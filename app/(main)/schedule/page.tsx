@@ -8,6 +8,7 @@ import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } 
 import { CSS } from "@dnd-kit/utilities";
 import { supabase } from "../../lib/supabase";
 import { analyzeAdaptiveVolume, getVolumeStatus, VOLUME_GUIDELINES, type AdaptiveVolumeData, type MuscleTrend } from "../../lib/volumeAnalysis";
+import { QUICK_START_TEMPLATES, type QuickStartTemplate } from "../../lib/quickStartTemplates";
 import { useAuth } from "../../lib/AuthProvider";
 import AddExerciseModal from "../../components/AddExerciseModal";
 import ExerciseDatabaseModal from "../../components/ExerciseDatabaseModal";
@@ -287,6 +288,7 @@ export default function SchedulePage() {
     const [weeklyVolume, setWeeklyVolume] = useState<{ segment: string; sets: number; days: number }[]>([]);
     const [adaptiveData, setAdaptiveData] = useState<Record<string, AdaptiveVolumeData>>({});
     const [adaptiveLoaded, setAdaptiveLoaded] = useState(false);
+    const [importingTemplate, setImportingTemplate] = useState<string | null>(null);
 
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -369,6 +371,40 @@ export default function SchedulePage() {
     }, [user]);
 
     useEffect(() => { loadRecurring(); }, [loadRecurring]);
+
+    async function importQuickStartTemplate(tpl: QuickStartTemplate) {
+        if (!user) return;
+        setImportingTemplate(tpl.key);
+
+        const allNames = Array.from(new Set(tpl.days.flatMap((d) => d.exerciseNames)));
+        const { data: exRows } = await supabase.from("exercises").select("id, name").in("name", allNames);
+        const idByName: Record<string, string> = {};
+        (exRows ?? []).forEach((e: any) => { idByName[e.name] = e.id; });
+
+        // Reuse one template per distinct day definition (e.g. "Upper Body" appears twice in Upper/Lower)
+        const templateIdBySignature: Record<string, string> = {};
+        for (const day of tpl.days) {
+            const signature = `${day.dayName}::${day.exerciseNames.join(",")}`;
+            let templateId = templateIdBySignature[signature];
+
+            if (!templateId) {
+                const { data: template } = await supabase.from("workout_templates").insert({ user_id: user.id, name: day.dayName }).select("id").single();
+                if (!template) continue;
+                templateId = template.id;
+                templateIdBySignature[signature] = templateId;
+
+                const rows = day.exerciseNames
+                    .map((name, i) => ({ template_id: templateId, user_id: user.id, exercise_id: idByName[name], order_index: i, target_sets: 3, target_reps: "8-12" }))
+                    .filter((r) => r.exercise_id);
+                if (rows.length) await supabase.from("workout_template_exercises").insert(rows);
+            }
+
+            await supabase.from("recurring_plans").upsert({ user_id: user.id, weekday: day.weekday, template_id: templateId, is_rest: false }, { onConflict: "user_id,weekday" });
+        }
+
+        await loadRecurring();
+        setImportingTemplate(null);
+    }
 
     useEffect(() => {
         if (!user) return;
@@ -622,6 +658,31 @@ export default function SchedulePage() {
                         <Database size={14} /> View Database
                     </button>
                 </div>
+
+                {/* QUICK START — only when no plan exists yet */}
+                {recurringLoaded && Object.keys(recurringPlans).length === 0 && (
+                    <div className="rounded-md border border-cyan-400/15 bg-white/[0.03] p-3">
+                        <p className="text-[10px] font-mono tracking-widest text-white/40 mb-1">QUICK START</p>
+                        <p className="text-[11px] text-white/30 mb-3">Import a proven split — you can tweak it anytime after.</p>
+                        <div className="grid sm:grid-cols-2 gap-2.5">
+                            {QUICK_START_TEMPLATES.map((tpl) => (
+                                <button
+                                    key={tpl.key}
+                                    onClick={() => importQuickStartTemplate(tpl)}
+                                    disabled={importingTemplate !== null}
+                                    className="text-left rounded-md border border-white/10 bg-white/[0.02] p-3.5 hover:border-cyan-400/30 hover:bg-cyan-400/[0.04] disabled:opacity-40 transition"
+                                >
+                                    <div className="flex items-center justify-between mb-1.5">
+                                        <p className="text-sm font-bold text-white/90">{tpl.name}</p>
+                                        <span className="text-[9px] font-mono px-2 py-0.5 rounded-full border border-cyan-400/20 text-cyan-300/70 shrink-0">{tpl.daysPerWeek}D/WK</span>
+                                    </div>
+                                    <p className="text-[10px] font-mono text-white/30">{tpl.muscleCoverage}</p>
+                                    {importingTemplate === tpl.key && <p className="text-[10px] font-mono text-cyan-300 mt-2">Importing...</p>}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
 
                 {/* WEEKLY PLAN — the only editor */}
                 <div className="rounded-md border border-cyan-400/15 bg-white/[0.03] p-3">
