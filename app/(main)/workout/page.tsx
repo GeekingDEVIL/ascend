@@ -2,12 +2,12 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Check, Plus, Play, X, RefreshCw, Pause, SkipForward, ChevronDown, Moon, Flame, Dumbbell, Timer, TrendingUp, Award } from "lucide-react";
+import { Check, Plus, Play, X, RefreshCw, Pause, SkipForward, ChevronDown, Moon, Flame, Dumbbell, Timer, TrendingUp, Award, Share2 } from "lucide-react";
 import { useSwipeable } from "react-swipeable";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../lib/AuthProvider";
 import { calculateSessionXP, type XPBreakdown } from "../../lib/xpEngine";
-import { computeLevel } from "../../lib/levelSystem";
+import { computeLevel, getRank } from "../../lib/levelSystem";
 import { checkAndAwardAchievements } from "../../lib/achievements";
 import { updateUserStats } from "../../lib/updateUserStats";
 import AddExerciseModal from "../../components/AddExerciseModal";
@@ -169,7 +169,8 @@ export default function WorkoutPage() {
     const [weightLogged, setWeightLogged] = useState(false);
     const [confirmedExercises, setConfirmedExercises] = useState<Set<string>>(new Set());
     const [prCount, setPrCount] = useState(0);
-    const [summary, setSummary] = useState<{ duration: number; sets: number; volume: number; xpBreakdown: XPBreakdown } | null>(null);
+    const [summary, setSummary] = useState<{ duration: number; sets: number; volume: number; xpBreakdown: XPBreakdown; level: number; rankName: string } | null>(null);
+    const [sharing, setSharing] = useState(false);
     const [freestyleExercises, setFreestyleExercises] = useState<WorkoutExercise[]>([]);
     const [showFreestyleAddModal, setShowFreestyleAddModal] = useState(false);
     const [startingFreestyle, setStartingFreestyle] = useState(false);
@@ -241,11 +242,15 @@ export default function WorkoutPage() {
         const completedSession = completedSessions?.[0] ?? null;
         if (completedSession) {
             setDayTitle(planTitle);
+            const { data: statsRow } = await supabase.from("user_stats").select("total_xp").eq("user_id", user.id).maybeSingle();
+            const curLevel = computeLevel(statsRow?.total_xp ?? 0).level;
             setSummary({
                 duration: completedSession.duration_seconds || 0,
                 sets: completedSession.total_sets || 0,
                 volume: Number(completedSession.total_volume) || 0,
                 xpBreakdown: { total: completedSession.xp_earned || 0, base: 0, setCompletion: 0, completionBonus: 0, prBonus: 0, progressionBonus: 0, consistencyBonus: 0, details: [] } as XPBreakdown,
+                level: curLevel,
+                rankName: getRank(curLevel).name,
             });
             localStorage.removeItem("ascend_active_session");
             setStatus("completed_today");
@@ -526,9 +531,120 @@ export default function WorkoutPage() {
         }
 
         localStorage.removeItem("ascend_active_session");
-        setSummary({ duration: dur, sets: totalSets, volume: totalVolume, xpBreakdown: xp });
+        setSummary({ duration: dur, sets: totalSets, volume: totalVolume, xpBreakdown: xp, level: lvlAfter, rankName: getRank(lvlAfter).name });
         setStatus("completed");
         setRestRemaining(null);
+    }
+
+    async function generateShareImage(): Promise<Blob | null> {
+        if (!summary) return null;
+        const canvas = document.createElement("canvas");
+        canvas.width = 1080;
+        canvas.height = 1920;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return null;
+
+        // Background
+        const bg = ctx.createLinearGradient(0, 0, 0, 1920);
+        bg.addColorStop(0, "#0a1524");
+        bg.addColorStop(1, "#050914");
+        ctx.fillStyle = bg;
+        ctx.fillRect(0, 0, 1080, 1920);
+
+        const glow = ctx.createRadialGradient(540, 300, 50, 540, 300, 700);
+        glow.addColorStop(0, "rgba(34,211,238,0.18)");
+        glow.addColorStop(1, "rgba(34,211,238,0)");
+        ctx.fillStyle = glow;
+        ctx.fillRect(0, 0, 1080, 1920);
+
+        ctx.textAlign = "center";
+
+        // Logo
+        ctx.fillStyle = "#22d3ee";
+        ctx.font = "bold 64px ui-monospace, monospace";
+        ctx.fillText("ASCEND", 540, 180);
+        ctx.fillStyle = "rgba(255,255,255,0.3)";
+        ctx.font = "24px ui-monospace, monospace";
+        ctx.fillText("YOUR TRAINING SYSTEM", 540, 220);
+
+        // Title + date
+        ctx.fillStyle = "rgba(34,211,238,0.6)";
+        ctx.font = "28px ui-monospace, monospace";
+        ctx.fillText("SESSION COMPLETE", 540, 420);
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 72px ui-monospace, monospace";
+        ctx.fillText(dayTitle, 540, 510);
+        ctx.fillStyle = "rgba(255,255,255,0.4)";
+        ctx.font = "30px ui-monospace, monospace";
+        ctx.fillText(new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" }), 540, 560);
+
+        // Rank badge
+        const badgeText = `LVL ${summary.level} · ${summary.rankName}`;
+        ctx.font = "bold 34px ui-monospace, monospace";
+        const badgeW = Math.max(300, ctx.measureText(badgeText).width + 100);
+        ctx.strokeStyle = "rgba(34,211,238,0.5)";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.roundRect(540 - badgeW / 2, 650, badgeW, 90, 45);
+        ctx.stroke();
+        ctx.fillStyle = "#22d3ee";
+        ctx.fillText(badgeText, 540, 707);
+
+        // Stats grid
+        const stats: [string, string][] = [
+            ["DURATION", formatClock(summary.duration)],
+            ["SETS", String(summary.sets)],
+            ["VOLUME", `${Math.round(summary.volume).toLocaleString()} KG`],
+            ["XP EARNED", `+${summary.xpBreakdown.total}`],
+        ];
+        const cellW = 460, cellH = 220, gap = 40;
+        const startX = 540 - cellW - gap / 2;
+        const startY = 850;
+        stats.forEach(([label, value], i) => {
+            const col = i % 2, row = Math.floor(i / 2);
+            const x = startX + col * (cellW + gap);
+            const y = startY + row * (cellH + gap);
+            ctx.strokeStyle = "rgba(255,255,255,0.1)";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.roundRect(x, y, cellW, cellH, 20);
+            ctx.stroke();
+            ctx.fillStyle = "rgba(255,255,255,0.35)";
+            ctx.font = "24px ui-monospace, monospace";
+            ctx.fillText(label, x + cellW / 2, y + 70);
+            ctx.fillStyle = i === 3 ? "#22d3ee" : "#ffffff";
+            ctx.font = "bold 56px ui-monospace, monospace";
+            ctx.fillText(value, x + cellW / 2, y + 150);
+        });
+
+        ctx.fillStyle = "rgba(255,255,255,0.2)";
+        ctx.font = "24px ui-monospace, monospace";
+        ctx.fillText("ascend.app", 540, 1850);
+
+        return new Promise((resolve) => canvas.toBlob((blob) => resolve(blob), "image/png"));
+    }
+
+    async function handleShare() {
+        setSharing(true);
+        const blob = await generateShareImage();
+        if (!blob) { setSharing(false); return; }
+
+        const file = new File([blob], `ascend-${today}.png`, { type: "image/png" });
+        if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+            try {
+                await navigator.share({ files: [file], title: "ASCEND Workout Summary" });
+            } catch {
+                // user cancelled — no-op
+            }
+        } else {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `ascend-${today}.png`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+        setSharing(false);
     }
 
     async function saveFreestyleAsRecurringPlan() {
@@ -688,9 +804,17 @@ export default function WorkoutPage() {
                         ))}
                     </div>
 
-                    <button onClick={() => router.push("/")} className="w-full text-sm font-bold py-3.5 rounded-lg bg-cyan-400 text-black hover:bg-cyan-300 transition" style={{ boxShadow: "0 0 20px -4px rgba(34,211,238,0.6)" }}>
-                        RETURN TO DASHBOARD
-                    </button>
+                    <div className="flex gap-2">
+                        <button onClick={() => router.push("/")} className="flex-1 text-sm font-mono font-bold py-3.5 rounded-lg border border-cyan-400/40 text-cyan-300 hover:bg-cyan-400/10 transition">
+                            DASHBOARD
+                        </button>
+                        <button onClick={() => router.push("/progress")} className="flex-1 text-sm font-mono font-bold py-3.5 rounded-lg bg-cyan-400 text-black hover:bg-cyan-300 transition" style={{ boxShadow: "0 0 20px -4px rgba(34,211,238,0.6)" }}>
+                            VIEW PROGRESS
+                        </button>
+                        <button onClick={handleShare} disabled={sharing} title="Share" className="shrink-0 w-12 flex items-center justify-center rounded-lg border border-white/15 text-white/60 hover:text-cyan-300 hover:border-cyan-400/40 disabled:opacity-40 transition">
+                            {sharing ? <div className="w-4 h-4 border-2 border-white/30 border-t-cyan-300 rounded-full animate-spin" /> : <Share2 size={16} />}
+                        </button>
+                    </div>
                 </BeamBorder>
             </div>
 
