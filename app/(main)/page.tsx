@@ -562,7 +562,7 @@ export default function Dashboard() {
             <span className="w-px h-6 bg-white/10" />
             <span className="font-mono text-white/50">RANK: <GlassText className={`font-bold ${rank.color}`}>{rank.name}</GlassText></span>
             {nextRank && (
-              <span className="text-[9px] font-mono text-white/25 block mt-1">Next: {nextRank.name} at Level {nextRank.minLevel}</span>
+              <span className="hidden sm:block text-[9px] font-mono text-white/25 mt-1">Next: {nextRank.name} at Level {nextRank.minLevel}</span>
             )}
             <span className="font-mono text-white/50">LVL <GlassText className="font-bold">{statsLoaded ? level : 1}</GlassText></span>
             <button onClick={() => router.push("/notifications")} className="relative text-white/50 hover:text-cyan-300 transition">
