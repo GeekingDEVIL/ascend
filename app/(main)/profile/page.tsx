@@ -173,29 +173,74 @@ export default function ProfilePage() {
         setTargetLifts((prev) => prev.filter((l) => l.id !== id));
     }
 
+    function csvField(v: any): string {
+        const s = v === null || v === undefined ? "" : String(v);
+        return `"${s.replace(/"/g, '""')}"`;
+    }
+
     async function exportData() {
         if (!user) return;
+
         const { data: sessions } = await supabase
             .from("workout_sessions")
-            .select("date, title, duration_seconds, total_sets, total_volume, xp_earned")
+            .select("id, date, title, duration_seconds, total_sets, total_volume, xp_earned, started_at, completed_at")
             .eq("user_id", user.id)
             .eq("status", "completed")
             .order("date");
 
         if (!sessions?.length) { alert("No data to export."); return; }
 
-        const csv = [
-            "Date,Title,Duration (min),Sets,Volume (kg),XP",
-            ...sessions.map((s: any) =>
-                `${s.date},"${s.title || "Workout"}",${Math.round((s.duration_seconds || 0) / 60)},${s.total_sets},${Math.round(Number(s.total_volume) || 0)},${s.xp_earned}`
+        const sessionIds = sessions.map((s: any) => s.id);
+        const { data: setLogs } = await supabase
+            .from("exercise_set_logs")
+            .select("workout_session_id, weight, reps, duration_seconds, distance, set_index, completed_at, exercises(name, body_segment)")
+            .in("workout_session_id", sessionIds)
+            .order("completed_at");
+
+        const { data: weightLogs } = await supabase
+            .from("body_weight_logs")
+            .select("weight, logged_at, context")
+            .eq("user_id", user.id)
+            .order("logged_at");
+
+        const sessionsSection = [
+            "=== WORKOUT SESSIONS ===",
+            "Date,Day,Title,Duration (min),Sets,Volume (kg),XP,Start Time,End Time",
+            ...sessions.map((s: any) => {
+                const day = new Date(s.date + "T00:00:00").toLocaleDateString(undefined, { weekday: "long" });
+                const start = s.started_at ? new Date(s.started_at).toLocaleTimeString() : "";
+                const end = s.completed_at ? new Date(s.completed_at).toLocaleTimeString() : "";
+                return [s.date, day, csvField(s.title || "Workout"), Math.round((s.duration_seconds || 0) / 60), s.total_sets, Math.round(Number(s.total_volume) || 0), s.xp_earned, start, end].join(",");
+            }),
+        ];
+
+        const sessionDateById: Record<string, string> = {};
+        sessions.forEach((s: any) => { sessionDateById[s.id] = s.date; });
+
+        const setSection = [
+            "=== SET-BY-SET LOG ===",
+            "Date,Exercise,Muscle Group,Set #,Weight (kg),Reps,Duration (sec),Distance (km)",
+            ...(setLogs ?? []).map((l: any) =>
+                [sessionDateById[l.workout_session_id] ?? "", csvField(l.exercises?.name ?? "Unknown"), csvField(l.exercises?.body_segment ?? ""), l.set_index + 1, l.weight ?? "", l.reps ?? "", l.duration_seconds ?? "", l.distance ?? ""].join(",")
             ),
-        ].join("\n");
+        ];
+
+        const weightSection = [
+            "=== BODY WEIGHT LOG ===",
+            "Date,Time,Weight (kg),Context",
+            ...(weightLogs ?? []).map((w: any) => {
+                const d = new Date(w.logged_at);
+                return [d.toLocaleDateString(), d.toLocaleTimeString(), w.weight, csvField(w.context ?? "")].join(",");
+            }),
+        ];
+
+        const csv = [...sessionsSection, "", ...setSection, "", ...weightSection].join("\n");
 
         const blob = new Blob([csv], { type: "text/csv" });
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `ascend-workout-history-${new Date().toISOString().split("T")[0]}.csv`;
+        a.download = `ascend-full-export-${new Date().toISOString().split("T")[0]}.csv`;
         a.click();
         URL.revokeObjectURL(url);
     }
