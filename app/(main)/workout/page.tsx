@@ -386,6 +386,7 @@ export default function WorkoutPage() {
         else { const { data } = await supabase.from("exercise_set_logs").insert(payload).select().single(); logId = data?.id ?? null; }
 
         setLogs((p) => ({ ...p, [ex.id]: p[ex.id].map((s) => (s.index === idx ? { ...s, completed: true, logId } : s)) }));
+        if (navigator.vibrate) navigator.vibrate(50);
         if (!ex.isCardio && !ex.isBodyweight && set.weight && set.reps) checkPR(ex.exercise_id, ex.name, Number(set.weight), Number(set.reps));
         // Don't auto-start rest timer — user taps to start if they want
     }
