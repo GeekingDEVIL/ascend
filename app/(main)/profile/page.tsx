@@ -5,6 +5,17 @@ import { useRouter } from "next/navigation";
 import { User, LogOut, Save, Plus, Trash2, Check, Download, AlertTriangle, Eye, EyeOff, Target, Dumbbell, Scale, Ruler, Calendar, Clock, Shield, Heart, AtSign, Globe } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../lib/AuthProvider";
+import CustomSelect from "../../components/CustomSelect";
+
+const GOAL_OPTIONS = [
+    { value: "Build Muscle", label: "Build Muscle" },
+    { value: "Lose Fat", label: "Lose Fat" },
+    { value: "Build Strength", label: "Build Strength" },
+    { value: "Improve Endurance", label: "Improve Endurance" },
+    { value: "Body Recomposition", label: "Body Recomposition" },
+    { value: "Athletic Performance", label: "Athletic Performance" },
+    { value: "General Fitness", label: "General Fitness" },
+];
 
 type ProfileData = {
     goal: string;
@@ -374,17 +385,13 @@ export default function ProfilePage() {
                     <div className="space-y-4">
                         <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4">
                             <p className="text-[10px] font-mono tracking-widest text-white/40 mb-3">TRAINING GOAL</p>
-                            <select value={data.goal} onChange={(e) => updateField("goal", e.target.value)}
-                                className="w-full rounded-lg bg-white/[0.04] border border-white/[0.08] px-3 py-2.5 text-sm font-mono text-white/80 focus:outline-none focus:border-cyan-400/40 transition appearance-none">
-                                <option value="">Select a goal...</option>
-                                <option value="Build Muscle">Build Muscle</option>
-                                <option value="Lose Fat">Lose Fat</option>
-                                <option value="Build Strength">Build Strength</option>
-                                <option value="Improve Endurance">Improve Endurance</option>
-                                <option value="Body Recomposition">Body Recomposition</option>
-                                <option value="Athletic Performance">Athletic Performance</option>
-                                <option value="General Fitness">General Fitness</option>
-                            </select>
+                            <CustomSelect
+                                options={GOAL_OPTIONS}
+                                value={data.goal}
+                                onChange={(v) => updateField("goal", v)}
+                                placeholder="Select a goal..."
+                                searchable={false}
+                            />
                         </div>
 
                         <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4">
@@ -409,16 +416,19 @@ export default function ProfilePage() {
                                 </div>
                             )}
 
-                            <div className="flex items-center gap-2">
-                                <select value={newLiftExercise} onChange={(e) => setNewLiftExercise(e.target.value)}
-                                    className="flex-1 min-w-0 rounded-lg bg-white/[0.04] border border-white/[0.08] px-2 py-2 text-xs font-mono text-white/70 focus:outline-none focus:border-cyan-400/40 transition appearance-none">
-                                    <option value="">Select exercise...</option>
-                                    {exercises.map((ex) => <option key={ex.id} value={ex.id}>{ex.name}</option>)}
-                                </select>
+                            <div className="flex items-start gap-2">
+                                <div className="flex-1 min-w-0">
+                                    <CustomSelect
+                                        options={exercises.map((ex) => ({ value: ex.id, label: ex.name }))}
+                                        value={newLiftExercise}
+                                        onChange={setNewLiftExercise}
+                                        placeholder="Select exercise..."
+                                    />
+                                </div>
                                 <input type="number" min="0" onWheel={(e) => (e.target as HTMLElement).blur()} value={newLiftWeight} onChange={(e) => setNewLiftWeight(e.target.value)} placeholder={weightUnit}
-                                    className="w-20 rounded-lg bg-white/[0.04] border border-white/[0.08] text-center text-sm font-mono py-2 focus:outline-none focus:border-cyan-400/40 transition" />
+                                    className="w-20 shrink-0 rounded-lg bg-white/[0.04] border border-white/[0.08] text-center text-sm font-mono py-2.5 focus:outline-none focus:border-cyan-400/40 transition" />
                                 <button onClick={addTargetLift} disabled={!newLiftExercise || !newLiftWeight}
-                                    className="shrink-0 w-9 h-9 rounded-lg border border-cyan-400/30 text-cyan-300 flex items-center justify-center hover:bg-cyan-400/10 disabled:opacity-30 transition">
+                                    className="shrink-0 w-11 h-11 rounded-lg border border-cyan-400/30 text-cyan-300 flex items-center justify-center hover:bg-cyan-400/10 disabled:opacity-30 transition">
                                     <Plus size={14} />
                                 </button>
                             </div>
