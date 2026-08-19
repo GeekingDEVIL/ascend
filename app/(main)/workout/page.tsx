@@ -39,7 +39,7 @@ type SetEntry = {
     logId: string | null;
 };
 
-type SessionStatus = "loading" | "not_started" | "active" | "completed" | "completed_today" | "rest_day" | "no_plan";
+type SessionStatus = "loading" | "not_started" | "active" | "completed" | "completed_today" | "rest_day" | "no_plan" | "freestyle";
 
 type OverloadSuggestion = {
     type: "weight_up" | "reps_up" | "first_time" | "maintain";
@@ -125,6 +125,9 @@ export default function WorkoutPage() {
     const [confirmedExercises, setConfirmedExercises] = useState<Set<string>>(new Set());
     const [prCount, setPrCount] = useState(0);
     const [summary, setSummary] = useState<{ duration: number; sets: number; volume: number; xpBreakdown: XPBreakdown } | null>(null);
+    const [freestyleExercises, setFreestyleExercises] = useState<WorkoutExercise[]>([]);
+    const [showFreestyleAddModal, setShowFreestyleAddModal] = useState(false);
+    const [startingFreestyle, setStartingFreestyle] = useState(false);
 
     const today = toDateString(new Date());
 
@@ -274,6 +277,76 @@ export default function WorkoutPage() {
         setStartedAt(new Date(data.started_at).getTime());
         setStatus("active");
         setExpandedId(exercisesList[0]?.id ?? null);
+    }
+
+    function addFreestyleExercise(ex: { id: string; name: string; category?: string; equipment?: string; body_segment?: string }) {
+        const seg = ex.body_segment ?? "";
+        const equip = ex.equipment ?? "";
+        const localEx: WorkoutExercise = {
+            id: `freestyle-${ex.id}-${Date.now()}`,
+            exercise_id: ex.id,
+            order_index: freestyleExercises.length,
+            target_sets: 3,
+            target_reps: "8-10",
+            target_weight: null,
+            rest_seconds: 90,
+            name: ex.name,
+            category: ex.category ?? "",
+            equipment: equip,
+            body_segment: seg,
+            isCardio: seg === "Cardio",
+            isBodyweight: equip.toLowerCase() === "bodyweight" && seg !== "Cardio",
+        };
+        setFreestyleExercises((p) => [...p, localEx]);
+        setShowFreestyleAddModal(false);
+    }
+
+    function removeFreestyleExercise(id: string) {
+        setFreestyleExercises((p) => p.filter((e) => e.id !== id));
+    }
+
+    async function beginFreestyleSession() {
+        if (!user || freestyleExercises.length === 0) return;
+        setStartingFreestyle(true);
+
+        const { data: day } = await supabase.from("scheduled_days").insert({ user_id: user.id, date: today, title: "Freestyle Session", is_rest: false }).select("id").single();
+        if (!day) { setStartingFreestyle(false); return; }
+
+        await supabase.from("scheduled_exercises").insert(freestyleExercises.map((ex, i) => ({
+            scheduled_day_id: day.id, user_id: user.id, exercise_id: ex.exercise_id, order_index: i,
+            target_sets: ex.target_sets, target_reps: ex.target_reps, target_weight: ex.target_weight, rest_seconds: ex.rest_seconds,
+        })));
+
+        const { data: exRows } = await supabase
+            .from("scheduled_exercises")
+            .select("id, order_index, target_sets, target_reps, target_weight, rest_seconds, exercise_id, exercises(name, category, equipment, body_segment)")
+            .eq("scheduled_day_id", day.id)
+            .order("order_index");
+
+        const mapped: WorkoutExercise[] = (exRows ?? []).map((r: any) => {
+            const seg = r.exercises?.body_segment ?? ""; const equip = r.exercises?.equipment ?? "";
+            return { id: r.id, exercise_id: r.exercise_id, order_index: r.order_index, target_sets: r.target_sets, target_reps: r.target_reps, target_weight: r.target_weight, rest_seconds: r.rest_seconds, name: r.exercises?.name ?? "Unknown", category: r.exercises?.category ?? "", equipment: equip, body_segment: seg, isCardio: seg === "Cardio", isBodyweight: equip.toLowerCase() === "bodyweight" && seg !== "Cardio" };
+        });
+
+        const { data: session } = await supabase.from("workout_sessions").insert({ user_id: user.id, scheduled_day_id: day.id, date: today, title: "Freestyle Session", status: "active" }).select().single();
+        if (!session) { setStartingFreestyle(false); return; }
+
+        const initLogs: Record<string, SetEntry[]> = {};
+        mapped.forEach((ex) => {
+            const setCount = ex.isCardio ? 1 : ex.target_sets;
+            initLogs[ex.id] = Array.from({ length: setCount }, (_, i) => emptySet(i));
+        });
+
+        setScheduledDayId(day.id);
+        setDayTitle("Freestyle Session");
+        setExercisesList(mapped);
+        setLogs(initLogs);
+        setSessionId(session.id);
+        setStartedAt(new Date(session.started_at).getTime());
+        setExpandedId(mapped[0]?.id ?? null);
+        setFreestyleExercises([]);
+        setStartingFreestyle(false);
+        setStatus("active");
     }
 
     function updateSet(exId: string, idx: number, field: keyof SetEntry, val: string) {
@@ -444,13 +517,64 @@ export default function WorkoutPage() {
                     <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-4">
                         <p className="text-sm font-bold text-white/90 mb-1">Just train today</p>
                         <p className="text-[11px] text-white/40 mb-3">No plan needed — pick exercises and log as you go.</p>
-                        <button disabled className="w-full text-sm font-mono font-bold py-3 rounded-lg border border-white/15 text-white/30 cursor-not-allowed transition">
+                        <button onClick={() => setStatus("freestyle")} className="w-full text-sm font-mono font-bold py-3 rounded-lg border border-white/15 text-white/70 hover:border-cyan-400/40 hover:text-cyan-300 transition">
                             START FREESTYLE SESSION
                         </button>
-                        <p className="text-[9px] font-mono text-white/20 mt-2 text-center">Coming soon</p>
                     </div>
                 </div>
             </div>
+        </main>
+    );
+
+    // ── FREESTYLE (BUILD) ──
+    if (status === "freestyle") return (
+        <main className="min-h-screen bg-[#050914] text-white p-4 md:p-10 pb-24">
+            <div className="pointer-events-none fixed top-[-10%] left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-cyan-500/10 rounded-full blur-[130px]" />
+            <div className="relative z-10 w-full max-w-lg mx-auto">
+                <button onClick={() => { setFreestyleExercises([]); setStatus("no_plan"); }} className="text-[10px] font-mono text-white/30 hover:text-white/60 transition mb-4">
+                    ← Back
+                </button>
+                <p className="text-[10px] font-mono tracking-[0.2em] text-cyan-300/60 mb-0.5">FREESTYLE</p>
+                <h1 className="text-xl md:text-2xl font-bold text-white/95 mb-5">Freestyle Session</h1>
+
+                <button onClick={() => setShowFreestyleAddModal(true)} className="w-full flex items-center justify-center gap-2 text-sm font-mono font-bold py-3.5 rounded-lg border border-cyan-400/30 bg-cyan-400/[0.05] text-cyan-300 hover:bg-cyan-400/10 transition mb-4">
+                    <Plus size={16} /> ADD EXERCISE
+                </button>
+
+                {freestyleExercises.length === 0 ? (
+                    <div className="text-center py-10">
+                        <p className="text-sm text-white/30">No exercises added yet.</p>
+                    </div>
+                ) : (
+                    <div className="space-y-2 mb-6">
+                        {freestyleExercises.map((ex, i) => (
+                            <div key={ex.id} className="flex items-center gap-3 rounded-lg border border-white/[0.08] bg-white/[0.02] px-4 py-3">
+                                <span className="text-[10px] font-mono text-cyan-300/40 w-5 shrink-0">{String(i + 1).padStart(2, "0")}</span>
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-bold text-white/90 truncate">{ex.name}</p>
+                                    <p className="text-[10px] font-mono text-white/35">{ex.body_segment}</p>
+                                </div>
+                                <button onClick={() => removeFreestyleExercise(ex.id)} className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg text-white/25 hover:text-red-400 transition">
+                                    <X size={16} />
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                {freestyleExercises.length > 0 && (
+                    <button
+                        onClick={beginFreestyleSession}
+                        disabled={startingFreestyle}
+                        className="w-full flex items-center justify-center gap-2.5 text-sm font-bold py-4 rounded-lg bg-cyan-400 text-black hover:bg-cyan-300 disabled:opacity-50 transition"
+                        style={{ boxShadow: "0 0 25px -4px rgba(34,211,238,0.6)" }}
+                    >
+                        <Play size={18} fill="black" /> {startingFreestyle ? "STARTING..." : "BEGIN SESSION"}
+                    </button>
+                )}
+            </div>
+
+            {showFreestyleAddModal && <AddExerciseModal onAdd={addFreestyleExercise} onClose={() => setShowFreestyleAddModal(false)} existingIds={new Set(freestyleExercises.map((e) => e.exercise_id))} />}
         </main>
     );
 
