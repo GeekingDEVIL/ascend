@@ -61,6 +61,20 @@ export default function ProfilePage() {
     const [latestWeight, setLatestWeight] = useState<number | null>(null);
     const [totalSessions, setTotalSessions] = useState(0);
     const [totalVolume, setTotalVolume] = useState(0);
+    const [theme, setTheme] = useState<"navy" | "oled">("navy");
+
+    useEffect(() => {
+        const stored = localStorage.getItem("ascend_theme");
+        const initial = stored === "oled" ? "oled" : "navy";
+        setTheme(initial);
+        document.documentElement.style.setProperty("--bg-primary", initial === "oled" ? "#000000" : "#050914");
+    }, []);
+
+    function applyTheme(value: "navy" | "oled") {
+        setTheme(value);
+        document.documentElement.style.setProperty("--bg-primary", value === "oled" ? "#000000" : "#050914");
+        localStorage.setItem("ascend_theme", value);
+    }
 
     const loadProfile = useCallback(async () => {
         if (!user) return;
@@ -567,6 +581,22 @@ export default function ProfilePage() {
                                     className={`flex-1 text-center py-3 rounded-lg border transition ${data.unit_preference === "imperial" ? "border-cyan-400/40 bg-cyan-400/10 text-cyan-300" : "border-white/10 text-white/40"}`}>
                                     <p className="text-sm font-mono font-bold">IMPERIAL</p>
                                     <p className="text-[9px] font-mono text-white/30">LBS · FT/IN · MI</p>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4 space-y-4">
+                            <p className="text-[10px] font-mono tracking-widest text-white/40">THEME</p>
+                            <div className="flex gap-2">
+                                <button onClick={() => applyTheme("navy")}
+                                    className={`flex-1 text-center py-3 rounded-lg border transition ${theme === "navy" ? "border-cyan-400/40 bg-cyan-400/10 text-cyan-300" : "border-white/10 text-white/40"}`}>
+                                    <p className="text-sm font-mono font-bold">NAVY DARK</p>
+                                    <p className="text-[9px] font-mono text-white/30">#050914</p>
+                                </button>
+                                <button onClick={() => applyTheme("oled")}
+                                    className={`flex-1 text-center py-3 rounded-lg border transition ${theme === "oled" ? "border-cyan-400/40 bg-cyan-400/10 text-cyan-300" : "border-white/10 text-white/40"}`}>
+                                    <p className="text-sm font-mono font-bold">OLED BLACK</p>
+                                    <p className="text-[9px] font-mono text-white/30">#000000</p>
                                 </button>
                             </div>
                         </div>
