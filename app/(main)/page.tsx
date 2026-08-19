@@ -6,6 +6,7 @@ import { Dumbbell, Activity, Flame, Target, Zap, HeartPulse, Gauge, Trophy, Awar
 import { supabase } from "../lib/supabase";
 import { computeLevel, getRank, getNextRank } from "../lib/levelSystem";
 import { useAuth } from "../lib/AuthProvider";
+import OnboardingModal from "../components/OnboardingModal";
 
 const HOLO_CLIP = "polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px))";
 
@@ -172,6 +173,7 @@ export default function Dashboard() {
     goal: null as string | null,
   });
   const [statsLoaded, setStatsLoaded] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   const levelInfo = computeLevel(stats.totalXp);
   const level = levelInfo.level;
@@ -188,6 +190,15 @@ export default function Dashboard() {
     setToday(new Date().toLocaleDateString(undefined, { weekday: "short", day: "2-digit", month: "short" }).toUpperCase());
     return () => clearInterval(id);
   }, []);
+
+  useEffect(() => {
+    async function checkOnboarding() {
+      if (!user) return;
+      const { data } = await supabase.from("recurring_plans").select("id").eq("user_id", user.id).limit(1);
+      if (!data?.length) setShowOnboarding(true);
+    }
+    checkOnboarding();
+  }, [user]);
 
   useEffect(() => {
     async function loadToday() {
@@ -799,6 +810,8 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {showOnboarding && user && <OnboardingModal userId={user.id} onClose={() => setShowOnboarding(false)} />}
     </main >
   );
 }

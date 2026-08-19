@@ -6,16 +6,7 @@ import { User, LogOut, Save, Plus, Trash2, Check, Download, AlertTriangle, Eye, 
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../lib/AuthProvider";
 import CustomSelect from "../../components/CustomSelect";
-
-const GOAL_OPTIONS = [
-    { value: "Build Muscle", label: "Build Muscle" },
-    { value: "Lose Fat", label: "Lose Fat" },
-    { value: "Build Strength", label: "Build Strength" },
-    { value: "Improve Endurance", label: "Improve Endurance" },
-    { value: "Body Recomposition", label: "Body Recomposition" },
-    { value: "Athletic Performance", label: "Athletic Performance" },
-    { value: "General Fitness", label: "General Fitness" },
-];
+import { GOAL_OPTIONS } from "../../lib/goals";
 
 type ProfileData = {
     goal: string;
