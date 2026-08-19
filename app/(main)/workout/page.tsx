@@ -1101,7 +1101,7 @@ export default function WorkoutPage() {
                 </div>
             )}
 
-            {swapTargetId && <AddExerciseModal onAdd={(e) => { const old = exercisesList.find((x) => x.id === swapTargetId); if (old) handleSwap(old, e); }} onClose={() => setSwapTargetId(null)} />}
+            {swapTargetId && <AddExerciseModal onAdd={(e) => { const old = exercisesList.find((x) => x.id === swapTargetId); if (old) handleSwap(old, e); }} onClose={() => setSwapTargetId(null)} defaultSegment={exercisesList.find((x) => x.id === swapTargetId)?.body_segment} />}
             {showAddModal && <AddExerciseModal onAdd={handleAddExercise} onClose={() => setShowAddModal(false)} existingIds={new Set(exercisesList.map((e) => e.exercise_id))} />}
         </main>
     );

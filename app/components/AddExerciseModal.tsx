@@ -73,16 +73,18 @@ export default function AddExerciseModal({
   onAdd,
   onClose,
   existingIds,
+  defaultSegment,
 }: {
   onAdd: (exercise: Exercise) => void;
   onClose: () => void;
   existingIds?: Set<string>;
+  defaultSegment?: string;
 }) {
   const [mounted, setMounted] = useState(false);
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
-  const [bodySegment, setBodySegment] = useState("All");
+  const [bodySegment, setBodySegment] = useState(defaultSegment || "All");
   const [equipment, setEquipment] = useState("All");
   const [difficulty, setDifficulty] = useState("All");
   const [justAdded, setJustAdded] = useState<string | null>(null);
