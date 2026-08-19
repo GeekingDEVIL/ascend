@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Plus, Play, X, RefreshCw, Pause, SkipForward, ChevronDown, Moon, Flame, Dumbbell, Timer, TrendingUp, Award } from "lucide-react";
+import { useSwipeable } from "react-swipeable";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../lib/AuthProvider";
 import { calculateSessionXP, type XPBreakdown } from "../../lib/xpEngine";
@@ -95,6 +96,50 @@ function GlassStat({ label, value, accent }: { label: string; value: string; acc
         <div className="rounded-lg border border-white/10 bg-white/[0.03] backdrop-blur-sm px-3 py-2.5 text-center">
             <p className="text-[8px] font-mono tracking-widest text-white/30 mb-0.5">{label}</p>
             <p className={`text-lg font-bold font-mono ${accent ? "text-cyan-300" : "text-white/90"}`}>{value}</p>
+        </div>
+    );
+}
+
+/* ─── SWIPE-TO-COMPLETE SET ─── */
+const SWIPE_THRESHOLD = 80;
+
+function SwipeSet({ completed, onComplete, children }: { completed: boolean; onComplete: () => void; children: React.ReactNode }) {
+    const [dragX, setDragX] = useState(0);
+    const [swiping, setSwiping] = useState(false);
+    const pastThreshold = dragX >= SWIPE_THRESHOLD;
+
+    const handlers = useSwipeable({
+        onSwiping: (e) => {
+            if (completed || e.dir !== "Right") return;
+            setSwiping(true);
+            setDragX(Math.max(0, Math.min(e.deltaX, SWIPE_THRESHOLD * 1.5)));
+        },
+        onSwiped: (e) => {
+            if (!completed && e.dir === "Right" && e.deltaX >= SWIPE_THRESHOLD) {
+                onComplete();
+            }
+            setDragX(0);
+            setSwiping(false);
+        },
+        trackMouse: true,
+    });
+
+    if (completed) return <>{children}</>;
+
+    return (
+        <div className="relative overflow-hidden rounded-lg">
+            <div
+                className="absolute inset-0 flex items-center pl-4 bg-cyan-400/20 rounded-lg pointer-events-none"
+                style={{ opacity: dragX > 4 ? 1 : 0 }}
+            >
+                <span className={`text-[10px] font-mono font-bold flex items-center gap-1.5 transition-transform ${pastThreshold ? "text-cyan-200 scale-110" : "text-cyan-300/70"}`}>
+                    <Check size={pastThreshold ? 16 : 12} />
+                    {pastThreshold ? "RELEASE TO LOG" : "SWIPE TO LOG →"}
+                </span>
+            </div>
+            <div {...handlers} style={{ transform: `translateX(${dragX}px)`, transition: swiping ? "none" : "transform 0.2s ease" }}>
+                {children}
+            </div>
         </div>
     );
 }
@@ -980,29 +1025,31 @@ export default function WorkoutPage() {
 
                                                     {sets.map((s) => (
                                                         <div key={s.index}>
-                                                            <div className="flex items-center gap-1.5 sm:gap-2">
-                                                                <span className={`text-[10px] font-mono w-5 sm:w-7 text-center shrink-0 ${s.completed ? "text-cyan-300/50" : "text-white/25"}`}>{s.index + 1}</span>
-                                                                {ex.isBodyweight ? (
-                                                                    <input type="number" min="0" inputMode="numeric" onWheel={(e) => (e.target as HTMLElement).blur()} placeholder="—" value={s.reps} onChange={(e) => updateSet(ex.id, s.index, "reps", e.target.value)} disabled={s.completed}
-                                                                        className="flex-1 min-w-0 h-10 sm:h-11 rounded-lg bg-white/[0.04] border border-white/[0.08] text-center text-sm sm:text-base font-bold font-mono focus:outline-none focus:border-cyan-400/40 focus:bg-cyan-400/[0.03] disabled:opacity-40 transition" />
-                                                                ) : (
-                                                                    <>
-                                                                        <input type="number" min="0" inputMode="decimal" onWheel={(e) => (e.target as HTMLElement).blur()} placeholder="—" value={s.weight} onChange={(e) => updateSet(ex.id, s.index, "weight", e.target.value)} disabled={s.completed}
-                                                                            className="flex-1 min-w-0 h-10 sm:h-11 rounded-lg bg-white/[0.04] border border-white/[0.08] text-center text-sm sm:text-base font-bold font-mono focus:outline-none focus:border-cyan-400/40 focus:bg-cyan-400/[0.03] disabled:opacity-40 transition" />
+                                                            <SwipeSet completed={s.completed} onComplete={() => completeSet(ex, s.index)}>
+                                                                <div className="flex items-center gap-1.5 sm:gap-2 bg-[#0a1120]">
+                                                                    <span className={`text-[10px] font-mono w-5 sm:w-7 text-center shrink-0 ${s.completed ? "text-cyan-300/50" : "text-white/25"}`}>{s.index + 1}</span>
+                                                                    {ex.isBodyweight ? (
                                                                         <input type="number" min="0" inputMode="numeric" onWheel={(e) => (e.target as HTMLElement).blur()} placeholder="—" value={s.reps} onChange={(e) => updateSet(ex.id, s.index, "reps", e.target.value)} disabled={s.completed}
                                                                             className="flex-1 min-w-0 h-10 sm:h-11 rounded-lg bg-white/[0.04] border border-white/[0.08] text-center text-sm sm:text-base font-bold font-mono focus:outline-none focus:border-cyan-400/40 focus:bg-cyan-400/[0.03] disabled:opacity-40 transition" />
-                                                                    </>
-                                                                )}
-                                                                <button
-                                                                    onClick={() => !s.completed && completeSet(ex, s.index)}
-                                                                    className={`w-9 h-9 sm:w-11 sm:h-11 shrink-0 rounded-lg border flex items-center justify-center transition ${s.completed
-                                                                        ? "border-cyan-400/50 bg-cyan-400/20 text-cyan-300"
-                                                                        : "border-white/10 text-white/20 hover:border-cyan-400/40 hover:text-cyan-300 hover:bg-cyan-400/[0.05] active:scale-95"
-                                                                        }`}
-                                                                >
-                                                                    <Check size={16} />
-                                                                </button>
-                                                            </div>
+                                                                    ) : (
+                                                                        <>
+                                                                            <input type="number" min="0" inputMode="decimal" onWheel={(e) => (e.target as HTMLElement).blur()} placeholder="—" value={s.weight} onChange={(e) => updateSet(ex.id, s.index, "weight", e.target.value)} disabled={s.completed}
+                                                                                className="flex-1 min-w-0 h-10 sm:h-11 rounded-lg bg-white/[0.04] border border-white/[0.08] text-center text-sm sm:text-base font-bold font-mono focus:outline-none focus:border-cyan-400/40 focus:bg-cyan-400/[0.03] disabled:opacity-40 transition" />
+                                                                            <input type="number" min="0" inputMode="numeric" onWheel={(e) => (e.target as HTMLElement).blur()} placeholder="—" value={s.reps} onChange={(e) => updateSet(ex.id, s.index, "reps", e.target.value)} disabled={s.completed}
+                                                                                className="flex-1 min-w-0 h-10 sm:h-11 rounded-lg bg-white/[0.04] border border-white/[0.08] text-center text-sm sm:text-base font-bold font-mono focus:outline-none focus:border-cyan-400/40 focus:bg-cyan-400/[0.03] disabled:opacity-40 transition" />
+                                                                        </>
+                                                                    )}
+                                                                    <button
+                                                                        onClick={() => !s.completed && completeSet(ex, s.index)}
+                                                                        className={`w-9 h-9 sm:w-11 sm:h-11 shrink-0 rounded-lg border flex items-center justify-center transition ${s.completed
+                                                                            ? "border-cyan-400/50 bg-cyan-400/20 text-cyan-300"
+                                                                            : "border-white/10 text-white/20 hover:border-cyan-400/40 hover:text-cyan-300 hover:bg-cyan-400/[0.05] active:scale-95"
+                                                                            }`}
+                                                                    >
+                                                                        <Check size={16} />
+                                                                    </button>
+                                                                </div>
+                                                            </SwipeSet>
                                                             {!s.completed && (
                                                                 <input type="text" value={s.note} onChange={(e) => updateSet(ex.id, s.index, "note", e.target.value)} placeholder="Note (optional)"
                                                                     className="mt-1 ml-5 sm:ml-7 text-[10px] font-mono rounded-md bg-transparent border border-white/[0.04] px-2 py-1 text-white/30 placeholder:text-white/15 focus:outline-none focus:border-cyan-400/20 focus:text-white/50 transition" style={{ width: "calc(100% - 24px)" }} />
