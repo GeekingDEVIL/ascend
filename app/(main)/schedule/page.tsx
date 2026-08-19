@@ -7,7 +7,7 @@ import { DndContext, closestCenter, PointerSensor, MouseSensor, TouchSensor, use
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { supabase } from "../../lib/supabase";
-import { analyzeAdaptiveVolume, type AdaptiveVolumeData, type MuscleTrend } from "../../lib/volumeAnalysis";
+import { analyzeAdaptiveVolume, getVolumeStatus, VOLUME_GUIDELINES, type AdaptiveVolumeData, type MuscleTrend } from "../../lib/volumeAnalysis";
 import { useAuth } from "../../lib/AuthProvider";
 import AddExerciseModal from "../../components/AddExerciseModal";
 import ExerciseDatabaseModal from "../../components/ExerciseDatabaseModal";
@@ -71,40 +71,6 @@ function mapExerciseRow(row: any): LocalExercise {
         target_incline: row.target_incline ?? null,
         target_speed: row.target_speed ?? null,
     };
-}
-
-const VOLUME_GUIDELINES: Record<string, { min: number; max: number; note: string }> = {
-    Chest: { min: 10, max: 20, note: "10–20 sets/week. Compounds (bench, dips) hit front delts and triceps too." },
-    Back: { min: 10, max: 25, note: "10–25 sets/week. Back recovers well — can handle higher volume." },
-    Shoulders: { min: 8, max: 20, note: "8–20 sets/week (direct). Front delts get volume from pressing." },
-    Traps: { min: 6, max: 16, note: "6–16 sets/week. Rows and deadlifts provide indirect volume." },
-    Biceps: { min: 8, max: 18, note: "8–18 sets/week (direct). Pulling movements add indirect volume." },
-    Triceps: { min: 8, max: 18, note: "8–18 sets/week (direct). Pressing movements add indirect volume." },
-    Forearms: { min: 4, max: 12, note: "4–12 sets/week. Most lifters get enough from gripping heavy loads." },
-    Core: { min: 6, max: 16, note: "6–16 sets/week (direct). Compounds provide significant indirect work." },
-    Legs: { min: 12, max: 22, note: "12–22 sets/week (combined quads + hamstrings). Large muscles need more volume." },
-    Glutes: { min: 8, max: 20, note: "8–20 sets/week. Squats, lunges, and hip hinges all contribute." },
-    "Full Body": { min: 0, max: 99, note: "Volume varies — these are compound/conditioning movements." },
-};
-
-function getVolumeStatus(
-    segment: string,
-    sets: number,
-    adaptive?: AdaptiveVolumeData
-): { label: string; color: string; tip: string | null; source: "personal" | "general"; trend?: MuscleTrend } {
-    const guide = VOLUME_GUIDELINES[segment] ?? { min: 8, max: 20, note: "" };
-    const usePersonal = adaptive?.hasEnoughData && adaptive.personalMin !== null && adaptive.personalMax !== null;
-
-    const min = usePersonal ? adaptive!.personalMin! : guide.min;
-    const max = usePersonal ? adaptive!.personalMax! : guide.max;
-    const source: "personal" | "general" = usePersonal ? "personal" : "general";
-    const trend = adaptive?.trend;
-
-    if (sets === 0) return { label: "NONE", color: "text-white/30", tip: `No direct ${segment.toLowerCase()} work planned.`, source, trend };
-    if (sets < min) return { label: "LOW", color: "text-amber-300", tip: `Below ${source === "personal" ? "your observed" : "recommended"} minimum (${min} sets). Consider adding ${min - sets}+ sets.`, source, trend };
-    if (sets <= max) return { label: "OPTIMAL", color: "text-cyan-300", tip: null, source, trend };
-    if (sets <= max + 4) return { label: "HIGH", color: "text-orange-300", tip: `Above ${source === "personal" ? "your observed" : "recommended"} max (${max} sets). ${adaptive?.suggestion || "Monitor recovery."}`, source, trend };
-    return { label: "EXCESSIVE", color: "text-red-400", tip: `Well above ${source === "personal" ? "your" : ""} maximum recoverable volume (${max} sets). ${adaptive?.suggestion || "Strongly consider reducing."}`, source, trend };
 }
 
 function groupExercisesBySegment(list: LocalExercise[]) {
