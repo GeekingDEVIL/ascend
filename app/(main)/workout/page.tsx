@@ -427,13 +427,29 @@ export default function WorkoutPage() {
     // ── NO PLAN ──
     if (status === "no_plan") return (
         <main className="min-h-screen bg-[#050914] text-white flex items-center justify-center p-6">
-            <div className="text-center">
+            <div className="text-center w-full max-w-sm">
                 <div className="w-14 h-14 mx-auto mb-5 rotate-45 border-2 border-cyan-400/30" />
                 <p className="text-lg font-bold tracking-widest text-cyan-300/70">NO WORKOUT PLANNED</p>
-                <p className="text-sm text-white/40 mt-2 max-w-xs mx-auto">Set up your weekly plan in Schedule first.</p>
-                <button onClick={() => router.push("/schedule")} className="mt-5 text-sm font-mono px-5 py-2.5 rounded-lg border border-cyan-400/40 text-cyan-300 hover:bg-cyan-400/10 transition">
-                    OPEN SCHEDULE
-                </button>
+                <p className="text-sm text-white/40 mt-2 mb-8 max-w-xs mx-auto">Nothing scheduled for today. Set up a recurring plan, or log a session on the fly.</p>
+
+                <div className="space-y-3 text-left">
+                    <div className="rounded-lg border border-cyan-400/20 bg-cyan-400/[0.04] p-4">
+                        <p className="text-sm font-bold text-white/90 mb-1">Create a weekly plan</p>
+                        <p className="text-[11px] text-white/40 mb-3">Set your training days once — it repeats automatically every week.</p>
+                        <button onClick={() => router.push("/schedule")} className="w-full text-sm font-bold py-3 rounded-lg bg-cyan-400 text-black hover:bg-cyan-300 transition" style={{ boxShadow: "0 0 20px -4px rgba(34,211,238,0.5)" }}>
+                            CREATE WEEKLY PLAN
+                        </button>
+                    </div>
+
+                    <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-4">
+                        <p className="text-sm font-bold text-white/90 mb-1">Just train today</p>
+                        <p className="text-[11px] text-white/40 mb-3">No plan needed — pick exercises and log as you go.</p>
+                        <button disabled className="w-full text-sm font-mono font-bold py-3 rounded-lg border border-white/15 text-white/30 cursor-not-allowed transition">
+                            START FREESTYLE SESSION
+                        </button>
+                        <p className="text-[9px] font-mono text-white/20 mt-2 text-center">Coming soon</p>
+                    </div>
+                </div>
             </div>
         </main>
     );
