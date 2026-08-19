@@ -128,6 +128,8 @@ export default function WorkoutPage() {
     const [freestyleExercises, setFreestyleExercises] = useState<WorkoutExercise[]>([]);
     const [showFreestyleAddModal, setShowFreestyleAddModal] = useState(false);
     const [startingFreestyle, setStartingFreestyle] = useState(false);
+    const [showFreestylePrompt, setShowFreestylePrompt] = useState(false);
+    const [savingFreestylePlan, setSavingFreestylePlan] = useState(false);
 
     const today = toDateString(new Date());
 
@@ -309,7 +311,11 @@ export default function WorkoutPage() {
         if (!user || freestyleExercises.length === 0) return;
         setStartingFreestyle(true);
 
-        const { data: day } = await supabase.from("scheduled_days").insert({ user_id: user.id, date: today, title: "Freestyle Session", is_rest: false }).select("id").single();
+        let { data: day } = await supabase.from("scheduled_days").select("id").eq("user_id", user.id).eq("date", today).maybeSingle();
+        if (!day) {
+            const { data: created } = await supabase.from("scheduled_days").insert({ user_id: user.id, date: today, title: "Freestyle Session", is_rest: false }).select("id").single();
+            day = created;
+        }
         if (!day) { setStartingFreestyle(false); return; }
 
         await supabase.from("scheduled_exercises").insert(freestyleExercises.map((ex, i) => ({
@@ -462,9 +468,34 @@ export default function WorkoutPage() {
         // Update leaderboard stats
         await updateUserStats(user.id);
 
+        // Freestyle → offer to make it a recurring plan if today has none
+        if (dayTitle === "Freestyle Session") {
+            const weekday = new Date().getDay();
+            const { data: existingPlan } = await supabase.from("recurring_plans").select("id").eq("user_id", user.id).eq("weekday", weekday).limit(1);
+            if (!existingPlan?.length) setShowFreestylePrompt(true);
+        }
+
         setSummary({ duration: dur, sets: totalSets, volume: totalVolume, xpBreakdown: xp });
         setStatus("completed");
         setRestRemaining(null);
+    }
+
+    async function saveFreestyleAsRecurringPlan() {
+        if (!user) return;
+        setSavingFreestylePlan(true);
+        const weekday = new Date().getDay();
+        const weekdayName = new Date().toLocaleDateString(undefined, { weekday: "long" });
+
+        const { data: template } = await supabase.from("workout_templates").insert({ user_id: user.id, name: `${weekdayName} Workout` }).select("id").single();
+        if (template) {
+            await supabase.from("workout_template_exercises").insert(exercisesList.map((ex, i) => ({
+                template_id: template.id, user_id: user.id, exercise_id: ex.exercise_id, order_index: i,
+                target_sets: ex.target_sets, target_reps: ex.target_reps, target_weight: ex.target_weight, rest_seconds: ex.rest_seconds,
+            })));
+            await supabase.from("recurring_plans").insert({ user_id: user.id, weekday, template_id: template.id, is_rest: false });
+        }
+        setSavingFreestylePlan(false);
+        setShowFreestylePrompt(false);
     }
 
     const totalPlanned = exercisesList.reduce((sum, e) => sum + e.target_sets, 0);
@@ -611,6 +642,27 @@ export default function WorkoutPage() {
                     </button>
                 </BeamBorder>
             </div>
+
+            {showFreestylePrompt && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+                    <div className="w-full max-w-sm rounded-lg border border-cyan-400/20 bg-[#0a1120] p-5">
+                        <p className="text-sm font-bold text-white/90 mb-2">
+                            Want to make this your regular {new Date().toLocaleDateString(undefined, { weekday: "long" })} workout?
+                        </p>
+                        <p className="text-[11px] text-white/50 mb-4">
+                            It'll show up automatically every {new Date().toLocaleDateString(undefined, { weekday: "long" })} from now on.
+                        </p>
+                        <div className="flex gap-2">
+                            <button onClick={() => setShowFreestylePrompt(false)} className="flex-1 text-sm font-mono py-2.5 rounded-lg border border-white/15 text-white/50 hover:text-white/80 transition">
+                                NO THANKS
+                            </button>
+                            <button onClick={saveFreestyleAsRecurringPlan} disabled={savingFreestylePlan} className="flex-1 text-sm font-mono font-bold py-2.5 rounded-lg bg-cyan-400 text-black hover:bg-cyan-300 disabled:opacity-50 transition">
+                                {savingFreestylePlan ? "SAVING..." : "YES, SAVE IT"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </main>
     );
 
