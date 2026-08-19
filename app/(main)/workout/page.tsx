@@ -202,6 +202,7 @@ export default function WorkoutPage() {
                 volume: Number(completedSession.total_volume) || 0,
                 xpBreakdown: { total: completedSession.xp_earned || 0, base: 0, setCompletion: 0, completionBonus: 0, prBonus: 0, progressionBonus: 0, consistencyBonus: 0, details: [] } as XPBreakdown,
             });
+            localStorage.removeItem("ascend_active_session");
             setStatus("completed_today");
             return;
         }
@@ -237,6 +238,7 @@ export default function WorkoutPage() {
                 logMap[ex.id] = arr;
             });
             setLogs(logMap);
+            localStorage.setItem("ascend_active_session", "true");
             setStatus("active");
             setExpandedId(mapped[0]?.id ?? null);
         } else {
@@ -277,6 +279,7 @@ export default function WorkoutPage() {
         if (!data) return;
         setSessionId(data.id);
         setStartedAt(new Date(data.started_at).getTime());
+        localStorage.setItem("ascend_active_session", "true");
         setStatus("active");
         setExpandedId(exercisesList[0]?.id ?? null);
     }
@@ -352,6 +355,7 @@ export default function WorkoutPage() {
         setExpandedId(mapped[0]?.id ?? null);
         setFreestyleExercises([]);
         setStartingFreestyle(false);
+        localStorage.setItem("ascend_active_session", "true");
         setStatus("active");
     }
 
@@ -475,6 +479,7 @@ export default function WorkoutPage() {
             if (!existingPlan?.length) setShowFreestylePrompt(true);
         }
 
+        localStorage.removeItem("ascend_active_session");
         setSummary({ duration: dur, sets: totalSets, volume: totalVolume, xpBreakdown: xp });
         setStatus("completed");
         setRestRemaining(null);
