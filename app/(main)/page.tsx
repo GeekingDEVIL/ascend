@@ -255,6 +255,22 @@ export default function Dashboard() {
   useEffect(() => {
     async function loadStats() {
       if (!user) return;
+      // Fast cache
+      const { data: c } = await supabase.from("user_stats").select("*").eq("user_id", user.id).maybeSingle();
+      if (c) {
+        const [{ data: wl }, { data: ls }, { data: pd }] = await Promise.all([
+          supabase.from("body_weight_logs").select("weight, logged_at").eq("user_id", user.id).order("logged_at", { ascending: false }).limit(2),
+          supabase.from("workout_sessions").select("completed_at").eq("user_id", user.id).eq("status", "completed").order("completed_at", { ascending: false }).limit(1),
+          supabase.from("profiles").select("goal").eq("id", user.id).maybeSingle(),
+        ]);
+        let bw: number | null = null, bwc: number | null = null, rp: number | null = null;
+        if (wl?.length) { bw = Number(wl[0].weight); if (wl.length > 1) bwc = Number((wl[0].weight - wl[1].weight).toFixed(1)); }
+        if (ls?.[0]?.completed_at) rp = Math.min(100, Math.round(((Date.now() - new Date(ls[0].completed_at).getTime()) / 3600000) / 48 * 100));
+        const sk = c.current_streak ?? 0;
+        setStats({ streak: sk, totalWorkouts: c.total_workouts ?? 0, weeklyVolume: Math.round(Number(c.total_volume) || 0), prCount: c.achievement_count ?? 0, totalXp: c.total_xp ?? 0, strength: 50, endurance: 0, consistency: Math.min(100, Math.round((sk / 30) * 100)), discipline: 70, bodyWeight: bw, bodyWeightChange: bwc, recoveryPct: rp, fatigue: rp !== null ? Math.max(0, 100 - rp) : 0, goal: pd?.goal ?? null });
+        setStatsLoaded(true);
+        return;
+      }
       const dateStr = toDateString(new Date());
 
       // 1. Total completed workouts
