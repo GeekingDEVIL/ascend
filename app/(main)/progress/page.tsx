@@ -20,6 +20,20 @@ const MEASUREMENT_TYPES: { type: MeasurementType; color: string; bar: string }[]
 ];
 
 type Tab = "history" | "strength" | "body" | "volume";
+type ActivityRange = "7D" | "30D" | "6M" | "12M" | "All";
+
+const ACTIVITY_RANGES: ActivityRange[] = ["7D", "30D", "6M", "12M", "All"];
+
+function rangeStartDate(range: ActivityRange): Date | null {
+    const now = new Date();
+    switch (range) {
+        case "7D": return new Date(now.getTime() - 7 * 86400000);
+        case "30D": return new Date(now.getTime() - 30 * 86400000);
+        case "6M": { const d = new Date(now); d.setMonth(d.getMonth() - 6); return d; }
+        case "12M": { const d = new Date(now); d.setMonth(d.getMonth() - 12); return d; }
+        case "All": return null;
+    }
+}
 
 type SessionRecord = {
     id: string;
@@ -73,6 +87,10 @@ function formatDate(dateStr: string): string {
     return new Date(dateStr + "T00:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
+function toDateString(d: Date): string {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
 function formatDateFull(dateStr: string): string {
     return new Date(dateStr + "T00:00:00").toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric", year: "numeric" });
 }
@@ -116,6 +134,8 @@ export default function ProgressPage() {
     const [earnedKeys, setEarnedKeys] = useState<Set<string>>(new Set());
     const [earnedDates, setEarnedDates] = useState<Record<string, string>>({});
     const [leaderboardCard, setLeaderboardCard] = useState<LeaderboardCard | null>(null);
+    const [activityRange, setActivityRange] = useState<ActivityRange>("7D");
+    const [calendarMonthOffset, setCalendarMonthOffset] = useState(0);
 
     // Strength
     const [prs, setPrs] = useState<ExercisePR[]>([]);
@@ -143,7 +163,7 @@ export default function ProgressPage() {
             .eq("user_id", user.id)
             .eq("status", "completed")
             .order("date", { ascending: false })
-            .limit(50);
+            .limit(1000);
         setSessions(data ?? []);
     }, [user]);
 
@@ -352,8 +372,22 @@ export default function ProgressPage() {
         await loadBodyWeight();
     }
 
-    const totalVolume = sessions.reduce((s, r) => s + (Number(r.total_volume) || 0), 0);
-    const totalSets = sessions.reduce((s, r) => s + (r.total_sets || 0), 0);
+    const rangeStart = rangeStartDate(activityRange);
+    const rangeSessions = rangeStart ? sessions.filter((s) => new Date(s.date + "T00:00:00") >= rangeStart) : sessions;
+    const rangeWorkoutCount = rangeSessions.length;
+    const rangeHours = rangeSessions.reduce((s, r) => s + (r.duration_seconds || 0), 0) / 3600;
+    const rangeVolume = rangeSessions.reduce((s, r) => s + (Number(r.total_volume) || 0), 0);
+
+    const sessionDates = new Set(sessions.map((s) => s.date));
+    const calendarBase = new Date();
+    calendarBase.setDate(1);
+    calendarBase.setMonth(calendarBase.getMonth() + calendarMonthOffset);
+    const calendarYear = calendarBase.getFullYear();
+    const calendarMonth = calendarBase.getMonth();
+    const firstWeekday = new Date(calendarYear, calendarMonth, 1).getDay();
+    const daysInMonth = new Date(calendarYear, calendarMonth + 1, 0).getDate();
+    const todayStr = toDateString(new Date());
+    const calendarCells: (number | null)[] = [...Array(firstWeekday).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)];
 
     const earnedSorted = ACHIEVEMENT_DEFS
         .filter((a) => earnedKeys.has(a.key))
@@ -402,19 +436,67 @@ export default function ProgressPage() {
                         {/* ══════════ HISTORY ══════════ */}
                         {tab === "history" && (
                             <div className="space-y-4">
-                                {/* Summary */}
-                                <div className="grid grid-cols-3 gap-2">
-                                    <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-3 text-center">
-                                        <p className="text-[8px] font-mono text-white/30">SESSIONS</p>
-                                        <p className="text-xl font-bold font-mono text-white/90">{sessions.length}</p>
+                                {/* Total Activity */}
+                                <div>
+                                    <p className="text-[10px] font-mono tracking-widest text-white/40 mb-2.5">TOTAL ACTIVITY</p>
+                                    <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-3">
+                                        <div className="flex gap-1.5 overflow-x-auto no-scrollbar mb-4">
+                                            {ACTIVITY_RANGES.map((r) => (
+                                                <button
+                                                    key={r}
+                                                    onClick={() => setActivityRange(r)}
+                                                    className={`shrink-0 text-[10px] font-mono px-3 py-1.5 rounded-full border transition ${activityRange === r ? "border-[rgb(var(--accent-rgb)/0.5)] bg-[rgb(var(--accent-rgb)/0.15)] text-[rgb(var(--accent-light-rgb))]" : "border-white/10 text-white/40 hover:text-white/70"}`}
+                                                >
+                                                    {r}
+                                                </button>
+                                            ))}
+                                        </div>
+                                        <div className="grid grid-cols-3 gap-2 text-center">
+                                            <div>
+                                                <p className="text-xl font-bold font-mono text-white/90">{rangeWorkoutCount}</p>
+                                                <p className="text-[9px] font-mono text-white/30 mt-1 leading-tight">Number of<br />Workouts</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-xl font-bold font-mono text-white/90">{rangeHours.toFixed(1)}</p>
+                                                <p className="text-[9px] font-mono text-white/30 mt-1 leading-tight">Hours at<br />the Gym</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-xl font-bold font-mono text-[rgb(var(--accent-light-rgb))]">{Math.round(rangeVolume).toLocaleString()}</p>
+                                                <p className="text-[9px] font-mono text-white/30 mt-1 leading-tight">Total Weight<br />Lifted (kg)</p>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-3 text-center">
-                                        <p className="text-[8px] font-mono text-white/30">TOTAL SETS</p>
-                                        <p className="text-xl font-bold font-mono text-white/90">{totalSets.toLocaleString()}</p>
-                                    </div>
-                                    <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-3 text-center">
-                                        <p className="text-[8px] font-mono text-white/30">TOTAL VOLUME</p>
-                                        <p className="text-xl font-bold font-mono text-[rgb(var(--accent-light-rgb))]">{Math.round(totalVolume).toLocaleString()} <span className="text-xs text-white/30">KG</span></p>
+                                </div>
+
+                                {/* Your Workouts calendar */}
+                                <div>
+                                    <p className="text-[10px] font-mono tracking-widest text-white/40 mb-2.5">YOUR WORKOUTS</p>
+                                    <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-4">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <button onClick={() => setCalendarMonthOffset((o) => o - 1)} className="text-white/30 hover:text-white/70 transition px-1">‹</button>
+                                            <p className="text-sm font-bold text-white/85">{calendarBase.toLocaleDateString(undefined, { month: "long", year: "numeric" })}</p>
+                                            <button onClick={() => setCalendarMonthOffset((o) => o + 1)} disabled={calendarMonthOffset >= 0} className="text-white/30 hover:text-white/70 disabled:opacity-20 disabled:hover:text-white/30 transition px-1">›</button>
+                                        </div>
+                                        <div className="grid grid-cols-7 gap-1 text-center mb-1.5">
+                                            {["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"].map((d) => (
+                                                <p key={d} className="text-[8px] font-mono text-white/25">{d}</p>
+                                            ))}
+                                        </div>
+                                        <div className="grid grid-cols-7 gap-1">
+                                            {calendarCells.map((day, i) => {
+                                                if (day === null) return <div key={`empty-${i}`} />;
+                                                const cellDate = `${calendarYear}-${String(calendarMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+                                                const hasWorkout = sessionDates.has(cellDate);
+                                                const isToday = cellDate === todayStr;
+                                                return (
+                                                    <div key={cellDate} className="aspect-square flex items-center justify-center">
+                                                        <span className={`w-full h-full flex items-center justify-center rounded-md text-[11px] font-mono ${hasWorkout ? "bg-[rgb(var(--accent-rgb)/0.2)] text-[rgb(var(--accent-light-rgb))] font-bold" : "text-white/30"} ${isToday ? "ring-1 ring-[rgb(var(--accent-rgb)/0.6)]" : ""}`}>
+                                                            {day}
+                                                        </span>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
                                     </div>
                                 </div>
 
