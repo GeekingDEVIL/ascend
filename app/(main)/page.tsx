@@ -52,7 +52,7 @@ function GlowPanel({ children, className = "" }: { children: React.ReactNode; cl
           className="absolute inset-[-60%] animate-[beamSpinSlow_10s_linear_infinite] opacity-60"
           style={{
             background:
-              "conic-gradient(from 0deg, transparent 0%, transparent 5%, #22d3ee 16%, #a5f3fc 24%, #22d3ee 32%, transparent 45%, transparent 55%, #22d3ee 68%, #a5f3fc 76%, #22d3ee 84%, transparent 95%, transparent 100%)",
+              "conic-gradient(from 0deg, transparent 0%, transparent 5%, rgb(var(--accent-rgb)) 16%, rgb(var(--accent-light-rgb)) 24%, rgb(var(--accent-rgb)) 32%, transparent 45%, transparent 55%, rgb(var(--accent-rgb)) 68%, rgb(var(--accent-light-rgb)) 76%, rgb(var(--accent-rgb)) 84%, transparent 95%, transparent 100%)",
             filter: "blur(4px)",
           }}
         />
@@ -70,18 +70,18 @@ function HoloCard({ icon, label, value, sub }: { icon: React.ReactNode; label: s
       className="relative flex overflow-hidden"
       style={{
         clipPath: HOLO_CLIP,
-        border: "1px solid rgba(34,211,238,0.4)",
-        boxShadow: "0 0 22px -6px rgba(34,211,238,0.35)",
+        border: "1px solid rgb(var(--accent-rgb) / 0.4)",
+        boxShadow: "0 0 22px -6px rgb(var(--accent-rgb) / 0.35)",
         background: "linear-gradient(135deg, rgba(10,21,36,0.9), rgba(10,21,36,0.75))",
       }}
     >
-      <div className="w-12 shrink-0 flex items-center justify-center bg-cyan-400/10 border-r border-cyan-400/20 text-cyan-300">
+      <div className="w-12 shrink-0 flex items-center justify-center border-r text-[rgb(var(--accent-rgb))]" style={{ backgroundColor: "rgb(var(--accent-rgb) / 0.1)", borderColor: "rgb(var(--accent-rgb) / 0.2)" }}>
         {icon}
       </div>
       <div className="flex-1 p-3">
         <p className="text-xs font-bold text-white/85 tracking-wide mb-2">{label}</p>
-        <div className="flex items-center justify-between rounded border border-cyan-400/20 bg-cyan-950/40 px-2.5 py-1.5">
-          <span className="text-[10px] text-cyan-300/60 font-mono tracking-widest">{sub ?? "VALUE"}</span>
+        <div className="flex items-center justify-between rounded px-2.5 py-1.5" style={{ border: "1px solid rgb(var(--accent-rgb) / 0.2)", backgroundColor: "rgb(var(--accent-rgb) / 0.08)" }}>
+          <span className="text-[10px] font-mono tracking-widest" style={{ color: "rgb(var(--accent-rgb) / 0.6)" }}>{sub ?? "VALUE"}</span>
           <GlassText className="text-base font-bold">{value}</GlassText>
         </div>
       </div>

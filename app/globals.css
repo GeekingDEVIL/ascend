@@ -4,6 +4,11 @@ html, body { overflow-x: hidden; max-width: 100vw; }
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  /* Accent color (default: cyan-400). Space-separated RGB so Tailwind arbitrary
+     values can apply alpha via rgb(var(--accent-rgb)/<alpha>). Overridden at
+     runtime by the Profile > Settings accent picker. */
+  --accent-rgb: 34 211 238;
+  --accent-light-rgb: 165 243 252;
 }
 
 @media (prefers-color-scheme: dark) {

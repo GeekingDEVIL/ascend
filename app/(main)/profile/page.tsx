@@ -8,6 +8,7 @@ import { useAuth } from "../../lib/AuthProvider";
 import CustomSelect from "../../components/CustomSelect";
 import { GOAL_OPTIONS } from "../../lib/goals";
 import { updateUserStats } from "../../lib/updateUserStats";
+import { ACCENT_PRESETS, DEFAULT_ACCENT, getAccentPreset, applyAccent, type AccentKey } from "../../lib/theme";
 
 type ProfileData = {
     goal: string;
@@ -70,18 +71,28 @@ export default function ProfilePage() {
     const [totalSessions, setTotalSessions] = useState(0);
     const [totalVolume, setTotalVolume] = useState(0);
     const [theme, setTheme] = useState<"navy" | "oled">("navy");
+    const [accent, setAccent] = useState<AccentKey>(DEFAULT_ACCENT);
 
     useEffect(() => {
         const stored = localStorage.getItem("ascend_theme");
         const initial = stored === "oled" ? "oled" : "navy";
         setTheme(initial);
         document.documentElement.style.setProperty("--bg-primary", initial === "oled" ? "#000000" : "#050914");
+
+        const storedAccent = localStorage.getItem("ascend_accent") as AccentKey | null;
+        setAccent(getAccentPreset(storedAccent).key);
     }, []);
 
     function applyTheme(value: "navy" | "oled") {
         setTheme(value);
         document.documentElement.style.setProperty("--bg-primary", value === "oled" ? "#000000" : "#050914");
         localStorage.setItem("ascend_theme", value);
+    }
+
+    function selectAccent(key: AccentKey) {
+        setAccent(key);
+        applyAccent(key);
+        localStorage.setItem("ascend_accent", key);
     }
 
     const loadProfile = useCallback(async () => {
@@ -710,6 +721,25 @@ export default function ProfilePage() {
                                     <p className="text-sm font-mono font-bold">OLED BLACK</p>
                                     <p className="text-[9px] font-mono text-white/30">#000000</p>
                                 </button>
+                            </div>
+                        </div>
+
+                        <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4 space-y-4">
+                            <p className="text-[10px] font-mono tracking-widest text-white/40">ACCENT COLOR</p>
+                            <div className="grid grid-cols-4 gap-2">
+                                {ACCENT_PRESETS.map((preset) => (
+                                    <button
+                                        key={preset.key}
+                                        onClick={() => selectAccent(preset.key)}
+                                        className={`flex flex-col items-center gap-1.5 py-2.5 rounded-lg border transition ${accent === preset.key ? "border-white/40 bg-white/[0.06]" : "border-white/10 hover:border-white/20"}`}
+                                    >
+                                        <span
+                                            className="w-6 h-6 rounded-full border border-white/20"
+                                            style={{ backgroundColor: `rgb(${preset.rgb})`, boxShadow: accent === preset.key ? `0 0 10px -1px rgb(${preset.rgb})` : undefined }}
+                                        />
+                                        <span className="text-[9px] font-mono text-white/50">{preset.label.toUpperCase()}</span>
+                                    </button>
+                                ))}
                             </div>
                         </div>
 

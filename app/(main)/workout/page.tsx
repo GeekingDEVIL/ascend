@@ -80,7 +80,7 @@ function BeamBorder({ children, className = "" }: { children: React.ReactNode; c
                 <div
                     className="absolute inset-[-60%] animate-[beamSpin_8s_linear_infinite] opacity-50"
                     style={{
-                        background: "conic-gradient(from 0deg, transparent 0%, transparent 10%, #22d3ee 20%, #a5f3fc 28%, #22d3ee 36%, transparent 46%, transparent 54%, #22d3ee 64%, #a5f3fc 72%, #22d3ee 80%, transparent 90%, transparent 100%)",
+                        background: "conic-gradient(from 0deg, transparent 0%, transparent 10%, rgb(var(--accent-rgb)) 20%, rgb(var(--accent-light-rgb)) 28%, rgb(var(--accent-rgb)) 36%, transparent 46%, transparent 54%, rgb(var(--accent-rgb)) 64%, rgb(var(--accent-light-rgb)) 72%, rgb(var(--accent-rgb)) 80%, transparent 90%, transparent 100%)",
                         filter: "blur(3px)",
                     }}
                 />
