@@ -9,6 +9,7 @@ import { computeLevel, getRank, getNextRank, RANK_TIERS } from "../../lib/levelS
 type LeaderboardEntry = {
     user_id: string;
     username: string;
+    avatar_url: string | null;
     level: number;
     total_xp: number;
     rank_name: string;
@@ -302,8 +303,12 @@ export default function RankingsPage() {
                                             </div>
 
                                             {/* Avatar + name */}
-                                            <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 text-sm font-bold ${rank.bgClass} border ${rank.border} ${rank.color}`}>
-                                                {entry.username?.[0]?.toUpperCase() ?? "?"}
+                                            <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 text-sm font-bold overflow-hidden ${rank.bgClass} border ${rank.border} ${rank.color}`}>
+                                                {entry.avatar_url ? (
+                                                    <img src={entry.avatar_url} alt={entry.username} className="w-full h-full object-cover" />
+                                                ) : (
+                                                    entry.username?.[0]?.toUpperCase() ?? "?"
+                                                )}
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center gap-2">

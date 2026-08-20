@@ -2,13 +2,14 @@ import { supabase } from "./supabase";
 import { computeLevel, getRank } from "./levelSystem";
 
 export async function updateUserStats(userId: string) {
-  // 1. Username
+  // 1. Username + avatar
   const { data: profile } = await supabase
     .from("profiles")
-    .select("username")
+    .select("username, avatar_url")
     .eq("id", userId)
     .maybeSingle();
   const username = profile?.username ?? "Unknown";
+  const avatarUrl = profile?.avatar_url ?? null;
 
   // 2. Total XP + Level + Rank
   const { data: sessions } = await supabase
@@ -58,6 +59,7 @@ export async function updateUserStats(userId: string) {
   await supabase.from("user_stats").upsert({
     user_id: userId,
     username,
+    avatar_url: avatarUrl,
     level: levelInfo.level,
     total_xp: totalXp,
     rank_name: rank.name,

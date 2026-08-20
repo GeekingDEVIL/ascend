@@ -7,6 +7,7 @@ import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../lib/AuthProvider";
 import CustomSelect from "../../components/CustomSelect";
 import { GOAL_OPTIONS } from "../../lib/goals";
+import { updateUserStats } from "../../lib/updateUserStats";
 
 type ProfileData = {
     goal: string;
@@ -306,6 +307,7 @@ export default function ProfilePage() {
         const bustedUrl = `${urlData.publicUrl}?v=${Date.now()}`;
         await supabase.from("profiles").update({ avatar_url: bustedUrl }).eq("id", user.id);
         await refreshProfile();
+        await updateUserStats(user.id);
         setAvatarUploading(false);
     }
 
@@ -339,6 +341,7 @@ export default function ProfilePage() {
         }
 
         await refreshProfile();
+        await updateUserStats(user.id);
         setUsernameSaving(false);
         setEditingUsername(false);
     }
