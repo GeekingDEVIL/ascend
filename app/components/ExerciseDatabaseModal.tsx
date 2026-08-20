@@ -19,6 +19,7 @@ type Exercise = {
     is_unilateral: boolean;
     instructions: string | null;
     tracking_method: string | null;
+    image_url: string | null;
 };
 
 export default function ExerciseDatabaseModal({ onClose }: { onClose: () => void }) {
@@ -128,15 +129,25 @@ export default function ExerciseDatabaseModal({ onClose }: { onClose: () => void
                                                 <div key={ex.id}>
                                                     <button
                                                         onClick={() => setOpenExercise(isExpanded ? null : ex.id)}
-                                                        className="w-full text-left px-4 py-2.5 hover:bg-white/[0.02] transition"
+                                                        className="w-full flex items-center gap-3 text-left px-4 py-2.5 hover:bg-white/[0.02] transition"
                                                     >
-                                                        <p className="text-sm font-bold text-white/90">{ex.name}</p>
-                                                        <p className="text-[10px] font-mono text-white/40 mt-0.5">
-                                                            {ex.primary_muscle} · {ex.equipment} · {ex.difficulty}
-                                                        </p>
+                                                        {ex.image_url ? (
+                                                            <img src={ex.image_url} alt="" className="w-11 h-11 rounded-md object-cover shrink-0 border border-white/10" />
+                                                        ) : (
+                                                            <div className="w-11 h-11 rounded-md shrink-0 bg-white/5 border border-white/10" />
+                                                        )}
+                                                        <span className="min-w-0">
+                                                            <p className="text-sm font-bold text-white/90">{ex.name}</p>
+                                                            <p className="text-[10px] font-mono text-white/40 mt-0.5">
+                                                                {ex.primary_muscle} · {ex.equipment} · {ex.difficulty}
+                                                            </p>
+                                                        </span>
                                                     </button>
                                                     {isExpanded && (
                                                         <div className="px-4 pb-3.5 pt-1 border-t border-white/5 space-y-3">
+                                                            {ex.image_url && (
+                                                                <img src={ex.image_url} alt={ex.name} className="w-full max-w-xs rounded-md border border-white/10" />
+                                                            )}
                                                             <div className="grid grid-cols-2 gap-x-4 gap-y-2">
                                                                 <div>
                                                                     <p className="text-[9px] font-mono text-white/30">MOVEMENT</p>

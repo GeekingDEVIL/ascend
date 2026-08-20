@@ -6,7 +6,6 @@ import { Dumbbell, Activity, Flame, Target, Zap, HeartPulse, Gauge, Trophy, Awar
 import { supabase } from "../lib/supabase";
 import { computeLevel, getRank, getNextRank } from "../lib/levelSystem";
 import { useAuth } from "../lib/AuthProvider";
-import OnboardingModal from "../components/OnboardingModal";
 
 const HOLO_CLIP = "polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px))";
 
@@ -173,7 +172,6 @@ export default function Dashboard() {
     goal: null as string | null,
   });
   const [statsLoaded, setStatsLoaded] = useState(false);
-  const [showOnboarding, setShowOnboarding] = useState(false);
 
   const levelInfo = computeLevel(stats.totalXp);
   const level = levelInfo.level;
@@ -195,7 +193,7 @@ export default function Dashboard() {
     async function checkOnboarding() {
       if (!user) return;
       const { data } = await supabase.from("profiles").select("onboarding_completed_at").eq("id", user.id).maybeSingle();
-      if (!data?.onboarding_completed_at) setShowOnboarding(true);
+      if (!data?.onboarding_completed_at) router.push("/onboarding");
     }
     checkOnboarding();
   }, [user]);
@@ -817,7 +815,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {showOnboarding && user && <OnboardingModal userId={user.id} onClose={() => setShowOnboarding(false)} />}
     </main >
   );
 }

@@ -17,6 +17,7 @@ type Exercise = {
   category: string;
   difficulty: string;
   is_unilateral: boolean;
+  image_url: string | null;
 };
 
 const BODY_SEGMENTS = ["All", "Chest", "Back", "Shoulders", "Traps", "Biceps", "Triceps", "Forearms", "Core", "Legs", "Glutes", "Full Body", "Cardio"];
@@ -197,12 +198,19 @@ export default function AddExerciseModal({
             const alreadyInDay = existingIds?.has(ex.id);
             return (
               <div key={ex.id} className="flex items-center justify-between gap-3 rounded-md border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.03] px-4 py-3.5 hover:border-[rgb(var(--accent-rgb)/0.35)] hover:bg-white/[0.05] transition">
-                <div className="min-w-0">
-                  <p className="font-bold text-sm text-white/90 mb-1.5">{ex.name}</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    <Tag>{ex.primary_muscle}</Tag>
-                    <Tag variant="muted">{ex.equipment}</Tag>
-                    <Tag variant="muted">{ex.category}</Tag>
+                <div className="flex items-center gap-3 min-w-0">
+                  {ex.image_url ? (
+                    <img src={ex.image_url} alt="" className="w-12 h-12 rounded-md object-cover shrink-0 border border-white/10" />
+                  ) : (
+                    <div className="w-12 h-12 rounded-md shrink-0 bg-white/5 border border-white/10" />
+                  )}
+                  <div className="min-w-0">
+                    <p className="font-bold text-sm text-white/90 mb-1.5">{ex.name}</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      <Tag>{ex.primary_muscle}</Tag>
+                      <Tag variant="muted">{ex.equipment}</Tag>
+                      <Tag variant="muted">{ex.category}</Tag>
+                    </div>
                   </div>
                 </div>
                 <button

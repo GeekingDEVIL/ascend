@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
-import { Plus, Trash2, GripVertical, Pencil, Database, Settings2, Play, Moon, Flame } from "lucide-react";
+import { Plus, Trash2, GripVertical, Pencil, Database, Settings2, Play, Moon, Flame, PersonStanding } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { DndContext, closestCenter, PointerSensor, MouseSensor, TouchSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
@@ -12,6 +12,7 @@ import { QUICK_START_TEMPLATES, type QuickStartTemplate } from "../../lib/quickS
 import { useAuth } from "../../lib/AuthProvider";
 import AddExerciseModal from "../../components/AddExerciseModal";
 import ExerciseDatabaseModal from "../../components/ExerciseDatabaseModal";
+import MusclePickerModal from "../../components/MusclePickerModal";
 
 type LocalExercise = {
     id: string;
@@ -266,6 +267,7 @@ export default function SchedulePage() {
     const [weekOffset, setWeekOffset] = useState(0);
     const [selectedDate, setSelectedDate] = useState(toDateString(new Date()));
     const [showDatabase, setShowDatabase] = useState(false);
+    const [showMusclePicker, setShowMusclePicker] = useState(false);
 
     const [recurringPlans, setRecurringPlans] = useState<Record<number, RecurringPlan>>({});
     const [recurringLoaded, setRecurringLoaded] = useState(false);
@@ -651,12 +653,20 @@ export default function SchedulePage() {
                         <h1 className="text-xl md:text-2xl font-bold tracking-wide text-white/90">Schedule</h1>
                         <p className="text-white/40 text-sm mt-0.5">Set your week once. It repeats.</p>
                     </div>
-                    <button
-                        onClick={() => setShowDatabase(true)}
-                        className="flex items-center gap-1.5 text-xs font-mono px-3 py-2 rounded-md border border-[rgb(var(--accent-rgb)/0.2)] text-[rgb(var(--accent-light-rgb)/0.8)] hover:bg-[rgb(var(--accent-rgb)/0.1)] transition shrink-0"
-                    >
-                        <Database size={14} /> View Database
-                    </button>
+                    <div className="flex items-center gap-2 shrink-0">
+                        <button
+                            onClick={() => setShowMusclePicker(true)}
+                            className="flex items-center gap-1.5 text-xs font-mono px-3 py-2 rounded-md border border-[rgb(var(--accent-rgb)/0.2)] text-[rgb(var(--accent-light-rgb)/0.8)] hover:bg-[rgb(var(--accent-rgb)/0.1)] transition"
+                        >
+                            <PersonStanding size={14} /> Muscle Map
+                        </button>
+                        <button
+                            onClick={() => setShowDatabase(true)}
+                            className="flex items-center gap-1.5 text-xs font-mono px-3 py-2 rounded-md border border-[rgb(var(--accent-rgb)/0.2)] text-[rgb(var(--accent-light-rgb)/0.8)] hover:bg-[rgb(var(--accent-rgb)/0.1)] transition"
+                        >
+                            <Database size={14} /> View Database
+                        </button>
+                    </div>
                 </div>
 
                 {/* QUICK START — only when no plan exists yet */}
@@ -1076,6 +1086,7 @@ export default function SchedulePage() {
                 <AddExerciseModal onAdd={handleAddExerciseToWeekly} onClose={() => setAddModalOpen(false)} existingIds={weeklyExistingIds} />
             )}
             {showDatabase && <ExerciseDatabaseModal onClose={() => setShowDatabase(false)} />}
+            {showMusclePicker && <MusclePickerModal onClose={() => setShowMusclePicker(false)} />}
         </main>
     );
 }
