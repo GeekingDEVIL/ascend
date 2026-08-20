@@ -119,7 +119,7 @@ export default function NotificationsPage() {
         </div>
 
         {loading ? (
-          <p className="text-sm text-white/40 py-12 text-center">Loading...</p>
+          <div className="flex items-center justify-center py-12"><div className="w-6 h-6 border-2 border-[rgb(var(--accent-rgb)/0.4)] border-t-[rgb(var(--accent-rgb))] rounded-full animate-spin" /></div>
         ) : notifications.length === 0 ? (
           <div className="text-center py-16">
             <Bell size={32} className="mx-auto mb-3 text-white/15" />

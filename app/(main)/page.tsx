@@ -769,7 +769,7 @@ export default function Dashboard() {
           <p className="text-xs tracking-widest text-[rgb(var(--accent-light-rgb))] mb-3">LIVE TELEMETRY</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div
-              className="rounded-md border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.05] backdrop-blur-2xl px-5 py-5"
+              className="rounded-lg border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.05] backdrop-blur-2xl px-5 py-5"
               style={{ boxShadow: "inset 0 1px 0 rgba(255,255,255,0.07), 0 4px 24px -8px rgb(var(--accent-rgb) / 0.15)" }}
             >
               <div className="flex items-center justify-between mb-6">
@@ -792,7 +792,7 @@ export default function Dashboard() {
               </div>
             </div>
             <div
-              className="rounded-md border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.05] backdrop-blur-2xl px-5 py-5"
+              className="rounded-lg border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.05] backdrop-blur-2xl px-5 py-5"
               style={{ boxShadow: "inset 0 1px 0 rgba(255,255,255,0.07), 0 4px 24px -8px rgb(var(--accent-rgb) / 0.15)" }}
             >
               <div className="flex items-center justify-between mb-6">

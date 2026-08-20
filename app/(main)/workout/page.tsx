@@ -719,9 +719,9 @@ export default function WorkoutPage() {
     if (status === "no_plan") return (
         <main className="min-h-screen bg-[#050914] text-white flex items-center justify-center p-6">
             <div className="text-center w-full max-w-sm">
-                <div className="w-14 h-14 mx-auto mb-5 rotate-45 border-2 border-[rgb(var(--accent-rgb)/0.3)]" />
-                <p className="text-lg font-bold tracking-widest text-[rgb(var(--accent-light-rgb)/0.7)]">NO WORKOUT PLANNED</p>
-                <p className="text-sm text-white/40 mt-2 mb-8 max-w-xs mx-auto">Nothing scheduled for today. Set up a recurring plan, or log a session on the fly.</p>
+                <div className="w-12 h-12 mx-auto mb-5 rotate-45 border-2 border-white/15 rounded-sm" />
+                <p className="text-sm font-bold tracking-widest text-white/30">NO WORKOUT PLANNED</p>
+                <p className="text-xs text-white/20 mt-2 mb-8 max-w-xs mx-auto">Nothing scheduled for today. Set up a recurring plan, or log a session on the fly.</p>
 
                 <div className="space-y-3 text-left">
                     <div className="rounded-lg border border-[rgb(var(--accent-rgb)/0.2)] bg-[rgb(var(--accent-rgb))]/[0.04] p-4">
@@ -753,7 +753,7 @@ export default function WorkoutPage() {
                     ← Back
                 </button>
                 <p className="text-[10px] font-mono tracking-[0.2em] text-[rgb(var(--accent-light-rgb)/0.6)] mb-0.5">FREESTYLE</p>
-                <h1 className="text-xl md:text-2xl font-bold text-white/95 mb-5">Freestyle Session</h1>
+                <h1 className="text-xl md:text-2xl font-bold text-white/90 mb-5">Freestyle Session</h1>
 
                 <button onClick={() => setShowFreestyleAddModal(true)} className="w-full flex items-center justify-center gap-2 text-sm font-mono font-bold py-3.5 rounded-lg border border-[rgb(var(--accent-rgb)/0.3)] bg-[rgb(var(--accent-rgb))]/[0.05] text-[rgb(var(--accent-light-rgb))] hover:bg-[rgb(var(--accent-rgb)/0.1)] transition mb-4">
                     <Plus size={16} /> ADD EXERCISE
@@ -807,7 +807,7 @@ export default function WorkoutPage() {
                             <Award size={26} className="text-[rgb(var(--accent-light-rgb))]" />
                         </div>
                         <p className="text-[10px] font-mono tracking-[0.3em] text-[rgb(var(--accent-light-rgb)/0.7)]">SESSION COMPLETE</p>
-                        <p className="text-xl font-bold text-white/95 mt-1">{dayTitle}</p>
+                        <p className="text-xl font-bold text-white/90 mt-1">{dayTitle}</p>
                     </div>
 
                     <div className="grid grid-cols-2 gap-2.5 mb-5">
@@ -872,7 +872,7 @@ export default function WorkoutPage() {
                                 <Check size={26} className="text-[rgb(var(--accent-light-rgb))]" />
                             </div>
                             <p className="text-[10px] font-mono tracking-[0.3em] text-[rgb(var(--accent-light-rgb)/0.7)]">TODAY'S SESSION</p>
-                            <p className="text-xl font-bold text-white/95 mt-1">{dayTitle}</p>
+                            <p className="text-xl font-bold text-white/90 mt-1">{dayTitle}</p>
                         </div>
 
                         {summary && (
@@ -927,7 +927,7 @@ export default function WorkoutPage() {
                         <p className="text-[10px] font-mono tracking-[0.2em] text-[rgb(var(--accent-light-rgb)/0.6)] mb-0.5">
                             {status === "active" ? "ACTIVE SESSION" : "PROTOCOL READY"}
                         </p>
-                        <h1 className="text-xl md:text-2xl font-bold text-white/95">{dayTitle}</h1>
+                        <h1 className="text-xl md:text-2xl font-bold text-white/90">{dayTitle}</h1>
                     </div>
                     {status === "active" && (
                         <div className="text-right shrink-0 rounded-lg border border-[rgb(var(--accent-rgb)/0.2)] bg-[rgb(var(--accent-rgb))]/[0.05] px-3 py-1.5">

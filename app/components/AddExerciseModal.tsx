@@ -39,7 +39,7 @@ function Chip({ active, children, onClick }: { active: boolean; children: React.
 
 function ChipRow({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex gap-1.5 overflow-x-auto no-scrollbar" style={{ maskImage: "linear-gradient(to right, black 92%, transparent 100%)" }}>
+    <div className="flex flex-wrap gap-1.5">
       {children}
     </div>
   );

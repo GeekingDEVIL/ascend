@@ -89,12 +89,12 @@ export default function RecoveryPage() {
         </div>
 
         {loading ? (
-          <p className="text-sm text-white/40 py-12 text-center">Loading...</p>
+          <div className="flex items-center justify-center py-12"><div className="w-6 h-6 border-2 border-[rgb(var(--accent-rgb)/0.4)] border-t-[rgb(var(--accent-rgb))] rounded-full animate-spin" /></div>
         ) : rows.length === 0 ? (
           <div className="text-center py-16">
-            <div className="w-9 h-9 mx-auto mb-3 rotate-45 border-2 border-[rgb(var(--accent-rgb)/0.3)]" />
-            <p className="text-sm font-bold tracking-widest text-[rgb(var(--accent-light-rgb)/0.7)]">NO TRAINING DATA</p>
-            <p className="text-xs text-white/40 mt-1">Complete a few workouts to see per-muscle recovery here.</p>
+            <div className="w-9 h-9 mx-auto mb-3 rotate-45 border-2 border-white/15 rounded-sm" />
+            <p className="text-sm font-bold tracking-widest text-white/30">NO TRAINING DATA</p>
+            <p className="text-xs text-white/20 mt-1">Complete a few workouts to see per-muscle recovery here.</p>
           </div>
         ) : (
           <>

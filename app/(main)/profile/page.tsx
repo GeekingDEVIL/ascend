@@ -473,12 +473,12 @@ export default function ProfilePage() {
                 </div>
 
                 {/* Section Tabs */}
-                <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
+                <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
                     {SECTIONS.map((s) => (
                         <button
                             key={s.key}
                             onClick={() => setSection(s.key)}
-                            className={`flex items-center gap-1.5 text-[10px] font-mono px-3 py-2 rounded-lg border shrink-0 transition ${section === s.key ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/10 text-white/40 hover:text-white/70"
+                            className={`flex items-center justify-center gap-1.5 text-[10px] font-mono px-2 py-2 rounded-lg border transition ${section === s.key ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/10 text-white/40 hover:text-white/70"
                                 }`}
                         >
                             <s.icon size={11} /> {s.label}

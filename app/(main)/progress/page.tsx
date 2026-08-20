@@ -414,12 +414,12 @@ export default function ProgressPage() {
                 </div>
 
                 {/* Tabs */}
-                <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
+                <div className="grid grid-cols-4 gap-1.5">
                     {TABS.map((t) => (
                         <button
                             key={t.key}
                             onClick={() => setTab(t.key)}
-                            className={`flex items-center gap-1.5 text-[10px] font-mono px-3 sm:px-4 py-2 rounded-lg border shrink-0 transition ${tab === t.key ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/10 text-white/40 hover:text-white/70"
+                            className={`flex items-center justify-center gap-1.5 text-[10px] font-mono px-2 py-2 rounded-lg border transition ${tab === t.key ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/10 text-white/40 hover:text-white/70"
                                 }`}
                         >
                             <t.icon size={12} /> {t.label}
@@ -440,12 +440,12 @@ export default function ProgressPage() {
                                 <div>
                                     <p className="text-[10px] font-mono tracking-widest text-white/40 mb-2.5">TOTAL ACTIVITY</p>
                                     <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-3">
-                                        <div className="flex gap-1.5 overflow-x-auto no-scrollbar mb-4">
+                                        <div className="flex flex-wrap gap-1.5 mb-4">
                                             {ACTIVITY_RANGES.map((r) => (
                                                 <button
                                                     key={r}
                                                     onClick={() => setActivityRange(r)}
-                                                    className={`shrink-0 text-[10px] font-mono px-3 py-1.5 rounded-full border transition ${activityRange === r ? "border-[rgb(var(--accent-rgb)/0.5)] bg-[rgb(var(--accent-rgb)/0.15)] text-[rgb(var(--accent-light-rgb))]" : "border-white/10 text-white/40 hover:text-white/70"}`}
+                                                    className={`text-[10px] font-mono px-3 py-1.5 rounded-full border transition ${activityRange === r ? "border-[rgb(var(--accent-rgb)/0.5)] bg-[rgb(var(--accent-rgb)/0.15)] text-[rgb(var(--accent-light-rgb))]" : "border-white/10 text-white/40 hover:text-white/70"}`}
                                                 >
                                                     {r}
                                                 </button>

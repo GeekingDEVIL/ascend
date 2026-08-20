@@ -102,9 +102,9 @@ function SetsStepper({ value, onChange }: { value: number; onChange: (v: number)
 function EmptyState({ title, subtitle }: { title: string; subtitle: string }) {
     return (
         <div className="text-center py-12">
-            <div className="w-9 h-9 mx-auto mb-3 rotate-45 border-2 border-[rgb(var(--accent-rgb)/0.3)]" />
-            <p className="text-sm font-bold tracking-widest text-[rgb(var(--accent-light-rgb)/0.7)]">{title}</p>
-            <p className="text-xs text-white/40 mt-1">{subtitle}</p>
+            <div className="w-9 h-9 mx-auto mb-3 rotate-45 border-2 border-white/15 rounded-sm" />
+            <p className="text-sm font-bold tracking-widest text-white/30">{title}</p>
+            <p className="text-xs text-white/20 mt-1">{subtitle}</p>
         </div>
     );
 }
@@ -671,7 +671,7 @@ export default function SchedulePage() {
 
                 {/* QUICK START — only when no plan exists yet */}
                 {recurringLoaded && Object.keys(recurringPlans).length === 0 && (
-                    <div className="rounded-md border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.03] p-3">
+                    <div className="rounded-lg border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.03] p-3">
                         <p className="text-[10px] font-mono tracking-widest text-white/40 mb-1">QUICK START</p>
                         <p className="text-[11px] text-white/30 mb-3">Import a proven split — you can tweak it anytime after.</p>
                         <div className="grid sm:grid-cols-2 gap-2.5">
@@ -695,9 +695,9 @@ export default function SchedulePage() {
                 )}
 
                 {/* WEEKLY PLAN — the only editor */}
-                <div className="rounded-md border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.03] p-3">
+                <div className="rounded-lg border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.03] p-3">
                     <p className="text-[10px] font-mono tracking-widest text-white/40 mb-2.5">YOUR WEEKLY PLAN</p>
-                    <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
+                    <div className="grid grid-cols-7 gap-1.5">
                         {WEEKDAY_ORDER.map((wd) => {
                             const plan = recurringPlans[wd];
                             const isOpen = weeklyTab === wd;
@@ -705,7 +705,7 @@ export default function SchedulePage() {
                                 <button
                                     key={wd}
                                     onClick={() => openWeekdayEditor(wd)}
-                                    className={`flex flex-col items-center gap-1 rounded-md border px-2 sm:px-3 py-2 min-w-[48px] sm:min-w-[68px] shrink-0 transition ${plan?.is_rest ? "border-emerald-400/25 bg-emerald-400/5" : plan ? "border-orange-400/25 bg-orange-400/5" : "border-white/10 bg-white/[0.02]"
+                                    className={`flex flex-col items-center gap-1 rounded-md border px-1 sm:px-3 py-2 transition ${plan?.is_rest ? "border-emerald-400/25 bg-emerald-400/5" : plan ? "border-orange-400/25 bg-orange-400/5" : "border-white/10 bg-white/[0.02]"
                                         } ${isOpen ? "border-[rgb(var(--accent-rgb)/0.6)]" : ""}`}
                                 >
                                     <span className="text-[9px] font-mono text-white/40">{WEEKDAY_LABELS[wd]}</span>
@@ -767,7 +767,7 @@ export default function SchedulePage() {
                             </div>
 
                             {weeklyLoading ? (
-                                <p className="text-sm text-white/40 py-6 text-center">Loading...</p>
+                                <div className="flex items-center justify-center py-6"><div className="w-6 h-6 border-2 border-[rgb(var(--accent-rgb)/0.4)] border-t-[rgb(var(--accent-rgb))] rounded-full animate-spin" /></div>
                             ) : !weeklyEditMode ? (
                                 weeklyIsRest ? (
                                     <EmptyState title="REST DAY" subtitle="Every future occurrence of this weekday stays a rest day." />
@@ -838,7 +838,7 @@ export default function SchedulePage() {
 
                 {/* WEEKLY VOLUME */}
                 {weeklyVolume.length > 0 && (
-                    <div className="rounded-md border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.03] p-3">
+                    <div className="rounded-lg border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.03] p-3">
                         <div className="flex items-center justify-between mb-3">
                             <p className="text-[10px] font-mono tracking-widest text-white/40">WEEKLY MUSCLE VOLUME</p>
                             {adaptiveLoaded && Object.values(adaptiveData).some((d) => d.hasEnoughData) && (
@@ -942,7 +942,7 @@ export default function SchedulePage() {
                     </div>
                 )}
                 {/* CALENDAR — 7-column grid, view only, always derived from Weekly Plan */}
-                <div className="rounded-md border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.03] p-3">
+                <div className="rounded-lg border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.03] p-3">
                     <div className="flex items-center justify-between mb-2.5 gap-2">
                         <button onClick={() => setWeekOffset((w) => w - 1)} className="shrink-0 w-8 h-8 flex items-center justify-center rounded-md border border-white/10 text-white/40 hover:text-[rgb(var(--accent-light-rgb))] hover:border-[rgb(var(--accent-rgb)/0.3)] active:scale-95 transition" aria-label="Previous week">←</button>
                         <div className="text-center min-w-0">
@@ -1006,7 +1006,7 @@ export default function SchedulePage() {
                 </div>
 
                 {/* SELECTED DAY — view only, derived */}
-                <div className="rounded-md border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.05] backdrop-blur-2xl p-4 md:p-5">
+                <div className="rounded-lg border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.05] backdrop-blur-2xl p-4 md:p-5">
                     <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
                         <p className="text-xs tracking-widest text-[rgb(var(--accent-light-rgb))]">{dayLabel.toUpperCase()}</p>
                         {selectedDate === today && selectedPlan && !selectedPlan.is_rest && viewExercises.length > 0 && (
@@ -1024,7 +1024,7 @@ export default function SchedulePage() {
                     </p>
 
                     {viewLoading ? (
-                        <p className="text-sm text-white/40 py-6 text-center">Loading...</p>
+                        <div className="flex items-center justify-center py-6"><div className="w-6 h-6 border-2 border-[rgb(var(--accent-rgb)/0.4)] border-t-[rgb(var(--accent-rgb))] rounded-full animate-spin" /></div>
                     ) : !selectedPlan ? (
                         <EmptyState title="NO PLAN" subtitle="Set a weekly plan above, or this day stays empty." />
                     ) : selectedPlan.is_rest ? (

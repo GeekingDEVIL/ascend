@@ -256,12 +256,12 @@ export default function RankingsPage() {
                 {tab === "leaderboard" && (
                     <>
                         {/* Sort options */}
-                        <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
+                        <div className="flex flex-wrap gap-1.5">
                             {SORT_OPTIONS.map((opt) => (
                                 <button
                                     key={opt.key}
                                     onClick={() => setSortBy(opt.key)}
-                                    className={`flex items-center gap-1.5 text-[10px] font-mono px-3 py-1.5 rounded-lg border shrink-0 transition ${sortBy === opt.key ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/10 text-white/40 hover:text-white/70"
+                                    className={`flex items-center gap-1.5 text-[10px] font-mono px-3 py-1.5 rounded-lg border transition ${sortBy === opt.key ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/10 text-white/40 hover:text-white/70"
                                         }`}
                                 >
                                     <opt.icon size={11} /> {opt.label}
@@ -271,7 +271,7 @@ export default function RankingsPage() {
 
                         {/* Leaderboard list */}
                         {lbLoading ? (
-                            <p className="text-sm text-white/40 py-12 text-center">Loading...</p>
+                            <div className="flex items-center justify-center py-12"><div className="w-6 h-6 border-2 border-[rgb(var(--accent-rgb)/0.4)] border-t-[rgb(var(--accent-rgb))] rounded-full animate-spin" /></div>
                         ) : leaderboard.length === 0 ? (
                             <div className="text-center py-16">
                                 <Users size={32} className="mx-auto mb-3 text-white/15" />
