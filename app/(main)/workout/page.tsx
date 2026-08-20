@@ -382,6 +382,10 @@ export default function WorkoutPage() {
         if (!day) {
             const { data: created } = await supabase.from("scheduled_days").insert({ user_id: user.id, date: today, title: "Freestyle Session", is_rest: false }).select("id").single();
             day = created;
+        } else {
+            // Going freestyle replaces whatever was already planned for today (if anything).
+            await supabase.from("scheduled_exercises").delete().eq("scheduled_day_id", day.id);
+            await supabase.from("scheduled_days").update({ title: "Freestyle Session", is_rest: false }).eq("id", day.id);
         }
         if (!day) { setStartingFreestyle(false); return; }
 
@@ -743,7 +747,7 @@ export default function WorkoutPage() {
         <main className="min-h-screen bg-[#050914] text-white p-4 md:p-10 pb-24">
             <div className="pointer-events-none fixed top-[-10%] left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[rgb(var(--accent-rgb)/0.1)] rounded-full blur-[130px]" />
             <div className="relative z-10 w-full max-w-lg mx-auto">
-                <button onClick={() => { setFreestyleExercises([]); setStatus("no_plan"); }} className="text-[10px] font-mono text-white/30 hover:text-white/60 transition mb-4">
+                <button onClick={() => { setFreestyleExercises([]); setStatus(exercisesList.length > 0 ? "not_started" : "no_plan"); }} className="text-[10px] font-mono text-white/30 hover:text-white/60 transition mb-4">
                     ← Back
                 </button>
                 <p className="text-[10px] font-mono tracking-[0.2em] text-[rgb(var(--accent-light-rgb)/0.6)] mb-0.5">FREESTYLE</p>
@@ -992,8 +996,11 @@ export default function WorkoutPage() {
                         </div>
 
 
-                        <button onClick={startWorkout} className="w-full flex items-center justify-center gap-2.5 text-sm font-bold py-4 rounded-lg bg-[rgb(var(--accent-rgb))] text-black hover:bg-[rgb(var(--accent-light-rgb))] transition mb-5" style={{ boxShadow: "0 0 25px -4px rgb(var(--accent-rgb) / 0.6)" }}>
+                        <button onClick={startWorkout} className="w-full flex items-center justify-center gap-2.5 text-sm font-bold py-4 rounded-lg bg-[rgb(var(--accent-rgb))] text-black hover:bg-[rgb(var(--accent-light-rgb))] transition" style={{ boxShadow: "0 0 25px -4px rgb(var(--accent-rgb) / 0.6)" }}>
                             <Play size={18} fill="black" /> BEGIN SESSION
+                        </button>
+                        <button onClick={() => setStatus("freestyle")} className="w-full text-center text-[11px] font-mono text-white/30 hover:text-[rgb(var(--accent-light-rgb))] transition py-2.5 mb-2.5">
+                            Not feeling today's plan? Train freestyle instead
                         </button>
 
                         <div className="space-y-2 mb-5">
