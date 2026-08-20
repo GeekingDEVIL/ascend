@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { User, LogOut, Save, Plus, Trash2, Check, Download, AlertTriangle, Eye, EyeOff, Target, Dumbbell, Scale, Ruler, Calendar, Clock, Shield, Heart, AtSign, Globe } from "lucide-react";
+import { User, LogOut, Save, Plus, Trash2, Check, Download, AlertTriangle, Eye, EyeOff, Target, Dumbbell, Scale, Ruler, Calendar, Clock, Shield, Heart, AtSign, Globe, Camera } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../lib/AuthProvider";
 import CustomSelect from "../../components/CustomSelect";
@@ -45,8 +45,10 @@ const DEFAULT_PROFILE: ProfileData = {
 };
 
 export default function ProfilePage() {
-    const { profile, user } = useAuth();
+    const { profile, user, refreshProfile } = useAuth();
     const router = useRouter();
+    const [avatarUploading, setAvatarUploading] = useState(false);
+    const [avatarError, setAvatarError] = useState<string | null>(null);
 
     const [data, setData] = useState<ProfileData>(DEFAULT_PROFILE);
     const [targetLifts, setTargetLifts] = useState<TargetLift[]>([]);
@@ -270,6 +272,38 @@ export default function ProfilePage() {
         router.push("/login");
     }
 
+    async function handleAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
+        const file = e.target.files?.[0];
+        e.target.value = "";
+        if (!file || !user) return;
+
+        setAvatarError(null);
+        if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) {
+            setAvatarError("Use a PNG, JPEG, or WEBP image.");
+            return;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+            setAvatarError("Image must be under 5MB.");
+            return;
+        }
+
+        setAvatarUploading(true);
+        const ext = file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg";
+        const path = `${user.id}/avatar.${ext}`;
+        const { error: uploadError } = await supabase.storage.from("avatars").upload(path, file, { upsert: true, cacheControl: "3600" });
+        if (uploadError) {
+            setAvatarError("Upload failed. Try again.");
+            setAvatarUploading(false);
+            return;
+        }
+
+        const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
+        const bustedUrl = `${urlData.publicUrl}?v=${Date.now()}`;
+        await supabase.from("profiles").update({ avatar_url: bustedUrl }).eq("id", user.id);
+        await refreshProfile();
+        setAvatarUploading(false);
+    }
+
     async function handleSignOut() {
         await supabase.auth.signOut();
         router.push("/login");
@@ -307,16 +341,29 @@ export default function ProfilePage() {
             <div className="relative z-10 w-full max-w-2xl mx-auto space-y-5">
                 {/* Header + Avatar */}
                 <div className="flex items-center gap-4">
-                    <div
-                        className="w-16 h-16 rounded-xl border-2 flex items-center justify-center text-2xl font-bold shrink-0"
+                    <label
+                        className="relative w-16 h-16 rounded-xl border-2 flex items-center justify-center text-2xl font-bold shrink-0 cursor-pointer overflow-hidden group"
                         style={{ borderColor: data.avatar_color + "60", backgroundColor: data.avatar_color + "15", color: data.avatar_color }}
                     >
-                        {(profile?.username?.[0] ?? "?").toUpperCase()}
-                    </div>
+                        {profile?.avatar_url ? (
+                            <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                        ) : (
+                            (profile?.username?.[0] ?? "?").toUpperCase()
+                        )}
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition">
+                            {avatarUploading ? (
+                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            ) : (
+                                <Camera size={18} className="text-white" />
+                            )}
+                        </div>
+                        <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={handleAvatarUpload} disabled={avatarUploading} />
+                    </label>
                     <div className="flex-1 min-w-0">
                         <h1 className="text-xl font-bold text-white/90 truncate">{profile?.username ?? "Unknown"}</h1>
                         <p className="text-xs font-mono text-white/40">{user?.email}</p>
                         <p className="text-[10px] font-mono text-white/25 mt-0.5">Member since {user?.created_at ? new Date(user.created_at).toLocaleDateString(undefined, { month: "long", year: "numeric" }) : "—"}</p>
+                        {avatarError && <p className="text-[10px] font-mono text-red-400 mt-0.5">{avatarError}</p>}
                     </div>
                     <button
                         onClick={saveProfile}

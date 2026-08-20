@@ -582,8 +582,12 @@ export default function Dashboard() {
                 <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-cyan-400 text-black text-[8px] font-bold flex items-center justify-center">{notifications.length}</span>
               )}
             </button>
-            <span className="w-8 h-8 rounded-md bg-cyan-400/15 border border-cyan-300/30 flex items-center justify-center text-cyan-200 font-bold">
-              {(profile?.username?.[0] ?? "?").toUpperCase()}
+            <span className="w-8 h-8 rounded-md bg-cyan-400/15 border border-cyan-300/30 flex items-center justify-center text-cyan-200 font-bold overflow-hidden shrink-0">
+              {profile?.avatar_url ? (
+                <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+              ) : (
+                (profile?.username?.[0] ?? "?").toUpperCase()
+              )}
             </span>
           </div>
           <button onClick={handleSignOut} className="text-xs font-mono text-white/40 hover:text-white/70 transition">
