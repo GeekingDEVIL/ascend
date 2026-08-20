@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Plus, Play, X, RefreshCw, Pause, SkipForward, ChevronDown, Moon, Flame, Dumbbell, Timer, TrendingUp, Award, Share2 } from "lucide-react";
 import { useSwipeable } from "react-swipeable";
@@ -178,10 +178,13 @@ export default function WorkoutPage() {
     const [savingFreestylePlan, setSavingFreestylePlan] = useState(false);
 
     const today = toDateString(new Date());
+    const loadInFlight = useRef(false);
 
     /* ─── LOAD ─── */
     const load = useCallback(async () => {
-        if (!user) return;
+        if (!user || loadInFlight.current) return;
+        loadInFlight.current = true;
+        try {
         setStatus("loading");
 
         const weekday = new Date().getDay();
@@ -200,18 +203,26 @@ export default function WorkoutPage() {
         setDayTitle(planTitle);
 
         let { data: day } = await supabase.from("scheduled_days").select("id").eq("user_id", user.id).eq("date", today).maybeSingle();
+        const dayExisted = !!day;
         if (!day) {
             const { data: created } = await supabase.from("scheduled_days").insert({ user_id: user.id, date: today, title: planTitle, is_rest: false }).select("id").single();
             day = created;
-            if (day) {
-                const { data: te } = await supabase.from("workout_template_exercises").select("exercise_id, order_index, target_sets, target_reps, target_weight, rest_seconds, notes").eq("template_id", plan.template_id).order("order_index");
-                if (te?.length) {
-                    await supabase.from("scheduled_exercises").insert(te.map((t: any) => ({ scheduled_day_id: day!.id, user_id: user.id, exercise_id: t.exercise_id, order_index: t.order_index, target_sets: t.target_sets, target_reps: t.target_reps, target_weight: t.target_weight, rest_seconds: t.rest_seconds, notes: t.notes })));
-                }
-            }
         }
         if (!day) { setStatus("no_plan"); return; }
         setScheduledDayId(day.id);
+
+        // If nothing has been logged for today yet, (re)sync scheduled_exercises from the
+        // current template so schedule edits made after materialization actually take effect.
+        // Never touches a day with an active or completed session — that data stays put.
+        const { data: sessionCheck } = await supabase.from("workout_sessions").select("id, status").eq("user_id", user.id).eq("date", today).in("status", ["active", "completed"]).limit(1);
+        const hasSessionToday = !!sessionCheck?.length;
+        if (!hasSessionToday) {
+            if (dayExisted) await supabase.from("scheduled_exercises").delete().eq("scheduled_day_id", day.id);
+            const { data: te } = await supabase.from("workout_template_exercises").select("exercise_id, order_index, target_sets, target_reps, target_weight, rest_seconds, notes").eq("template_id", plan.template_id).order("order_index");
+            if (te?.length) {
+                await supabase.from("scheduled_exercises").insert(te.map((t: any) => ({ scheduled_day_id: day!.id, user_id: user.id, exercise_id: t.exercise_id, order_index: t.order_index, target_sets: t.target_sets, target_reps: t.target_reps, target_weight: t.target_weight, rest_seconds: t.rest_seconds, notes: t.notes })));
+            }
+        }
 
         const { data: exRows } = await supabase
             .from("scheduled_exercises")
@@ -302,6 +313,9 @@ export default function WorkoutPage() {
             });
             setLogs(initLogs);
             setStatus("not_started");
+        }
+        } finally {
+            loadInFlight.current = false;
         }
     }, [user, today]);
 
@@ -914,6 +928,14 @@ export default function WorkoutPage() {
                             <p className="text-[8px] font-mono text-cyan-300/50">ELAPSED</p>
                             <p className="text-lg font-bold font-mono text-cyan-300">{formatClock(elapsed)}</p>
                         </div>
+                    )}
+                    {status === "not_started" && (
+                        <button
+                            onClick={() => router.push("/schedule")}
+                            className="shrink-0 flex items-center gap-1.5 text-[10px] font-mono px-3 py-2 rounded-lg border border-white/10 text-white/40 hover:text-cyan-300 hover:border-cyan-400/30 transition"
+                        >
+                            <RefreshCw size={11} /> CHANGE SCHEDULE
+                        </button>
                     )}
                 </div>
 
