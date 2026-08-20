@@ -110,9 +110,9 @@ export default function TemplateModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/60 backdrop-blur-sm p-0 md:p-4">
-      <div className="w-full md:max-w-md rounded-t-xl md:rounded-md border border-cyan-400/20 bg-[#0a1524] p-5 max-h-[85vh] overflow-y-auto">
+      <div className="w-full md:max-w-md rounded-t-xl md:rounded-md border border-[rgb(var(--accent-rgb)/0.2)] bg-[#0a1524] p-5 max-h-[85vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
-          <p className="text-sm font-bold tracking-widest text-cyan-300">
+          <p className="text-sm font-bold tracking-widest text-[rgb(var(--accent-light-rgb))]">
             {mode === "save" ? "SAVE AS TEMPLATE" : "LOAD TEMPLATE"}
           </p>
           <button onClick={onClose} className="text-white/40 hover:text-white/80"><X size={18} /></button>
@@ -125,14 +125,14 @@ export default function TemplateModal({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Push Day"
-              className="w-full rounded-md bg-white/[0.03] border border-cyan-400/20 px-3 py-2.5 text-sm focus:outline-none focus:border-cyan-400/50"
+              className="w-full rounded-md bg-white/[0.03] border border-[rgb(var(--accent-rgb)/0.2)] px-3 py-2.5 text-sm focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.5)]"
               autoFocus
             />
             <p className="text-[11px] text-white/40">{currentExercises.length} exercises will be saved.</p>
             <button
               onClick={handleSave}
               disabled={!name.trim() || saving || currentExercises.length === 0}
-              className="w-full flex items-center justify-center gap-2 text-sm font-bold px-4 py-3 rounded-md bg-cyan-400 text-black hover:bg-cyan-300 transition disabled:opacity-40"
+              className="w-full flex items-center justify-center gap-2 text-sm font-bold px-4 py-3 rounded-md bg-[rgb(var(--accent-rgb))] text-black hover:bg-[rgb(var(--accent-light-rgb))] transition disabled:opacity-40"
             >
               <Save size={15} /> {saving ? "SAVING..." : "SAVE TEMPLATE"}
             </button>
@@ -146,7 +146,7 @@ export default function TemplateModal({
             {templates.map((t) => (
               <div key={t.id} className="flex items-center gap-2 rounded-md border border-white/10 bg-white/[0.03] px-3 py-2.5">
                 <button onClick={() => handleLoad(t.id)} className="flex-1 min-w-0 text-left flex items-center gap-2">
-                  <FolderOpen size={15} className="text-cyan-300 shrink-0" />
+                  <FolderOpen size={15} className="text-[rgb(var(--accent-light-rgb))] shrink-0" />
                   <div className="min-w-0">
                     <p className="text-sm font-bold text-white/90 truncate">{t.name}</p>
                     <p className="text-[10px] font-mono text-white/40">{t.exercise_count} exercises</p>

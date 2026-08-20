@@ -64,7 +64,7 @@ export default function AchievementsPage() {
   return (
     <main className="relative min-h-screen w-full bg-[#050914] text-white p-4 md:p-10 pb-24 md:pb-10 overflow-x-hidden">
       <div className="pointer-events-none fixed top-[-10%] left-1/2 -translate-x-1/2 w-[700px] h-[700px] bg-blue-600/15 rounded-full blur-[150px]" />
-      <div className="pointer-events-none fixed bottom-[-15%] right-[5%] w-[500px] h-[500px] bg-cyan-500/10 rounded-full blur-[130px]" />
+      <div className="pointer-events-none fixed bottom-[-15%] right-[5%] w-[500px] h-[500px] bg-[rgb(var(--accent-rgb)/0.1)] rounded-full blur-[130px]" />
 
       <div className="relative z-10 w-full max-w-3xl mx-auto space-y-5">
         <div>
@@ -73,15 +73,15 @@ export default function AchievementsPage() {
         </div>
 
         {/* Progress overview */}
-        <div className="rounded-lg border border-cyan-400/15 bg-white/[0.03] p-4">
+        <div className="rounded-lg border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.03] p-4">
           <div className="flex items-center justify-between mb-2">
             <p className="text-[10px] font-mono tracking-widest text-white/40">COMPLETION</p>
             <p className="text-sm font-bold font-mono text-white/80">{totalEarned}/{totalAchievements}</p>
           </div>
           <div className="h-2.5 rounded-full bg-white/[0.06] overflow-hidden border border-white/[0.04]">
             <div
-              className="h-full bg-gradient-to-r from-cyan-500 to-cyan-300 rounded-full transition-all"
-              style={{ width: `${completionPct}%`, boxShadow: "0 0 8px rgba(34,211,238,0.4)" }}
+              className="h-full bg-gradient-to-r from-[rgb(var(--accent-rgb))] to-[rgb(var(--accent-light-rgb))] rounded-full transition-all"
+              style={{ width: `${completionPct}%`, boxShadow: "0 0 8px rgb(var(--accent-rgb) / 0.4)" }}
             />
           </div>
           <p className="text-[9px] font-mono text-white/30 mt-1.5">{completionPct}% complete</p>
@@ -94,7 +94,7 @@ export default function AchievementsPage() {
               key={f}
               onClick={() => setFilter(f)}
               className={`text-[10px] font-mono px-3 py-1.5 rounded-lg border transition ${
-                filter === f ? "border-cyan-400/40 bg-cyan-400/10 text-cyan-300" : "border-white/10 text-white/40 hover:text-white/70"
+                filter === f ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/10 text-white/40 hover:text-white/70"
               }`}
             >
               {f.toUpperCase()} {f === "earned" ? `(${totalEarned})` : f === "locked" ? `(${totalAchievements - totalEarned})` : ""}
@@ -106,7 +106,7 @@ export default function AchievementsPage() {
               key={c}
               onClick={() => setCategoryFilter(c)}
               className={`text-[10px] font-mono px-2.5 py-1.5 rounded-lg border transition ${
-                categoryFilter === c ? "border-cyan-400/40 bg-cyan-400/10 text-cyan-300" : "border-white/10 text-white/30 hover:text-white/60"
+                categoryFilter === c ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/10 text-white/30 hover:text-white/60"
               }`}
             >
               {c === "all" ? "ALL" : c.toUpperCase()}
@@ -126,7 +126,7 @@ export default function AchievementsPage() {
         ) : (
           Object.entries(grouped).map(([category, achievements]) => (
             <div key={category}>
-              <p className="text-[10px] font-mono tracking-widest text-cyan-300/60 mb-2.5">{category.toUpperCase()}</p>
+              <p className="text-[10px] font-mono tracking-widest text-[rgb(var(--accent-light-rgb)/0.6)] mb-2.5">{category.toUpperCase()}</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {achievements.map((a) => {
                   const isEarned = earnedKeys.has(a.key);

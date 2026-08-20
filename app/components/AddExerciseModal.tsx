@@ -28,7 +28,7 @@ function Chip({ active, children, onClick }: { active: boolean; children: React.
     <button
       onClick={onClick}
       className={`shrink-0 rounded-md border px-3 py-1.5 text-xs font-mono transition ${
-        active ? "border-cyan-400/60 bg-cyan-400/15 text-cyan-200" : "border-white/10 bg-white/[0.03] text-white/50 hover:text-white/80"
+        active ? "border-[rgb(var(--accent-rgb)/0.6)] bg-[rgb(var(--accent-rgb)/0.15)] text-[rgb(var(--accent-light-rgb))]" : "border-white/10 bg-white/[0.03] text-white/50 hover:text-white/80"
       }`}
     >
       {children}
@@ -46,7 +46,7 @@ function ChipRow({ children }: { children: React.ReactNode }) {
 
 function Tag({ children, variant = "default" }: { children: React.ReactNode; variant?: "default" | "muted" }) {
   return (
-    <span className={`text-[10px] font-mono px-2 py-0.5 rounded border ${variant === "default" ? "bg-cyan-400/10 text-cyan-300 border-cyan-400/20" : "bg-white/5 text-white/40 border-white/10"}`}>
+    <span className={`text-[10px] font-mono px-2 py-0.5 rounded border ${variant === "default" ? "bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))] border-[rgb(var(--accent-rgb)/0.2)]" : "bg-white/5 text-white/40 border-white/10"}`}>
       {children}
     </span>
   );
@@ -128,15 +128,15 @@ export default function AddExerciseModal({
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         .custom-scroll::-webkit-scrollbar { width: 6px; }
         .custom-scroll::-webkit-scrollbar-track { background: transparent; }
-        .custom-scroll::-webkit-scrollbar-thumb { background: rgba(34,211,238,0.25); border-radius: 999px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: rgb(var(--accent-rgb) / 0.25); border-radius: 999px; }
       `}</style>
-      <div className="pointer-events-none fixed top-[10%] left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-cyan-500/10 rounded-full blur-[130px]" />
+      <div className="pointer-events-none fixed top-[10%] left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[rgb(var(--accent-rgb)/0.1)] rounded-full blur-[130px]" />
 
       <div
-        className="relative w-full md:max-w-xl h-[90vh] md:h-[85vh] rounded-t-2xl md:rounded-md border border-cyan-400/25 bg-[#0a1120]/95 backdrop-blur-2xl flex flex-col overflow-hidden"
-        style={{ boxShadow: "0 0 60px -12px rgba(34,211,238,0.3), inset 0 1px 0 rgba(255,255,255,0.06)" }}
+        className="relative w-full md:max-w-xl h-[90vh] md:h-[85vh] rounded-t-2xl md:rounded-md border border-[rgb(var(--accent-rgb)/0.25)] bg-[#0a1120]/95 backdrop-blur-2xl flex flex-col overflow-hidden"
+        style={{ boxShadow: "0 0 60px -12px rgb(var(--accent-rgb) / 0.3), inset 0 1px 0 rgba(255,255,255,0.06)" }}
       >
-        <div className="flex items-center justify-between px-5 py-4 border-b border-cyan-400/10 shrink-0">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[rgb(var(--accent-rgb)/0.1)] shrink-0">
           <div>
             <p className="font-bold text-white/90">Add Exercise</p>
             <p className="text-[10px] font-mono text-white/30 mt-0.5">{filtered.length} results</p>
@@ -146,27 +146,27 @@ export default function AddExerciseModal({
           </button>
         </div>
 
-        <div className="p-4 space-y-3 shrink-0 border-b border-cyan-400/10">
+        <div className="p-4 space-y-3 shrink-0 border-b border-[rgb(var(--accent-rgb)/0.1)]">
           <div className="flex gap-2">
             <div className="relative flex-1">
-              <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-cyan-300/50" />
+              <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-[rgb(var(--accent-light-rgb)/0.5)]" />
               <input
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search exercises..."
-                className="w-full rounded-md bg-white/[0.04] border border-cyan-400/20 pl-11 pr-4 py-2.5 text-sm focus:outline-none focus:border-cyan-400/50 transition"
+                className="w-full rounded-md bg-white/[0.04] border border-[rgb(var(--accent-rgb)/0.2)] pl-11 pr-4 py-2.5 text-sm focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.5)] transition"
               />
             </div>
             <button
               onClick={() => setShowFilters((v) => !v)}
               className={`shrink-0 flex items-center gap-1.5 rounded-md border px-3 text-xs font-mono transition ${
-                activeFilterCount > 0 || showFilters ? "border-cyan-400/50 bg-cyan-400/10 text-cyan-200" : "border-white/10 text-white/50 hover:text-white/80"
+                activeFilterCount > 0 || showFilters ? "border-[rgb(var(--accent-rgb)/0.5)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/10 text-white/50 hover:text-white/80"
               }`}
             >
               <SlidersHorizontal size={14} />
               {activeFilterCount > 0 && (
-                <span className="w-4 h-4 rounded-full bg-cyan-400 text-black text-[9px] font-bold flex items-center justify-center">{activeFilterCount}</span>
+                <span className="w-4 h-4 rounded-full bg-[rgb(var(--accent-rgb))] text-black text-[9px] font-bold flex items-center justify-center">{activeFilterCount}</span>
               )}
               <ChevronDown size={12} className={`transition-transform ${showFilters ? "rotate-180" : ""}`} />
             </button>
@@ -175,15 +175,15 @@ export default function AddExerciseModal({
           {showFilters && (
             <div className="space-y-2.5 pt-1">
               <div>
-                <p className="text-[9px] font-mono tracking-widest text-cyan-300/60 mb-1.5">BODY SEGMENT</p>
+                <p className="text-[9px] font-mono tracking-widest text-[rgb(var(--accent-light-rgb)/0.6)] mb-1.5">BODY SEGMENT</p>
                 <ChipRow>{BODY_SEGMENTS.map((s) => <Chip key={s} active={bodySegment === s} onClick={() => setBodySegment(s)}>{s}</Chip>)}</ChipRow>
               </div>
               <div>
-                <p className="text-[9px] font-mono tracking-widest text-cyan-300/60 mb-1.5">EQUIPMENT</p>
+                <p className="text-[9px] font-mono tracking-widest text-[rgb(var(--accent-light-rgb)/0.6)] mb-1.5">EQUIPMENT</p>
                 <ChipRow>{EQUIPMENT.map((eq) => <Chip key={eq} active={equipment === eq} onClick={() => setEquipment(eq)}>{eq}</Chip>)}</ChipRow>
               </div>
               <div>
-                <p className="text-[9px] font-mono tracking-widest text-cyan-300/60 mb-1.5">DIFFICULTY</p>
+                <p className="text-[9px] font-mono tracking-widest text-[rgb(var(--accent-light-rgb)/0.6)] mb-1.5">DIFFICULTY</p>
                 <ChipRow>{DIFFICULTIES.map((d) => <Chip key={d} active={difficulty === d} onClick={() => setDifficulty(d)}>{d}</Chip>)}</ChipRow>
               </div>
             </div>
@@ -196,7 +196,7 @@ export default function AddExerciseModal({
           {filtered.map((ex) => {
             const alreadyInDay = existingIds?.has(ex.id);
             return (
-              <div key={ex.id} className="flex items-center justify-between gap-3 rounded-md border border-cyan-400/15 bg-white/[0.03] px-4 py-3.5 hover:border-cyan-400/35 hover:bg-white/[0.05] transition">
+              <div key={ex.id} className="flex items-center justify-between gap-3 rounded-md border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.03] px-4 py-3.5 hover:border-[rgb(var(--accent-rgb)/0.35)] hover:bg-white/[0.05] transition">
                 <div className="min-w-0">
                   <p className="font-bold text-sm text-white/90 mb-1.5">{ex.name}</p>
                   <div className="flex flex-wrap gap-1.5">
@@ -209,9 +209,9 @@ export default function AddExerciseModal({
                   onClick={() => !alreadyInDay && handleAdd(ex)}
                   disabled={alreadyInDay}
                   className={`shrink-0 rounded-md text-xs font-bold px-4 py-2.5 transition ${
-                    alreadyInDay ? "bg-white/5 text-white/30 border border-white/10 cursor-not-allowed" : "bg-cyan-400 text-black hover:bg-cyan-300"
+                    alreadyInDay ? "bg-white/5 text-white/30 border border-white/10 cursor-not-allowed" : "bg-[rgb(var(--accent-rgb))] text-black hover:bg-[rgb(var(--accent-light-rgb))]"
                   }`}
-                  style={!alreadyInDay ? { boxShadow: "0 0 16px -3px rgba(34,211,238,0.6)" } : undefined}
+                  style={!alreadyInDay ? { boxShadow: "0 0 16px -3px rgb(var(--accent-rgb) / 0.6)" } : undefined}
                 >
                   {alreadyInDay ? "Added" : justAdded === ex.id ? "Added ✓" : "+ Add"}
                 </button>

@@ -90,10 +90,10 @@ function groupExercisesBySegment(list: LocalExercise[]) {
 
 function SetsStepper({ value, onChange }: { value: number; onChange: (v: number) => void }) {
     return (
-        <div className="flex items-center gap-1 rounded-md border border-cyan-400/20 bg-white/[0.03] px-1 shrink-0">
-            <button onClick={() => onChange(Math.max(1, value - 1))} className="w-6 h-7 flex items-center justify-center text-cyan-300 hover:bg-cyan-400/10 rounded">−</button>
+        <div className="flex items-center gap-1 rounded-md border border-[rgb(var(--accent-rgb)/0.2)] bg-white/[0.03] px-1 shrink-0">
+            <button onClick={() => onChange(Math.max(1, value - 1))} className="w-6 h-7 flex items-center justify-center text-[rgb(var(--accent-light-rgb))] hover:bg-[rgb(var(--accent-rgb)/0.1)] rounded">−</button>
             <span className="w-5 text-center text-sm font-bold">{value}</span>
-            <button onClick={() => onChange(value + 1)} className="w-6 h-7 flex items-center justify-center text-cyan-300 hover:bg-cyan-400/10 rounded">+</button>
+            <button onClick={() => onChange(value + 1)} className="w-6 h-7 flex items-center justify-center text-[rgb(var(--accent-light-rgb))] hover:bg-[rgb(var(--accent-rgb)/0.1)] rounded">+</button>
         </div>
     );
 }
@@ -101,8 +101,8 @@ function SetsStepper({ value, onChange }: { value: number; onChange: (v: number)
 function EmptyState({ title, subtitle }: { title: string; subtitle: string }) {
     return (
         <div className="text-center py-12">
-            <div className="w-9 h-9 mx-auto mb-3 rotate-45 border-2 border-cyan-400/30" />
-            <p className="text-sm font-bold tracking-widest text-cyan-300/70">{title}</p>
+            <div className="w-9 h-9 mx-auto mb-3 rotate-45 border-2 border-[rgb(var(--accent-rgb)/0.3)]" />
+            <p className="text-sm font-bold tracking-widest text-[rgb(var(--accent-light-rgb)/0.7)]">{title}</p>
             <p className="text-xs text-white/40 mt-1">{subtitle}</p>
         </div>
     );
@@ -171,7 +171,7 @@ function SortableRow({
     return (
         <div ref={setNodeRef} style={style} className="rounded-md border border-white/10 bg-white/[0.03]">
             <div className="flex items-center gap-2 px-3 py-2.5">
-                <button {...attributes} {...listeners} className="text-white/30 hover:text-cyan-300 cursor-grab active:cursor-grabbing shrink-0 touch-none">
+                <button {...attributes} {...listeners} className="text-white/30 hover:text-[rgb(var(--accent-light-rgb))] cursor-grab active:cursor-grabbing shrink-0 touch-none">
                     <GripVertical size={16} />
                 </button>
                 <span className="text-[10px] font-mono text-white/30 w-5 shrink-0">{String(index + 1).padStart(2, "0")}</span>
@@ -184,21 +184,21 @@ function SortableRow({
                             value={ex.target_duration_minutes ?? ""}
                             onChange={(e) => onUpdate(ex.id, { target_duration_minutes: e.target.value ? Number(e.target.value) : null })}
                             placeholder="MIN"
-                            className="w-14 shrink-0 rounded-md bg-white/[0.03] border border-cyan-400/20 text-center text-sm py-1.5 focus:outline-none focus:border-cyan-400/50"
+                            className="w-14 shrink-0 rounded-md bg-white/[0.03] border border-[rgb(var(--accent-rgb)/0.2)] text-center text-sm py-1.5 focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.5)]"
                         />
                         <input
                             type="number" min="0" onWheel={(e) => (e.target as HTMLElement).blur()} inputMode="decimal"
                             value={ex.target_incline ?? ""}
                             onChange={(e) => onUpdate(ex.id, { target_incline: e.target.value ? Number(e.target.value) : null })}
                             placeholder="%"
-                            className="w-12 shrink-0 rounded-md bg-white/[0.03] border border-cyan-400/20 text-center text-sm py-1.5 focus:outline-none focus:border-cyan-400/50"
+                            className="w-12 shrink-0 rounded-md bg-white/[0.03] border border-[rgb(var(--accent-rgb)/0.2)] text-center text-sm py-1.5 focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.5)]"
                         />
                         <input
                             type="number" min="0" onWheel={(e) => (e.target as HTMLElement).blur()} inputMode="decimal"
                             value={ex.target_speed ?? ""}
                             onChange={(e) => onUpdate(ex.id, { target_speed: e.target.value ? Number(e.target.value) : null })}
                             placeholder="KM/H"
-                            className="w-16 shrink-0 rounded-md bg-white/[0.03] border border-cyan-400/20 text-center text-sm py-1.5 focus:outline-none focus:border-cyan-400/50"
+                            className="w-16 shrink-0 rounded-md bg-white/[0.03] border border-[rgb(var(--accent-rgb)/0.2)] text-center text-sm py-1.5 focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.5)]"
                         />
                     </div>
                 ) : (
@@ -208,12 +208,12 @@ function SortableRow({
                             type="text"
                             value={ex.target_reps}
                             onChange={(e) => onUpdate(ex.id, { target_reps: e.target.value })}
-                            className="w-14 shrink-0 rounded-md bg-white/[0.03] border border-cyan-400/20 text-center text-sm py-1.5 focus:outline-none focus:border-cyan-400/50"
+                            className="w-14 shrink-0 rounded-md bg-white/[0.03] border border-[rgb(var(--accent-rgb)/0.2)] text-center text-sm py-1.5 focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.5)]"
                         />
                     </div>
                 )}
 
-                <button onClick={() => setExpanded((v) => !v)} className={`shrink-0 transition ${expanded ? "text-cyan-300" : "text-white/30 hover:text-white/70"}`}>
+                <button onClick={() => setExpanded((v) => !v)} className={`shrink-0 transition ${expanded ? "text-[rgb(var(--accent-light-rgb))]" : "text-white/30 hover:text-white/70"}`}>
                     <Settings2 size={15} />
                 </button>
                 <button onClick={() => onRemove(ex.id)} className="text-white/30 hover:text-red-400 transition shrink-0">
@@ -230,7 +230,7 @@ function SortableRow({
                             value={ex.target_weight ?? ""}
                             onChange={(e) => onUpdate(ex.id, { target_weight: e.target.value ? Number(e.target.value) : null })}
                             placeholder="—"
-                            className="w-full mt-1 rounded-md bg-white/[0.03] border border-white/10 text-center text-sm py-1.5 focus:outline-none focus:border-cyan-400/50"
+                            className="w-full mt-1 rounded-md bg-white/[0.03] border border-white/10 text-center text-sm py-1.5 focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.5)]"
                         />
                     </div>
                     <div>
@@ -240,7 +240,7 @@ function SortableRow({
                             value={ex.rest_seconds ?? ""}
                             onChange={(e) => onUpdate(ex.id, { rest_seconds: e.target.value ? Number(e.target.value) : null })}
                             placeholder="90"
-                            className="w-full mt-1 rounded-md bg-white/[0.03] border border-white/10 text-center text-sm py-1.5 focus:outline-none focus:border-cyan-400/50"
+                            className="w-full mt-1 rounded-md bg-white/[0.03] border border-white/10 text-center text-sm py-1.5 focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.5)]"
                         />
                     </div>
                     <div className="col-span-2">
@@ -250,7 +250,7 @@ function SortableRow({
                             value={ex.notes}
                             onChange={(e) => onUpdate(ex.id, { notes: e.target.value })}
                             placeholder="e.g. slow eccentric"
-                            className="w-full mt-1 rounded-md bg-white/[0.03] border border-white/10 px-2 text-sm py-1.5 focus:outline-none focus:border-cyan-400/50"
+                            className="w-full mt-1 rounded-md bg-white/[0.03] border border-white/10 px-2 text-sm py-1.5 focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.5)]"
                         />
                     </div>
                 </div>
@@ -642,7 +642,7 @@ export default function SchedulePage() {
     return (
         <main className="relative min-h-screen w-full max-w-full bg-[#050914] text-white p-4 md:p-10 pb-24 md:pb-10 overflow-x-hidden">
             <div className="pointer-events-none fixed top-[-10%] left-1/2 -translate-x-1/2 w-[700px] h-[700px] bg-blue-600/15 rounded-full blur-[150px]" />
-            <div className="pointer-events-none fixed bottom-[-15%] right-[5%] w-[500px] h-[500px] bg-cyan-500/10 rounded-full blur-[130px]" />
+            <div className="pointer-events-none fixed bottom-[-15%] right-[5%] w-[500px] h-[500px] bg-[rgb(var(--accent-rgb)/0.1)] rounded-full blur-[130px]" />
             <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(ellipse_at_center,transparent_20%,rgba(0,0,0,0.7)_100%)]" />
 
             <div className="relative z-10 w-full max-w-4xl mx-auto space-y-5">
@@ -653,7 +653,7 @@ export default function SchedulePage() {
                     </div>
                     <button
                         onClick={() => setShowDatabase(true)}
-                        className="flex items-center gap-1.5 text-xs font-mono px-3 py-2 rounded-md border border-cyan-400/20 text-cyan-300/80 hover:bg-cyan-400/10 transition shrink-0"
+                        className="flex items-center gap-1.5 text-xs font-mono px-3 py-2 rounded-md border border-[rgb(var(--accent-rgb)/0.2)] text-[rgb(var(--accent-light-rgb)/0.8)] hover:bg-[rgb(var(--accent-rgb)/0.1)] transition shrink-0"
                     >
                         <Database size={14} /> View Database
                     </button>
@@ -661,7 +661,7 @@ export default function SchedulePage() {
 
                 {/* QUICK START — only when no plan exists yet */}
                 {recurringLoaded && Object.keys(recurringPlans).length === 0 && (
-                    <div className="rounded-md border border-cyan-400/15 bg-white/[0.03] p-3">
+                    <div className="rounded-md border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.03] p-3">
                         <p className="text-[10px] font-mono tracking-widest text-white/40 mb-1">QUICK START</p>
                         <p className="text-[11px] text-white/30 mb-3">Import a proven split — you can tweak it anytime after.</p>
                         <div className="grid sm:grid-cols-2 gap-2.5">
@@ -670,14 +670,14 @@ export default function SchedulePage() {
                                     key={tpl.key}
                                     onClick={() => importQuickStartTemplate(tpl)}
                                     disabled={importingTemplate !== null}
-                                    className="text-left rounded-md border border-white/10 bg-white/[0.02] p-3.5 hover:border-cyan-400/30 hover:bg-cyan-400/[0.04] disabled:opacity-40 transition"
+                                    className="text-left rounded-md border border-white/10 bg-white/[0.02] p-3.5 hover:border-[rgb(var(--accent-rgb)/0.3)] hover:bg-[rgb(var(--accent-rgb))]/[0.04] disabled:opacity-40 transition"
                                 >
                                     <div className="flex items-center justify-between mb-1.5">
                                         <p className="text-sm font-bold text-white/90">{tpl.name}</p>
-                                        <span className="text-[9px] font-mono px-2 py-0.5 rounded-full border border-cyan-400/20 text-cyan-300/70 shrink-0">{tpl.daysPerWeek}D/WK</span>
+                                        <span className="text-[9px] font-mono px-2 py-0.5 rounded-full border border-[rgb(var(--accent-rgb)/0.2)] text-[rgb(var(--accent-light-rgb)/0.7)] shrink-0">{tpl.daysPerWeek}D/WK</span>
                                     </div>
                                     <p className="text-[10px] font-mono text-white/30">{tpl.muscleCoverage}</p>
-                                    {importingTemplate === tpl.key && <p className="text-[10px] font-mono text-cyan-300 mt-2">Importing...</p>}
+                                    {importingTemplate === tpl.key && <p className="text-[10px] font-mono text-[rgb(var(--accent-light-rgb))] mt-2">Importing...</p>}
                                 </button>
                             ))}
                         </div>
@@ -685,7 +685,7 @@ export default function SchedulePage() {
                 )}
 
                 {/* WEEKLY PLAN — the only editor */}
-                <div className="rounded-md border border-cyan-400/15 bg-white/[0.03] p-3">
+                <div className="rounded-md border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.03] p-3">
                     <p className="text-[10px] font-mono tracking-widest text-white/40 mb-2.5">YOUR WEEKLY PLAN</p>
                     <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
                         {WEEKDAY_ORDER.map((wd) => {
@@ -696,7 +696,7 @@ export default function SchedulePage() {
                                     key={wd}
                                     onClick={() => openWeekdayEditor(wd)}
                                     className={`flex flex-col items-center gap-1 rounded-md border px-2 sm:px-3 py-2 min-w-[48px] sm:min-w-[68px] shrink-0 transition ${plan?.is_rest ? "border-emerald-400/25 bg-emerald-400/5" : plan ? "border-orange-400/25 bg-orange-400/5" : "border-white/10 bg-white/[0.02]"
-                                        } ${isOpen ? "border-cyan-400/60" : ""}`}
+                                        } ${isOpen ? "border-[rgb(var(--accent-rgb)/0.6)]" : ""}`}
                                 >
                                     <span className="text-[9px] font-mono text-white/40">{WEEKDAY_LABELS[wd]}</span>
                                     <span className={`text-[10px] font-bold text-center leading-tight truncate max-w-[60px] ${plan?.is_rest ? "text-emerald-300" : plan ? "text-orange-300" : "text-white/50"}`}>
@@ -726,7 +726,7 @@ export default function SchedulePage() {
                                         <button
                                             onClick={handleSaveWeekday}
                                             disabled={!weeklyHasContent}
-                                            className={`text-[10px] font-mono px-3 py-1.5 rounded border transition ${weeklyHasContent ? "border-cyan-400/40 text-cyan-300 hover:bg-cyan-400/10" : "border-white/10 text-white/20 cursor-not-allowed"
+                                            className={`text-[10px] font-mono px-3 py-1.5 rounded border transition ${weeklyHasContent ? "border-[rgb(var(--accent-rgb)/0.4)] text-[rgb(var(--accent-light-rgb))] hover:bg-[rgb(var(--accent-rgb)/0.1)]" : "border-white/10 text-white/20 cursor-not-allowed"
                                                 }`}
                                         >
                                             {weeklySaved ? "SAVED ✓" : "SAVE"}
@@ -746,7 +746,7 @@ export default function SchedulePage() {
                                             {weeklyIsRest ? <Moon size={12} /> : <Flame size={12} />}
                                             {weeklyIsRest ? "REST DAY" : "TRAINING DAY"}
                                         </span>
-                                        <button onClick={() => setWeeklyEditMode(true)} className="flex items-center gap-1.5 text-[10px] font-mono px-3 py-1.5 rounded border border-white/15 text-white/50 hover:text-white/80 hover:border-cyan-400/30 transition">
+                                        <button onClick={() => setWeeklyEditMode(true)} className="flex items-center gap-1.5 text-[10px] font-mono px-3 py-1.5 rounded border border-white/15 text-white/50 hover:text-white/80 hover:border-[rgb(var(--accent-rgb)/0.3)] transition">
                                             <Pencil size={11} /> EDIT
                                         </button>
                                         <button onClick={handleClearWeekday} className="flex items-center gap-1.5 text-[10px] font-mono px-2.5 py-1.5 rounded border border-red-400/20 text-red-400/70 hover:text-red-400 hover:border-red-400/40 transition">
@@ -767,7 +767,7 @@ export default function SchedulePage() {
                                         <div className="space-y-4">
                                             {groupExercisesBySegment(weeklyExercises).map((group, gi) => (
                                                 <div key={`${group.label}-${gi}`}>
-                                                    <p className="text-[10px] font-mono tracking-widest text-cyan-300/70 mb-2">{group.label.toUpperCase()}</p>
+                                                    <p className="text-[10px] font-mono tracking-widest text-[rgb(var(--accent-light-rgb)/0.7)] mb-2">{group.label.toUpperCase()}</p>
                                                     <div className="space-y-2">
                                                         {group.items.map((ex) => (
                                                             <ReadOnlyRow key={ex.id} ex={ex} index={weeklyExercises.indexOf(ex)} />
@@ -787,7 +787,7 @@ export default function SchedulePage() {
                                         value={weeklyTitle}
                                         onChange={(e) => setWeeklyTitle(e.target.value)}
                                         placeholder={`${WEEKDAY_FULL[weeklyTab]} Plan`}
-                                        className="w-full bg-transparent text-base font-bold text-white/90 placeholder:text-white/30 focus:outline-none mb-3 border-b border-white/10 pb-2 focus:border-cyan-400/40"
+                                        className="w-full bg-transparent text-base font-bold text-white/90 placeholder:text-white/30 focus:outline-none mb-3 border-b border-white/10 pb-2 focus:border-[rgb(var(--accent-rgb)/0.4)]"
                                     />
 
                                     {weeklyExercises.length > 0 && (
@@ -813,7 +813,7 @@ export default function SchedulePage() {
 
                                     <button
                                         onClick={() => setAddModalOpen(true)}
-                                        className={`flex items-center gap-1.5 text-xs font-mono transition ${weeklyExercises.length === 0 ? "px-3 py-2 rounded-md bg-cyan-400 text-black font-bold hover:bg-cyan-300" : "text-cyan-300 hover:text-cyan-200"
+                                        className={`flex items-center gap-1.5 text-xs font-mono transition ${weeklyExercises.length === 0 ? "px-3 py-2 rounded-md bg-[rgb(var(--accent-rgb))] text-black font-bold hover:bg-[rgb(var(--accent-light-rgb))]" : "text-[rgb(var(--accent-light-rgb))] hover:text-[rgb(var(--accent-light-rgb))]"
                                             }`}
                                     >
                                         <Plus size={14} /> ADD EXERCISE
@@ -828,11 +828,11 @@ export default function SchedulePage() {
 
                 {/* WEEKLY VOLUME */}
                 {weeklyVolume.length > 0 && (
-                    <div className="rounded-md border border-cyan-400/15 bg-white/[0.03] p-3">
+                    <div className="rounded-md border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.03] p-3">
                         <div className="flex items-center justify-between mb-3">
                             <p className="text-[10px] font-mono tracking-widest text-white/40">WEEKLY MUSCLE VOLUME</p>
                             {adaptiveLoaded && Object.values(adaptiveData).some((d) => d.hasEnoughData) && (
-                                <span className="text-[8px] font-mono px-2 py-0.5 rounded-full border border-cyan-400/30 bg-cyan-400/10 text-cyan-300">
+                                <span className="text-[8px] font-mono px-2 py-0.5 rounded-full border border-[rgb(var(--accent-rgb)/0.3)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]">
                                     PERSONALIZED
                                 </span>
                             )}
@@ -884,19 +884,19 @@ export default function SchedulePage() {
                                                 <span className="text-xs font-bold font-mono text-white/70">{v.sets}</span>
                                                 <span className="text-[8px] font-mono text-white/30">/ {min}–{max}</span>
                                                 {usePersonal && (
-                                                    <span className="text-[7px] font-mono text-cyan-400/50" title="Range learned from your training data">✦</span>
+                                                    <span className="text-[7px] font-mono text-[rgb(var(--accent-rgb)/0.5)]" title="Range learned from your training data">✦</span>
                                                 )}
                                             </div>
                                         </div>
                                         <div className="relative h-2.5 rounded-full bg-white/5 overflow-hidden">
                                             <div
-                                                className="absolute top-0 bottom-0 rounded-full bg-cyan-400/10"
+                                                className="absolute top-0 bottom-0 rounded-full bg-[rgb(var(--accent-rgb)/0.1)]"
                                                 style={{ left: `${optStartPct}%`, width: `${optEndPct - optStartPct}%` }}
                                             />
                                             <div
                                                 className={`absolute top-0 bottom-0 left-0 rounded-full transition-all ${status.label === "NONE" ? "bg-white/10" :
                                                     status.label === "LOW" ? "bg-amber-400/70" :
-                                                        status.label === "OPTIMAL" ? "bg-cyan-400/70" :
+                                                        status.label === "OPTIMAL" ? "bg-[rgb(var(--accent-rgb)/0.7)]" :
                                                             status.label === "HIGH" ? "bg-orange-400/70" :
                                                                 "bg-red-400/70"
                                                     }`}
@@ -907,7 +907,7 @@ export default function SchedulePage() {
                                             <p className={`text-[9px] font-mono mt-1 ${status.color} opacity-70`}>{status.tip}</p>
                                         )}
                                         {adaptive?.hasEnoughData && adaptive.suggestion && status.label === "OPTIMAL" && (
-                                            <p className="text-[9px] font-mono mt-1 text-cyan-300/50">{adaptive.suggestion}</p>
+                                            <p className="text-[9px] font-mono mt-1 text-[rgb(var(--accent-light-rgb)/0.5)]">{adaptive.suggestion}</p>
                                         )}
                                     </div>
                                 );
@@ -932,20 +932,20 @@ export default function SchedulePage() {
                     </div>
                 )}
                 {/* CALENDAR — 7-column grid, view only, always derived from Weekly Plan */}
-                <div className="rounded-md border border-cyan-400/15 bg-white/[0.03] p-3">
+                <div className="rounded-md border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.03] p-3">
                     <div className="flex items-center justify-between mb-2.5 gap-2">
-                        <button onClick={() => setWeekOffset((w) => w - 1)} className="shrink-0 w-8 h-8 flex items-center justify-center rounded-md border border-white/10 text-white/40 hover:text-cyan-300 hover:border-cyan-400/30 active:scale-95 transition" aria-label="Previous week">←</button>
+                        <button onClick={() => setWeekOffset((w) => w - 1)} className="shrink-0 w-8 h-8 flex items-center justify-center rounded-md border border-white/10 text-white/40 hover:text-[rgb(var(--accent-light-rgb))] hover:border-[rgb(var(--accent-rgb)/0.3)] active:scale-95 transition" aria-label="Previous week">←</button>
                         <div className="text-center min-w-0">
                             <p className="text-[10px] font-mono text-white/40">
                                 {weekDates[0].toLocaleDateString(undefined, { month: "short", day: "numeric" })} – {weekDates[6].toLocaleDateString(undefined, { month: "short", day: "numeric" })}
                             </p>
                             {(weekOffset !== 0 || selectedDate !== today) && (
-                                <button onClick={() => { setWeekOffset(0); setSelectedDate(today); }} className="text-[9px] font-mono text-cyan-300/70 hover:text-cyan-300 transition">
+                                <button onClick={() => { setWeekOffset(0); setSelectedDate(today); }} className="text-[9px] font-mono text-[rgb(var(--accent-light-rgb)/0.7)] hover:text-[rgb(var(--accent-light-rgb))] transition">
                                     JUMP TO TODAY
                                 </button>
                             )}
                         </div>
-                        <button onClick={() => setWeekOffset((w) => w + 1)} className="shrink-0 w-8 h-8 flex items-center justify-center rounded-md border border-white/10 text-white/40 hover:text-cyan-300 hover:border-cyan-400/30 active:scale-95 transition" aria-label="Next week">→</button>
+                        <button onClick={() => setWeekOffset((w) => w + 1)} className="shrink-0 w-8 h-8 flex items-center justify-center rounded-md border border-white/10 text-white/40 hover:text-[rgb(var(--accent-light-rgb))] hover:border-[rgb(var(--accent-rgb)/0.3)] active:scale-95 transition" aria-label="Next week">→</button>
                     </div>
 
                     <div ref={calendarRef} className="flex gap-2 overflow-x-auto no-scrollbar snap-x snap-mandatory pb-1 sm:grid sm:grid-cols-7 sm:gap-1.5 sm:overflow-visible">
@@ -961,11 +961,11 @@ export default function SchedulePage() {
                                     key={dateStr}
                                     data-today={isToday ? "true" : undefined}
                                     onClick={() => setSelectedDate(dateStr)}
-                                    className={`relative flex flex-col items-start rounded-md border p-2.5 transition active:scale-[0.97] min-w-[120px] w-[120px] sm:w-auto sm:min-w-0 shrink-0 snap-start min-h-[110px] sm:min-h-[100px] ${isSelected ? "border-cyan-400/70 bg-cyan-400/10" : "border-white/10 bg-white/[0.02] hover:border-cyan-400/25"
+                                    className={`relative flex flex-col items-start rounded-md border p-2.5 transition active:scale-[0.97] min-w-[120px] w-[120px] sm:w-auto sm:min-w-0 shrink-0 snap-start min-h-[110px] sm:min-h-[100px] ${isSelected ? "border-[rgb(var(--accent-rgb)/0.7)] bg-[rgb(var(--accent-rgb)/0.1)]" : "border-white/10 bg-white/[0.02] hover:border-[rgb(var(--accent-rgb)/0.25)]"
                                         }`}
-                                    style={isSelected ? { boxShadow: "0 0 16px -6px rgba(34,211,238,0.5)" } : undefined}
+                                    style={isSelected ? { boxShadow: "0 0 16px -6px rgb(var(--accent-rgb) / 0.5)" } : undefined}
                                 >
-                                    {isToday && <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-cyan-300" />}
+                                    {isToday && <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-[rgb(var(--accent-light-rgb))]" />}
                                     <span className="text-[8px] sm:text-[9px] font-mono text-white/40 tracking-tight">
                                         {d.toLocaleDateString(undefined, { weekday: "short" }).slice(0, 3).toUpperCase()}
                                     </span>
@@ -996,13 +996,13 @@ export default function SchedulePage() {
                 </div>
 
                 {/* SELECTED DAY — view only, derived */}
-                <div className="rounded-md border border-cyan-400/15 bg-white/[0.05] backdrop-blur-2xl p-4 md:p-5">
+                <div className="rounded-md border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.05] backdrop-blur-2xl p-4 md:p-5">
                     <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-                        <p className="text-xs tracking-widest text-cyan-300">{dayLabel.toUpperCase()}</p>
+                        <p className="text-xs tracking-widest text-[rgb(var(--accent-light-rgb))]">{dayLabel.toUpperCase()}</p>
                         {selectedDate === today && selectedPlan && !selectedPlan.is_rest && viewExercises.length > 0 && (
                             <button
                                 onClick={() => router.push("/workout")}
-                                className="flex items-center gap-1.5 text-[10px] font-mono px-3 py-1.5 rounded bg-cyan-400 text-black font-bold hover:bg-cyan-300 transition"
+                                className="flex items-center gap-1.5 text-[10px] font-mono px-3 py-1.5 rounded bg-[rgb(var(--accent-rgb))] text-black font-bold hover:bg-[rgb(var(--accent-light-rgb))] transition"
                             >
                                 <Play size={11} fill="black" /> START WORKOUT
                             </button>
@@ -1054,7 +1054,7 @@ export default function SchedulePage() {
                             <div className="space-y-4 mt-4">
                                 {groupExercisesBySegment(viewExercises).map((group, gi) => (
                                     <div key={`${group.label}-${gi}`}>
-                                        <p className="text-[10px] font-mono tracking-widest text-cyan-300/70 mb-2">{group.label.toUpperCase()}</p>
+                                        <p className="text-[10px] font-mono tracking-widest text-[rgb(var(--accent-light-rgb)/0.7)] mb-2">{group.label.toUpperCase()}</p>
                                         <div className="space-y-2">
                                             {group.items.map((ex) => (
                                                 <ReadOnlyRow key={ex.id} ex={ex} index={viewExercises.indexOf(ex)} />

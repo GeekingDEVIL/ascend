@@ -71,34 +71,34 @@ export default function ExerciseDatabaseModal({ onClose }: { onClose: () => void
             <style>{`
         .custom-scroll::-webkit-scrollbar { width: 6px; }
         .custom-scroll::-webkit-scrollbar-track { background: transparent; }
-        .custom-scroll::-webkit-scrollbar-thumb { background: rgba(34,211,238,0.25); border-radius: 999px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: rgb(var(--accent-rgb) / 0.25); border-radius: 999px; }
       `}</style>
             <div
-                className="relative w-full h-full md:h-[85vh] md:max-w-2xl md:rounded-md border border-cyan-400/25 bg-[#0a1120] md:bg-[#0a1120]/95 backdrop-blur-2xl flex flex-col overflow-hidden"
-                style={{ boxShadow: "0 0 70px -12px rgba(34,211,238,0.3)" }}
+                className="relative w-full h-full md:h-[85vh] md:max-w-2xl md:rounded-md border border-[rgb(var(--accent-rgb)/0.25)] bg-[#0a1120] md:bg-[#0a1120]/95 backdrop-blur-2xl flex flex-col overflow-hidden"
+                style={{ boxShadow: "0 0 70px -12px rgb(var(--accent-rgb) / 0.3)" }}
             >
-                <div className="px-6 pt-6 pb-4 border-b border-cyan-400/10 shrink-0">
+                <div className="px-6 pt-6 pb-4 border-b border-[rgb(var(--accent-rgb)/0.1)] shrink-0">
                     <div className="flex items-center justify-between">
-                        <p className="text-[10px] font-mono tracking-widest text-cyan-300/60">SYSTEM / EXERCISE DATABASE</p>
+                        <p className="text-[10px] font-mono tracking-widest text-[rgb(var(--accent-light-rgb)/0.6)]">SYSTEM / EXERCISE DATABASE</p>
                         <button onClick={onClose} className="text-white/40 hover:text-white/80">
                             <X size={18} />
                         </button>
                     </div>
                     <h2 className="text-xl font-bold mt-1">
-                        EXERCISE <span className="text-cyan-300">DATABASE</span>
+                        EXERCISE <span className="text-[rgb(var(--accent-light-rgb))]">DATABASE</span>
                     </h2>
                     <p className="text-xs text-white/40 mt-1">Browse the full library. This view doesn't add anything to your schedule.</p>
                 </div>
 
-                <div className="p-4 border-b border-cyan-400/10 shrink-0">
+                <div className="p-4 border-b border-[rgb(var(--accent-rgb)/0.1)] shrink-0">
                     <div className="relative">
-                        <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-cyan-300/50" />
+                        <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-[rgb(var(--accent-light-rgb)/0.5)]" />
                         <input
                             type="text"
                             value={query}
                             onChange={(e) => setQuery(e.target.value)}
                             placeholder="Search the database..."
-                            className="w-full rounded-md bg-white/[0.04] border border-cyan-400/20 pl-11 pr-4 py-2.5 text-sm focus:outline-none focus:border-cyan-400/50"
+                            className="w-full rounded-md bg-white/[0.04] border border-[rgb(var(--accent-rgb)/0.2)] pl-11 pr-4 py-2.5 text-sm focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.5)]"
                         />
                     </div>
                     <p className="text-[10px] font-mono text-white/30 mt-2">{filtered.length} exercises</p>
@@ -109,12 +109,12 @@ export default function ExerciseDatabaseModal({ onClose }: { onClose: () => void
                     {grouped.map(([groupName, items]) => {
                         const isOpen = openGroups.has(groupName);
                         return (
-                            <div key={groupName} className="mb-2 rounded-md border border-cyan-400/10 overflow-hidden">
+                            <div key={groupName} className="mb-2 rounded-md border border-[rgb(var(--accent-rgb)/0.1)] overflow-hidden">
                                 <button
                                     onClick={() => toggleGroup(groupName)}
                                     className="w-full flex items-center justify-between px-4 py-3 bg-white/[0.02] hover:bg-white/[0.04] transition"
                                 >
-                                    <span className="text-xs font-bold tracking-widest text-cyan-300">{groupName.toUpperCase()}</span>
+                                    <span className="text-xs font-bold tracking-widest text-[rgb(var(--accent-light-rgb))]">{groupName.toUpperCase()}</span>
                                     <div className="flex items-center gap-2">
                                         <span className="text-[10px] font-mono text-white/30">{items.length}</span>
                                         <ChevronDown size={14} className={`text-white/40 transition-transform ${isOpen ? "rotate-180" : ""}`} />

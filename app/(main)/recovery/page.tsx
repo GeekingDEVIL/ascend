@@ -34,7 +34,7 @@ function TrendBadge({ trend }: { trend?: MuscleTrend }) {
   if (!trend || trend === "insufficient") return null;
   const map: Record<Exclude<MuscleTrend, "insufficient">, { icon: React.ReactNode; color: string; label: string }> = {
     improving: { icon: <TrendingUp size={11} />, color: "text-emerald-300 border-emerald-400/30 bg-emerald-400/10", label: "IMPROVING" },
-    maintaining: { icon: <Minus size={11} />, color: "text-cyan-300 border-cyan-400/30 bg-cyan-400/10", label: "STABLE" },
+    maintaining: { icon: <Minus size={11} />, color: "text-[rgb(var(--accent-light-rgb))] border-[rgb(var(--accent-rgb)/0.3)] bg-[rgb(var(--accent-rgb)/0.1)]", label: "STABLE" },
     stalling: { icon: <Minus size={11} />, color: "text-amber-300 border-amber-400/30 bg-amber-400/10", label: "STALLING" },
     declining: { icon: <TrendingDown size={11} />, color: "text-red-400 border-red-400/30 bg-red-400/10", label: "DECLINING" },
   };
@@ -80,7 +80,7 @@ export default function RecoveryPage() {
   return (
     <main className="relative min-h-screen w-full bg-[#050914] text-white p-4 md:p-10 pb-24 md:pb-10 overflow-x-hidden">
       <div className="pointer-events-none fixed top-[-10%] left-1/2 -translate-x-1/2 w-[700px] h-[700px] bg-emerald-600/10 rounded-full blur-[150px]" />
-      <div className="pointer-events-none fixed bottom-[-15%] right-[5%] w-[500px] h-[500px] bg-cyan-500/10 rounded-full blur-[130px]" />
+      <div className="pointer-events-none fixed bottom-[-15%] right-[5%] w-[500px] h-[500px] bg-[rgb(var(--accent-rgb)/0.1)] rounded-full blur-[130px]" />
 
       <div className="relative z-10 w-full max-w-3xl mx-auto space-y-5">
         <div>
@@ -92,23 +92,23 @@ export default function RecoveryPage() {
           <p className="text-sm text-white/40 py-12 text-center">Loading...</p>
         ) : rows.length === 0 ? (
           <div className="text-center py-16">
-            <div className="w-9 h-9 mx-auto mb-3 rotate-45 border-2 border-cyan-400/30" />
-            <p className="text-sm font-bold tracking-widest text-cyan-300/70">NO TRAINING DATA</p>
+            <div className="w-9 h-9 mx-auto mb-3 rotate-45 border-2 border-[rgb(var(--accent-rgb)/0.3)]" />
+            <p className="text-sm font-bold tracking-widest text-[rgb(var(--accent-light-rgb)/0.7)]">NO TRAINING DATA</p>
             <p className="text-xs text-white/40 mt-1">Complete a few workouts to see per-muscle recovery here.</p>
           </div>
         ) : (
           <>
-            <div className="rounded-lg border border-cyan-400/15 bg-white/[0.03] p-4">
+            <div className="rounded-lg border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.03] p-4">
               <div className="flex items-center justify-between mb-3">
                 <p className="text-[10px] font-mono tracking-widest text-white/40">OVERALL READINESS</p>
-                <HeartPulse size={16} className="text-cyan-300" />
+                <HeartPulse size={16} className="text-[rgb(var(--accent-light-rgb))]" />
               </div>
               <div className="flex items-end gap-4">
                 <p className="text-3xl font-bold text-white">{avgRecovery ?? "—"}%</p>
                 <div className="flex-1 space-y-1 pb-1">
                   <div className="h-2 rounded-full bg-white/[0.06] overflow-hidden border border-white/[0.04]">
                     <div
-                      className="h-full bg-gradient-to-r from-emerald-400 to-cyan-300 rounded-full transition-all"
+                      className="h-full bg-gradient-to-r from-emerald-400 to-[rgb(var(--accent-light-rgb))] rounded-full transition-all"
                       style={{ width: `${avgRecovery ?? 0}%` }}
                     />
                   </div>
@@ -121,7 +121,7 @@ export default function RecoveryPage() {
 
             <div className="space-y-3">
               {rows.map((r) => (
-                <div key={r.segment} className="rounded-md border border-cyan-400/15 bg-white/[0.03] p-3.5">
+                <div key={r.segment} className="rounded-md border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.03] p-3.5">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-bold text-white/90">{r.segment}</p>

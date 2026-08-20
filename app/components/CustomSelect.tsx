@@ -51,7 +51,7 @@ export default function CustomSelect({ options, value, onChange, placeholder = "
             <button
                 type="button"
                 onClick={() => setOpen((o) => !o)}
-                className="w-full flex items-center justify-between gap-2 rounded-lg bg-white/[0.04] border border-white/[0.08] px-3 py-2.5 text-sm font-mono text-left transition focus:outline-none focus:border-cyan-400/40"
+                className="w-full flex items-center justify-between gap-2 rounded-lg bg-white/[0.04] border border-white/[0.08] px-3 py-2.5 text-sm font-mono text-left transition focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)]"
             >
                 <span className={`truncate ${selected ? "text-white/80" : "text-white/30"}`}>{selected ? selected.label : placeholder}</span>
                 <ChevronDown size={14} className={`shrink-0 text-white/30 transition-transform ${open ? "rotate-180" : ""}`} />
@@ -62,7 +62,7 @@ export default function CustomSelect({ options, value, onChange, placeholder = "
                     {/* Mobile: full bottom sheet */}
                     <div className="md:hidden fixed inset-0 z-[80] flex flex-col justify-end">
                         <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setOpen(false)} />
-                        <div className="relative z-10 bg-[#0a1120] border-t border-cyan-400/20 rounded-t-2xl max-h-[75vh] flex flex-col">
+                        <div className="relative z-10 bg-[#0a1120] border-t border-[rgb(var(--accent-rgb)/0.2)] rounded-t-2xl max-h-[75vh] flex flex-col">
                             <div className="flex items-center justify-between px-5 pt-4 pb-2">
                                 <p className="text-xs font-mono tracking-widest text-white/40">{label ?? "SELECT"}</p>
                                 <button onClick={() => setOpen(false)} className="w-8 h-8 flex items-center justify-center rounded-lg text-white/40 hover:text-white/70 transition">
@@ -91,13 +91,13 @@ export default function CustomSelect({ options, value, onChange, placeholder = "
                                         <button
                                             key={o.value}
                                             onClick={() => select(o.value)}
-                                            className={`w-full flex items-center justify-between gap-2 px-3 py-3 rounded-lg text-left transition ${o.value === value ? "bg-cyan-400/10 text-cyan-300" : "text-white/70 hover:bg-white/[0.04]"}`}
+                                            className={`w-full flex items-center justify-between gap-2 px-3 py-3 rounded-lg text-left transition ${o.value === value ? "bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "text-white/70 hover:bg-white/[0.04]"}`}
                                         >
                                             <span className="min-w-0">
                                                 <span className="block text-sm font-bold truncate">{o.label}</span>
                                                 {o.sub && <span className="block text-[10px] font-mono text-white/30 truncate">{o.sub}</span>}
                                             </span>
-                                            {o.value === value && <Check size={16} className="shrink-0 text-cyan-300" />}
+                                            {o.value === value && <Check size={16} className="shrink-0 text-[rgb(var(--accent-light-rgb))]" />}
                                         </button>
                                     ))
                                 )}
@@ -106,7 +106,7 @@ export default function CustomSelect({ options, value, onChange, placeholder = "
                     </div>
 
                     {/* Desktop: inline dropdown */}
-                    <div className="hidden md:block absolute z-[80] top-full left-0 right-0 mt-1.5 rounded-lg border border-cyan-400/20 bg-[#0a1120] shadow-xl overflow-hidden">
+                    <div className="hidden md:block absolute z-[80] top-full left-0 right-0 mt-1.5 rounded-lg border border-[rgb(var(--accent-rgb)/0.2)] bg-[#0a1120] shadow-xl overflow-hidden">
                         {searchable && (
                             <div className="p-2 border-b border-white/[0.06]">
                                 <div className="flex items-center gap-2 rounded-lg bg-white/[0.04] border border-white/[0.08] px-2.5 py-2">
@@ -129,13 +129,13 @@ export default function CustomSelect({ options, value, onChange, placeholder = "
                                     <button
                                         key={o.value}
                                         onClick={() => select(o.value)}
-                                        className={`w-full flex items-center justify-between gap-2 px-2.5 py-2 rounded-md text-left text-xs font-mono transition ${o.value === value ? "bg-cyan-400/10 text-cyan-300" : "text-white/70 hover:bg-white/[0.05]"}`}
+                                        className={`w-full flex items-center justify-between gap-2 px-2.5 py-2 rounded-md text-left text-xs font-mono transition ${o.value === value ? "bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "text-white/70 hover:bg-white/[0.05]"}`}
                                     >
                                         <span className="min-w-0">
                                             <span className="block truncate">{o.label}</span>
                                             {o.sub && <span className="block text-[9px] text-white/30 truncate">{o.sub}</span>}
                                         </span>
-                                        {o.value === value && <Check size={13} className="shrink-0 text-cyan-300" />}
+                                        {o.value === value && <Check size={13} className="shrink-0 text-[rgb(var(--accent-light-rgb))]" />}
                                     </button>
                                 ))
                             )}

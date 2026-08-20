@@ -27,9 +27,9 @@ function GlassText({ children, className = "" }: { children: React.ReactNode; cl
 function DividerWithHyphens() {
   return (
     <div className="flex items-center gap-2 my-4">
-      <span className="text-cyan-300/50 text-xs leading-none">–</span>
-      <span className="h-px flex-1 bg-cyan-400/20" />
-      <span className="text-cyan-300/50 text-xs leading-none">–</span>
+      <span className="text-[rgb(var(--accent-light-rgb)/0.5)] text-xs leading-none">–</span>
+      <span className="h-px flex-1 bg-[rgb(var(--accent-rgb)/0.2)]" />
+      <span className="text-[rgb(var(--accent-light-rgb)/0.5)] text-xs leading-none">–</span>
     </div>
   );
 }
@@ -38,7 +38,7 @@ function SideLine({ side }: { side: "left" | "right" }) {
   return (
     <div
       className={`absolute top-[-10px] bottom-[-10px] ${side === "left" ? "-left-3" : "-right-3"} w-px hidden md:block`}
-      style={{ background: "linear-gradient(to bottom, transparent, rgba(103,232,249,0.5) 50%, transparent)" }}
+      style={{ background: "linear-gradient(to bottom, transparent, rgb(var(--accent-light-rgb) / 0.5) 50%, transparent)" }}
     />
   );
 }
@@ -143,7 +143,7 @@ function RankBadge({ level }: { level: number }) {
 function StatRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: number }) {
   return (
     <div className="flex items-center gap-3 font-mono text-sm text-white/70">
-      <span className="text-cyan-300">{icon}</span>
+      <span className="text-[rgb(var(--accent-light-rgb))]">{icon}</span>
       <span className="text-white/40">{label}:</span>
       <GlassText className="font-bold text-base">{value}</GlassText>
     </div>
@@ -556,14 +556,14 @@ export default function Dashboard() {
   return (
     <main className="relative min-h-screen bg-[#050914] text-white p-6 md:p-10 pb-24 md:pb-10 overflow-hidden">
       <div className="pointer-events-none fixed top-[-10%] left-1/2 -translate-x-1/2 w-[700px] h-[700px] bg-blue-600/15 rounded-full blur-[150px]" />
-      <div className="pointer-events-none fixed bottom-[-15%] right-[5%] w-[500px] h-[500px] bg-cyan-500/10 rounded-full blur-[130px]" />
+      <div className="pointer-events-none fixed bottom-[-15%] right-[5%] w-[500px] h-[500px] bg-[rgb(var(--accent-rgb)/0.1)] rounded-full blur-[130px]" />
       <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(ellipse_at_center,transparent_20%,rgba(0,0,0,0.7)_100%)]" />
 
       <div className="relative z-10 max-w-5xl mx-auto space-y-6">
         {/* TOP BAR */}
         <div className="flex items-center justify-end gap-3">
           <div
-            className="flex items-center gap-4 rounded-md border border-cyan-400/15 bg-white/[0.05] backdrop-blur-xl px-5 py-2.5 text-xs"
+            className="flex items-center gap-4 rounded-md border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.05] backdrop-blur-xl px-5 py-2.5 text-xs"
             style={{ boxShadow: "inset 0 1px 0 rgba(255,255,255,0.07)" }}
           >
             <div className="text-right font-mono">
@@ -576,13 +576,13 @@ export default function Dashboard() {
               <span className="hidden sm:block text-[9px] font-mono text-white/25 mt-1">Next: {nextRank.name} at Level {nextRank.minLevel}</span>
             )}
             <span className="font-mono text-white/50">LVL <GlassText className="font-bold">{statsLoaded ? level : 1}</GlassText></span>
-            <button onClick={() => router.push("/notifications")} className="relative text-white/50 hover:text-cyan-300 transition">
+            <button onClick={() => router.push("/notifications")} className="relative text-white/50 hover:text-[rgb(var(--accent-light-rgb))] transition">
               <Bell size={16} />
               {notifLoaded && notifications.length > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-cyan-400 text-black text-[8px] font-bold flex items-center justify-center">{notifications.length}</span>
+                <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-[rgb(var(--accent-rgb))] text-black text-[8px] font-bold flex items-center justify-center">{notifications.length}</span>
               )}
             </button>
-            <span className="w-8 h-8 rounded-md bg-cyan-400/15 border border-cyan-300/30 flex items-center justify-center text-cyan-200 font-bold overflow-hidden shrink-0">
+            <span className="w-8 h-8 rounded-md bg-[rgb(var(--accent-rgb)/0.15)] border border-[rgb(var(--accent-light-rgb)/0.3)] flex items-center justify-center text-[rgb(var(--accent-light-rgb))] font-bold overflow-hidden shrink-0">
               {profile?.avatar_url ? (
                 <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
               ) : (
@@ -607,7 +607,7 @@ export default function Dashboard() {
         <GlowPanel>
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div>
-              <p className="text-xs tracking-widest text-cyan-300 mb-1">TODAY · {today ?? "———"}</p>
+              <p className="text-xs tracking-widest text-[rgb(var(--accent-light-rgb))] mb-1">TODAY · {today ?? "———"}</p>
 
               {todayLoading ? (
                 <h2 className="text-lg font-bold text-white/40">LOADING...</h2>
@@ -637,8 +637,8 @@ export default function Dashboard() {
             </div>
             <button
               onClick={handleTodayAction}
-              className="shrink-0 rounded-md bg-cyan-400 text-black font-bold text-sm font-mono tracking-widest px-6 py-3 hover:bg-cyan-300 transition"
-              style={{ boxShadow: "0 0 25px -4px rgba(34,211,238,0.6)" }}
+              className="shrink-0 rounded-md bg-[rgb(var(--accent-rgb))] text-black font-bold text-sm font-mono tracking-widest px-6 py-3 hover:bg-[rgb(var(--accent-light-rgb))] transition"
+              style={{ boxShadow: "0 0 25px -4px rgb(var(--accent-rgb) / 0.6)" }}
             >
               {todayPlan?.completed ? "VIEW PROGRESS" : todayPlan?.is_rest || !todayPlan || todayPlan.count === 0 ? "GO TO SCHEDULE" : "INITIATE WORKOUT"}
             </button>
@@ -647,7 +647,7 @@ export default function Dashboard() {
 
         {/* STATUS */}
         <GlowPanel>
-          <h2 className="text-center text-base font-bold tracking-wide text-cyan-100">STATUS</h2>
+          <h2 className="text-center text-base font-bold tracking-wide text-[rgb(var(--accent-light-rgb))]">STATUS</h2>
           <DividerWithHyphens />
           <div className="flex items-center justify-center gap-10 mb-4">
             <div className="text-center">
@@ -658,7 +658,7 @@ export default function Dashboard() {
               <p>GOAL: {stats.goal ? (
                 <span className="text-white/90">{stats.goal}</span>
               ) : (
-                <button onClick={() => router.push("/profile")} className="text-cyan-300/70 hover:text-cyan-300 underline underline-offset-2 transition">Set Goal →</button>
+                <button onClick={() => router.push("/profile")} className="text-[rgb(var(--accent-light-rgb)/0.7)] hover:text-[rgb(var(--accent-light-rgb))] underline underline-offset-2 transition">Set Goal →</button>
               )}</p>
               <p>RANK: <span className={`font-bold ${rank.color}`}>{rank.name}</span></p>
               {nextRank && <p className="text-[9px] text-white/25">Next: {nextRank.name} at Level {nextRank.minLevel}</p>}
@@ -673,9 +673,9 @@ export default function Dashboard() {
           </div>
           <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 mb-6 border-y border-white/10 py-4">
             <div className="flex items-center gap-2">
-              <Zap size={14} className="text-cyan-300" />
+              <Zap size={14} className="text-[rgb(var(--accent-light-rgb))]" />
               <div className="relative w-28 md:w-36 h-2 bg-white/10 rounded-full overflow-hidden">
-                <div className={`h-full rounded-full transition-all`} style={{ width: `${Math.min(100, levelInfo.progress * 100)}%`, background: `linear-gradient(90deg, rgba(34,211,238,0.8), rgba(34,211,238,1))`, boxShadow: "0 0 6px rgba(34,211,238,0.4)" }} />
+                <div className={`h-full rounded-full transition-all`} style={{ width: `${Math.min(100, levelInfo.progress * 100)}%`, background: `linear-gradient(90deg, rgb(var(--accent-rgb) / 0.8), rgb(var(--accent-rgb) / 1))`, boxShadow: "0 0 6px rgb(var(--accent-rgb) / 0.4)" }} />
               </div>
               <span className="text-[10px] font-mono text-white/40">
                 {levelInfo.isMaxLevel ? "MAX" : `${levelInfo.xpIntoCurrentLevel}/${levelInfo.xpNeededForNext}`}
@@ -689,7 +689,7 @@ export default function Dashboard() {
               <span className="text-[10px] font-mono text-white/40">{stats.recoveryPct ?? 0}/100</span>
             </div>
             <div className="flex items-center gap-2 font-mono text-xs text-white/50">
-              <Gauge size={14} className="text-cyan-300" />
+              <Gauge size={14} className="text-[rgb(var(--accent-light-rgb))]" />
               <span>FATIGUE: <span className="text-white/90 font-bold">{stats.fatigue}%</span></span>
               <span className="text-[8px] text-white/20 block mt-0.5">
                 {stats.fatigue >= 80 ? "Recently trained — rest recommended" : stats.fatigue >= 50 ? "Partially recovered" : stats.fatigue > 0 ? "Mostly recovered" : "Fully rested"}
@@ -701,7 +701,7 @@ export default function Dashboard() {
               <div className="relative w-full aspect-square max-w-[60px] mx-auto mb-1">
                 <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
                   <circle cx="18" cy="18" r="15.5" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="3" />
-                  <circle cx="18" cy="18" r="15.5" fill="none" stroke="rgba(34,211,238,0.7)" strokeWidth="3" strokeDasharray={`${stats.strength * 0.97} 97`} strokeLinecap="round" />
+                  <circle cx="18" cy="18" r="15.5" fill="none" stroke="rgb(var(--accent-rgb) / 0.7)" strokeWidth="3" strokeDasharray={`${stats.strength * 0.97} 97`} strokeLinecap="round" />
                 </svg>
                 <span className="absolute inset-0 flex items-center justify-center text-[10px] font-mono font-bold text-white/80">{stats.strength}</span>
               </div>
@@ -768,11 +768,11 @@ export default function Dashboard() {
 
         {/* LIVE TELEMETRY */}
         <div>
-          <p className="text-xs tracking-widest text-cyan-300 mb-3">LIVE TELEMETRY</p>
+          <p className="text-xs tracking-widest text-[rgb(var(--accent-light-rgb))] mb-3">LIVE TELEMETRY</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div
-              className="rounded-md border border-cyan-400/15 bg-white/[0.05] backdrop-blur-2xl px-5 py-5"
-              style={{ boxShadow: "inset 0 1px 0 rgba(255,255,255,0.07), 0 4px 24px -8px rgba(34,211,238,0.15)" }}
+              className="rounded-md border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.05] backdrop-blur-2xl px-5 py-5"
+              style={{ boxShadow: "inset 0 1px 0 rgba(255,255,255,0.07), 0 4px 24px -8px rgb(var(--accent-rgb) / 0.15)" }}
             >
               <div className="flex items-center justify-between mb-6">
                 <p className="text-xs tracking-widest text-white/50">WEIGHT TREND</p>
@@ -794,8 +794,8 @@ export default function Dashboard() {
               </div>
             </div>
             <div
-              className="rounded-md border border-cyan-400/15 bg-white/[0.05] backdrop-blur-2xl px-5 py-5"
-              style={{ boxShadow: "inset 0 1px 0 rgba(255,255,255,0.07), 0 4px 24px -8px rgba(34,211,238,0.15)" }}
+              className="rounded-md border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.05] backdrop-blur-2xl px-5 py-5"
+              style={{ boxShadow: "inset 0 1px 0 rgba(255,255,255,0.07), 0 4px 24px -8px rgb(var(--accent-rgb) / 0.15)" }}
             >
               <div className="flex items-center justify-between mb-6">
                 <p className="text-xs tracking-widest text-white/50">CALORIE INTELLIGENCE</p>

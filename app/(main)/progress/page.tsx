@@ -79,7 +79,7 @@ function estimateE1RM(weight: number, reps: number): number {
 const CustomTooltip = ({ active, payload, label }: any) => {
     if (!active || !payload?.length) return null;
     return (
-        <div className="rounded-lg border border-cyan-400/20 bg-[#0a1120]/95 backdrop-blur-xl px-3 py-2 text-[10px] font-mono">
+        <div className="rounded-lg border border-[rgb(var(--accent-rgb)/0.2)] bg-[#0a1120]/95 backdrop-blur-xl px-3 py-2 text-[10px] font-mono">
             <p className="text-white/50 mb-1">{label}</p>
             {payload.map((p: any, i: number) => (
                 <p key={i} style={{ color: p.color }}>
@@ -265,7 +265,7 @@ export default function ProgressPage() {
     return (
         <main className="relative min-h-screen w-full bg-[#050914] text-white p-4 md:p-10 pb-24 md:pb-10 overflow-x-hidden">
             <div className="pointer-events-none fixed top-[-10%] left-1/2 -translate-x-1/2 w-[700px] h-[700px] bg-blue-600/15 rounded-full blur-[150px]" />
-            <div className="pointer-events-none fixed bottom-[-15%] right-[5%] w-[500px] h-[500px] bg-cyan-500/10 rounded-full blur-[130px]" />
+            <div className="pointer-events-none fixed bottom-[-15%] right-[5%] w-[500px] h-[500px] bg-[rgb(var(--accent-rgb)/0.1)] rounded-full blur-[130px]" />
 
             <div className="relative z-10 w-full max-w-3xl mx-auto space-y-5">
                 <div>
@@ -279,7 +279,7 @@ export default function ProgressPage() {
                         <button
                             key={t.key}
                             onClick={() => setTab(t.key)}
-                            className={`flex items-center gap-1.5 text-[10px] font-mono px-3 sm:px-4 py-2 rounded-lg border shrink-0 transition ${tab === t.key ? "border-cyan-400/40 bg-cyan-400/10 text-cyan-300" : "border-white/10 text-white/40 hover:text-white/70"
+                            className={`flex items-center gap-1.5 text-[10px] font-mono px-3 sm:px-4 py-2 rounded-lg border shrink-0 transition ${tab === t.key ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/10 text-white/40 hover:text-white/70"
                                 }`}
                         >
                             <t.icon size={12} /> {t.label}
@@ -289,7 +289,7 @@ export default function ProgressPage() {
 
                 {loading ? (
                     <div className="flex items-center justify-center py-20">
-                        <div className="w-8 h-8 border-2 border-cyan-400/40 border-t-cyan-300 rounded-full animate-spin" />
+                        <div className="w-8 h-8 border-2 border-[rgb(var(--accent-rgb)/0.4)] border-t-[rgb(var(--accent-rgb))] rounded-full animate-spin" />
                     </div>
                 ) : (
                     <>
@@ -308,7 +308,7 @@ export default function ProgressPage() {
                                     </div>
                                     <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-3 text-center">
                                         <p className="text-[8px] font-mono text-white/30">TOTAL VOLUME</p>
-                                        <p className="text-xl font-bold font-mono text-cyan-300">{Math.round(totalVolume).toLocaleString()} <span className="text-xs text-white/30">KG</span></p>
+                                        <p className="text-xl font-bold font-mono text-[rgb(var(--accent-light-rgb))]">{Math.round(totalVolume).toLocaleString()} <span className="text-xs text-white/30">KG</span></p>
                                     </div>
                                 </div>
 
@@ -323,8 +323,8 @@ export default function ProgressPage() {
                                     <div className="space-y-2">
                                         {sessions.map((s) => (
                                             <div key={s.id} className="flex items-center gap-3 rounded-lg border border-white/[0.06] bg-white/[0.02] px-4 py-3">
-                                                <div className="w-10 h-10 rounded-lg bg-cyan-400/10 border border-cyan-400/20 flex items-center justify-center shrink-0">
-                                                    <Dumbbell size={16} className="text-cyan-300" />
+                                                <div className="w-10 h-10 rounded-lg bg-[rgb(var(--accent-rgb)/0.1)] border border-[rgb(var(--accent-rgb)/0.2)] flex items-center justify-center shrink-0">
+                                                    <Dumbbell size={16} className="text-[rgb(var(--accent-light-rgb))]" />
                                                 </div>
                                                 <div className="flex-1 min-w-0">
                                                     <p className="text-sm font-bold text-white/90 truncate">{s.title || "Workout"}</p>
@@ -344,8 +344,8 @@ export default function ProgressPage() {
                                                         <p className="text-xs font-mono text-white/70">{Math.round(Number(s.total_volume) || 0).toLocaleString()}</p>
                                                     </div>
                                                     <div>
-                                                        <p className="text-[8px] font-mono text-cyan-300/50">XP</p>
-                                                        <p className="text-xs font-mono text-cyan-300">+{s.xp_earned}</p>
+                                                        <p className="text-[8px] font-mono text-[rgb(var(--accent-light-rgb)/0.5)]">XP</p>
+                                                        <p className="text-xs font-mono text-[rgb(var(--accent-light-rgb))]">+{s.xp_earned}</p>
                                                     </div>
                                                 </div>
                                             </div>
@@ -375,7 +375,7 @@ export default function ProgressPage() {
                                                     <div key={pr.exercise_id}>
                                                         <button
                                                             onClick={() => isSelected ? setSelectedExercise(null) : loadStrengthHistory(pr.exercise_id)}
-                                                            className={`w-full flex items-center gap-3 rounded-lg border px-4 py-3 text-left transition ${isSelected ? "border-cyan-400/30 bg-cyan-400/[0.05]" : "border-white/[0.06] bg-white/[0.02] hover:border-white/[0.12]"
+                                                            className={`w-full flex items-center gap-3 rounded-lg border px-4 py-3 text-left transition ${isSelected ? "border-[rgb(var(--accent-rgb)/0.3)] bg-[rgb(var(--accent-rgb))]/[0.05]" : "border-white/[0.06] bg-white/[0.02] hover:border-white/[0.12]"
                                                                 }`}
                                                         >
                                                             <div className="flex-1 min-w-0">
@@ -385,14 +385,14 @@ export default function ProgressPage() {
                                                             <div className="flex items-center gap-3 shrink-0">
                                                                 <div className="text-right">
                                                                     <p className="text-sm font-bold font-mono text-white/90">{pr.best_weight}<span className="text-[10px] text-white/40">kg</span> × {pr.best_reps_at_weight}</p>
-                                                                    <p className="text-[9px] font-mono text-cyan-300/60">e1RM: {pr.estimated_1rm}kg</p>
+                                                                    <p className="text-[9px] font-mono text-[rgb(var(--accent-light-rgb)/0.6)]">e1RM: {pr.estimated_1rm}kg</p>
                                                                 </div>
-                                                                {isSelected ? <ChevronDown size={14} className="text-cyan-300" /> : <ChevronRight size={14} className="text-white/25" />}
+                                                                {isSelected ? <ChevronDown size={14} className="text-[rgb(var(--accent-light-rgb))]" /> : <ChevronRight size={14} className="text-white/25" />}
                                                             </div>
                                                         </button>
 
                                                         {isSelected && (
-                                                            <div className="rounded-b-lg border border-t-0 border-cyan-400/20 bg-cyan-400/[0.02] p-4">
+                                                            <div className="rounded-b-lg border border-t-0 border-[rgb(var(--accent-rgb)/0.2)] bg-[rgb(var(--accent-rgb))]/[0.02] p-4">
                                                                 {strengthLoading ? (
                                                                     <p className="text-xs text-white/40 text-center py-4">Loading chart...</p>
                                                                 ) : strengthHistory.length < 2 ? (
@@ -405,8 +405,8 @@ export default function ProgressPage() {
                                                                                 <XAxis dataKey="date" tick={{ fontSize: 9, fill: "rgba(255,255,255,0.3)" }} />
                                                                                 <YAxis tick={{ fontSize: 9, fill: "rgba(255,255,255,0.3)" }} domain={["auto", "auto"]} />
                                                                                 <Tooltip content={<CustomTooltip />} />
-                                                                                <Line type="monotone" dataKey="weight" stroke="#22d3ee" strokeWidth={2} dot={{ r: 3, fill: "#22d3ee" }} name="Weight (kg)" />
-                                                                                <Line type="monotone" dataKey="e1rm" stroke="#a5f3fc" strokeWidth={1.5} strokeDasharray="4 4" dot={false} name="Est. 1RM" />
+                                                                                <Line type="monotone" dataKey="weight" stroke="rgb(var(--accent-rgb))" strokeWidth={2} dot={{ r: 3, fill: "rgb(var(--accent-rgb))" }} name="Weight (kg)" />
+                                                                                <Line type="monotone" dataKey="e1rm" stroke="rgb(var(--accent-light-rgb))" strokeWidth={1.5} strokeDasharray="4 4" dot={false} name="Est. 1RM" />
                                                                             </LineChart>
                                                                         </ResponsiveContainer>
                                                                     </div>
@@ -437,13 +437,13 @@ export default function ProgressPage() {
                                             value={newWeight}
                                             onChange={(e) => setNewWeight(e.target.value)}
                                             placeholder="—"
-                                            className="flex-1 min-w-0 h-12 rounded-lg bg-white/[0.04] border border-white/[0.08] text-center text-xl font-bold font-mono focus:outline-none focus:border-cyan-400/40 transition"
+                                            className="flex-1 min-w-0 h-12 rounded-lg bg-white/[0.04] border border-white/[0.08] text-center text-xl font-bold font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition"
                                         />
                                         <span className="text-sm font-mono text-white/30 shrink-0">KG</span>
                                         <button
                                             onClick={logBodyWeight}
                                             disabled={!newWeight}
-                                            className="shrink-0 text-[10px] font-mono px-4 py-3 rounded-lg border border-cyan-400/30 text-cyan-300 hover:bg-cyan-400/10 disabled:opacity-30 disabled:cursor-not-allowed transition"
+                                            className="shrink-0 text-[10px] font-mono px-4 py-3 rounded-lg border border-[rgb(var(--accent-rgb)/0.3)] text-[rgb(var(--accent-light-rgb))] hover:bg-[rgb(var(--accent-rgb)/0.1)] disabled:opacity-30 disabled:cursor-not-allowed transition"
                                         >
                                             LOG
                                         </button>
@@ -514,7 +514,7 @@ export default function ProgressPage() {
                                                     <XAxis dataKey="week" tick={{ fontSize: 9, fill: "rgba(255,255,255,0.3)" }} />
                                                     <YAxis tick={{ fontSize: 9, fill: "rgba(255,255,255,0.3)" }} />
                                                     <Tooltip content={<CustomTooltip />} />
-                                                    <Bar dataKey="volume" fill="rgba(34,211,238,0.6)" radius={[4, 4, 0, 0]} name="Volume (kg)" />
+                                                    <Bar dataKey="volume" fill="rgb(var(--accent-rgb) / 0.6)" radius={[4, 4, 0, 0]} name="Volume (kg)" />
                                                 </BarChart>
                                             </ResponsiveContainer>
                                         </div>
@@ -551,13 +551,13 @@ export default function ProgressPage() {
                                         <div className="grid grid-cols-2 gap-2">
                                             <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-3 text-center">
                                                 <p className="text-[8px] font-mono text-white/30">VOL VS LAST WEEK</p>
-                                                <p className={`text-lg font-bold font-mono ${volChange > 0 ? "text-cyan-300" : volChange < 0 ? "text-orange-300" : "text-white/50"}`}>
+                                                <p className={`text-lg font-bold font-mono ${volChange > 0 ? "text-[rgb(var(--accent-light-rgb))]" : volChange < 0 ? "text-orange-300" : "text-white/50"}`}>
                                                     {volChange > 0 ? "+" : ""}{volChange.toLocaleString()} <span className="text-xs text-white/30">KG</span>
                                                 </p>
                                             </div>
                                             <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-3 text-center">
                                                 <p className="text-[8px] font-mono text-white/30">SETS VS LAST WEEK</p>
-                                                <p className={`text-lg font-bold font-mono ${setChange > 0 ? "text-cyan-300" : setChange < 0 ? "text-orange-300" : "text-white/50"}`}>
+                                                <p className={`text-lg font-bold font-mono ${setChange > 0 ? "text-[rgb(var(--accent-light-rgb))]" : setChange < 0 ? "text-orange-300" : "text-white/50"}`}>
                                                     {setChange > 0 ? "+" : ""}{setChange} <span className="text-xs text-white/30">SETS</span>
                                                 </p>
                                             </div>

@@ -8,7 +8,7 @@ import { useAuth } from "../../lib/AuthProvider";
 function NotifIcon({ type }: { type: string }) {
   switch (type) {
     case "new_pr": return <Medal size={18} className="text-yellow-300" />;
-    case "workout_complete": return <Trophy size={18} className="text-cyan-300" />;
+    case "workout_complete": return <Trophy size={18} className="text-[rgb(var(--accent-light-rgb))]" />;
     case "level_up": return <Star size={18} className="text-purple-300" />;
     case "streak_milestone": return <Flame size={18} className="text-orange-300" />;
     case "achievement": return <Award size={18} className="text-emerald-300" />;
@@ -19,7 +19,7 @@ function NotifIcon({ type }: { type: string }) {
 function notifBorder(type: string): string {
   switch (type) {
     case "new_pr": return "border-yellow-400/20";
-    case "workout_complete": return "border-cyan-400/15";
+    case "workout_complete": return "border-[rgb(var(--accent-rgb)/0.15)]";
     case "level_up": return "border-purple-400/20";
     case "streak_milestone": return "border-orange-400/20";
     case "achievement": return "border-emerald-400/20";
@@ -85,7 +85,7 @@ export default function NotificationsPage() {
   return (
     <main className="relative min-h-screen w-full bg-[#050914] text-white p-4 md:p-10 pb-24 md:pb-10 overflow-x-hidden">
       <div className="pointer-events-none fixed top-[-10%] left-1/2 -translate-x-1/2 w-[700px] h-[700px] bg-blue-600/15 rounded-full blur-[150px]" />
-      <div className="pointer-events-none fixed bottom-[-15%] right-[5%] w-[500px] h-[500px] bg-cyan-500/10 rounded-full blur-[130px]" />
+      <div className="pointer-events-none fixed bottom-[-15%] right-[5%] w-[500px] h-[500px] bg-[rgb(var(--accent-rgb)/0.1)] rounded-full blur-[130px]" />
 
       <div className="relative z-10 w-full max-w-2xl mx-auto space-y-5">
         <div className="flex items-center justify-between flex-wrap gap-2">
@@ -97,7 +97,7 @@ export default function NotificationsPage() {
           </div>
           <div className="flex items-center gap-2">
             {unreadCount > 0 && (
-              <button onClick={dismissAll} className="text-[10px] font-mono px-3 py-1.5 rounded-lg border border-cyan-400/20 text-cyan-300/70 hover:bg-cyan-400/10 transition">
+              <button onClick={dismissAll} className="text-[10px] font-mono px-3 py-1.5 rounded-lg border border-[rgb(var(--accent-rgb)/0.2)] text-[rgb(var(--accent-light-rgb)/0.7)] hover:bg-[rgb(var(--accent-rgb)/0.1)] transition">
                 MARK ALL READ
               </button>
             )}
@@ -110,10 +110,10 @@ export default function NotificationsPage() {
         </div>
 
         <div className="flex gap-2">
-          <button onClick={() => setFilter("all")} className={`text-[10px] font-mono px-3 py-1.5 rounded-lg border transition ${filter === "all" ? "border-cyan-400/40 bg-cyan-400/10 text-cyan-300" : "border-white/10 text-white/40 hover:text-white/70"}`}>
+          <button onClick={() => setFilter("all")} className={`text-[10px] font-mono px-3 py-1.5 rounded-lg border transition ${filter === "all" ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/10 text-white/40 hover:text-white/70"}`}>
             ALL
           </button>
-          <button onClick={() => setFilter("unread")} className={`text-[10px] font-mono px-3 py-1.5 rounded-lg border transition ${filter === "unread" ? "border-cyan-400/40 bg-cyan-400/10 text-cyan-300" : "border-white/10 text-white/40 hover:text-white/70"}`}>
+          <button onClick={() => setFilter("unread")} className={`text-[10px] font-mono px-3 py-1.5 rounded-lg border transition ${filter === "unread" ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/10 text-white/40 hover:text-white/70"}`}>
             UNREAD {unreadCount > 0 && `(${unreadCount})`}
           </button>
         </div>

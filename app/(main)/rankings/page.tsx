@@ -96,7 +96,7 @@ export default function RankingsPage() {
     if (loading) {
         return (
             <main className="min-h-screen bg-[#050914] text-white flex items-center justify-center">
-                <div className="w-8 h-8 border-2 border-cyan-400/40 border-t-cyan-300 rounded-full animate-spin" />
+                <div className="w-8 h-8 border-2 border-[rgb(var(--accent-rgb)/0.4)] border-t-[rgb(var(--accent-rgb))] rounded-full animate-spin" />
             </main>
         );
     }
@@ -104,7 +104,7 @@ export default function RankingsPage() {
     return (
         <main className="relative min-h-screen w-full bg-[#050914] text-white p-4 md:p-10 pb-24 md:pb-10 overflow-x-hidden">
             <div className="pointer-events-none fixed top-[-10%] left-1/2 -translate-x-1/2 w-[700px] h-[700px] bg-blue-600/15 rounded-full blur-[150px]" />
-            <div className="pointer-events-none fixed bottom-[-15%] right-[5%] w-[500px] h-[500px] bg-cyan-500/10 rounded-full blur-[130px]" />
+            <div className="pointer-events-none fixed bottom-[-15%] right-[5%] w-[500px] h-[500px] bg-[rgb(var(--accent-rgb)/0.1)] rounded-full blur-[130px]" />
 
             <div className="relative z-10 w-full max-w-2xl mx-auto space-y-5">
                 <div>
@@ -116,14 +116,14 @@ export default function RankingsPage() {
                 <div className="flex gap-2">
                     <button
                         onClick={() => setTab("personal")}
-                        className={`flex items-center gap-1.5 text-[10px] font-mono px-4 py-2 rounded-lg border transition ${tab === "personal" ? "border-cyan-400/40 bg-cyan-400/10 text-cyan-300" : "border-white/10 text-white/40 hover:text-white/70"
+                        className={`flex items-center gap-1.5 text-[10px] font-mono px-4 py-2 rounded-lg border transition ${tab === "personal" ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/10 text-white/40 hover:text-white/70"
                             }`}
                     >
                         <User size={12} /> MY RANK
                     </button>
                     <button
                         onClick={() => setTab("leaderboard")}
-                        className={`flex items-center gap-1.5 text-[10px] font-mono px-4 py-2 rounded-lg border transition ${tab === "leaderboard" ? "border-cyan-400/40 bg-cyan-400/10 text-cyan-300" : "border-white/10 text-white/40 hover:text-white/70"
+                        className={`flex items-center gap-1.5 text-[10px] font-mono px-4 py-2 rounded-lg border transition ${tab === "leaderboard" ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/10 text-white/40 hover:text-white/70"
                             }`}
                     >
                         <Users size={12} /> LEADERBOARD
@@ -181,7 +181,7 @@ export default function RankingsPage() {
                             </div>
                             <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-3 text-center">
                                 <p className="text-[8px] font-mono text-white/30">TOTAL XP</p>
-                                <p className="text-xl font-bold font-mono text-cyan-300">{totalXp.toLocaleString()}</p>
+                                <p className="text-xl font-bold font-mono text-[rgb(var(--accent-light-rgb))]">{totalXp.toLocaleString()}</p>
                             </div>
                             <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-3 text-center">
                                 <p className="text-[8px] font-mono text-white/30">NEXT LEVEL</p>
@@ -208,13 +208,13 @@ export default function RankingsPage() {
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center gap-2">
                                                     <p className={`text-sm font-bold ${isUnlocked ? tier.color : "text-white/25"}`}>{tier.name}</p>
-                                                    {isCurrentTier && <span className="text-[8px] font-mono px-1.5 py-0.5 rounded bg-cyan-400/15 border border-cyan-400/30 text-cyan-300">YOU</span>}
+                                                    {isCurrentTier && <span className="text-[8px] font-mono px-1.5 py-0.5 rounded bg-[rgb(var(--accent-rgb)/0.15)] border border-[rgb(var(--accent-rgb)/0.3)] text-[rgb(var(--accent-light-rgb))]">YOU</span>}
                                                 </div>
                                                 <p className="text-[10px] font-mono text-white/30">Level {tier.minLevel}{nextTier ? ` — ${nextTier.minLevel - 1}` : "+"}</p>
                                             </div>
                                             <div className="shrink-0">
                                                 {isCurrentTier ? (
-                                                    <div className="flex items-center gap-1.5"><Zap size={12} className="text-cyan-300" /><span className="text-[10px] font-mono text-cyan-300">ACTIVE</span></div>
+                                                    <div className="flex items-center gap-1.5"><Zap size={12} className="text-[rgb(var(--accent-light-rgb))]" /><span className="text-[10px] font-mono text-[rgb(var(--accent-light-rgb))]">ACTIVE</span></div>
                                                 ) : isUnlocked ? (
                                                     <span className="text-[10px] font-mono text-white/25">ACHIEVED</span>
                                                 ) : (
@@ -241,7 +241,7 @@ export default function RankingsPage() {
                                 ].map(([label, xp]) => (
                                     <div key={label} className="flex items-center justify-between px-3 py-2 rounded-lg bg-white/[0.02] border border-white/[0.04]">
                                         <span className="text-white/50">{label}</span>
-                                        <span className="text-cyan-300">{xp}</span>
+                                        <span className="text-[rgb(var(--accent-light-rgb))]">{xp}</span>
                                     </div>
                                 ))}
                             </div>
@@ -261,7 +261,7 @@ export default function RankingsPage() {
                                 <button
                                     key={opt.key}
                                     onClick={() => setSortBy(opt.key)}
-                                    className={`flex items-center gap-1.5 text-[10px] font-mono px-3 py-1.5 rounded-lg border shrink-0 transition ${sortBy === opt.key ? "border-cyan-400/40 bg-cyan-400/10 text-cyan-300" : "border-white/10 text-white/40 hover:text-white/70"
+                                    className={`flex items-center gap-1.5 text-[10px] font-mono px-3 py-1.5 rounded-lg border shrink-0 transition ${sortBy === opt.key ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/10 text-white/40 hover:text-white/70"
                                         }`}
                                 >
                                     <opt.icon size={11} /> {opt.label}
@@ -289,9 +289,9 @@ export default function RankingsPage() {
                                     return (
                                         <div
                                             key={entry.user_id}
-                                            className={`flex items-center gap-3 rounded-lg border p-3 transition ${isMe ? "border-cyan-400/30 bg-cyan-400/[0.05]" : "border-white/[0.06] bg-white/[0.02]"
+                                            className={`flex items-center gap-3 rounded-lg border p-3 transition ${isMe ? "border-[rgb(var(--accent-rgb)/0.3)] bg-[rgb(var(--accent-rgb))]/[0.05]" : "border-white/[0.06] bg-white/[0.02]"
                                                 }`}
-                                            style={isMe ? { boxShadow: "0 0 15px -6px rgba(34,211,238,0.3)" } : undefined}
+                                            style={isMe ? { boxShadow: "0 0 15px -6px rgb(var(--accent-rgb) / 0.3)" } : undefined}
                                         >
                                             {/* Position */}
                                             <div className="w-8 text-center shrink-0">
@@ -312,8 +312,8 @@ export default function RankingsPage() {
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center gap-2">
-                                                    <p className={`text-sm font-bold truncate ${isMe ? "text-cyan-300" : "text-white/85"}`}>{entry.username}</p>
-                                                    {isMe && <span className="text-[8px] font-mono px-1.5 py-0.5 rounded bg-cyan-400/15 border border-cyan-400/30 text-cyan-300 shrink-0">YOU</span>}
+                                                    <p className={`text-sm font-bold truncate ${isMe ? "text-[rgb(var(--accent-light-rgb))]" : "text-white/85"}`}>{entry.username}</p>
+                                                    {isMe && <span className="text-[8px] font-mono px-1.5 py-0.5 rounded bg-[rgb(var(--accent-rgb)/0.15)] border border-[rgb(var(--accent-rgb)/0.3)] text-[rgb(var(--accent-light-rgb))] shrink-0">YOU</span>}
                                                 </div>
                                                 <p className="text-[10px] font-mono text-white/30">
                                                     LVL {entry.level} · {rank.name}

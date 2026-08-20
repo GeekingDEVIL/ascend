@@ -37,13 +37,13 @@ type TargetLift = {
 
 type Section = "stats" | "goals" | "training" | "social" | "preferences" | "data";
 
-const AVATAR_COLORS = ["#22d3ee", "#34d399", "#a78bfa", "#f97316", "#ef4444", "#f59e0b", "#ec4899", "#6366f1"];
+const AVATAR_COLORS = ["rgb(var(--accent-rgb))", "#34d399", "#a78bfa", "#f97316", "#ef4444", "#f59e0b", "#ec4899", "#6366f1"];
 
 const DEFAULT_PROFILE: ProfileData = {
     goal: "", height_cm: null, target_weight: null, experience: "beginner",
     training_frequency: 5, date_of_birth: null, unit_preference: "metric",
     workout_time_pref: null, injury_notes: null, social_instagram: null,
-    social_twitter: null, profile_visibility: "public", avatar_color: "#22d3ee",
+    social_twitter: null, profile_visibility: "public", avatar_color: "rgb(var(--accent-rgb))",
 };
 
 export default function ProfilePage() {
@@ -119,7 +119,7 @@ export default function ProfilePage() {
                 social_instagram: p.social_instagram,
                 social_twitter: p.social_twitter,
                 profile_visibility: p.profile_visibility ?? "public",
-                avatar_color: p.avatar_color ?? "#22d3ee",
+                avatar_color: p.avatar_color ?? "rgb(var(--accent-rgb))",
             });
         }
 
@@ -381,7 +381,7 @@ export default function ProfilePage() {
     if (loading) {
         return (
             <main className="min-h-screen bg-[#050914] text-white flex items-center justify-center">
-                <div className="w-8 h-8 border-2 border-cyan-400/40 border-t-cyan-300 rounded-full animate-spin" />
+                <div className="w-8 h-8 border-2 border-[rgb(var(--accent-rgb)/0.4)] border-t-[rgb(var(--accent-rgb))] rounded-full animate-spin" />
             </main>
         );
     }
@@ -389,7 +389,7 @@ export default function ProfilePage() {
     return (
         <main className="relative min-h-screen w-full bg-[#050914] text-white p-4 md:p-10 pb-24 md:pb-10 overflow-x-hidden">
             <div className="pointer-events-none fixed top-[-10%] left-1/2 -translate-x-1/2 w-[700px] h-[700px] bg-blue-600/15 rounded-full blur-[150px]" />
-            <div className="pointer-events-none fixed bottom-[-15%] right-[5%] w-[500px] h-[500px] bg-cyan-500/10 rounded-full blur-[130px]" />
+            <div className="pointer-events-none fixed bottom-[-15%] right-[5%] w-[500px] h-[500px] bg-[rgb(var(--accent-rgb)/0.1)] rounded-full blur-[130px]" />
 
             <div className="relative z-10 w-full max-w-2xl mx-auto space-y-5">
                 {/* Header + Avatar */}
@@ -421,9 +421,9 @@ export default function ProfilePage() {
                                     onChange={(e) => setUsernameInput(e.target.value)}
                                     onKeyDown={(e) => e.key === "Enter" && saveUsername()}
                                     disabled={usernameSaving}
-                                    className="min-w-0 flex-1 h-9 rounded-md bg-white/[0.06] border border-cyan-400/30 px-2.5 text-lg font-bold text-white/90 focus:outline-none focus:border-cyan-400/60 transition"
+                                    className="min-w-0 flex-1 h-9 rounded-md bg-white/[0.06] border border-[rgb(var(--accent-rgb)/0.3)] px-2.5 text-lg font-bold text-white/90 focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.6)] transition"
                                 />
-                                <button onClick={saveUsername} disabled={usernameSaving} className="shrink-0 w-8 h-8 rounded-md border border-cyan-400/30 text-cyan-300 flex items-center justify-center hover:bg-cyan-400/10 disabled:opacity-40 transition">
+                                <button onClick={saveUsername} disabled={usernameSaving} className="shrink-0 w-8 h-8 rounded-md border border-[rgb(var(--accent-rgb)/0.3)] text-[rgb(var(--accent-light-rgb))] flex items-center justify-center hover:bg-[rgb(var(--accent-rgb)/0.1)] disabled:opacity-40 transition">
                                     <Check size={14} />
                                 </button>
                                 <button onClick={() => setEditingUsername(false)} disabled={usernameSaving} className="shrink-0 w-8 h-8 rounded-md border border-white/10 text-white/40 flex items-center justify-center hover:text-white/70 disabled:opacity-40 transition">
@@ -433,7 +433,7 @@ export default function ProfilePage() {
                         ) : (
                             <button onClick={startEditingUsername} className="flex items-center gap-1.5 group max-w-full">
                                 <h1 className="text-xl font-bold text-white/90 truncate">{profile?.username ?? "Unknown"}</h1>
-                                <Pencil size={12} className="shrink-0 text-white/20 group-hover:text-cyan-300 transition" />
+                                <Pencil size={12} className="shrink-0 text-white/20 group-hover:text-[rgb(var(--accent-light-rgb))] transition" />
                             </button>
                         )}
                         <p className="text-xs font-mono text-white/40">{user?.email}</p>
@@ -444,7 +444,7 @@ export default function ProfilePage() {
                     <button
                         onClick={saveProfile}
                         disabled={saving}
-                        className={`shrink-0 flex items-center gap-1.5 text-[10px] font-mono px-3 py-2 rounded-lg border transition ${saved ? "border-emerald-400/40 text-emerald-300" : "border-cyan-400/30 text-cyan-300 hover:bg-cyan-400/10"
+                        className={`shrink-0 flex items-center gap-1.5 text-[10px] font-mono px-3 py-2 rounded-lg border transition ${saved ? "border-emerald-400/40 text-emerald-300" : "border-[rgb(var(--accent-rgb)/0.3)] text-[rgb(var(--accent-light-rgb))] hover:bg-[rgb(var(--accent-rgb)/0.1)]"
                             }`}
                     >
                         {saved ? <Check size={12} /> : <Save size={12} />}
@@ -478,7 +478,7 @@ export default function ProfilePage() {
                         <button
                             key={s.key}
                             onClick={() => setSection(s.key)}
-                            className={`flex items-center gap-1.5 text-[10px] font-mono px-3 py-2 rounded-lg border shrink-0 transition ${section === s.key ? "border-cyan-400/40 bg-cyan-400/10 text-cyan-300" : "border-white/10 text-white/40 hover:text-white/70"
+                            className={`flex items-center gap-1.5 text-[10px] font-mono px-3 py-2 rounded-lg border shrink-0 transition ${section === s.key ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/10 text-white/40 hover:text-white/70"
                                 }`}
                         >
                             <s.icon size={11} /> {s.label}
@@ -496,17 +496,17 @@ export default function ProfilePage() {
                                 <div>
                                     <label className="text-[9px] font-mono text-white/30 mb-1 block">HEIGHT ({heightUnit})</label>
                                     <input type="number" min="0" onWheel={(e) => (e.target as HTMLElement).blur()} value={data.height_cm ?? ""} onChange={(e) => updateField("height_cm", e.target.value ? Number(e.target.value) : null)} placeholder="—"
-                                        className="w-full h-11 rounded-lg bg-white/[0.04] border border-white/[0.08] text-center text-base font-bold font-mono focus:outline-none focus:border-cyan-400/40 transition" />
+                                        className="w-full h-11 rounded-lg bg-white/[0.04] border border-white/[0.08] text-center text-base font-bold font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition" />
                                 </div>
                                 <div>
                                     <label className="text-[9px] font-mono text-white/30 mb-1 block">TARGET WEIGHT ({weightUnit})</label>
                                     <input type="number" min="0" onWheel={(e) => (e.target as HTMLElement).blur()} value={data.target_weight ?? ""} onChange={(e) => updateField("target_weight", e.target.value ? Number(e.target.value) : null)} placeholder="—"
-                                        className="w-full h-11 rounded-lg bg-white/[0.04] border border-white/[0.08] text-center text-base font-bold font-mono focus:outline-none focus:border-cyan-400/40 transition" />
+                                        className="w-full h-11 rounded-lg bg-white/[0.04] border border-white/[0.08] text-center text-base font-bold font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition" />
                                 </div>
                                 <div>
                                     <label className="text-[9px] font-mono text-white/30 mb-1 block">DATE OF BIRTH</label>
                                     <input type="date" value={data.date_of_birth ?? ""} onChange={(e) => updateField("date_of_birth", e.target.value || null)}
-                                        className="w-full h-11 rounded-lg bg-white/[0.04] border border-white/[0.08] text-center text-sm font-mono focus:outline-none focus:border-cyan-400/40 transition" />
+                                        className="w-full h-11 rounded-lg bg-white/[0.04] border border-white/[0.08] text-center text-sm font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition" />
                                 </div>
                                 <div>
                                     <label className="text-[9px] font-mono text-white/30 mb-1 block">AGE</label>
@@ -517,9 +517,9 @@ export default function ProfilePage() {
                             </div>
 
                             {weightToGoal !== null && (
-                                <div className="rounded-lg border border-cyan-400/15 bg-cyan-400/[0.03] p-3 text-center">
-                                    <p className="text-[9px] font-mono text-cyan-300/50">DISTANCE TO TARGET</p>
-                                    <p className={`text-xl font-bold font-mono ${weightToGoal > 0 ? "text-orange-300" : weightToGoal < 0 ? "text-emerald-300" : "text-cyan-300"}`}>
+                                <div className="rounded-lg border border-[rgb(var(--accent-rgb)/0.15)] bg-[rgb(var(--accent-rgb))]/[0.03] p-3 text-center">
+                                    <p className="text-[9px] font-mono text-[rgb(var(--accent-light-rgb)/0.5)]">DISTANCE TO TARGET</p>
+                                    <p className={`text-xl font-bold font-mono ${weightToGoal > 0 ? "text-orange-300" : weightToGoal < 0 ? "text-emerald-300" : "text-[rgb(var(--accent-light-rgb))]"}`}>
                                         {weightToGoal > 0 ? `-${weightToGoal}` : weightToGoal < 0 ? `+${Math.abs(weightToGoal)}` : "✓ AT GOAL"} {weightUnit}
                                     </p>
                                     <p className="text-[9px] font-mono text-white/25 mt-1">
@@ -546,7 +546,7 @@ export default function ProfilePage() {
                                 onChange={(e) => updateField("injury_notes", e.target.value)}
                                 placeholder="e.g. Left shoulder impingement — avoid heavy overhead pressing"
                                 rows={3}
-                                className="w-full rounded-lg bg-white/[0.04] border border-white/[0.08] px-3 py-2.5 text-sm font-mono text-white/70 placeholder:text-white/20 focus:outline-none focus:border-cyan-400/40 transition resize-none"
+                                className="w-full rounded-lg bg-white/[0.04] border border-white/[0.08] px-3 py-2.5 text-sm font-mono text-white/70 placeholder:text-white/20 focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition resize-none"
                             />
                             <p className="text-[8px] font-mono text-white/20 mt-1.5">This is for your reference — the system will show warnings for exercises that affect noted areas.</p>
                         </div>
@@ -599,9 +599,9 @@ export default function ProfilePage() {
                                     />
                                 </div>
                                 <input type="number" min="0" onWheel={(e) => (e.target as HTMLElement).blur()} value={newLiftWeight} onChange={(e) => setNewLiftWeight(e.target.value)} placeholder={weightUnit}
-                                    className="w-20 shrink-0 rounded-lg bg-white/[0.04] border border-white/[0.08] text-center text-sm font-mono py-2.5 focus:outline-none focus:border-cyan-400/40 transition" />
+                                    className="w-20 shrink-0 rounded-lg bg-white/[0.04] border border-white/[0.08] text-center text-sm font-mono py-2.5 focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition" />
                                 <button onClick={addTargetLift} disabled={!newLiftExercise || !newLiftWeight}
-                                    className="shrink-0 w-11 h-11 rounded-lg border border-cyan-400/30 text-cyan-300 flex items-center justify-center hover:bg-cyan-400/10 disabled:opacity-30 transition">
+                                    className="shrink-0 w-11 h-11 rounded-lg border border-[rgb(var(--accent-rgb)/0.3)] text-[rgb(var(--accent-light-rgb))] flex items-center justify-center hover:bg-[rgb(var(--accent-rgb)/0.1)] disabled:opacity-30 transition">
                                     <Plus size={14} />
                                 </button>
                             </div>
@@ -620,7 +620,7 @@ export default function ProfilePage() {
                                 <div className="flex gap-2">
                                     {["beginner", "intermediate", "advanced"].map((lvl) => (
                                         <button key={lvl} onClick={() => updateField("experience", lvl)}
-                                            className={`flex-1 text-[10px] font-mono py-2.5 rounded-lg border transition ${data.experience === lvl ? "border-cyan-400/40 bg-cyan-400/10 text-cyan-300" : "border-white/10 text-white/40 hover:text-white/70"
+                                            className={`flex-1 text-[10px] font-mono py-2.5 rounded-lg border transition ${data.experience === lvl ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/10 text-white/40 hover:text-white/70"
                                                 }`}>
                                             {lvl.toUpperCase()}
                                         </button>
@@ -636,7 +636,7 @@ export default function ProfilePage() {
                             <div>
                                 <label className="text-[9px] font-mono text-white/30 mb-1 block">TRAINING DAYS PER WEEK: {data.training_frequency}</label>
                                 <input type="range" min="1" max="7" value={data.training_frequency} onChange={(e) => updateField("training_frequency", Number(e.target.value))}
-                                    className="w-full accent-cyan-400" />
+                                    className="w-full accent-[rgb(var(--accent-rgb))]" />
                                 <div className="flex justify-between text-[8px] font-mono text-white/20 mt-0.5">
                                     <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span>
                                 </div>
@@ -647,7 +647,7 @@ export default function ProfilePage() {
                                 <div className="flex gap-2">
                                     {[{ value: "morning", label: "MORNING", sub: "5-9 AM" }, { value: "afternoon", label: "AFTERNOON", sub: "12-5 PM" }, { value: "evening", label: "EVENING", sub: "5-10 PM" }].map((t) => (
                                         <button key={t.value} onClick={() => updateField("workout_time_pref", t.value)}
-                                            className={`flex-1 text-center py-2.5 rounded-lg border transition ${data.workout_time_pref === t.value ? "border-cyan-400/40 bg-cyan-400/10 text-cyan-300" : "border-white/10 text-white/40 hover:text-white/70"
+                                            className={`flex-1 text-center py-2.5 rounded-lg border transition ${data.workout_time_pref === t.value ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/10 text-white/40 hover:text-white/70"
                                                 }`}>
                                             <p className="text-[10px] font-mono">{t.label}</p>
                                             <p className="text-[8px] font-mono text-white/20">{t.sub}</p>
@@ -667,12 +667,12 @@ export default function ProfilePage() {
                         <div>
                             <label className="text-[9px] font-mono text-white/30 mb-1 flex items-center gap-1"><AtSign size={10} /> INSTAGRAM</label>
                             <input type="text" value={data.social_instagram ?? ""} onChange={(e) => updateField("social_instagram", e.target.value)} placeholder="@username"
-                                className="w-full rounded-lg bg-white/[0.04] border border-white/[0.08] px-3 py-2.5 text-sm font-mono text-white/70 placeholder:text-white/20 focus:outline-none focus:border-cyan-400/40 transition" />
+                                className="w-full rounded-lg bg-white/[0.04] border border-white/[0.08] px-3 py-2.5 text-sm font-mono text-white/70 placeholder:text-white/20 focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition" />
                         </div>
                         <div>
                             <label className="text-[9px] font-mono text-white/30 mb-1 flex items-center gap-1"><Globe size={10} /> X (TWITTER)</label>
                             <input type="text" value={data.social_twitter ?? ""} onChange={(e) => updateField("social_twitter", e.target.value)} placeholder="@handle"
-                                className="w-full rounded-lg bg-white/[0.04] border border-white/[0.08] px-3 py-2.5 text-sm font-mono text-white/70 placeholder:text-white/20 focus:outline-none focus:border-cyan-400/40 transition" />
+                                className="w-full rounded-lg bg-white/[0.04] border border-white/[0.08] px-3 py-2.5 text-sm font-mono text-white/70 placeholder:text-white/20 focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition" />
                         </div>
 
                         <div>
@@ -696,12 +696,12 @@ export default function ProfilePage() {
                             <p className="text-[10px] font-mono tracking-widest text-white/40">UNITS</p>
                             <div className="flex gap-2">
                                 <button onClick={() => updateField("unit_preference", "metric")}
-                                    className={`flex-1 text-center py-3 rounded-lg border transition ${data.unit_preference === "metric" ? "border-cyan-400/40 bg-cyan-400/10 text-cyan-300" : "border-white/10 text-white/40"}`}>
+                                    className={`flex-1 text-center py-3 rounded-lg border transition ${data.unit_preference === "metric" ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/10 text-white/40"}`}>
                                     <p className="text-sm font-mono font-bold">METRIC</p>
                                     <p className="text-[9px] font-mono text-white/30">KG · CM · KM</p>
                                 </button>
                                 <button onClick={() => updateField("unit_preference", "imperial")}
-                                    className={`flex-1 text-center py-3 rounded-lg border transition ${data.unit_preference === "imperial" ? "border-cyan-400/40 bg-cyan-400/10 text-cyan-300" : "border-white/10 text-white/40"}`}>
+                                    className={`flex-1 text-center py-3 rounded-lg border transition ${data.unit_preference === "imperial" ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/10 text-white/40"}`}>
                                     <p className="text-sm font-mono font-bold">IMPERIAL</p>
                                     <p className="text-[9px] font-mono text-white/30">LBS · FT/IN · MI</p>
                                 </button>
@@ -712,12 +712,12 @@ export default function ProfilePage() {
                             <p className="text-[10px] font-mono tracking-widest text-white/40">THEME</p>
                             <div className="flex gap-2">
                                 <button onClick={() => applyTheme("navy")}
-                                    className={`flex-1 text-center py-3 rounded-lg border transition ${theme === "navy" ? "border-cyan-400/40 bg-cyan-400/10 text-cyan-300" : "border-white/10 text-white/40"}`}>
+                                    className={`flex-1 text-center py-3 rounded-lg border transition ${theme === "navy" ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/10 text-white/40"}`}>
                                     <p className="text-sm font-mono font-bold">NAVY DARK</p>
                                     <p className="text-[9px] font-mono text-white/30">#050914</p>
                                 </button>
                                 <button onClick={() => applyTheme("oled")}
-                                    className={`flex-1 text-center py-3 rounded-lg border transition ${theme === "oled" ? "border-cyan-400/40 bg-cyan-400/10 text-cyan-300" : "border-white/10 text-white/40"}`}>
+                                    className={`flex-1 text-center py-3 rounded-lg border transition ${theme === "oled" ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/10 text-white/40"}`}>
                                     <p className="text-sm font-mono font-bold">OLED BLACK</p>
                                     <p className="text-[9px] font-mono text-white/30">#000000</p>
                                 </button>
@@ -752,7 +752,7 @@ export default function ProfilePage() {
                                     { value: "private", label: "PRIVATE", desc: "Hidden from leaderboard", icon: EyeOff },
                                 ].map((opt) => (
                                     <button key={opt.value} onClick={() => updateField("profile_visibility", opt.value)}
-                                        className={`flex-1 text-center py-3 rounded-lg border transition ${data.profile_visibility === opt.value ? "border-cyan-400/40 bg-cyan-400/10 text-cyan-300" : "border-white/10 text-white/40"}`}>
+                                        className={`flex-1 text-center py-3 rounded-lg border transition ${data.profile_visibility === opt.value ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/10 text-white/40"}`}>
                                         <opt.icon size={16} className="mx-auto mb-1" />
                                         <p className="text-[10px] font-mono font-bold">{opt.label}</p>
                                         <p className="text-[8px] font-mono text-white/20">{opt.desc}</p>
@@ -769,7 +769,7 @@ export default function ProfilePage() {
                         <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4">
                             <p className="text-[10px] font-mono tracking-widest text-white/40 mb-3">EXPORT DATA</p>
                             <p className="text-[10px] font-mono text-white/30 mb-3">Download your complete workout history as a CSV file.</p>
-                            <button onClick={exportData} className="flex items-center gap-2 text-sm font-mono px-4 py-2.5 rounded-lg border border-cyan-400/30 text-cyan-300 hover:bg-cyan-400/10 transition">
+                            <button onClick={exportData} className="flex items-center gap-2 text-sm font-mono px-4 py-2.5 rounded-lg border border-[rgb(var(--accent-rgb)/0.3)] text-[rgb(var(--accent-light-rgb))] hover:bg-[rgb(var(--accent-rgb)/0.1)] transition">
                                 <Download size={14} /> EXPORT WORKOUT HISTORY
                             </button>
                         </div>

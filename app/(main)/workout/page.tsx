@@ -95,7 +95,7 @@ function GlassStat({ label, value, accent }: { label: string; value: string; acc
     return (
         <div className="rounded-lg border border-white/10 bg-white/[0.03] backdrop-blur-sm px-3 py-2.5 text-center">
             <p className="text-[8px] font-mono tracking-widest text-white/30 mb-0.5">{label}</p>
-            <p className={`text-lg font-bold font-mono ${accent ? "text-cyan-300" : "text-white/90"}`}>{value}</p>
+            <p className={`text-lg font-bold font-mono ${accent ? "text-[rgb(var(--accent-light-rgb))]" : "text-white/90"}`}>{value}</p>
         </div>
     );
 }
@@ -129,10 +129,10 @@ function SwipeSet({ completed, onComplete, children }: { completed: boolean; onC
     return (
         <div className="relative overflow-hidden rounded-lg">
             <div
-                className="absolute inset-0 flex items-center pl-4 bg-cyan-400/20 rounded-lg pointer-events-none"
+                className="absolute inset-0 flex items-center pl-4 bg-[rgb(var(--accent-rgb)/0.2)] rounded-lg pointer-events-none"
                 style={{ opacity: dragX > 4 ? 1 : 0 }}
             >
-                <span className={`text-[10px] font-mono font-bold flex items-center gap-1.5 transition-transform ${pastThreshold ? "text-cyan-200 scale-110" : "text-cyan-300/70"}`}>
+                <span className={`text-[10px] font-mono font-bold flex items-center gap-1.5 transition-transform ${pastThreshold ? "text-[rgb(var(--accent-light-rgb))] scale-110" : "text-[rgb(var(--accent-light-rgb)/0.7)]"}`}>
                     <Check size={pastThreshold ? 16 : 12} />
                     {pastThreshold ? "RELEASE TO LOG" : "SWIPE TO LOG →"}
                 </span>
@@ -566,15 +566,15 @@ export default function WorkoutPage() {
         ctx.fillRect(0, 0, 1080, 1920);
 
         const glow = ctx.createRadialGradient(540, 300, 50, 540, 300, 700);
-        glow.addColorStop(0, "rgba(34,211,238,0.18)");
-        glow.addColorStop(1, "rgba(34,211,238,0)");
+        glow.addColorStop(0, "rgb(var(--accent-rgb) / 0.18)");
+        glow.addColorStop(1, "rgb(var(--accent-rgb) / 0)");
         ctx.fillStyle = glow;
         ctx.fillRect(0, 0, 1080, 1920);
 
         ctx.textAlign = "center";
 
         // Logo
-        ctx.fillStyle = "#22d3ee";
+        ctx.fillStyle = "rgb(var(--accent-rgb))";
         ctx.font = "bold 64px ui-monospace, monospace";
         ctx.fillText("ASCEND", 540, 180);
         ctx.fillStyle = "rgba(255,255,255,0.3)";
@@ -582,7 +582,7 @@ export default function WorkoutPage() {
         ctx.fillText("YOUR TRAINING SYSTEM", 540, 220);
 
         // Title + date
-        ctx.fillStyle = "rgba(34,211,238,0.6)";
+        ctx.fillStyle = "rgb(var(--accent-rgb) / 0.6)";
         ctx.font = "28px ui-monospace, monospace";
         ctx.fillText("SESSION COMPLETE", 540, 420);
         ctx.fillStyle = "#ffffff";
@@ -596,12 +596,12 @@ export default function WorkoutPage() {
         const badgeText = `LVL ${summary.level} · ${summary.rankName}`;
         ctx.font = "bold 34px ui-monospace, monospace";
         const badgeW = Math.max(300, ctx.measureText(badgeText).width + 100);
-        ctx.strokeStyle = "rgba(34,211,238,0.5)";
+        ctx.strokeStyle = "rgb(var(--accent-rgb) / 0.5)";
         ctx.lineWidth = 3;
         ctx.beginPath();
         ctx.roundRect(540 - badgeW / 2, 650, badgeW, 90, 45);
         ctx.stroke();
-        ctx.fillStyle = "#22d3ee";
+        ctx.fillStyle = "rgb(var(--accent-rgb))";
         ctx.fillText(badgeText, 540, 707);
 
         // Stats grid
@@ -626,7 +626,7 @@ export default function WorkoutPage() {
             ctx.fillStyle = "rgba(255,255,255,0.35)";
             ctx.font = "24px ui-monospace, monospace";
             ctx.fillText(label, x + cellW / 2, y + 70);
-            ctx.fillStyle = i === 3 ? "#22d3ee" : "#ffffff";
+            ctx.fillStyle = i === 3 ? "rgb(var(--accent-rgb))" : "#ffffff";
             ctx.font = "bold 56px ui-monospace, monospace";
             ctx.fillText(value, x + cellW / 2, y + 150);
         });
@@ -690,7 +690,7 @@ export default function WorkoutPage() {
     if (status === "loading") return (
         <main className="min-h-screen bg-[#050914] text-white flex items-center justify-center">
             <div className="text-center">
-                <div className="w-8 h-8 border-2 border-cyan-400/40 border-t-cyan-300 rounded-full animate-spin mx-auto mb-3" />
+                <div className="w-8 h-8 border-2 border-[rgb(var(--accent-rgb)/0.4)] border-t-[rgb(var(--accent-rgb))] rounded-full animate-spin mx-auto mb-3" />
                 <p className="text-xs font-mono text-white/40">Initializing protocol...</p>
             </div>
         </main>
@@ -713,15 +713,15 @@ export default function WorkoutPage() {
     if (status === "no_plan") return (
         <main className="min-h-screen bg-[#050914] text-white flex items-center justify-center p-6">
             <div className="text-center w-full max-w-sm">
-                <div className="w-14 h-14 mx-auto mb-5 rotate-45 border-2 border-cyan-400/30" />
-                <p className="text-lg font-bold tracking-widest text-cyan-300/70">NO WORKOUT PLANNED</p>
+                <div className="w-14 h-14 mx-auto mb-5 rotate-45 border-2 border-[rgb(var(--accent-rgb)/0.3)]" />
+                <p className="text-lg font-bold tracking-widest text-[rgb(var(--accent-light-rgb)/0.7)]">NO WORKOUT PLANNED</p>
                 <p className="text-sm text-white/40 mt-2 mb-8 max-w-xs mx-auto">Nothing scheduled for today. Set up a recurring plan, or log a session on the fly.</p>
 
                 <div className="space-y-3 text-left">
-                    <div className="rounded-lg border border-cyan-400/20 bg-cyan-400/[0.04] p-4">
+                    <div className="rounded-lg border border-[rgb(var(--accent-rgb)/0.2)] bg-[rgb(var(--accent-rgb))]/[0.04] p-4">
                         <p className="text-sm font-bold text-white/90 mb-1">Create a weekly plan</p>
                         <p className="text-[11px] text-white/40 mb-3">Set your training days once — it repeats automatically every week.</p>
-                        <button onClick={() => router.push("/schedule")} className="w-full text-sm font-bold py-3 rounded-lg bg-cyan-400 text-black hover:bg-cyan-300 transition" style={{ boxShadow: "0 0 20px -4px rgba(34,211,238,0.5)" }}>
+                        <button onClick={() => router.push("/schedule")} className="w-full text-sm font-bold py-3 rounded-lg bg-[rgb(var(--accent-rgb))] text-black hover:bg-[rgb(var(--accent-light-rgb))] transition" style={{ boxShadow: "0 0 20px -4px rgb(var(--accent-rgb) / 0.5)" }}>
                             CREATE WEEKLY PLAN
                         </button>
                     </div>
@@ -729,7 +729,7 @@ export default function WorkoutPage() {
                     <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-4">
                         <p className="text-sm font-bold text-white/90 mb-1">Just train today</p>
                         <p className="text-[11px] text-white/40 mb-3">No plan needed — pick exercises and log as you go.</p>
-                        <button onClick={() => setStatus("freestyle")} className="w-full text-sm font-mono font-bold py-3 rounded-lg border border-white/15 text-white/70 hover:border-cyan-400/40 hover:text-cyan-300 transition">
+                        <button onClick={() => setStatus("freestyle")} className="w-full text-sm font-mono font-bold py-3 rounded-lg border border-white/15 text-white/70 hover:border-[rgb(var(--accent-rgb)/0.4)] hover:text-[rgb(var(--accent-light-rgb))] transition">
                             START FREESTYLE SESSION
                         </button>
                     </div>
@@ -741,15 +741,15 @@ export default function WorkoutPage() {
     // ── FREESTYLE (BUILD) ──
     if (status === "freestyle") return (
         <main className="min-h-screen bg-[#050914] text-white p-4 md:p-10 pb-24">
-            <div className="pointer-events-none fixed top-[-10%] left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-cyan-500/10 rounded-full blur-[130px]" />
+            <div className="pointer-events-none fixed top-[-10%] left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[rgb(var(--accent-rgb)/0.1)] rounded-full blur-[130px]" />
             <div className="relative z-10 w-full max-w-lg mx-auto">
                 <button onClick={() => { setFreestyleExercises([]); setStatus("no_plan"); }} className="text-[10px] font-mono text-white/30 hover:text-white/60 transition mb-4">
                     ← Back
                 </button>
-                <p className="text-[10px] font-mono tracking-[0.2em] text-cyan-300/60 mb-0.5">FREESTYLE</p>
+                <p className="text-[10px] font-mono tracking-[0.2em] text-[rgb(var(--accent-light-rgb)/0.6)] mb-0.5">FREESTYLE</p>
                 <h1 className="text-xl md:text-2xl font-bold text-white/95 mb-5">Freestyle Session</h1>
 
-                <button onClick={() => setShowFreestyleAddModal(true)} className="w-full flex items-center justify-center gap-2 text-sm font-mono font-bold py-3.5 rounded-lg border border-cyan-400/30 bg-cyan-400/[0.05] text-cyan-300 hover:bg-cyan-400/10 transition mb-4">
+                <button onClick={() => setShowFreestyleAddModal(true)} className="w-full flex items-center justify-center gap-2 text-sm font-mono font-bold py-3.5 rounded-lg border border-[rgb(var(--accent-rgb)/0.3)] bg-[rgb(var(--accent-rgb))]/[0.05] text-[rgb(var(--accent-light-rgb))] hover:bg-[rgb(var(--accent-rgb)/0.1)] transition mb-4">
                     <Plus size={16} /> ADD EXERCISE
                 </button>
 
@@ -761,7 +761,7 @@ export default function WorkoutPage() {
                     <div className="space-y-2 mb-6">
                         {freestyleExercises.map((ex, i) => (
                             <div key={ex.id} className="flex items-center gap-3 rounded-lg border border-white/[0.08] bg-white/[0.02] px-4 py-3">
-                                <span className="text-[10px] font-mono text-cyan-300/40 w-5 shrink-0">{String(i + 1).padStart(2, "0")}</span>
+                                <span className="text-[10px] font-mono text-[rgb(var(--accent-light-rgb)/0.4)] w-5 shrink-0">{String(i + 1).padStart(2, "0")}</span>
                                 <div className="flex-1 min-w-0">
                                     <p className="text-sm font-bold text-white/90 truncate">{ex.name}</p>
                                     <p className="text-[10px] font-mono text-white/35">{ex.body_segment}</p>
@@ -778,8 +778,8 @@ export default function WorkoutPage() {
                     <button
                         onClick={beginFreestyleSession}
                         disabled={startingFreestyle}
-                        className="w-full flex items-center justify-center gap-2.5 text-sm font-bold py-4 rounded-lg bg-cyan-400 text-black hover:bg-cyan-300 disabled:opacity-50 transition"
-                        style={{ boxShadow: "0 0 25px -4px rgba(34,211,238,0.6)" }}
+                        className="w-full flex items-center justify-center gap-2.5 text-sm font-bold py-4 rounded-lg bg-[rgb(var(--accent-rgb))] text-black hover:bg-[rgb(var(--accent-light-rgb))] disabled:opacity-50 transition"
+                        style={{ boxShadow: "0 0 25px -4px rgb(var(--accent-rgb) / 0.6)" }}
                     >
                         <Play size={18} fill="black" /> {startingFreestyle ? "STARTING..." : "BEGIN SESSION"}
                     </button>
@@ -793,14 +793,14 @@ export default function WorkoutPage() {
     // ── COMPLETED ──
     if (status === "completed" && summary) return (
         <main className="min-h-screen bg-[#050914] text-white flex items-center justify-center p-4">
-            <div className="pointer-events-none fixed top-[-10%] left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-cyan-500/20 rounded-full blur-[150px]" />
+            <div className="pointer-events-none fixed top-[-10%] left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[rgb(var(--accent-rgb)/0.2)] rounded-full blur-[150px]" />
             <div className="relative z-10 w-full max-w-md">
                 <BeamBorder className="p-6">
                     <div className="text-center mb-5">
-                        <div className="w-14 h-14 mx-auto mb-3 rounded-full bg-cyan-400/15 border border-cyan-300/30 flex items-center justify-center" style={{ boxShadow: "0 0 25px -4px rgba(34,211,238,0.5)" }}>
-                            <Award size={26} className="text-cyan-300" />
+                        <div className="w-14 h-14 mx-auto mb-3 rounded-full bg-[rgb(var(--accent-rgb)/0.15)] border border-[rgb(var(--accent-light-rgb)/0.3)] flex items-center justify-center" style={{ boxShadow: "0 0 25px -4px rgb(var(--accent-rgb) / 0.5)" }}>
+                            <Award size={26} className="text-[rgb(var(--accent-light-rgb))]" />
                         </div>
-                        <p className="text-[10px] font-mono tracking-[0.3em] text-cyan-300/70">SESSION COMPLETE</p>
+                        <p className="text-[10px] font-mono tracking-[0.3em] text-[rgb(var(--accent-light-rgb)/0.7)]">SESSION COMPLETE</p>
                         <p className="text-xl font-bold text-white/95 mt-1">{dayTitle}</p>
                     </div>
 
@@ -811,22 +811,22 @@ export default function WorkoutPage() {
                         <GlassStat label="XP EARNED" value={`+${summary.xpBreakdown.total}`} accent />
                     </div>
 
-                    <div className="rounded-lg border border-cyan-400/15 bg-cyan-400/[0.03] p-3 mb-5">
-                        <p className="text-[8px] font-mono tracking-widest text-cyan-300/50 mb-2">XP BREAKDOWN</p>
+                    <div className="rounded-lg border border-[rgb(var(--accent-rgb)/0.15)] bg-[rgb(var(--accent-rgb))]/[0.03] p-3 mb-5">
+                        <p className="text-[8px] font-mono tracking-widest text-[rgb(var(--accent-light-rgb)/0.5)] mb-2">XP BREAKDOWN</p>
                         {summary.xpBreakdown.details.map((d, i) => (
                             <p key={i} className="text-[10px] font-mono text-white/50 leading-relaxed">{d}</p>
                         ))}
                     </div>
 
                     <div className="flex gap-2">
-                        <button onClick={() => router.push("/")} className="flex-1 text-sm font-mono font-bold py-3.5 rounded-lg border border-cyan-400/40 text-cyan-300 hover:bg-cyan-400/10 transition">
+                        <button onClick={() => router.push("/")} className="flex-1 text-sm font-mono font-bold py-3.5 rounded-lg border border-[rgb(var(--accent-rgb)/0.4)] text-[rgb(var(--accent-light-rgb))] hover:bg-[rgb(var(--accent-rgb)/0.1)] transition">
                             DASHBOARD
                         </button>
-                        <button onClick={() => router.push("/progress")} className="flex-1 text-sm font-mono font-bold py-3.5 rounded-lg bg-cyan-400 text-black hover:bg-cyan-300 transition" style={{ boxShadow: "0 0 20px -4px rgba(34,211,238,0.6)" }}>
+                        <button onClick={() => router.push("/progress")} className="flex-1 text-sm font-mono font-bold py-3.5 rounded-lg bg-[rgb(var(--accent-rgb))] text-black hover:bg-[rgb(var(--accent-light-rgb))] transition" style={{ boxShadow: "0 0 20px -4px rgb(var(--accent-rgb) / 0.6)" }}>
                             VIEW PROGRESS
                         </button>
-                        <button onClick={handleShare} disabled={sharing} title="Share" className="shrink-0 w-12 flex items-center justify-center rounded-lg border border-white/15 text-white/60 hover:text-cyan-300 hover:border-cyan-400/40 disabled:opacity-40 transition">
-                            {sharing ? <div className="w-4 h-4 border-2 border-white/30 border-t-cyan-300 rounded-full animate-spin" /> : <Share2 size={16} />}
+                        <button onClick={handleShare} disabled={sharing} title="Share" className="shrink-0 w-12 flex items-center justify-center rounded-lg border border-white/15 text-white/60 hover:text-[rgb(var(--accent-light-rgb))] hover:border-[rgb(var(--accent-rgb)/0.4)] disabled:opacity-40 transition">
+                            {sharing ? <div className="w-4 h-4 border-2 border-white/30 border-t-[rgb(var(--accent-rgb))] rounded-full animate-spin" /> : <Share2 size={16} />}
                         </button>
                     </div>
                 </BeamBorder>
@@ -834,7 +834,7 @@ export default function WorkoutPage() {
 
             {showFreestylePrompt && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-                    <div className="w-full max-w-sm rounded-lg border border-cyan-400/20 bg-[#0a1120] p-5">
+                    <div className="w-full max-w-sm rounded-lg border border-[rgb(var(--accent-rgb)/0.2)] bg-[#0a1120] p-5">
                         <p className="text-sm font-bold text-white/90 mb-2">
                             Want to make this your regular {new Date().toLocaleDateString(undefined, { weekday: "long" })} workout?
                         </p>
@@ -845,7 +845,7 @@ export default function WorkoutPage() {
                             <button onClick={() => setShowFreestylePrompt(false)} className="flex-1 text-sm font-mono py-2.5 rounded-lg border border-white/15 text-white/50 hover:text-white/80 transition">
                                 NO THANKS
                             </button>
-                            <button onClick={saveFreestyleAsRecurringPlan} disabled={savingFreestylePlan} className="flex-1 text-sm font-mono font-bold py-2.5 rounded-lg bg-cyan-400 text-black hover:bg-cyan-300 disabled:opacity-50 transition">
+                            <button onClick={saveFreestyleAsRecurringPlan} disabled={savingFreestylePlan} className="flex-1 text-sm font-mono font-bold py-2.5 rounded-lg bg-[rgb(var(--accent-rgb))] text-black hover:bg-[rgb(var(--accent-light-rgb))] disabled:opacity-50 transition">
                                 {savingFreestylePlan ? "SAVING..." : "YES, SAVE IT"}
                             </button>
                         </div>
@@ -858,14 +858,14 @@ export default function WorkoutPage() {
     if (status === "completed_today") {
         return (
             <main className="min-h-screen bg-[#050914] text-white flex items-center justify-center p-4">
-                <div className="pointer-events-none fixed top-[-10%] left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-cyan-500/20 rounded-full blur-[150px]" />
+                <div className="pointer-events-none fixed top-[-10%] left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[rgb(var(--accent-rgb)/0.2)] rounded-full blur-[150px]" />
                 <div className="relative z-10 w-full max-w-md">
-                    <div className="rounded-xl border border-cyan-400/20 bg-[#0a1120]/95 p-6">
+                    <div className="rounded-xl border border-[rgb(var(--accent-rgb)/0.2)] bg-[#0a1120]/95 p-6">
                         <div className="text-center mb-5">
-                            <div className="w-14 h-14 mx-auto mb-3 rounded-full bg-cyan-400/15 border border-cyan-300/30 flex items-center justify-center" style={{ boxShadow: "0 0 25px -4px rgba(34,211,238,0.5)" }}>
-                                <Check size={26} className="text-cyan-300" />
+                            <div className="w-14 h-14 mx-auto mb-3 rounded-full bg-[rgb(var(--accent-rgb)/0.15)] border border-[rgb(var(--accent-light-rgb)/0.3)] flex items-center justify-center" style={{ boxShadow: "0 0 25px -4px rgb(var(--accent-rgb) / 0.5)" }}>
+                                <Check size={26} className="text-[rgb(var(--accent-light-rgb))]" />
                             </div>
-                            <p className="text-[10px] font-mono tracking-[0.3em] text-cyan-300/70">TODAY'S SESSION</p>
+                            <p className="text-[10px] font-mono tracking-[0.3em] text-[rgb(var(--accent-light-rgb)/0.7)]">TODAY'S SESSION</p>
                             <p className="text-xl font-bold text-white/95 mt-1">{dayTitle}</p>
                         </div>
 
@@ -883,9 +883,9 @@ export default function WorkoutPage() {
                                     <p className="text-[8px] font-mono text-white/30">VOLUME</p>
                                     <p className="text-lg font-bold font-mono text-white/90">{Math.round(summary.volume).toLocaleString()} KG</p>
                                 </div>
-                                <div className="rounded-lg border border-cyan-400/20 bg-cyan-400/[0.05] p-3 text-center">
-                                    <p className="text-[8px] font-mono text-cyan-300/50">XP EARNED</p>
-                                    <p className="text-lg font-bold font-mono text-cyan-300">+{summary.xpBreakdown.total}</p>
+                                <div className="rounded-lg border border-[rgb(var(--accent-rgb)/0.2)] bg-[rgb(var(--accent-rgb))]/[0.05] p-3 text-center">
+                                    <p className="text-[8px] font-mono text-[rgb(var(--accent-light-rgb)/0.5)]">XP EARNED</p>
+                                    <p className="text-lg font-bold font-mono text-[rgb(var(--accent-light-rgb))]">+{summary.xpBreakdown.total}</p>
                                 </div>
                             </div>
                         )}
@@ -893,10 +893,10 @@ export default function WorkoutPage() {
                         <p className="text-[10px] font-mono text-white/25 text-center mb-5">Completed for today. Come back tomorrow.</p>
 
                         <div className="flex gap-2">
-                            <button onClick={() => router.push("/")} className="flex-1 text-sm font-mono font-bold py-3 rounded-lg border border-cyan-400/40 text-cyan-300 hover:bg-cyan-400/10 transition">
+                            <button onClick={() => router.push("/")} className="flex-1 text-sm font-mono font-bold py-3 rounded-lg border border-[rgb(var(--accent-rgb)/0.4)] text-[rgb(var(--accent-light-rgb))] hover:bg-[rgb(var(--accent-rgb)/0.1)] transition">
                                 DASHBOARD
                             </button>
-                            <button onClick={() => router.push("/progress")} className="flex-1 text-sm font-mono font-bold py-3 rounded-lg bg-cyan-400 text-black hover:bg-cyan-300 transition">
+                            <button onClick={() => router.push("/progress")} className="flex-1 text-sm font-mono font-bold py-3 rounded-lg bg-[rgb(var(--accent-rgb))] text-black hover:bg-[rgb(var(--accent-light-rgb))] transition">
                                 VIEW PROGRESS
                             </button>
                         </div>
@@ -911,28 +911,28 @@ export default function WorkoutPage() {
         <main className="relative min-h-screen w-full bg-[#050914] text-white pb-36 md:pb-10 overflow-x-hidden">
             {/* Ambient glow */}
             <div className="pointer-events-none fixed top-[-10%] left-1/2 -translate-x-1/2 w-[700px] h-[700px] bg-blue-600/15 rounded-full blur-[150px]" />
-            <div className="pointer-events-none fixed bottom-[-15%] right-[5%] w-[500px] h-[500px] bg-cyan-500/10 rounded-full blur-[130px]" />
+            <div className="pointer-events-none fixed bottom-[-15%] right-[5%] w-[500px] h-[500px] bg-[rgb(var(--accent-rgb)/0.1)] rounded-full blur-[130px]" />
 
             <div className="relative z-10 w-full max-w-2xl mx-auto p-4 md:p-10 space-y-4">
 
                 {/* ── TOP BAR ── */}
                 <div className="flex items-center justify-between">
                     <div>
-                        <p className="text-[10px] font-mono tracking-[0.2em] text-cyan-300/60 mb-0.5">
+                        <p className="text-[10px] font-mono tracking-[0.2em] text-[rgb(var(--accent-light-rgb)/0.6)] mb-0.5">
                             {status === "active" ? "ACTIVE SESSION" : "PROTOCOL READY"}
                         </p>
                         <h1 className="text-xl md:text-2xl font-bold text-white/95">{dayTitle}</h1>
                     </div>
                     {status === "active" && (
-                        <div className="text-right shrink-0 rounded-lg border border-cyan-400/20 bg-cyan-400/[0.05] px-3 py-1.5">
-                            <p className="text-[8px] font-mono text-cyan-300/50">ELAPSED</p>
-                            <p className="text-lg font-bold font-mono text-cyan-300">{formatClock(elapsed)}</p>
+                        <div className="text-right shrink-0 rounded-lg border border-[rgb(var(--accent-rgb)/0.2)] bg-[rgb(var(--accent-rgb))]/[0.05] px-3 py-1.5">
+                            <p className="text-[8px] font-mono text-[rgb(var(--accent-light-rgb)/0.5)]">ELAPSED</p>
+                            <p className="text-lg font-bold font-mono text-[rgb(var(--accent-light-rgb))]">{formatClock(elapsed)}</p>
                         </div>
                     )}
                     {status === "not_started" && (
                         <button
                             onClick={() => router.push("/schedule")}
-                            className="shrink-0 flex items-center gap-1.5 text-[10px] font-mono px-3 py-2 rounded-lg border border-white/10 text-white/40 hover:text-cyan-300 hover:border-cyan-400/30 transition"
+                            className="shrink-0 flex items-center gap-1.5 text-[10px] font-mono px-3 py-2 rounded-lg border border-white/10 text-white/40 hover:text-[rgb(var(--accent-light-rgb))] hover:border-[rgb(var(--accent-rgb)/0.3)] transition"
                         >
                             <RefreshCw size={11} /> CHANGE SCHEDULE
                         </button>
@@ -943,7 +943,7 @@ export default function WorkoutPage() {
                 {status === "active" && (
                     <div className="flex items-center gap-3">
                         <div className="flex-1 h-2 rounded-full bg-white/[0.06] overflow-hidden border border-white/[0.04]">
-                            <div className="h-full bg-gradient-to-r from-cyan-500 to-cyan-300 rounded-full transition-all" style={{ width: `${totalPlanned ? Math.min(100, (completedCount / totalPlanned) * 100) : 0}%`, boxShadow: "0 0 8px rgba(34,211,238,0.4)" }} />
+                            <div className="h-full bg-gradient-to-r from-[rgb(var(--accent-rgb))] to-[rgb(var(--accent-light-rgb))] rounded-full transition-all" style={{ width: `${totalPlanned ? Math.min(100, (completedCount / totalPlanned) * 100) : 0}%`, boxShadow: "0 0 8px rgb(var(--accent-rgb) / 0.4)" }} />
                         </div>
                         <p className="text-[10px] font-mono text-white/40 shrink-0">{completedCount}/{totalPlanned}</p>
                     </div>
@@ -967,7 +967,7 @@ export default function WorkoutPage() {
                                     value={preWorkoutWeight}
                                     onChange={(e) => setPreWorkoutWeight(e.target.value)}
                                     placeholder="—"
-                                    className="flex-1 min-w-0 h-11 rounded-lg bg-white/[0.04] border border-white/[0.08] text-center text-lg font-bold font-mono focus:outline-none focus:border-cyan-400/40 transition"
+                                    className="flex-1 min-w-0 h-11 rounded-lg bg-white/[0.04] border border-white/[0.08] text-center text-lg font-bold font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition"
                                 />
                                 <span className="text-sm font-mono text-white/30 shrink-0">KG</span>
                                 {preWorkoutWeight && !weightLogged && (
@@ -981,18 +981,18 @@ export default function WorkoutPage() {
                                             });
                                             setWeightLogged(true);
                                         }}
-                                        className="shrink-0 text-[10px] font-mono px-3 py-2 rounded-lg border border-cyan-400/30 text-cyan-300 hover:bg-cyan-400/10 transition"
+                                        className="shrink-0 text-[10px] font-mono px-3 py-2 rounded-lg border border-[rgb(var(--accent-rgb)/0.3)] text-[rgb(var(--accent-light-rgb))] hover:bg-[rgb(var(--accent-rgb)/0.1)] transition"
                                     >
                                         LOG
                                     </button>
                                 )}
-                                {weightLogged && <Check size={16} className="shrink-0 text-cyan-300" />}
+                                {weightLogged && <Check size={16} className="shrink-0 text-[rgb(var(--accent-light-rgb))]" />}
                             </div>
                             <p className="text-[9px] font-mono text-white/20 mt-1.5">Optional — helps track body composition over time.</p>
                         </div>
 
 
-                        <button onClick={startWorkout} className="w-full flex items-center justify-center gap-2.5 text-sm font-bold py-4 rounded-lg bg-cyan-400 text-black hover:bg-cyan-300 transition mb-5" style={{ boxShadow: "0 0 25px -4px rgba(34,211,238,0.6)" }}>
+                        <button onClick={startWorkout} className="w-full flex items-center justify-center gap-2.5 text-sm font-bold py-4 rounded-lg bg-[rgb(var(--accent-rgb))] text-black hover:bg-[rgb(var(--accent-light-rgb))] transition mb-5" style={{ boxShadow: "0 0 25px -4px rgb(var(--accent-rgb) / 0.6)" }}>
                             <Play size={18} fill="black" /> BEGIN SESSION
                         </button>
 
@@ -1002,7 +1002,7 @@ export default function WorkoutPage() {
                                 return (
                                     <div key={ex.id} className="rounded-lg border border-white/[0.08] bg-white/[0.02] px-4 py-3">
                                         <div className="flex items-center gap-3">
-                                            <span className="text-[10px] font-mono text-cyan-300/40 w-5 shrink-0">{String(i + 1).padStart(2, "0")}</span>
+                                            <span className="text-[10px] font-mono text-[rgb(var(--accent-light-rgb)/0.4)] w-5 shrink-0">{String(i + 1).padStart(2, "0")}</span>
                                             <div className="flex-1 min-w-0">
                                                 <p className="text-sm font-bold text-white/90 truncate">{ex.name}</p>
                                                 <p className="text-[10px] font-mono text-white/35">{ex.body_segment}</p>
@@ -1025,7 +1025,7 @@ export default function WorkoutPage() {
                                             </div>
                                         </div>
                                         {hint && hint.type !== "first_time" && (
-                                            <p className="text-[9px] font-mono text-cyan-300/50 mt-1.5 ml-8">
+                                            <p className="text-[9px] font-mono text-[rgb(var(--accent-light-rgb)/0.5)] mt-1.5 ml-8">
                                                 <TrendingUp size={10} className="inline mr-1 -mt-0.5" />{hint.text}
                                             </p>
                                         )}
@@ -1048,12 +1048,12 @@ export default function WorkoutPage() {
                             const allDone = done === sets.length && sets.length > 0;
 
                             return (
-                                <div key={ex.id} className={`rounded-lg border overflow-hidden transition-all ${allDone ? "border-cyan-400/30 bg-cyan-400/[0.03]" : "border-white/[0.08] bg-white/[0.02]"}`}
-                                    style={isOpen ? { boxShadow: "0 0 20px -8px rgba(34,211,238,0.25)" } : undefined}
+                                <div key={ex.id} className={`rounded-lg border overflow-hidden transition-all ${allDone ? "border-[rgb(var(--accent-rgb)/0.3)] bg-[rgb(var(--accent-rgb))]/[0.03]" : "border-white/[0.08] bg-white/[0.02]"}`}
+                                    style={isOpen ? { boxShadow: "0 0 20px -8px rgb(var(--accent-rgb) / 0.25)" } : undefined}
                                 >
                                     {/* Exercise header */}
                                     <button onClick={() => setExpandedId(isOpen ? null : ex.id)} className="w-full flex items-center gap-3 px-4 py-3.5 text-left">
-                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-[10px] font-mono font-bold ${allDone ? "bg-cyan-400/20 text-cyan-300 border border-cyan-400/30" : "bg-white/[0.05] text-white/30 border border-white/10"}`}>
+                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-[10px] font-mono font-bold ${allDone ? "bg-[rgb(var(--accent-rgb)/0.2)] text-[rgb(var(--accent-light-rgb))] border border-[rgb(var(--accent-rgb)/0.3)]" : "bg-white/[0.05] text-white/30 border border-white/10"}`}>
                                             {allDone ? <Check size={14} /> : String(i + 1).padStart(2, "0")}
                                         </div>
                                         <div className="flex-1 min-w-0">
@@ -1071,15 +1071,15 @@ export default function WorkoutPage() {
                                         <div className="border-t border-white/[0.06]">
                                             {/* Overload hint */}
                                             {hint && hint.type !== "first_time" && (
-                                                <div className="mx-4 mt-3 flex items-center gap-2 rounded-lg bg-cyan-400/[0.06] border border-cyan-400/15 px-3 py-2">
-                                                    <TrendingUp size={12} className="text-cyan-300/60 shrink-0" />
-                                                    <p className="text-[10px] font-mono text-cyan-300/70">{hint.text}</p>
+                                                <div className="mx-4 mt-3 flex items-center gap-2 rounded-lg bg-[rgb(var(--accent-rgb))]/[0.06] border border-[rgb(var(--accent-rgb)/0.15)] px-3 py-2">
+                                                    <TrendingUp size={12} className="text-[rgb(var(--accent-light-rgb)/0.6)] shrink-0" />
+                                                    <p className="text-[10px] font-mono text-[rgb(var(--accent-light-rgb)/0.7)]">{hint.text}</p>
                                                 </div>
                                             )}
 
                                             {/* Swap button */}
                                             <div className="px-4 pt-2.5 pb-1">
-                                                <button onClick={() => setSwapTargetId(ex.id)} className="flex items-center gap-1.5 text-white/25 text-[10px] font-mono hover:text-cyan-300/60 transition">
+                                                <button onClick={() => setSwapTargetId(ex.id)} className="flex items-center gap-1.5 text-white/25 text-[10px] font-mono hover:text-[rgb(var(--accent-light-rgb)/0.6)] transition">
                                                     <RefreshCw size={10} /> Swap exercise
                                                 </button>
                                             </div>
@@ -1097,7 +1097,7 @@ export default function WorkoutPage() {
                                                                 onChange={(e) => updateSet(ex.id, 0, "duration", e.target.value)}
                                                                 disabled={sets[0]?.completed}
                                                                 placeholder="—"
-                                                                className="w-full h-12 rounded-lg bg-white/[0.04] border border-white/[0.08] text-center text-xl font-bold font-mono focus:outline-none focus:border-cyan-400/40 disabled:opacity-40 transition"
+                                                                className="w-full h-12 rounded-lg bg-white/[0.04] border border-white/[0.08] text-center text-xl font-bold font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] disabled:opacity-40 transition"
                                                             />
                                                         </div>
                                                         <div>
@@ -1109,7 +1109,7 @@ export default function WorkoutPage() {
                                                                 onChange={(e) => updateSet(ex.id, 0, "distance", e.target.value)}
                                                                 disabled={sets[0]?.completed}
                                                                 placeholder="—"
-                                                                className="w-full h-12 rounded-lg bg-white/[0.04] border border-white/[0.08] text-center text-xl font-bold font-mono focus:outline-none focus:border-cyan-400/40 disabled:opacity-40 transition"
+                                                                className="w-full h-12 rounded-lg bg-white/[0.04] border border-white/[0.08] text-center text-xl font-bold font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] disabled:opacity-40 transition"
                                                             />
                                                         </div>
                                                         <div>
@@ -1121,7 +1121,7 @@ export default function WorkoutPage() {
                                                                 onChange={(e) => updateSet(ex.id, 0, "weight", e.target.value)}
                                                                 disabled={sets[0]?.completed}
                                                                 placeholder="—"
-                                                                className="w-full h-12 rounded-lg bg-white/[0.04] border border-white/[0.08] text-center text-xl font-bold font-mono focus:outline-none focus:border-cyan-400/40 disabled:opacity-40 transition"
+                                                                className="w-full h-12 rounded-lg bg-white/[0.04] border border-white/[0.08] text-center text-xl font-bold font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] disabled:opacity-40 transition"
                                                             />
                                                         </div>
                                                         <div>
@@ -1133,7 +1133,7 @@ export default function WorkoutPage() {
                                                                 onChange={(e) => updateSet(ex.id, 0, "reps", e.target.value)}
                                                                 disabled={sets[0]?.completed}
                                                                 placeholder="—"
-                                                                className="w-full h-12 rounded-lg bg-white/[0.04] border border-white/[0.08] text-center text-xl font-bold font-mono focus:outline-none focus:border-cyan-400/40 disabled:opacity-40 transition"
+                                                                className="w-full h-12 rounded-lg bg-white/[0.04] border border-white/[0.08] text-center text-xl font-bold font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] disabled:opacity-40 transition"
                                                             />
                                                         </div>
                                                     </div>
@@ -1143,17 +1143,17 @@ export default function WorkoutPage() {
                                                         onChange={(e) => updateSet(ex.id, 0, "note", e.target.value)}
                                                         disabled={sets[0]?.completed}
                                                         placeholder="Notes (optional)"
-                                                        className="w-full text-[10px] font-mono rounded-lg bg-transparent border border-white/[0.06] px-3 py-2 text-white/40 placeholder:text-white/15 focus:outline-none focus:border-cyan-400/20 disabled:opacity-40 transition"
+                                                        className="w-full text-[10px] font-mono rounded-lg bg-transparent border border-white/[0.06] px-3 py-2 text-white/40 placeholder:text-white/15 focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.2)] disabled:opacity-40 transition"
                                                     />
                                                     {!sets[0]?.completed ? (
                                                         <button
                                                             onClick={() => completeSet(ex, 0)}
-                                                            className="w-full text-[10px] font-mono font-bold py-3 rounded-lg border border-cyan-400/30 bg-cyan-400/10 text-cyan-300 hover:bg-cyan-400/15 transition"
+                                                            className="w-full text-[10px] font-mono font-bold py-3 rounded-lg border border-[rgb(var(--accent-rgb)/0.3)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))] hover:bg-[rgb(var(--accent-rgb)/0.15)] transition"
                                                         >
                                                             LOG CARDIO ✓
                                                         </button>
                                                     ) : (
-                                                        <p className="text-[10px] font-mono text-cyan-300/50 text-center py-2">✓ Logged</p>
+                                                        <p className="text-[10px] font-mono text-[rgb(var(--accent-light-rgb)/0.5)] text-center py-2">✓ Logged</p>
                                                     )}
                                                 </div>
                                             ) : (
@@ -1173,23 +1173,23 @@ export default function WorkoutPage() {
                                                         <div key={s.index}>
                                                             <SwipeSet completed={s.completed} onComplete={() => completeSet(ex, s.index)}>
                                                                 <div className="flex items-center gap-1.5 sm:gap-2 bg-[#0a1120]">
-                                                                    <span className={`text-[10px] font-mono w-5 sm:w-7 text-center shrink-0 ${s.completed ? "text-cyan-300/50" : "text-white/25"}`}>{s.index + 1}</span>
+                                                                    <span className={`text-[10px] font-mono w-5 sm:w-7 text-center shrink-0 ${s.completed ? "text-[rgb(var(--accent-light-rgb)/0.5)]" : "text-white/25"}`}>{s.index + 1}</span>
                                                                     {ex.isBodyweight ? (
                                                                         <input type="number" min="0" inputMode="numeric" onWheel={(e) => (e.target as HTMLElement).blur()} placeholder="—" value={s.reps} onChange={(e) => updateSet(ex.id, s.index, "reps", e.target.value)} disabled={s.completed}
-                                                                            className="flex-1 min-w-0 h-10 sm:h-11 rounded-lg bg-white/[0.04] border border-white/[0.08] text-center text-sm sm:text-base font-bold font-mono focus:outline-none focus:border-cyan-400/40 focus:bg-cyan-400/[0.03] disabled:opacity-40 transition" />
+                                                                            className="flex-1 min-w-0 h-10 sm:h-11 rounded-lg bg-white/[0.04] border border-white/[0.08] text-center text-sm sm:text-base font-bold font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] focus:bg-[rgb(var(--accent-rgb))]/[0.03] disabled:opacity-40 transition" />
                                                                     ) : (
                                                                         <>
                                                                             <input type="number" min="0" inputMode="decimal" onWheel={(e) => (e.target as HTMLElement).blur()} placeholder="—" value={s.weight} onChange={(e) => updateSet(ex.id, s.index, "weight", e.target.value)} disabled={s.completed}
-                                                                                className="flex-1 min-w-0 h-10 sm:h-11 rounded-lg bg-white/[0.04] border border-white/[0.08] text-center text-sm sm:text-base font-bold font-mono focus:outline-none focus:border-cyan-400/40 focus:bg-cyan-400/[0.03] disabled:opacity-40 transition" />
+                                                                                className="flex-1 min-w-0 h-10 sm:h-11 rounded-lg bg-white/[0.04] border border-white/[0.08] text-center text-sm sm:text-base font-bold font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] focus:bg-[rgb(var(--accent-rgb))]/[0.03] disabled:opacity-40 transition" />
                                                                             <input type="number" min="0" inputMode="numeric" onWheel={(e) => (e.target as HTMLElement).blur()} placeholder="—" value={s.reps} onChange={(e) => updateSet(ex.id, s.index, "reps", e.target.value)} disabled={s.completed}
-                                                                                className="flex-1 min-w-0 h-10 sm:h-11 rounded-lg bg-white/[0.04] border border-white/[0.08] text-center text-sm sm:text-base font-bold font-mono focus:outline-none focus:border-cyan-400/40 focus:bg-cyan-400/[0.03] disabled:opacity-40 transition" />
+                                                                                className="flex-1 min-w-0 h-10 sm:h-11 rounded-lg bg-white/[0.04] border border-white/[0.08] text-center text-sm sm:text-base font-bold font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] focus:bg-[rgb(var(--accent-rgb))]/[0.03] disabled:opacity-40 transition" />
                                                                         </>
                                                                     )}
                                                                     <button
                                                                         onClick={() => !s.completed && completeSet(ex, s.index)}
                                                                         className={`w-9 h-9 sm:w-11 sm:h-11 shrink-0 rounded-lg border flex items-center justify-center transition ${s.completed
-                                                                            ? "border-cyan-400/50 bg-cyan-400/20 text-cyan-300"
-                                                                            : "border-white/10 text-white/20 hover:border-cyan-400/40 hover:text-cyan-300 hover:bg-cyan-400/[0.05] active:scale-95"
+                                                                            ? "border-[rgb(var(--accent-rgb)/0.5)] bg-[rgb(var(--accent-rgb)/0.2)] text-[rgb(var(--accent-light-rgb))]"
+                                                                            : "border-white/10 text-white/20 hover:border-[rgb(var(--accent-rgb)/0.4)] hover:text-[rgb(var(--accent-light-rgb))] hover:bg-[rgb(var(--accent-rgb))]/[0.05] active:scale-95"
                                                                             }`}
                                                                     >
                                                                         <Check size={16} />
@@ -1198,12 +1198,12 @@ export default function WorkoutPage() {
                                                             </SwipeSet>
                                                             {!s.completed && (
                                                                 <input type="text" value={s.note} onChange={(e) => updateSet(ex.id, s.index, "note", e.target.value)} placeholder="Note (optional)"
-                                                                    className="mt-1 ml-5 sm:ml-7 text-[10px] font-mono rounded-md bg-transparent border border-white/[0.04] px-2 py-1 text-white/30 placeholder:text-white/15 focus:outline-none focus:border-cyan-400/20 focus:text-white/50 transition" style={{ width: "calc(100% - 24px)" }} />
+                                                                    className="mt-1 ml-5 sm:ml-7 text-[10px] font-mono rounded-md bg-transparent border border-white/[0.04] px-2 py-1 text-white/30 placeholder:text-white/15 focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.2)] focus:text-white/50 transition" style={{ width: "calc(100% - 24px)" }} />
                                                             )}
                                                         </div>
                                                     ))}
 
-                                                    <button onClick={() => addSet(ex.id)} className="flex items-center gap-1.5 text-cyan-300/60 text-[10px] font-mono hover:text-cyan-300 transition pt-1 ml-5 sm:ml-7">
+                                                    <button onClick={() => addSet(ex.id)} className="flex items-center gap-1.5 text-[rgb(var(--accent-light-rgb)/0.6)] text-[10px] font-mono hover:text-[rgb(var(--accent-light-rgb))] transition pt-1 ml-5 sm:ml-7">
                                                         <Plus size={12} /> Add set
                                                     </button>
 
@@ -1215,7 +1215,7 @@ export default function WorkoutPage() {
                                                                 const next = exercisesList[currentIdx + 1];
                                                                 if (next) setExpandedId(next.id);
                                                             }}
-                                                            className="w-full mt-3 text-[10px] font-mono font-bold py-2.5 rounded-lg border border-cyan-400/30 bg-cyan-400/10 text-cyan-300 hover:bg-cyan-400/15 transition"
+                                                            className="w-full mt-3 text-[10px] font-mono font-bold py-2.5 rounded-lg border border-[rgb(var(--accent-rgb)/0.3)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))] hover:bg-[rgb(var(--accent-rgb)/0.15)] transition"
                                                         >
                                                             CONFIRM & NEXT EXERCISE →
                                                         </button>
@@ -1228,7 +1228,7 @@ export default function WorkoutPage() {
                             );
                         })}
 
-                        <button onClick={() => setShowAddModal(true)} className="flex items-center gap-2 text-cyan-300/60 text-xs font-mono hover:text-cyan-300 transition py-2">
+                        <button onClick={() => setShowAddModal(true)} className="flex items-center gap-2 text-[rgb(var(--accent-light-rgb)/0.6)] text-xs font-mono hover:text-[rgb(var(--accent-light-rgb))] transition py-2">
                             <Plus size={14} /> Add exercise
                         </button>
                     </div>
@@ -1238,14 +1238,14 @@ export default function WorkoutPage() {
             {/* ── REST TIMER (sticky bottom) ── */}
             {restRemaining !== null && status === "active" && (
                 <div className="fixed bottom-16 md:bottom-6 left-0 right-0 md:left-1/2 md:-translate-x-1/2 md:max-w-sm md:rounded-lg z-30">
-                    <div className="border-t md:border border-cyan-400/30 bg-[#0a1120]/95 backdrop-blur-xl px-5 py-3.5 flex items-center justify-between md:rounded-lg" style={{ boxShadow: "0 -4px 30px -8px rgba(34,211,238,0.4)" }}>
+                    <div className="border-t md:border border-[rgb(var(--accent-rgb)/0.3)] bg-[#0a1120]/95 backdrop-blur-xl px-5 py-3.5 flex items-center justify-between md:rounded-lg" style={{ boxShadow: "0 -4px 30px -8px rgb(var(--accent-rgb) / 0.4)" }}>
                         <div>
-                            <p className="text-[8px] font-mono tracking-widest text-cyan-300/50">REST TIMER</p>
-                            <p className="text-2xl font-bold font-mono text-cyan-300">{formatClock(restRemaining)}</p>
+                            <p className="text-[8px] font-mono tracking-widest text-[rgb(var(--accent-light-rgb)/0.5)]">REST TIMER</p>
+                            <p className="text-2xl font-bold font-mono text-[rgb(var(--accent-light-rgb))]">{formatClock(restRemaining)}</p>
                         </div>
                         <div className="flex items-center gap-2">
                             <button onClick={() => setRestRemaining((r) => (r !== null ? r + 15 : null))} className="text-[10px] font-mono px-2.5 py-2 rounded-lg border border-white/10 text-white/50 hover:text-white/80 active:scale-95 transition">+15s</button>
-                            <button onClick={() => setRestPaused((p) => !p)} className="w-10 h-10 flex items-center justify-center rounded-lg border border-white/10 text-white/50 hover:text-cyan-300 active:scale-95 transition">
+                            <button onClick={() => setRestPaused((p) => !p)} className="w-10 h-10 flex items-center justify-center rounded-lg border border-white/10 text-white/50 hover:text-[rgb(var(--accent-light-rgb))] active:scale-95 transition">
                                 {restPaused ? <Play size={16} /> : <Pause size={16} />}
                             </button>
                             <button onClick={() => { setRestRemaining(null); setRestPaused(false); }} className="w-10 h-10 flex items-center justify-center rounded-lg border border-white/10 text-white/50 hover:text-white/80 active:scale-95 transition">
@@ -1259,14 +1259,14 @@ export default function WorkoutPage() {
             {/* ── STICKY ACTION BAR ── */}
             {status === "active" && restRemaining === null && completedCount > 0 && (
                 <div className="fixed bottom-16 md:bottom-6 left-0 right-0 md:left-1/2 md:-translate-x-1/2 md:max-w-sm md:rounded-lg z-20">
-                    <div className="border-t md:border border-cyan-400/15 bg-[#0a1120]/95 backdrop-blur-xl px-5 py-3 md:rounded-lg flex items-center gap-2">
+                    <div className="border-t md:border border-[rgb(var(--accent-rgb)/0.15)] bg-[#0a1120]/95 backdrop-blur-xl px-5 py-3 md:rounded-lg flex items-center gap-2">
                         <button
                             onClick={() => { setRestRemaining(90); setRestPaused(false); }}
                             className="flex-1 text-[10px] font-mono font-bold py-3 rounded-lg border border-white/15 text-white/50 hover:text-white/80 transition"
                         >
                             REST TIMER
                         </button>
-                        <button onClick={() => setShowEndConfirm(true)} className="flex-1 text-sm font-bold py-3 rounded-lg border border-cyan-400/40 text-cyan-300 hover:bg-cyan-400/10 transition">
+                        <button onClick={() => setShowEndConfirm(true)} className="flex-1 text-sm font-bold py-3 rounded-lg border border-[rgb(var(--accent-rgb)/0.4)] text-[rgb(var(--accent-light-rgb))] hover:bg-[rgb(var(--accent-rgb)/0.1)] transition">
                             COMPLETE · {completedCount} SETS
                         </button>
                     </div>
@@ -1277,7 +1277,7 @@ export default function WorkoutPage() {
             {/* ── MODALS ── */}
             {showEndConfirm && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-                    <div className="w-full max-w-sm rounded-lg border border-cyan-400/20 bg-[#0a1120] p-5">
+                    <div className="w-full max-w-sm rounded-lg border border-[rgb(var(--accent-rgb)/0.2)] bg-[#0a1120] p-5">
                         <p className="text-sm font-bold text-white/90 mb-2">End workout?</p>
                         {completedCount < totalPlanned ? (
                             <p className="text-[11px] text-white/50 mb-4">
@@ -1292,7 +1292,7 @@ export default function WorkoutPage() {
                             <button onClick={() => setShowEndConfirm(false)} className="flex-1 text-sm font-mono py-2.5 rounded-lg border border-white/15 text-white/50 hover:text-white/80 transition">
                                 KEEP GOING
                             </button>
-                            <button onClick={() => { setShowEndConfirm(false); finishWorkout(); }} className="flex-1 text-sm font-mono font-bold py-2.5 rounded-lg bg-cyan-400 text-black hover:bg-cyan-300 transition">
+                            <button onClick={() => { setShowEndConfirm(false); finishWorkout(); }} className="flex-1 text-sm font-mono font-bold py-2.5 rounded-lg bg-[rgb(var(--accent-rgb))] text-black hover:bg-[rgb(var(--accent-light-rgb))] transition">
                                 FINISH
                             </button>
                         </div>
