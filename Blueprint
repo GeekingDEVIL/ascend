@@ -1,0 +1,542 @@
+# 1. SCHEDULE — ALREADY BUILT
+
+Your current Schedule page is essentially:
+
+> **Training Calendar + Activity Planner + Exercise Database**
+
+You have:
+
+### Weekly Training Map
+
+```text
+MON       TUE       WED       THU       FRI       SAT       SUN
+
+PUSH      PULL      NEW       REST      UPPER     ARMS      REST
+DAY       DAY       WORKOUT             BODY      + CORE
+```
+
+This is exactly what we discussed.
+
+The user selects a day and configures **what activity is planned for that day**.
+
+---
+
+# 2. EXERCISE DATABASE IS ALREADY MERGED INTO SCHEDULE
+
+You currently have:
+
+> **EXERCISE DATABASE**
+
+at the top-right.
+
+That is correct.
+
+We don't need:
+
+```text
+Schedule
+Exercise Library
+```
+
+as two navigation items.
+
+Instead:
+
+```text
+SCHEDULE
+   │
+   └── Exercise Database
+```
+
+The database is a tool available while planning the schedule.
+
+---
+
+# 3. YOUR "DAY PROTOCOL" IS THE IMPORTANT PART
+
+Your screenshot shows:
+
+> **DAY PROTOCOL**
+>
+> FRIDAY  
+> UPPER BODY
+
+Then:
+
+```text
+Exercises: 4
+Sets: 12
+Est. Time: 64 MIN
+```
+
+And:
+
+```text
+WORKOUT CONTENT
+
+Bench Press       3 × 8
+Lat Pulldown      3 × 10
+Lateral Raise     3 × 12
+Cable Row         ...
+```
+
+This is the **planned activity**.
+
+That is NOT the actual workout log.
+
+That's the distinction we need to preserve.
+
+---
+
+# 4. WORKOUT PAGE IS SEPARATE
+
+When Friday arrives, the user goes to:
+
+**WORKOUT**
+
+And the Workout page reads the activity that was scheduled.
+
+For example:
+
+```text
+SCHEDULE
+Friday
+
+UPPER BODY
+│
+├── Bench Press
+├── Lat Pulldown
+├── Lateral Raise
+└── Cable Row
+        │
+        ▼
+     WORKOUT
+```
+
+Then Workout becomes the actual execution interface.
+
+---
+
+# 5. THIS IS THE CORRECT DATA FLOW
+
+This is the architecture we should lock:
+
+```text
+                 EXERCISE DATABASE
+                        │
+                        ▼
+                    SCHEDULE
+                        │
+                "What should I do?"
+                        │
+                        ▼
+                 DAY PROTOCOL
+                        │
+                        ▼
+                    WORKOUT
+                        │
+                "What did I do?"
+                        │
+                        ▼
+                WORKOUT SESSION
+                        │
+              ┌─────────┼─────────┐
+              ▼         ▼         ▼
+             XP       RECOVERY   VOLUME
+              │         │         │
+              └─────────┼─────────┘
+                        ▼
+                    PROGRESS
+```
+
+---
+
+# 6. ONE THING I WOULD CHANGE IN THE CURRENT SCHEDULE
+
+Your current Schedule has:
+
+```text
+SETS
+REPS
+```
+
+For example:
+
+> Bench Press — 3 sets × 8 reps
+
+**That is perfectly fine.**
+
+Those values represent the **planned prescription**.
+
+But Schedule should NOT contain things like:
+
+```text
+Actual weight
+Actual reps
+RIR
+RPE
+Actual rest
+Actual performance
+```
+
+Those belong to **Workout**.
+
+So:
+
+### Schedule
+
+```text
+Bench Press
+3 × 8
+```
+
+means:
+
+> **Plan:** 3 sets of 8.
+
+### Workout
+
+```text
+Bench Press
+
+Set 1
+80kg × 8
+
+Set 2
+80kg × 8
+
+Set 3
+82.5kg × 7
+```
+
+means:
+
+> **Actual performance.**
+
+That separation is extremely important for everything we want to build later.
+
+---
+
+# 7. WHAT SCHEDULE SHOULD DO
+
+Your current page should focus on:
+
+### Calendar
+
+Which activity is assigned to which day.
+
+### Activity
+
+What you're supposed to do.
+
+### Exercise selection
+
+Choose exercises from the database.
+
+### Prescription
+
+Set:
+
+- Sets
+- Target reps
+- Target duration
+- Target distance
+- Target activity
+
+### Planning
+
+- Move activity
+- Duplicate
+- Delete
+- Rest day
+- Recovery day
+- Recurring activity
+
+---
+
+# 8. WHAT WORKOUT SHOULD DO
+
+Workout should focus entirely on **execution**.
+
+Example:
+
+```text
+WORKOUT
+
+TODAY
+UPPER BODY
+
+Progress
+0 / 4 exercises
+
+────────────────────
+
+BENCH PRESS
+
+Target
+3 × 8
+
+Previous
+77.5kg × 8 × 3
+
+SET 1
+Weight [ 80 ] KG
+Reps   [ 8 ]
+RIR    [ 2 ]
+
+[ COMPLETE SET ]
+
+────────────────────
+
+SET 2
+Weight [    ] KG
+Reps   [    ]
+
+[ COMPLETE SET ]
+```
+
+Then rest timer.
+
+Then next exercise.
+
+---
+
+# 9. WORKOUT SHOULD AUTOMATICALLY PULL FROM SCHEDULE
+
+This is the connection we want.
+
+If Schedule says:
+
+```text
+FRIDAY
+
+UPPER BODY
+
+Bench Press
+3 × 8
+
+Lat Pulldown
+3 × 10
+
+Lateral Raise
+3 × 12
+
+Cable Row
+3 × 10
+```
+
+then on Friday:
+
+**Workout** automatically becomes:
+
+```text
+TODAY'S WORKOUT
+
+UPPER BODY
+
+01 Bench Press
+02 Lat Pulldown
+03 Lateral Raise
+04 Cable Row
+```
+
+The user shouldn't have to rebuild it.
+
+---
+
+# 10. THE WORKOUT PAGE SHOULD ALSO SHOW PREVIOUS PERFORMANCE
+
+This is where the real intelligence begins.
+
+For Bench:
+
+```text
+TARGET
+3 × 8
+
+LAST SESSION
+80 × 8
+80 × 8
+80 × 7
+
+RECOMMENDED
+80 × 8
+```
+
+Then the user logs what actually happened.
+
+---
+
+# 11. AFTER WORKOUT
+
+Once completed:
+
+```text
+WORKOUT COMPLETE
+
+UPPER BODY
+
+Duration       61 min
+Sets           12
+Volume         8,420 kg
+
+PRs            1
+XP             +284
+
+Recovery Impact
+Moderate
+```
+
+Then that data feeds:
+
+```text
+XP
+Recovery
+Muscle Volume
+Progress
+PRs
+AI Coach
+```
+
+---
+
+# 12. THIS ALSO FIXES THE XP CHEATING PROBLEM
+
+Because now we have a clear distinction:
+
+### Schedule data
+
+**User's plan**
+
+```text
+Bench Press
+3 × 8
+```
+
+### Workout data
+
+**User's actual performance**
+
+```text
+80 × 8
+80 × 8
+82.5 × 7
+```
+
+### History
+
+**What they've actually done previously**
+
+```text
+Last week:
+80 × 8 × 3
+
+This week:
+82.5 × 7
+```
+
+Now the XP engine has a proper history to compare against.
+
+---
+
+# 13. YOUR CURRENT SCREEN IS THEREFORE NOT WRONG
+
+Actually, the current screen is quite close to what we want.
+
+The architecture is:
+
+```text
+┌─────────────────────────────────────────┐
+│                SCHEDULE                 │
+│                                         │
+│  Calendar                               │
+│      ↓                                  │
+│  Select Day                             │
+│      ↓                                  │
+│  Day Protocol                           │
+│      ↓                                  │
+│  Add exercises from Exercise Database   │
+│      ↓                                  │
+│  Define planned sets/reps               │
+│                                         │
+└─────────────────────────────────────────┘
+
+                    ↓
+
+┌─────────────────────────────────────────┐
+│                WORKOUT                  │
+│                                         │
+│  Today's scheduled activity             │
+│      ↓                                  │
+│  Perform exercises                      │
+│      ↓                                  │
+│  Log actual sets/reps/weight            │
+│      ↓                                  │
+│  Complete workout                       │
+│                                         │
+└─────────────────────────────────────────┘
+```
+
+**That is the architecture we should preserve.**
+
+---
+
+# 14. SO OUR NAVIGATION IS NOW LOCKED
+
+```text
+GYM EXP
+
+├── Dashboard
+│
+├── Workout
+│   └── Execute today's activity
+│
+├── Schedule
+│   ├── Calendar
+│   ├── Day Protocol
+│   └── Exercise Database
+│
+├── Progress
+│
+├── Recovery
+│
+├── AI Coach
+│
+└── Settings
+```
+
+And later:
+
+```text
+Character
+Activity
+Social
+```
+
+can be added without breaking this structure.
+
+---
+
+## The key distinction from now on
+
+I'll use this terminology consistently:
+
+**Schedule = PLAN**
+
+**Workout = EXECUTE + LOG**
+
+**Exercise Database = RESOURCE INSIDE SCHEDULE**
+
+**Workout History = RECORD OF EXECUTION**
+
+**Progress = ANALYSIS**
+
+**Recovery = READINESS**
+
+**Muscle Volume = TRAINING LOAD**
+
+**XP = GAMIFICATION**
+
+**AI Coach = INTELLIGENCE**
+
+Your existing Schedule page is therefore **the foundation we should build forward from**, not something we need to replace.
