@@ -1,10 +1,23 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Calendar, Dumbbell, TrendingUp, Weight, Trophy, ChevronDown, ChevronRight } from "lucide-react";
+import Link from "next/link";
+import { Calendar, Dumbbell, TrendingUp, Weight, Trophy, ChevronDown, ChevronRight, Lock } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../lib/AuthProvider";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, CartesianGrid } from "recharts";
+import { ACHIEVEMENT_DEFS, RARITY_COLORS, type AchievementDef } from "../../lib/achievements";
+import MeasurementModal, { type MeasurementType } from "../../components/MeasurementModal";
+
+const MEASUREMENT_TYPES: { type: MeasurementType; color: string; bar: string }[] = [
+    { type: "Biceps", color: "text-pink-300", bar: "bg-pink-400" },
+    { type: "Abs", color: "text-emerald-300", bar: "bg-emerald-400" },
+    { type: "Waist", color: "text-orange-300", bar: "bg-orange-400" },
+    { type: "Chest", color: "text-blue-300", bar: "bg-blue-400" },
+    { type: "Shoulders", color: "text-violet-300", bar: "bg-violet-400" },
+    { type: "Thigh", color: "text-teal-300", bar: "bg-teal-400" },
+    { type: "Calf", color: "text-yellow-300", bar: "bg-yellow-400" },
+];
 
 type Tab = "history" | "strength" | "body" | "volume";
 
@@ -45,6 +58,9 @@ type WeeklyVolume = {
     volume: number;
     sets: number;
 };
+
+type LeaderboardRow = { user_id: string; username: string; avatar_url: string | null; best_weight: number };
+type LeaderboardCard = { exerciseName: string; top: LeaderboardRow[]; myRank: number; total: number; myWeight: number };
 
 function formatDuration(seconds: number): string {
     const m = Math.floor(seconds / 60);
@@ -97,16 +113,24 @@ export default function ProgressPage() {
 
     // History
     const [sessions, setSessions] = useState<SessionRecord[]>([]);
+    const [earnedKeys, setEarnedKeys] = useState<Set<string>>(new Set());
+    const [earnedDates, setEarnedDates] = useState<Record<string, string>>({});
+    const [leaderboardCard, setLeaderboardCard] = useState<LeaderboardCard | null>(null);
 
     // Strength
     const [prs, setPrs] = useState<ExercisePR[]>([]);
     const [selectedExercise, setSelectedExercise] = useState<string | null>(null);
     const [strengthHistory, setStrengthHistory] = useState<StrengthDataPoint[]>([]);
     const [strengthLoading, setStrengthLoading] = useState(false);
+    const [goals, setGoals] = useState<Record<string, number>>({});
+    const [goalInput, setGoalInput] = useState("");
+    const [editingGoal, setEditingGoal] = useState(false);
 
     // Body
     const [bodyWeightData, setBodyWeightData] = useState<BodyWeightEntry[]>([]);
     const [newWeight, setNewWeight] = useState("");
+    const [measurements, setMeasurements] = useState<Record<string, number | null>>({});
+    const [activeMeasurement, setActiveMeasurement] = useState<MeasurementType | null>(null);
 
     // Volume
     const [weeklyVolumeData, setWeeklyVolumeData] = useState<WeeklyVolume[]>([]);
@@ -122,6 +146,68 @@ export default function ProgressPage() {
             .limit(50);
         setSessions(data ?? []);
     }, [user]);
+
+    const loadAchievements = useCallback(async () => {
+        if (!user) return;
+        const { data } = await supabase.from("achievements").select("achievement_key, earned_at").eq("user_id", user.id);
+        setEarnedKeys(new Set((data ?? []).map((a: any) => a.achievement_key)));
+        const dates: Record<string, string> = {};
+        (data ?? []).forEach((a: any) => { dates[a.achievement_key] = a.earned_at; });
+        setEarnedDates(dates);
+    }, [user]);
+
+    const loadLeaderboardCard = useCallback(async () => {
+        if (!user) return;
+        const { data: mine } = await supabase
+            .from("exercise_leaderboard")
+            .select("exercise_id, exercise_name, best_weight")
+            .eq("user_id", user.id);
+        if (!mine || mine.length === 0) { setLeaderboardCard(null); return; }
+
+        const exerciseIds = mine.map((m: any) => m.exercise_id);
+        const { data: all } = await supabase
+            .from("exercise_leaderboard")
+            .select("exercise_id, user_id, username, avatar_url, best_weight")
+            .in("exercise_id", exerciseIds);
+        if (!all) { setLeaderboardCard(null); return; }
+
+        const byExercise: Record<string, LeaderboardRow[]> = {};
+        all.forEach((r: any) => { (byExercise[r.exercise_id] ??= []).push(r); });
+
+        let best: { exerciseId: string; exerciseName: string; myWeight: number; percentile: number } | null = null;
+        for (const m of mine as any[]) {
+            const rows = byExercise[m.exercise_id] || [];
+            const total = rows.length;
+            const below = rows.filter((r) => r.best_weight < m.best_weight).length;
+            const percentile = total > 1 ? below / (total - 1) : 1;
+            if (!best || percentile > best.percentile) {
+                best = { exerciseId: m.exercise_id, exerciseName: m.exercise_name, myWeight: m.best_weight, percentile };
+            }
+        }
+        if (!best) { setLeaderboardCard(null); return; }
+
+        const rows = (byExercise[best.exerciseId] || []).slice().sort((a, b) => b.best_weight - a.best_weight);
+        const myRank = rows.findIndex((r) => r.user_id === user.id) + 1;
+        setLeaderboardCard({ exerciseName: best.exerciseName, top: rows.slice(0, 3), myRank, total: rows.length, myWeight: best.myWeight });
+    }, [user]);
+
+    const loadGoals = useCallback(async () => {
+        if (!user) return;
+        const { data } = await supabase.from("exercise_goals").select("exercise_id, goal_weight").eq("user_id", user.id);
+        const map: Record<string, number> = {};
+        (data ?? []).forEach((g: any) => { map[g.exercise_id] = Number(g.goal_weight); });
+        setGoals(map);
+    }, [user]);
+
+    async function saveGoal(exerciseId: string) {
+        if (!user || !goalInput) return;
+        const value = Number(goalInput);
+        if (!value || value <= 0) return;
+        await supabase.from("exercise_goals").upsert({ user_id: user.id, exercise_id: exerciseId, goal_weight: value, updated_at: new Date().toISOString() }, { onConflict: "user_id,exercise_id" });
+        setGoals((prev) => ({ ...prev, [exerciseId]: value }));
+        setGoalInput("");
+        setEditingGoal(false);
+    }
 
     const loadPRs = useCallback(async () => {
         if (!user) return;
@@ -173,6 +259,18 @@ export default function ProgressPage() {
         })));
     }, [user]);
 
+    const loadMeasurements = useCallback(async () => {
+        if (!user) return;
+        const { data } = await supabase
+            .from("body_measurements")
+            .select("type, value_cm, logged_at")
+            .eq("user_id", user.id)
+            .order("logged_at", { ascending: false });
+        const latest: Record<string, number | null> = {};
+        (data ?? []).forEach((m: any) => { if (latest[m.type] === undefined) latest[m.type] = Number(m.value_cm); });
+        setMeasurements(latest);
+    }, [user]);
+
     const loadWeeklyVolume = useCallback(async () => {
         if (!user) return;
         const { data: allSessions } = await supabase
@@ -206,16 +304,18 @@ export default function ProgressPage() {
     useEffect(() => {
         async function load() {
             setLoading(true);
-            await Promise.all([loadHistory(), loadPRs(), loadBodyWeight(), loadWeeklyVolume()]);
+            await Promise.all([loadHistory(), loadAchievements(), loadLeaderboardCard(), loadGoals(), loadPRs(), loadBodyWeight(), loadMeasurements(), loadWeeklyVolume()]);
             setLoading(false);
         }
         load();
-    }, [loadHistory, loadPRs, loadBodyWeight, loadWeeklyVolume]);
+    }, [loadHistory, loadAchievements, loadLeaderboardCard, loadGoals, loadPRs, loadBodyWeight, loadMeasurements, loadWeeklyVolume]);
 
     async function loadStrengthHistory(exerciseId: string) {
         if (!user) return;
         setStrengthLoading(true);
         setSelectedExercise(exerciseId);
+        setEditingGoal(false);
+        setGoalInput("");
 
         const { data } = await supabase
             .from("exercise_set_logs")
@@ -254,6 +354,12 @@ export default function ProgressPage() {
 
     const totalVolume = sessions.reduce((s, r) => s + (Number(r.total_volume) || 0), 0);
     const totalSets = sessions.reduce((s, r) => s + (r.total_sets || 0), 0);
+
+    const earnedSorted = ACHIEVEMENT_DEFS
+        .filter((a) => earnedKeys.has(a.key))
+        .sort((a, b) => new Date(earnedDates[b.key]).getTime() - new Date(earnedDates[a.key]).getTime());
+    const lockedInOrder = ACHIEVEMENT_DEFS.filter((a) => !earnedKeys.has(a.key));
+    const achievementStrip: AchievementDef[] = [...earnedSorted, ...lockedInOrder].slice(0, 10);
 
     const TABS: { key: Tab; label: string; icon: any }[] = [
         { key: "history", label: "HISTORY", icon: Calendar },
@@ -309,6 +415,67 @@ export default function ProgressPage() {
                                     <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-3 text-center">
                                         <p className="text-[8px] font-mono text-white/30">TOTAL VOLUME</p>
                                         <p className="text-xl font-bold font-mono text-[rgb(var(--accent-light-rgb))]">{Math.round(totalVolume).toLocaleString()} <span className="text-xs text-white/30">KG</span></p>
+                                    </div>
+                                </div>
+
+                                {/* Leaderboard */}
+                                {leaderboardCard && (
+                                    <div>
+                                        <Link href="/rankings" className="flex items-center justify-between mb-2.5 group">
+                                            <p className="text-[10px] font-mono tracking-widest text-white/40">LEADERBOARDS</p>
+                                            <span className="flex items-center gap-0.5 text-[10px] font-mono text-white/30 group-hover:text-[rgb(var(--accent-light-rgb))] transition">
+                                                SEE ALL <ChevronRight size={12} />
+                                            </span>
+                                        </Link>
+                                        <div className="rounded-lg border border-[rgb(var(--accent-rgb)/0.2)] bg-white/[0.03] p-4">
+                                            <p className="text-base font-bold text-white/95">{leaderboardCard.exerciseName}</p>
+                                            <p className="text-[10px] font-mono text-[rgb(var(--accent-light-rgb)/0.6)] mt-0.5">Max Weight Lifted</p>
+                                            <p className="text-[10px] font-mono text-white/30">Global, All-Time</p>
+                                            <div className="space-y-1.5 mt-3">
+                                                {leaderboardCard.top.map((row, i) => (
+                                                    <div key={row.user_id} className={`flex items-center gap-3 rounded-lg px-3 py-2 ${row.user_id === user?.id ? "bg-[rgb(var(--accent-rgb)/0.15)] border border-[rgb(var(--accent-rgb)/0.3)]" : "bg-white/[0.02]"}`}>
+                                                        <span className="text-xs font-mono text-white/40 w-4 shrink-0">{i + 1}</span>
+                                                        <span className="text-sm font-bold text-white/85 flex-1 min-w-0 truncate">{row.username}</span>
+                                                        <span className="text-sm font-mono text-white/70 shrink-0">{row.best_weight}kg</span>
+                                                    </div>
+                                                ))}
+                                                {leaderboardCard.myRank > 3 && (
+                                                    <div className="flex items-center gap-3 rounded-lg px-3 py-2 bg-[rgb(var(--accent-rgb)/0.15)] border border-[rgb(var(--accent-rgb)/0.3)]">
+                                                        <span className="text-xs font-mono text-white/40 w-4 shrink-0">#{leaderboardCard.myRank}</span>
+                                                        <span className="text-sm font-bold text-white/85 flex-1 min-w-0 truncate">You</span>
+                                                        <span className="text-sm font-mono text-white/70 shrink-0">{leaderboardCard.myWeight}kg</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <p className="text-[9px] font-mono text-white/25 mt-2.5">Ranked #{leaderboardCard.myRank} of {leaderboardCard.total}</p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Latest Achievements */}
+                                <div>
+                                    <Link href="/achievements" className="flex items-center justify-between mb-2.5 group">
+                                        <p className="text-[10px] font-mono tracking-widest text-white/40">LATEST ACHIEVEMENTS</p>
+                                        <span className="flex items-center gap-0.5 text-[10px] font-mono text-white/30 group-hover:text-[rgb(var(--accent-light-rgb))] transition">
+                                            SEE ALL <ChevronRight size={12} />
+                                        </span>
+                                    </Link>
+                                    <div className="flex gap-2.5 overflow-x-auto no-scrollbar pb-1">
+                                        {achievementStrip.map((a) => {
+                                            const isEarned = earnedKeys.has(a.key);
+                                            const colors = RARITY_COLORS[a.rarity];
+                                            return (
+                                                <div
+                                                    key={a.key}
+                                                    className={`shrink-0 w-20 flex flex-col items-center gap-1.5 rounded-lg border px-2 py-3 text-center ${isEarned ? `${colors.border} ${colors.bg}` : "border-white/[0.06] bg-white/[0.02]"}`}
+                                                    style={isEarned && colors.glow ? { boxShadow: colors.glow } : undefined}
+                                                >
+                                                    <div className={`text-2xl ${isEarned ? "" : "grayscale opacity-25"}`}>{a.icon}</div>
+                                                    <p className={`text-[9px] font-mono leading-tight ${isEarned ? colors.text : "text-white/25"}`}>{a.name}</p>
+                                                    {!isEarned && <Lock size={9} className="text-white/15" />}
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 </div>
 
@@ -393,6 +560,31 @@ export default function ProgressPage() {
 
                                                         {isSelected && (
                                                             <div className="rounded-b-lg border border-t-0 border-[rgb(var(--accent-rgb)/0.2)] bg-[rgb(var(--accent-rgb))]/[0.02] p-4">
+                                                                <div className="flex items-center justify-between mb-3">
+                                                                    <div>
+                                                                        <p className="text-[8px] font-mono text-white/30 mb-0.5">GOAL</p>
+                                                                        {editingGoal ? (
+                                                                            <div className="flex items-center gap-1.5">
+                                                                                <input
+                                                                                    type="number" min="0" autoFocus onWheel={(e) => (e.target as HTMLElement).blur()}
+                                                                                    value={goalInput} onChange={(e) => setGoalInput(e.target.value)}
+                                                                                    onKeyDown={(e) => e.key === "Enter" && saveGoal(pr.exercise_id)}
+                                                                                    className="w-16 h-7 rounded bg-white/[0.06] border border-white/10 text-center text-xs font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)]"
+                                                                                />
+                                                                                <button onClick={() => saveGoal(pr.exercise_id)} className="text-[9px] font-mono text-[rgb(var(--accent-light-rgb))] px-1.5">SET</button>
+                                                                            </div>
+                                                                        ) : (
+                                                                            <button onClick={() => { setEditingGoal(true); setGoalInput(goals[pr.exercise_id] ? String(goals[pr.exercise_id]) : ""); }} className="flex items-center gap-1.5">
+                                                                                <Trophy size={12} className="text-white/25" />
+                                                                                <span className="text-sm font-bold font-mono text-white/80">{goals[pr.exercise_id] ? `${goals[pr.exercise_id]}kg` : "— —"}</span>
+                                                                            </button>
+                                                                        )}
+                                                                    </div>
+                                                                    <div className="text-right">
+                                                                        <p className="text-[8px] font-mono text-white/30 mb-0.5">CURRENT MAX</p>
+                                                                        <p className="text-lg font-bold font-mono text-[rgb(var(--accent-light-rgb))]">{pr.best_weight}<span className="text-xs text-white/40">kg</span></p>
+                                                                    </div>
+                                                                </div>
                                                                 {strengthLoading ? (
                                                                     <p className="text-xs text-white/40 text-center py-4">Loading chart...</p>
                                                                 ) : strengthHistory.length < 2 ? (
@@ -405,7 +597,20 @@ export default function ProgressPage() {
                                                                                 <XAxis dataKey="date" tick={{ fontSize: 9, fill: "rgba(255,255,255,0.3)" }} />
                                                                                 <YAxis tick={{ fontSize: 9, fill: "rgba(255,255,255,0.3)" }} domain={["auto", "auto"]} />
                                                                                 <Tooltip content={<CustomTooltip />} />
-                                                                                <Line type="monotone" dataKey="weight" stroke="rgb(var(--accent-rgb))" strokeWidth={2} dot={{ r: 3, fill: "rgb(var(--accent-rgb))" }} name="Weight (kg)" />
+                                                                                <Line
+                                                                                    type="monotone" dataKey="weight" stroke="rgb(var(--accent-rgb))" strokeWidth={2} name="Weight (kg)"
+                                                                                    dot={(dotProps: any) => {
+                                                                                        const { cx, cy, payload, index } = dotProps;
+                                                                                        const maxWeight = Math.max(...strengthHistory.map((p) => p.weight));
+                                                                                        const isPR = payload.weight === maxWeight;
+                                                                                        return (
+                                                                                            <g key={`dot-${index}`}>
+                                                                                                <circle cx={cx} cy={cy} r={isPR ? 5 : 3} fill={isPR ? "rgb(var(--accent-light-rgb))" : "rgb(var(--accent-rgb))"} stroke={isPR ? "#050914" : "none"} strokeWidth={isPR ? 1.5 : 0} />
+                                                                                                {isPR && <text x={cx} y={cy - 12} textAnchor="middle" fontSize="9" fontFamily="monospace" fill="rgb(var(--accent-light-rgb))" fontWeight="bold">PR</text>}
+                                                                                            </g>
+                                                                                        );
+                                                                                    }}
+                                                                                />
                                                                                 <Line type="monotone" dataKey="e1rm" stroke="rgb(var(--accent-light-rgb))" strokeWidth={1.5} strokeDasharray="4 4" dot={false} name="Est. 1RM" />
                                                                             </LineChart>
                                                                         </ResponsiveContainer>
@@ -425,6 +630,37 @@ export default function ProgressPage() {
                         {/* ══════════ BODY ══════════ */}
                         {tab === "body" && (
                             <div className="space-y-4">
+                                {/* Measurements */}
+                                <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-4">
+                                    <p className="text-[10px] font-mono tracking-widest text-white/40 mb-4">MEASUREMENTS</p>
+                                    <div className="flex items-end justify-between gap-2 h-28 mb-3">
+                                        {MEASUREMENT_TYPES.map((m) => {
+                                            const val = measurements[m.type];
+                                            const maxVal = Math.max(30, ...MEASUREMENT_TYPES.map((t) => measurements[t.type] ?? 0));
+                                            const heightPct = val ? Math.max(12, (val / maxVal) * 100) : 8;
+                                            return (
+                                                <div key={m.type} className="flex-1 flex flex-col items-center justify-end h-full">
+                                                    <div className={`w-full max-w-8 rounded-t ${val ? m.bar : "bg-white/[0.06]"}`} style={{ height: `${heightPct}%` }} />
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                    <div className="flex items-start justify-between gap-2">
+                                        {MEASUREMENT_TYPES.map((m) => (
+                                            <div key={m.type} className="flex-1 flex flex-col items-center gap-1">
+                                                <button
+                                                    onClick={() => setActiveMeasurement(m.type)}
+                                                    className={`w-7 h-7 rounded-md flex items-center justify-center text-sm font-bold ${m.bar} text-black`}
+                                                >
+                                                    +
+                                                </button>
+                                                <p className={`text-[8px] font-mono ${m.color} text-center leading-tight`}>{m.type.toUpperCase()}</p>
+                                                {measurements[m.type] != null && <p className="text-[8px] font-mono text-white/30">{measurements[m.type]}cm</p>}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
                                 {/* Log weight */}
                                 <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-4">
                                     <p className="text-[10px] font-mono tracking-widest text-white/40 mb-3">LOG BODY WEIGHT</p>
@@ -569,6 +805,15 @@ export default function ProgressPage() {
                     </>
                 )}
             </div>
+
+            {activeMeasurement && (
+                <MeasurementModal
+                    type={activeMeasurement}
+                    lastValue={measurements[activeMeasurement] ?? null}
+                    onClose={() => setActiveMeasurement(null)}
+                    onSaved={(type, value) => setMeasurements((prev) => ({ ...prev, [type]: value }))}
+                />
+            )}
         </main>
     );
 }

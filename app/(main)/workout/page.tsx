@@ -10,6 +10,7 @@ import { calculateSessionXP, type XPBreakdown } from "../../lib/xpEngine";
 import { computeLevel, getRank } from "../../lib/levelSystem";
 import { checkAndAwardAchievements } from "../../lib/achievements";
 import { updateUserStats } from "../../lib/updateUserStats";
+import { updateExerciseLeaderboard } from "../../lib/updateExerciseLeaderboard";
 import AddExerciseModal from "../../components/AddExerciseModal";
 
 /* ─── TYPES ─── */
@@ -540,6 +541,7 @@ export default function WorkoutPage() {
 
         // Update leaderboard stats
         await updateUserStats(user.id);
+        await updateExerciseLeaderboard(user.id);
 
         // Freestyle → offer to make it a recurring plan if today has none
         if (dayTitle === "Freestyle Session") {
