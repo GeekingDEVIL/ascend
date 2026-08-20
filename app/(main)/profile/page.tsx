@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { User, LogOut, Save, Plus, Trash2, Check, Download, AlertTriangle, Eye, EyeOff, Target, Dumbbell, Scale, Ruler, Calendar, Clock, Shield, Heart, AtSign, Globe, Camera } from "lucide-react";
+import { User, LogOut, Save, Plus, Trash2, Check, Download, AlertTriangle, Eye, EyeOff, Target, Dumbbell, Scale, Ruler, Calendar, Clock, Shield, Heart, AtSign, Globe, Camera, Pencil, X } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../lib/AuthProvider";
 import CustomSelect from "../../components/CustomSelect";
@@ -49,6 +49,11 @@ export default function ProfilePage() {
     const router = useRouter();
     const [avatarUploading, setAvatarUploading] = useState(false);
     const [avatarError, setAvatarError] = useState<string | null>(null);
+
+    const [editingUsername, setEditingUsername] = useState(false);
+    const [usernameInput, setUsernameInput] = useState("");
+    const [usernameError, setUsernameError] = useState<string | null>(null);
+    const [usernameSaving, setUsernameSaving] = useState(false);
 
     const [data, setData] = useState<ProfileData>(DEFAULT_PROFILE);
     const [targetLifts, setTargetLifts] = useState<TargetLift[]>([]);
@@ -304,6 +309,40 @@ export default function ProfilePage() {
         setAvatarUploading(false);
     }
 
+    function startEditingUsername() {
+        setUsernameInput(profile?.username ?? "");
+        setUsernameError(null);
+        setEditingUsername(true);
+    }
+
+    async function saveUsername() {
+        if (!user) return;
+        const next = usernameInput.trim();
+        if (!next) { setUsernameError("Username can't be empty."); return; }
+        if (next === profile?.username) { setEditingUsername(false); return; }
+
+        setUsernameSaving(true);
+        setUsernameError(null);
+
+        const { data: existing } = await supabase.from("profiles").select("id").eq("username", next).limit(1);
+        if (existing?.length) {
+            setUsernameError("username already exists");
+            setUsernameSaving(false);
+            return;
+        }
+
+        const { error } = await supabase.from("profiles").update({ username: next }).eq("id", user.id);
+        if (error) {
+            setUsernameError("Couldn't save. Try again.");
+            setUsernameSaving(false);
+            return;
+        }
+
+        await refreshProfile();
+        setUsernameSaving(false);
+        setEditingUsername(false);
+    }
+
     async function handleSignOut() {
         await supabase.auth.signOut();
         router.push("/login");
@@ -360,10 +399,33 @@ export default function ProfilePage() {
                         <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={handleAvatarUpload} disabled={avatarUploading} />
                     </label>
                     <div className="flex-1 min-w-0">
-                        <h1 className="text-xl font-bold text-white/90 truncate">{profile?.username ?? "Unknown"}</h1>
+                        {editingUsername ? (
+                            <div className="flex items-center gap-1.5">
+                                <input
+                                    autoFocus
+                                    value={usernameInput}
+                                    onChange={(e) => setUsernameInput(e.target.value)}
+                                    onKeyDown={(e) => e.key === "Enter" && saveUsername()}
+                                    disabled={usernameSaving}
+                                    className="min-w-0 flex-1 h-9 rounded-md bg-white/[0.06] border border-cyan-400/30 px-2.5 text-lg font-bold text-white/90 focus:outline-none focus:border-cyan-400/60 transition"
+                                />
+                                <button onClick={saveUsername} disabled={usernameSaving} className="shrink-0 w-8 h-8 rounded-md border border-cyan-400/30 text-cyan-300 flex items-center justify-center hover:bg-cyan-400/10 disabled:opacity-40 transition">
+                                    <Check size={14} />
+                                </button>
+                                <button onClick={() => setEditingUsername(false)} disabled={usernameSaving} className="shrink-0 w-8 h-8 rounded-md border border-white/10 text-white/40 flex items-center justify-center hover:text-white/70 disabled:opacity-40 transition">
+                                    <X size={14} />
+                                </button>
+                            </div>
+                        ) : (
+                            <button onClick={startEditingUsername} className="flex items-center gap-1.5 group max-w-full">
+                                <h1 className="text-xl font-bold text-white/90 truncate">{profile?.username ?? "Unknown"}</h1>
+                                <Pencil size={12} className="shrink-0 text-white/20 group-hover:text-cyan-300 transition" />
+                            </button>
+                        )}
                         <p className="text-xs font-mono text-white/40">{user?.email}</p>
                         <p className="text-[10px] font-mono text-white/25 mt-0.5">Member since {user?.created_at ? new Date(user.created_at).toLocaleDateString(undefined, { month: "long", year: "numeric" }) : "—"}</p>
                         {avatarError && <p className="text-[10px] font-mono text-red-400 mt-0.5">{avatarError}</p>}
+                        {usernameError && <p className="text-[10px] font-mono text-red-400 mt-0.5">{usernameError}</p>}
                     </div>
                     <button
                         onClick={saveProfile}
