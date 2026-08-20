@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronRight, ChevronLeft, Sparkles } from "lucide-react";
 import { supabase } from "../lib/supabase";
@@ -17,12 +17,25 @@ export default function OnboardingModal({ userId, onClose }: { userId: string; o
     const [frequency, setFrequency] = useState(3);
     const [saving, setSaving] = useState(false);
 
+    // Pre-fill from whatever the user has already set (e.g. via Profile) instead of re-asking
+    useEffect(() => {
+        async function loadExisting() {
+            const { data } = await supabase.from("profiles").select("goal, experience, training_frequency").eq("id", userId).maybeSingle();
+            if (!data) return;
+            if (data.goal) setGoal(data.goal);
+            if (data.experience) setExperience(data.experience);
+            if (data.training_frequency) setFrequency(data.training_frequency);
+        }
+        loadExisting();
+    }, [userId]);
+
     async function persist() {
         setSaving(true);
         await supabase.from("profiles").update({
             goal: goal || null,
             experience,
             training_frequency: frequency,
+            onboarding_completed_at: new Date().toISOString(),
         }).eq("id", userId);
         setSaving(false);
     }

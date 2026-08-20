@@ -194,8 +194,8 @@ export default function Dashboard() {
   useEffect(() => {
     async function checkOnboarding() {
       if (!user) return;
-      const { data } = await supabase.from("recurring_plans").select("id").eq("user_id", user.id).limit(1);
-      if (!data?.length) setShowOnboarding(true);
+      const { data } = await supabase.from("profiles").select("onboarding_completed_at").eq("id", user.id).maybeSingle();
+      if (!data?.onboarding_completed_at) setShowOnboarding(true);
     }
     checkOnboarding();
   }, [user]);
