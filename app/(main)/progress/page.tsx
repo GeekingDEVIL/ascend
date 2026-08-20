@@ -437,13 +437,13 @@ export default function ProgressPage() {
                                             value={newWeight}
                                             onChange={(e) => setNewWeight(e.target.value)}
                                             placeholder="—"
-                                            className="flex-1 h-12 rounded-lg bg-white/[0.04] border border-white/[0.08] text-center text-xl font-bold font-mono focus:outline-none focus:border-cyan-400/40 transition"
+                                            className="flex-1 min-w-0 h-12 rounded-lg bg-white/[0.04] border border-white/[0.08] text-center text-xl font-bold font-mono focus:outline-none focus:border-cyan-400/40 transition"
                                         />
-                                        <span className="text-sm font-mono text-white/30">KG</span>
+                                        <span className="text-sm font-mono text-white/30 shrink-0">KG</span>
                                         <button
                                             onClick={logBodyWeight}
                                             disabled={!newWeight}
-                                            className="text-[10px] font-mono px-4 py-3 rounded-lg border border-cyan-400/30 text-cyan-300 hover:bg-cyan-400/10 disabled:opacity-30 disabled:cursor-not-allowed transition"
+                                            className="shrink-0 text-[10px] font-mono px-4 py-3 rounded-lg border border-cyan-400/30 text-cyan-300 hover:bg-cyan-400/10 disabled:opacity-30 disabled:cursor-not-allowed transition"
                                         >
                                             LOG
                                         </button>

@@ -800,9 +800,11 @@ export default function Dashboard() {
               <div className="h-24 flex items-center justify-center border border-dashed border-white/10 rounded-md">
                 <p className="text-xs font-mono text-white/30 text-center px-4">Calorie tracking will be available in a future update.</p>
               </div>
-              <div><p className="text-[10px] text-white/40">CONSUMED</p><GlassText className="text-xl font-bold">—</GlassText><p className="text-[10px] text-white/40">KCAL</p></div>
-              <div><p className="text-[10px] text-white/40">TRAINING</p><GlassText className="text-xl font-bold">—</GlassText><p className="text-[10px] text-white/40">KCAL EST.</p></div>
-              <div><p className="text-[10px] text-white/40">NET</p><GlassText className="text-xl font-bold">—</GlassText><p className="text-[10px] text-white/40">KCAL</p></div>
+              <div className="grid grid-cols-3 gap-2 mt-4 text-center">
+                <div><p className="text-[10px] text-white/40">CONSUMED</p><GlassText className="text-xl font-bold">—</GlassText><p className="text-[10px] text-white/40">KCAL</p></div>
+                <div><p className="text-[10px] text-white/40">TRAINING</p><GlassText className="text-xl font-bold">—</GlassText><p className="text-[10px] text-white/40">KCAL EST.</p></div>
+                <div><p className="text-[10px] text-white/40">NET</p><GlassText className="text-xl font-bold">—</GlassText><p className="text-[10px] text-white/40">KCAL</p></div>
+              </div>
             </div>
             <div className="flex justify-between text-[10px] font-mono border-t border-white/10 pt-3">
               <span className="text-white/40">WEIGHT DATA</span><span className="text-emerald-300">LINKED</span>
