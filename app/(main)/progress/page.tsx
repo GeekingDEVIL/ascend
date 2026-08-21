@@ -14,6 +14,8 @@ import { buildLedger, avgDailyNet, projectWeightChange, projectWeightAtDate, day
 import { getFullCalorieSummary, ageFromDOB, type CalorieSummary, type GoalType, type ActivityLevel, type DietPreference, type Sex } from "../../lib/calorieEngine";
 import { checkFeasibility, type FeasibilityVerdict } from "../../lib/energyGuardrails";
 import { estimateObservedTdee, blendTdee, type TdeeEstimate } from "../../lib/energyEstimator";
+import { buildEnergyReceipt, type EnergyReceipt } from "../../lib/systemValue";
+import EnergyReceiptPanel from "../../components/EnergyReceipt";
 
 const MEASUREMENT_TYPES: { type: MeasurementType; color: string; bar: string }[] = [
     { type: "Biceps", color: "text-pink-300", bar: "bg-pink-400" },
@@ -187,6 +189,8 @@ export default function ProgressPage() {
     const [feasibility, setFeasibility] = useState<FeasibilityVerdict | null>(null);
     const [tdeeEstimate, setTdeeEstimate] = useState<TdeeEstimate | null>(null);
     const [adaptiveMode, setAdaptiveMode] = useState(false);
+    const [energyReceipt, setEnergyReceipt] = useState<EnergyReceipt | null>(null);
+    const [showReceipt, setShowReceipt] = useState(false);
 
     const loadHistory = useCallback(async () => {
         if (!user) return;
@@ -453,13 +457,33 @@ export default function ProgressPage() {
                 }));
             }
 
+            let estimate: TdeeEstimate | null = null;
             if (allIntake && trendRows && trendRows.length >= 2) {
-                const estimate = estimateObservedTdee({
+                estimate = estimateObservedTdee({
                     dailyIntakes: allIntake.map((r: any) => ({ date: r.date, kcal: Number(r.kcal) })),
                     trendWeights: trendRows.map((r: any) => ({ date: r.date, ema_kg: Number(r.ema_kg) })),
                 });
                 setTdeeEstimate(estimate);
             }
+
+            const isAdaptive = !!g?.adaptive_mode;
+            const blended = estimate ? blendTdee(summary.tdee, estimate.observedTdee, estimate.days) : null;
+            setEnergyReceipt(buildEnergyReceipt({
+                bmr: summary.bmr,
+                tdee: summary.tdee,
+                calorieTarget: summary.calorieTarget,
+                macros: summary.macros,
+                observedTdee: estimate?.observedTdee ?? null,
+                blendedTdee: blended,
+                adaptiveMode: isAdaptive,
+                hasOverride: !!g?.calorie_target_override,
+                goalType: g?.goal_type ?? "general_fitness",
+                weightKg: bwLatest,
+                heightCm: prof.height_cm,
+                ageYears: ageFromDOB(prof.date_of_birth),
+                sex: prof.sex,
+                activity: prof.activity_level ?? "moderate",
+            }));
         }
     }, [user, bodyWeightData]);
 
@@ -1296,6 +1320,14 @@ export default function ProgressPage() {
                                         {adaptiveMode && !tdeeEstimate && (
                                             <p className="text-[8px] font-mono text-white/20 mt-2 text-center">Log intake and morning weights for 14+ days to enable adaptive estimation.</p>
                                         )}
+                                        {energyReceipt && (
+                                            <button
+                                                onClick={() => setShowReceipt(true)}
+                                                className="w-full mt-3 text-[9px] font-mono py-2 rounded-lg border border-white/[0.08] text-white/25 hover:text-white/50 hover:border-white/[0.15] transition"
+                                            >
+                                                Show the receipt
+                                            </button>
+                                        )}
                                     </div>
                                 )}
 
@@ -1427,6 +1459,10 @@ export default function ProgressPage() {
                     onClose={() => setActiveMeasurement(null)}
                     onSaved={(type, value) => setMeasurements((prev) => ({ ...prev, [type]: value }))}
                 />
+            )}
+
+            {showReceipt && energyReceipt && (
+                <EnergyReceiptPanel receipt={energyReceipt} onClose={() => setShowReceipt(false)} />
             )}
         </main>
     );
