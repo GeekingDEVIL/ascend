@@ -5,9 +5,10 @@ import Link from "next/link";
 import { Calendar, Dumbbell, TrendingUp, Weight, Trophy, ChevronDown, ChevronRight, Lock } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../lib/AuthProvider";
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, CartesianGrid } from "recharts";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, CartesianGrid, ReferenceLine } from "recharts";
 import { ACHIEVEMENT_DEFS, RARITY_COLORS, type AchievementDef } from "../../lib/achievements";
 import MeasurementModal, { type MeasurementType } from "../../components/MeasurementModal";
+import { type WeightEntry, type WeightContext, lbsToKg, kgToLbs, rematerializeWeightTrend } from "../../lib/weightTrend";
 
 const MEASUREMENT_TYPES: { type: MeasurementType; color: string; bar: string }[] = [
     { type: "Biceps", color: "text-pink-300", bar: "bg-pink-400" },
@@ -65,7 +66,15 @@ type StrengthDataPoint = {
 type BodyWeightEntry = {
     weight: number;
     date: string;
+    ema?: number;
 };
+
+const WEIGHT_CONTEXTS: { value: WeightContext; label: string }[] = [
+    { value: "morning", label: "MORNING" },
+    { value: "pre_workout", label: "PRE-WORKOUT" },
+    { value: "post_workout", label: "POST-WORKOUT" },
+    { value: "manual", label: "GENERAL" },
+];
 
 type WeeklyVolume = {
     week: string;
@@ -149,6 +158,8 @@ export default function ProgressPage() {
     // Body
     const [bodyWeightData, setBodyWeightData] = useState<BodyWeightEntry[]>([]);
     const [newWeight, setNewWeight] = useState("");
+    const [weightUnit, setWeightUnit] = useState<"kg" | "lbs">("kg");
+    const [weightContext, setWeightContext] = useState<WeightContext>("morning");
     const [measurements, setMeasurements] = useState<Record<string, number | null>>({});
     const [activeMeasurement, setActiveMeasurement] = useState<MeasurementType | null>(null);
 
@@ -267,16 +278,42 @@ export default function ProgressPage() {
 
     const loadBodyWeight = useCallback(async () => {
         if (!user) return;
-        const { data } = await supabase
-            .from("body_weight_logs")
-            .select("weight, logged_at")
-            .eq("user_id", user.id)
-            .order("logged_at", { ascending: true })
-            .limit(90);
-        setBodyWeightData((data ?? []).map((d: any, i: number) => ({
-            weight: Number(d.weight),
-            date: new Date(d.logged_at).toLocaleDateString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }),
-        })));
+        const [{ data: logs }, { data: trend }] = await Promise.all([
+            supabase
+                .from("body_weight_logs")
+                .select("weight, logged_at, context, date")
+                .eq("user_id", user.id)
+                .order("logged_at", { ascending: true })
+                .limit(180),
+            supabase
+                .from("weight_trend")
+                .select("date, raw_kg, ema_kg")
+                .eq("user_id", user.id)
+                .order("date", { ascending: true }),
+        ]);
+
+        const emaByDate: Record<string, number> = {};
+        (trend ?? []).forEach((t: any) => { emaByDate[t.date] = Number(t.ema_kg); });
+
+        const byDate: Record<string, { weights: number[]; ema?: number }> = {};
+        (logs ?? []).forEach((d: any) => {
+            const dateKey = d.date || (d.logged_at as string).split("T")[0];
+            if (!byDate[dateKey]) byDate[dateKey] = { weights: [] };
+            byDate[dateKey].weights.push(Number(d.weight));
+        });
+
+        const entries: BodyWeightEntry[] = Object.entries(byDate)
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([dateKey, val]) => {
+                const avg = val.weights.reduce((a, b) => a + b, 0) / val.weights.length;
+                return {
+                    weight: Math.round(avg * 10) / 10,
+                    date: new Date(dateKey + "T12:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+                    ema: emaByDate[dateKey] ? Math.round(emaByDate[dateKey] * 10) / 10 : undefined,
+                };
+            });
+
+        setBodyWeightData(entries);
     }, [user]);
 
     const loadMeasurements = useCallback(async () => {
@@ -363,11 +400,23 @@ export default function ProgressPage() {
 
     async function logBodyWeight() {
         if (!user || !newWeight) return;
+        const rawValue = Number(newWeight);
+        if (rawValue <= 0) return;
+        const storedKg = weightUnit === "lbs" ? lbsToKg(rawValue) : rawValue;
+        const today = new Date().toISOString().split("T")[0];
+
         await supabase.from("body_weight_logs").insert({
             user_id: user.id,
-            weight: Number(newWeight),
-            context: "manual",
+            weight: storedKg,
+            context: weightContext,
+            entered_unit: weightUnit,
+            date: today,
         });
+
+        if (weightContext === "morning") {
+            await rematerializeWeightTrend(user.id);
+        }
+
         setNewWeight("");
         await loadBodyWeight();
     }
@@ -743,12 +792,27 @@ export default function ProgressPage() {
                                 </div>
 
                                 {/* Log weight */}
-                                <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-4">
+                                <div className="rounded-lg border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.02] p-4" style={{ boxShadow: "inset 0 1px 0 rgb(var(--accent-rgb) / 0.06)" }}>
                                     <p className="text-[10px] font-mono tracking-widest text-white/25 mb-3">LOG BODY WEIGHT</p>
-                                    <div className="flex items-center gap-3">
+
+                                    {/* Context selector */}
+                                    <div className="flex flex-wrap gap-1.5 mb-3">
+                                        {WEIGHT_CONTEXTS.map((ctx) => (
+                                            <button
+                                                key={ctx.value}
+                                                onClick={() => setWeightContext(ctx.value)}
+                                                className={`text-[9px] font-mono px-2.5 py-1.5 rounded-md border transition ${weightContext === ctx.value ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/[0.08] text-white/30 hover:text-white/50"}`}
+                                            >
+                                                {ctx.label}
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    <div className="flex items-center gap-2">
                                         <input
                                             type="number"
                                             min="0"
+                                            step="0.1"
                                             inputMode="decimal"
                                             onWheel={(e) => (e.target as HTMLElement).blur()}
                                             value={newWeight}
@@ -756,7 +820,13 @@ export default function ProgressPage() {
                                             placeholder="—"
                                             className="flex-1 min-w-0 h-12 rounded-lg bg-white/[0.04] border border-white/[0.08] text-center text-xl font-bold font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition"
                                         />
-                                        <span className="text-sm font-mono text-white/30 shrink-0">KG</span>
+                                        {/* Unit toggle */}
+                                        <button
+                                            onClick={() => setWeightUnit((u) => u === "kg" ? "lbs" : "kg")}
+                                            className="shrink-0 text-[10px] font-mono px-3 py-3 rounded-lg border border-white/[0.08] text-white/40 hover:text-white/70 hover:border-white/20 transition"
+                                        >
+                                            {weightUnit.toUpperCase()}
+                                        </button>
                                         <button
                                             onClick={logBodyWeight}
                                             disabled={!newWeight}
@@ -765,52 +835,97 @@ export default function ProgressPage() {
                                             LOG
                                         </button>
                                     </div>
+                                    {weightContext === "morning" && (
+                                        <p className="text-[9px] font-mono text-[rgb(var(--accent-light-rgb)/0.5)] mt-2">Morning weigh-ins feed the trend line. Other entries are logged but don't affect your trend.</p>
+                                    )}
                                 </div>
 
-                                {/* Weight chart */}
-                                <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-4">
-                                    <p className="text-[10px] font-mono tracking-widest text-white/25 mb-3">WEIGHT TREND</p>
+                                {/* Weight trend chart */}
+                                <div className="rounded-lg border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.02] p-4" style={{ boxShadow: "inset 0 1px 0 rgb(var(--accent-rgb) / 0.06)" }}>
+                                    <div className="flex items-center justify-between mb-3">
+                                        <p className="text-[10px] font-mono tracking-widest text-white/25">WEIGHT TREND</p>
+                                        {bodyWeightData.some((d) => d.ema) && (
+                                            <div className="flex items-center gap-3">
+                                                <span className="flex items-center gap-1.5 text-[8px] font-mono text-white/25">
+                                                    <span className="w-3 h-0.5 rounded-full bg-white/20 inline-block" /> RAW
+                                                </span>
+                                                <span className="flex items-center gap-1.5 text-[8px] font-mono text-cyan-300/60">
+                                                    <span className="w-3 h-0.5 rounded-full bg-cyan-400 inline-block" /> TREND
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
                                     {bodyWeightData.length < 2 ? (
                                         <div className="h-40 flex items-center justify-center border border-dashed border-white/10 rounded-lg">
                                             <p className="text-xs font-mono text-white/30 text-center px-4">
-                                                {bodyWeightData.length === 0 ? "No weight logs yet." : "Need at least 2 entries to show a trend."}
+                                                {bodyWeightData.length === 0 ? "No weight logs yet. Log your morning weight to start tracking." : "Need at least 2 entries to show a trend."}
                                             </p>
                                         </div>
                                     ) : (
-                                        <div className="h-52">
+                                        <div className="h-56">
                                             <ResponsiveContainer width="100%" height="100%">
                                                 <LineChart data={bodyWeightData}>
                                                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
                                                     <XAxis dataKey="date" tick={{ fontSize: 9, fill: "rgba(255,255,255,0.3)" }} />
                                                     <YAxis tick={{ fontSize: 9, fill: "rgba(255,255,255,0.3)" }} domain={["auto", "auto"]} />
                                                     <Tooltip content={<CustomTooltip />} />
-                                                    <Line type="monotone" dataKey="weight" stroke="#34d399" strokeWidth={2} dot={{ r: 3, fill: "#34d399" }} name="Weight (kg)" />
+                                                    <Line type="monotone" dataKey="weight" stroke="rgba(255,255,255,0.2)" strokeWidth={1} dot={{ r: 2.5, fill: "rgba(255,255,255,0.15)", strokeWidth: 0 }} name="Raw (kg)" activeDot={{ r: 4, fill: "rgba(255,255,255,0.4)" }} />
+                                                    {bodyWeightData.some((d) => d.ema) && (
+                                                        <Line type="monotone" dataKey="ema" stroke="#22d3ee" strokeWidth={2.5} dot={false} name="Trend (kg)" connectNulls />
+                                                    )}
                                                 </LineChart>
                                             </ResponsiveContainer>
                                         </div>
                                     )}
+                                    {bodyWeightData.length >= 2 && !bodyWeightData.some((d) => d.ema) && (
+                                        <p className="text-[9px] font-mono text-white/20 mt-2 text-center">Log morning weigh-ins to see the EMA trend line</p>
+                                    )}
                                 </div>
 
-                                {/* Latest stats */}
-                                {bodyWeightData.length > 0 && (
-                                    <div className="grid grid-cols-3 gap-2">
-                                        <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-3 text-center">
-                                            <p className="text-[8px] font-mono text-white/30">CURRENT</p>
-                                            <p className="text-lg font-bold font-mono text-white/90">{bodyWeightData[bodyWeightData.length - 1].weight} <span className="text-xs text-white/30">KG</span></p>
-                                        </div>
-                                        <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-3 text-center">
-                                            <p className="text-[8px] font-mono text-white/30">LOWEST</p>
-                                            <p className="text-lg font-bold font-mono text-emerald-300">{Math.min(...bodyWeightData.map((d) => d.weight))} <span className="text-xs text-white/30">KG</span></p>
-                                        </div>
-                                        <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-3 text-center">
-                                            <p className="text-[8px] font-mono text-white/30">CHANGE</p>
-                                            {bodyWeightData.length >= 2 ? (() => {
-                                                const change = Number((bodyWeightData[bodyWeightData.length - 1].weight - bodyWeightData[0].weight).toFixed(1));
-                                                return <p className={`text-lg font-bold font-mono ${change > 0 ? "text-orange-300" : change < 0 ? "text-emerald-300" : "text-white/50"}`}>{change > 0 ? "+" : ""}{change} <span className="text-xs text-white/30">KG</span></p>;
-                                            })() : <p className="text-lg font-bold font-mono text-white/30">—</p>}
-                                        </div>
+                                {/* Explainer — only shown once there's some data */}
+                                {bodyWeightData.length > 0 && bodyWeightData.length <= 7 && (
+                                    <div className="rounded-lg border border-amber-500/10 bg-amber-500/[0.03] px-4 py-3">
+                                        <p className="text-[9px] font-mono text-amber-200/60 leading-relaxed">Initial weight changes are mostly glycogen and water (~3g water per 1g glycogen stored), not fat. Give the trend line 2-3 weeks before reading real direction.</p>
                                     </div>
                                 )}
+
+                                {/* Latest stats */}
+                                {bodyWeightData.length > 0 && (() => {
+                                    const latest = bodyWeightData[bodyWeightData.length - 1];
+                                    const trendEntries = bodyWeightData.filter((d) => d.ema !== undefined);
+                                    const trendStart = trendEntries.length >= 2 ? trendEntries[0].ema! : null;
+                                    const trendEnd = trendEntries.length >= 2 ? trendEntries[trendEntries.length - 1].ema! : null;
+                                    const trendChange = trendStart !== null && trendEnd !== null ? Math.round((trendEnd - trendStart) * 10) / 10 : null;
+                                    const weeklyRate = trendEntries.length >= 7 && trendStart !== null && trendEnd !== null
+                                        ? Math.round(((trendEnd - trendStart) / (trendEntries.length / 7)) * 10) / 10
+                                        : null;
+
+                                    return (
+                                        <div className="grid grid-cols-3 gap-2">
+                                            <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-3 text-center">
+                                                <p className="text-[8px] font-mono text-white/30">CURRENT</p>
+                                                <p className="text-lg font-bold font-mono text-white/90">{latest.weight} <span className="text-xs text-white/30">KG</span></p>
+                                            </div>
+                                            <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-3 text-center">
+                                                <p className="text-[8px] font-mono text-white/30">{trendEnd !== null ? "TREND" : "LOWEST"}</p>
+                                                {trendEnd !== null ? (
+                                                    <p className="text-lg font-bold font-mono text-cyan-300">{trendEnd} <span className="text-xs text-white/30">KG</span></p>
+                                                ) : (
+                                                    <p className="text-lg font-bold font-mono text-emerald-300">{Math.min(...bodyWeightData.map((d) => d.weight))} <span className="text-xs text-white/30">KG</span></p>
+                                                )}
+                                            </div>
+                                            <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-3 text-center">
+                                                <p className="text-[8px] font-mono text-white/30">{weeklyRate !== null ? "/WEEK" : "CHANGE"}</p>
+                                                {weeklyRate !== null ? (
+                                                    <p className={`text-lg font-bold font-mono ${weeklyRate > 0 ? "text-orange-300" : weeklyRate < 0 ? "text-emerald-300" : "text-white/50"}`}>{weeklyRate > 0 ? "+" : ""}{weeklyRate} <span className="text-xs text-white/30">KG</span></p>
+                                                ) : bodyWeightData.length >= 2 ? (() => {
+                                                    const change = Math.round((latest.weight - bodyWeightData[0].weight) * 10) / 10;
+                                                    return <p className={`text-lg font-bold font-mono ${change > 0 ? "text-orange-300" : change < 0 ? "text-emerald-300" : "text-white/50"}`}>{change > 0 ? "+" : ""}{change} <span className="text-xs text-white/30">KG</span></p>;
+                                                })() : <p className="text-lg font-bold font-mono text-white/30">—</p>}
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
                             </div>
                         )}
 
