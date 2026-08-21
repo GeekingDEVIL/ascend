@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { Search, X, ChevronDown } from "lucide-react";
+import { Search, X, ChevronDown, ChevronRight } from "lucide-react";
 import { supabase } from "../lib/supabase";
 
 type Exercise = {
@@ -28,7 +28,7 @@ export default function ExerciseDatabaseModal({ onClose }: { onClose: () => void
     const [loading, setLoading] = useState(true);
     const [query, setQuery] = useState("");
     const [openGroups, setOpenGroups] = useState<Set<string>>(new Set());
-    const [openExercise, setOpenExercise] = useState<string | null>(null);
+    const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
 
     useEffect(() => {
         setMounted(true);
@@ -68,141 +68,153 @@ export default function ExerciseDatabaseModal({ onClose }: { onClose: () => void
     if (!mounted) return null;
 
     return createPortal(
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/75 backdrop-blur-sm p-0 md:p-6">
-            <style>{`
-        .custom-scroll::-webkit-scrollbar { width: 6px; }
-        .custom-scroll::-webkit-scrollbar-track { background: transparent; }
-        .custom-scroll::-webkit-scrollbar-thumb { background: rgb(var(--accent-rgb) / 0.25); border-radius: 999px; }
-      `}</style>
-            <div
-                className="relative w-full h-full md:h-[85vh] md:max-w-2xl md:rounded-md border border-[rgb(var(--accent-rgb)/0.25)] bg-[#0a1120] md:bg-[#0a1120]/95 backdrop-blur-2xl flex flex-col overflow-hidden"
-                style={{ boxShadow: "0 0 70px -12px rgb(var(--accent-rgb) / 0.3)" }}
-            >
-                <div className="px-6 pt-6 pb-4 border-b border-[rgb(var(--accent-rgb)/0.1)] shrink-0">
-                    <div className="flex items-center justify-between">
-                        <p className="text-[10px] font-mono tracking-widest text-[rgb(var(--accent-light-rgb)/0.6)]">SYSTEM / EXERCISE DATABASE</p>
-                        <button onClick={onClose} className="text-white/40 hover:text-white/80">
-                            <X size={18} />
-                        </button>
-                    </div>
-                    <h2 className="text-xl font-bold mt-1">
-                        EXERCISE <span className="text-[rgb(var(--accent-light-rgb))]">DATABASE</span>
-                    </h2>
-                    <p className="text-xs text-white/40 mt-1">Browse the full library. This view doesn't add anything to your schedule.</p>
-                </div>
+        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center">
+            <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={selectedExercise ? () => setSelectedExercise(null) : onClose} />
+            <div className="relative w-full max-w-lg max-h-[94vh] bg-[#080d18] border border-white/[0.08] rounded-t-2xl sm:rounded-2xl flex flex-col overflow-hidden">
 
-                <div className="p-4 border-b border-[rgb(var(--accent-rgb)/0.1)] shrink-0">
-                    <div className="relative">
-                        <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-[rgb(var(--accent-light-rgb)/0.5)]" />
-                        <input
-                            type="text"
-                            value={query}
-                            onChange={(e) => setQuery(e.target.value)}
-                            placeholder="Search the database..."
-                            className="w-full rounded-md bg-white/[0.04] border border-[rgb(var(--accent-rgb)/0.2)] pl-11 pr-4 py-2.5 text-sm focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.5)]"
-                        />
-                    </div>
-                    <p className="text-[10px] font-mono text-white/30 mt-2">{filtered.length} exercises</p>
-                </div>
-
-                <div className="flex-1 overflow-y-auto custom-scroll px-4 py-3 pb-24">
-                    {loading && <p className="text-center text-white/40 text-sm py-10">Loading...</p>}
-                    {grouped.map(([groupName, items]) => {
-                        const isOpen = openGroups.has(groupName);
-                        return (
-                            <div key={groupName} className="mb-2 rounded-md border border-[rgb(var(--accent-rgb)/0.1)] overflow-hidden">
-                                <button
-                                    onClick={() => toggleGroup(groupName)}
-                                    className="w-full flex items-center justify-between px-4 py-3 bg-white/[0.02] hover:bg-white/[0.04] transition"
-                                >
-                                    <span className="text-xs font-bold tracking-widest text-[rgb(var(--accent-light-rgb))]">{groupName.toUpperCase()}</span>
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-[10px] font-mono text-white/30">{items.length}</span>
-                                        <ChevronDown size={14} className={`text-white/40 transition-transform ${isOpen ? "rotate-180" : ""}`} />
-                                    </div>
+                {!selectedExercise ? (
+                    <>
+                        {/* Header */}
+                        <div className="px-5 pt-5 pb-3 shrink-0">
+                            <div className="flex items-center justify-between mb-3">
+                                <div>
+                                    <h2 className="text-lg font-bold text-white/90">Exercise Database</h2>
+                                    <p className="text-[10px] font-mono text-white/30 mt-0.5">{filtered.length} exercises</p>
+                                </div>
+                                <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-xl border border-white/[0.08] text-white/35 hover:text-white/70 transition">
+                                    <X size={16} />
                                 </button>
-                                {isOpen && (
-                                    <div className="divide-y divide-white/5">
-                                        {items.map((ex) => {
-                                            const isExpanded = openExercise === ex.id;
-                                            return (
-                                                <div key={ex.id}>
-                                                    <button
-                                                        onClick={() => setOpenExercise(isExpanded ? null : ex.id)}
-                                                        className="w-full flex items-center gap-3 text-left px-4 py-2.5 hover:bg-white/[0.02] transition"
-                                                    >
-                                                        {ex.image_url ? (
-                                                            <img src={ex.image_url} alt="" className="w-11 h-11 rounded-md object-cover shrink-0 border border-white/10" />
-                                                        ) : (
-                                                            <div className="w-11 h-11 rounded-md shrink-0 bg-white/5 border border-white/10" />
-                                                        )}
-                                                        <span className="min-w-0">
-                                                            <p className="text-sm font-bold text-white/90">{ex.name}</p>
-                                                            <p className="text-[10px] font-mono text-white/40 mt-0.5">
-                                                                {ex.primary_muscle} · {ex.equipment} · {ex.difficulty}
-                                                            </p>
-                                                        </span>
-                                                    </button>
-                                                    {isExpanded && (
-                                                        <div className="px-4 pb-3.5 pt-1 border-t border-white/5 space-y-3">
-                                                            {ex.image_url && (
-                                                                <img src={ex.image_url} alt={ex.name} className="w-full max-w-xs rounded-md border border-white/10" />
-                                                            )}
-                                                            <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-                                                                <div>
-                                                                    <p className="text-[9px] font-mono text-white/30">MOVEMENT</p>
-                                                                    <p className="text-[11px] font-mono text-white/70">{ex.movement_pattern || "—"}</p>
-                                                                </div>
-                                                                <div>
-                                                                    <p className="text-[9px] font-mono text-white/30">DIFFICULTY</p>
-                                                                    <p className="text-[11px] font-mono text-white/70">{ex.difficulty || "—"}</p>
-                                                                </div>
-                                                                <div>
-                                                                    <p className="text-[9px] font-mono text-white/30">EQUIPMENT TYPE</p>
-                                                                    <p className="text-[11px] font-mono text-white/70">{ex.equipment_type || "—"}</p>
-                                                                </div>
-                                                                <div>
-                                                                    <p className="text-[9px] font-mono text-white/30">TRACKING</p>
-                                                                    <p className="text-[11px] font-mono text-white/70">{ex.tracking_method || "Weight × Reps"}</p>
-                                                                </div>
-                                                                <div>
-                                                                    <p className="text-[9px] font-mono text-white/30">CATEGORY</p>
-                                                                    <p className="text-[11px] font-mono text-white/70">{ex.category || "—"}</p>
-                                                                </div>
-                                                                <div>
-                                                                    <p className="text-[9px] font-mono text-white/30">UNILATERAL</p>
-                                                                    <p className="text-[11px] font-mono text-white/70">{ex.is_unilateral ? "Yes" : "No"}</p>
-                                                                </div>
-                                                            </div>
-                                                            {ex.secondary_muscles?.length > 0 && (
-                                                                <div>
-                                                                    <p className="text-[9px] font-mono text-white/30">SECONDARY MUSCLES</p>
-                                                                    <div className="flex flex-wrap gap-1.5 mt-1">
-                                                                        {ex.secondary_muscles.map((m) => (
-                                                                            <span key={m} className="text-[10px] font-mono px-2 py-0.5 rounded border bg-white/5 text-white/50 border-white/10">{m}</span>
-                                                                        ))}
-                                                                    </div>
-                                                                </div>
-                                                            )}
-                                                            {ex.instructions ? (
-                                                                <div>
-                                                                    <p className="text-[9px] font-mono text-white/30">INSTRUCTIONS</p>
-                                                                    <p className="text-[11px] text-white/60 mt-1 whitespace-pre-line leading-relaxed">{ex.instructions}</p>
-                                                                </div>
-                                                            ) : (
-                                                                <p className="text-[9px] font-mono text-white/20 italic">No instructions added yet.</p>
-                                                            )}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                )}
                             </div>
-                        );
-                    })}
-                </div>
+
+                            {/* Search */}
+                            <div className="relative">
+                                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/25" />
+                                <input
+                                    type="text" value={query} onChange={(e) => setQuery(e.target.value)}
+                                    placeholder="Search exercises, muscles, equipment..."
+                                    className="w-full rounded-xl bg-white/[0.03] border border-white/[0.06] pl-9 pr-4 py-2.5 text-sm text-white/80 placeholder:text-white/20 focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.3)]"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="border-t border-white/[0.04]" />
+
+                        {/* List */}
+                        <div className="flex-1 overflow-y-auto custom-scroll px-4 py-3">
+                            {loading ? (
+                                <div className="flex items-center justify-center py-16"><div className="w-6 h-6 border-2 border-[rgb(var(--accent-rgb)/0.4)] border-t-[rgb(var(--accent-rgb))] rounded-full animate-spin" /></div>
+                            ) : (
+                                <div className="space-y-1.5">
+                                    {grouped.map(([groupName, items]) => {
+                                        const isOpen = openGroups.has(groupName);
+                                        return (
+                                            <div key={groupName} className="rounded-xl border border-white/[0.05] bg-white/[0.015] overflow-hidden">
+                                                <button
+                                                    onClick={() => toggleGroup(groupName)}
+                                                    className="w-full flex items-center justify-between px-3.5 py-2.5 hover:bg-white/[0.02] transition"
+                                                >
+                                                    <span className="text-[11px] font-bold tracking-wider text-white/60">{groupName.toUpperCase()}</span>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-[9px] font-mono text-white/20">{items.length}</span>
+                                                        <ChevronDown size={13} className={`text-white/25 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+                                                    </div>
+                                                </button>
+                                                {isOpen && (
+                                                    <div className="border-t border-white/[0.04]">
+                                                        {items.map((ex) => (
+                                                            <button
+                                                                key={ex.id}
+                                                                onClick={() => setSelectedExercise(ex)}
+                                                                className="w-full flex items-center gap-3 text-left px-3.5 py-2.5 border-b border-white/[0.03] last:border-b-0 hover:bg-white/[0.02] transition group"
+                                                            >
+                                                                {ex.image_url ? (
+                                                                    <img src={ex.image_url} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0 border border-white/[0.06]" />
+                                                                ) : (
+                                                                    <div className="w-10 h-10 rounded-lg shrink-0 bg-white/[0.03] border border-white/[0.06]" />
+                                                                )}
+                                                                <div className="min-w-0 flex-1">
+                                                                    <p className="text-[13px] font-medium text-white/80 truncate">{ex.name}</p>
+                                                                    <p className="text-[9px] font-mono text-white/30 mt-0.5">
+                                                                        {ex.primary_muscle} · {ex.equipment}
+                                                                    </p>
+                                                                </div>
+                                                                <ChevronRight size={13} className="text-white/10 group-hover:text-white/30 transition shrink-0" />
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                    </>
+                ) : (
+                    /* ─── Exercise Detail ─── */
+                    <>
+                        <div className="px-5 pt-5 pb-4 shrink-0">
+                            <button onClick={() => setSelectedExercise(null)} className="flex items-center gap-1 text-[10px] font-mono text-white/30 hover:text-white/60 transition mb-3">
+                                <ChevronDown size={12} className="rotate-90" /> BACK
+                            </button>
+                            <div className="flex items-start gap-3">
+                                {selectedExercise.image_url ? (
+                                    <img src={selectedExercise.image_url} alt="" className="w-16 h-16 rounded-xl object-cover shrink-0 border border-white/[0.08]" />
+                                ) : (
+                                    <div className="w-16 h-16 rounded-xl shrink-0 bg-white/[0.03] border border-white/[0.08]" />
+                                )}
+                                <div className="min-w-0">
+                                    <h2 className="text-base font-bold text-white/90 leading-tight">{selectedExercise.name}</h2>
+                                    <p className="text-[10px] font-mono text-white/35 mt-1">{selectedExercise.primary_muscle} · {selectedExercise.equipment} · {selectedExercise.difficulty}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="border-t border-white/[0.04]" />
+
+                        <div className="flex-1 overflow-y-auto custom-scroll px-5 py-4 space-y-4">
+                            {selectedExercise.image_url && (
+                                <img src={selectedExercise.image_url} alt={selectedExercise.name} className="w-full max-w-xs rounded-xl border border-white/[0.06]" />
+                            )}
+
+                            <div className="grid grid-cols-2 gap-2">
+                                {[
+                                    ["MOVEMENT", selectedExercise.movement_pattern],
+                                    ["DIFFICULTY", selectedExercise.difficulty],
+                                    ["EQUIPMENT", selectedExercise.equipment_type],
+                                    ["CATEGORY", selectedExercise.category],
+                                    ["TRACKING", selectedExercise.tracking_method || "Weight × Reps"],
+                                    ["UNILATERAL", selectedExercise.is_unilateral ? "Yes" : "No"],
+                                ].map(([label, value]) => (
+                                    <div key={label as string} className="rounded-lg border border-white/[0.05] bg-white/[0.02] p-2.5">
+                                        <p className="text-[8px] font-mono text-white/25">{label}</p>
+                                        <p className="text-[11px] font-medium text-white/65 mt-0.5">{(value as string) || "—"}</p>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {selectedExercise.secondary_muscles?.length > 0 && (
+                                <div>
+                                    <p className="text-[9px] font-mono text-white/25 mb-1.5">SECONDARY MUSCLES</p>
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {selectedExercise.secondary_muscles.map((m) => (
+                                            <span key={m} className="text-[9px] font-mono px-2.5 py-1 rounded-lg bg-white/[0.03] border border-white/[0.06] text-white/40">{m}</span>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {selectedExercise.instructions ? (
+                                <div>
+                                    <p className="text-[9px] font-mono text-white/25 mb-1.5">INSTRUCTIONS</p>
+                                    <p className="text-[11px] text-white/50 leading-relaxed whitespace-pre-line">{selectedExercise.instructions}</p>
+                                </div>
+                            ) : (
+                                <p className="text-[9px] font-mono text-white/15 italic">No instructions added yet.</p>
+                            )}
+                        </div>
+                    </>
+                )}
             </div>
         </div>,
         document.body

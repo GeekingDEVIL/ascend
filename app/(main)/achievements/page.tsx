@@ -62,26 +62,24 @@ export default function AchievementsPage() {
   }
 
   return (
-    <main className="relative min-h-screen w-full bg-[#050914] text-white p-4 md:p-10 pb-24 md:pb-10 overflow-x-hidden">
-      <div className="pointer-events-none fixed top-[-10%] left-1/2 -translate-x-1/2 w-[700px] h-[700px] bg-blue-600/15 rounded-full blur-[150px]" />
-      <div className="pointer-events-none fixed bottom-[-15%] right-[5%] w-[500px] h-[500px] bg-[rgb(var(--accent-rgb)/0.1)] rounded-full blur-[130px]" />
+    <main className="min-h-screen bg-[#050914] text-white pb-24 md:pb-10">
 
-      <div className="relative z-10 w-full max-w-3xl mx-auto space-y-5">
+      <div className="max-w-xl mx-auto px-4 pt-6 space-y-5">
         <div>
-          <h1 className="text-xl md:text-2xl font-bold tracking-wide text-white/90">Achievements</h1>
-          <p className="text-white/40 text-sm mt-0.5">Your training milestones and records.</p>
+          <h1 className="text-xl font-bold text-white/90">Achievements</h1>
+          <p className="text-[11px] text-white/30 mt-0.5">Your training milestones and records</p>
         </div>
 
         {/* Progress overview */}
         <div className="rounded-lg border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.03] p-4">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-[10px] font-mono tracking-widest text-white/40">COMPLETION</p>
+            <p className="text-[10px] font-mono tracking-widest text-white/25">COMPLETION</p>
             <p className="text-sm font-bold font-mono text-white/80">{totalEarned}/{totalAchievements}</p>
           </div>
           <div className="h-2.5 rounded-full bg-white/[0.06] overflow-hidden border border-white/[0.04]">
             <div
               className="h-full bg-gradient-to-r from-[rgb(var(--accent-rgb))] to-[rgb(var(--accent-light-rgb))] rounded-full transition-all"
-              style={{ width: `${completionPct}%`, boxShadow: "0 0 8px rgb(var(--accent-rgb) / 0.4)" }}
+              style={{ width: `${completionPct}%` }}
             />
           </div>
           <p className="text-[9px] font-mono text-white/30 mt-1.5">{completionPct}% complete</p>
@@ -120,7 +118,7 @@ export default function AchievementsPage() {
         ) : Object.keys(grouped).length === 0 ? (
           <div className="text-center py-16">
             <Award size={32} className="mx-auto mb-3 text-white/15" />
-            <p className="text-sm font-bold tracking-widest text-white/30">NO ACHIEVEMENTS FOUND</p>
+            <p className="text-sm font-semibold text-white/25">NO ACHIEVEMENTS FOUND</p>
             <p className="text-xs text-white/20 mt-1">Try a different filter.</p>
           </div>
         ) : (
@@ -137,7 +135,6 @@ export default function AchievementsPage() {
                       className={`flex items-start gap-3 rounded-lg border p-3 transition ${
                         isEarned ? `${rarity.border} ${rarity.bg}` : "border-white/[0.06] bg-white/[0.01] opacity-50"
                       }`}
-                      style={isEarned && rarity.glow ? { boxShadow: rarity.glow } : undefined}
                     >
                       <div className="text-2xl shrink-0 mt-0.5">
                         {isEarned ? a.icon : <Lock size={20} className="text-white/20" />}

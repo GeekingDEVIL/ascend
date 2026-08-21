@@ -102,28 +102,26 @@ export default function RankingsPage() {
     }
 
     return (
-        <main className="relative min-h-screen w-full bg-[#050914] text-white p-4 md:p-10 pb-24 md:pb-10 overflow-x-hidden">
-            <div className="pointer-events-none fixed top-[-10%] left-1/2 -translate-x-1/2 w-[700px] h-[700px] bg-blue-600/15 rounded-full blur-[150px]" />
-            <div className="pointer-events-none fixed bottom-[-15%] right-[5%] w-[500px] h-[500px] bg-[rgb(var(--accent-rgb)/0.1)] rounded-full blur-[130px]" />
+        <main className="min-h-screen bg-[#050914] text-white pb-24 md:pb-10">
 
-            <div className="relative z-10 w-full max-w-2xl mx-auto space-y-5">
+            <div className="max-w-xl mx-auto px-4 pt-6 space-y-5">
                 <div>
-                    <h1 className="text-xl md:text-2xl font-bold tracking-wide text-white/90">Rankings</h1>
-                    <p className="text-white/40 text-sm mt-0.5">Your ascent through the ranks.</p>
+                    <h1 className="text-xl font-bold text-white/90">Rankings</h1>
+                    <p className="text-[11px] text-white/30 mt-0.5">Your ascent through the ranks</p>
                 </div>
 
                 {/* ── TABS ── */}
                 <div className="flex gap-2">
                     <button
                         onClick={() => setTab("personal")}
-                        className={`flex items-center gap-1.5 text-[10px] font-mono px-4 py-2 rounded-lg border transition ${tab === "personal" ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/10 text-white/40 hover:text-white/70"
+                        className={`flex items-center gap-1.5 text-[10px] font-mono px-4 py-2 rounded-lg border transition ${tab === "personal" ? "border-[rgb(var(--accent-rgb)/0.2)] bg-[rgb(var(--accent-rgb)/0.08)] text-[rgb(var(--accent-rgb))]" : "border-white/[0.06] text-white/30 hover:text-white/60"
                             }`}
                     >
                         <User size={12} /> MY RANK
                     </button>
                     <button
                         onClick={() => setTab("leaderboard")}
-                        className={`flex items-center gap-1.5 text-[10px] font-mono px-4 py-2 rounded-lg border transition ${tab === "leaderboard" ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/10 text-white/40 hover:text-white/70"
+                        className={`flex items-center gap-1.5 text-[10px] font-mono px-4 py-2 rounded-lg border transition ${tab === "leaderboard" ? "border-[rgb(var(--accent-rgb)/0.2)] bg-[rgb(var(--accent-rgb)/0.08)] text-[rgb(var(--accent-rgb))]" : "border-white/[0.06] text-white/30 hover:text-white/60"
                             }`}
                     >
                         <Users size={12} /> LEADERBOARD
@@ -136,20 +134,10 @@ export default function RankingsPage() {
                 {tab === "personal" && (
                     <>
                         {/* Current Rank Hero */}
-                        <div className="relative p-[1.5px] rounded-xl overflow-hidden">
-                            <style>{`@keyframes rankBeam { to { transform: rotate(360deg); } }`}</style>
-                            <div
-                                className="absolute inset-[-60%] animate-[rankBeam_10s_linear_infinite] opacity-50"
-                                style={{
-                                    background: `conic-gradient(from 0deg, transparent 0%, transparent 10%, ${currentRank.glow.replace(")", ",0.8)")} 20%, transparent 40%, transparent 60%, ${currentRank.glow.replace(")", ",0.8)")} 80%, transparent 90%, transparent 100%)`,
-                                    filter: "blur(4px)",
-                                }}
-                            />
-                            <div className="relative rounded-xl bg-[#0a1120]/95 p-6">
+                        <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-6">
                                 <div className="flex flex-col items-center text-center">
                                     <div
                                         className={`w-20 h-20 rounded-xl border-2 ${currentRank.border} ${currentRank.bgClass} flex items-center justify-center mb-4`}
-                                        style={{ boxShadow: `0 0 30px -6px ${currentRank.glow}` }}
                                     >
                                         <span className="text-3xl">{currentRankIdx >= 10 ? "👑" : currentRankIdx >= 7 ? "💎" : currentRankIdx >= 4 ? "🛡️" : "⚔️"}</span>
                                     </div>
@@ -163,14 +151,13 @@ export default function RankingsPage() {
                                                 <span>{nextRank.name}</span>
                                             </div>
                                             <div className="h-3 rounded-full bg-white/[0.06] overflow-hidden border border-white/[0.04]">
-                                                <div className="h-full rounded-full transition-all" style={{ width: `${rankProgress}%`, background: `linear-gradient(90deg, ${currentRank.glow}, ${nextRank.glow})`, boxShadow: `0 0 10px ${currentRank.glow}` }} />
+                                                <div className="h-full rounded-full transition-all" style={{ width: `${rankProgress}%`, background: `linear-gradient(90deg, ${currentRank.glow}, ${nextRank.glow})` }} />
                                             </div>
                                             <p className="text-[10px] font-mono text-white/40 mt-1.5 text-center">{levelsToNextRank} levels to {nextRank.name}</p>
                                         </div>
                                     )}
                                     {!nextRank && <p className="text-sm font-mono text-white/50 mt-4">Maximum rank achieved.</p>}
                                 </div>
-                            </div>
                         </div>
 
                         {/* Stats */}
@@ -191,7 +178,7 @@ export default function RankingsPage() {
 
                         {/* Tier Ladder */}
                         <div>
-                            <p className="text-[10px] font-mono tracking-widest text-white/40 mb-3">RANK PROGRESSION</p>
+                            <p className="text-[10px] font-mono tracking-widest text-white/25 mb-3">RANK PROGRESSION</p>
                             <div className="space-y-1.5">
                                 {[...RANK_TIERS].reverse().map((tier, i) => {
                                     const reverseIdx = RANK_TIERS.length - 1 - i;
@@ -229,7 +216,7 @@ export default function RankingsPage() {
 
                         {/* XP Info */}
                         <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4">
-                            <p className="text-[10px] font-mono tracking-widest text-white/40 mb-3">HOW XP IS EARNED</p>
+                            <p className="text-[10px] font-mono tracking-widest text-white/25 mb-3">HOW XP IS EARNED</p>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10px] font-mono">
                                 {[
                                     ["Session completed", "+50 XP"],
@@ -261,7 +248,7 @@ export default function RankingsPage() {
                                 <button
                                     key={opt.key}
                                     onClick={() => setSortBy(opt.key)}
-                                    className={`flex items-center gap-1.5 text-[10px] font-mono px-3 py-1.5 rounded-lg border transition ${sortBy === opt.key ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/10 text-white/40 hover:text-white/70"
+                                    className={`flex items-center gap-1.5 text-[10px] font-mono px-3 py-1.5 rounded-lg border transition ${sortBy === opt.key ? "border-[rgb(var(--accent-rgb)/0.2)] bg-[rgb(var(--accent-rgb)/0.08)] text-[rgb(var(--accent-rgb))]" : "border-white/[0.06] text-white/30 hover:text-white/60"
                                         }`}
                                 >
                                     <opt.icon size={11} /> {opt.label}
@@ -275,7 +262,7 @@ export default function RankingsPage() {
                         ) : leaderboard.length === 0 ? (
                             <div className="text-center py-16">
                                 <Users size={32} className="mx-auto mb-3 text-white/15" />
-                                <p className="text-sm font-bold tracking-widest text-white/30">NO RANKINGS YET</p>
+                                <p className="text-sm font-semibold text-white/25">NO RANKINGS YET</p>
                                 <p className="text-xs text-white/20 mt-1">Complete a workout to appear on the leaderboard.</p>
                             </div>
                         ) : (

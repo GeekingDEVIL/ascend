@@ -2,110 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Dumbbell, Activity, Flame, Target, Zap, HeartPulse, Gauge, Trophy, Award, Bell, X, Medal, TrendingUp, Star } from "lucide-react";
+import { Dumbbell, Activity, Flame, Zap, HeartPulse, Trophy, Award, Bell, ChevronRight, TrendingUp, Target, Play, Calendar } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { computeLevel, getRank, getNextRank } from "../lib/levelSystem";
 import { useAuth } from "../lib/AuthProvider";
 
-const HOLO_CLIP = "polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px))";
+type TodayPlan = { title: string; is_rest: boolean; count: number; sets: number; completed?: boolean };
 
-function GlassText({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return (
-    <span
-      className={`bg-clip-text text-transparent ${className}`}
-      style={{
-        backgroundImage: "linear-gradient(180deg, rgba(255,255,255,0.98), rgba(255,255,255,0.55))",
-        filter: "drop-shadow(0 1px 0 rgba(255,255,255,0.25)) drop-shadow(0 3px 14px rgba(0,0,0,0.5))",
-      }}
-    >
-      {children}
-    </span>
-  );
-}
-
-function DividerWithHyphens() {
-  return (
-    <div className="flex items-center gap-2 my-4">
-      <span className="text-[rgb(var(--accent-light-rgb)/0.5)] text-xs leading-none">–</span>
-      <span className="h-px flex-1 bg-[rgb(var(--accent-rgb)/0.2)]" />
-      <span className="text-[rgb(var(--accent-light-rgb)/0.5)] text-xs leading-none">–</span>
-    </div>
-  );
-}
-
-function SideLine({ side }: { side: "left" | "right" }) {
-  return (
-    <div
-      className={`absolute top-[-10px] bottom-[-10px] ${side === "left" ? "-left-3" : "-right-3"} w-px hidden md:block`}
-      style={{ background: "linear-gradient(to bottom, transparent, rgb(var(--accent-light-rgb) / 0.5) 50%, transparent)" }}
-    />
-  );
-}
-
-function GlowPanel({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return (
-    <div className="relative w-full">
-      <div className="relative p-[1.5px] rounded-md overflow-hidden">
-        <style>{`@keyframes beamSpinSlow { to { transform: rotate(360deg); } }`}</style>
-        <div
-          className="absolute inset-[-60%] animate-[beamSpinSlow_10s_linear_infinite] opacity-60"
-          style={{
-            background:
-              "conic-gradient(from 0deg, transparent 0%, transparent 5%, rgb(var(--accent-rgb)) 16%, rgb(var(--accent-light-rgb)) 24%, rgb(var(--accent-rgb)) 32%, transparent 45%, transparent 55%, rgb(var(--accent-rgb)) 68%, rgb(var(--accent-light-rgb)) 76%, rgb(var(--accent-rgb)) 84%, transparent 95%, transparent 100%)",
-            filter: "blur(4px)",
-          }}
-        />
-        <div className={`relative rounded-md bg-[#0a1524]/95 px-6 py-6 ${className}`}>{children}</div>
-      </div>
-      <SideLine side="left" />
-      <SideLine side="right" />
-    </div>
-  );
-}
-
-function HoloCard({ icon, label, value, sub }: { icon: React.ReactNode; label: string; value: string; sub?: string }) {
-  return (
-    <div
-      className="relative flex overflow-hidden"
-      style={{
-        clipPath: HOLO_CLIP,
-        border: "1px solid rgb(var(--accent-rgb) / 0.4)",
-        boxShadow: "0 0 22px -6px rgb(var(--accent-rgb) / 0.35)",
-        background: "linear-gradient(135deg, rgba(10,21,36,0.9), rgba(10,21,36,0.75))",
-      }}
-    >
-      <div className="w-12 shrink-0 flex items-center justify-center border-r text-[rgb(var(--accent-rgb))]" style={{ backgroundColor: "rgb(var(--accent-rgb) / 0.1)", borderColor: "rgb(var(--accent-rgb) / 0.2)" }}>
-        {icon}
-      </div>
-      <div className="flex-1 p-3">
-        <p className="text-xs font-bold text-white/85 tracking-wide mb-2">{label}</p>
-        <div className="flex items-center justify-between rounded px-2.5 py-1.5" style={{ border: "1px solid rgb(var(--accent-rgb) / 0.2)", backgroundColor: "rgb(var(--accent-rgb) / 0.08)" }}>
-          <span className="text-[10px] font-mono tracking-widest" style={{ color: "rgb(var(--accent-rgb) / 0.6)" }}>{sub ?? "VALUE"}</span>
-          <GlassText className="text-base font-bold">{value}</GlassText>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function NotifIcon({ type }: { type: string }) {
-  switch (type) {
-    case "new_pr": return <Medal size={16} className="text-yellow-300" />;
-    case "workout_complete": return <Trophy size={16} className="text-cyan-300" />;
-    case "level_up": return <Star size={16} className="text-purple-300" />;
-    case "streak_milestone": return <Flame size={16} className="text-orange-300" />;
-    default: return <Bell size={16} className="text-white/50" />;
-  }
-}
-
-function notifBorderColor(type: string): string {
-  switch (type) {
-    case "new_pr": return "border-yellow-400/30";
-    case "workout_complete": return "border-cyan-400/20";
-    case "level_up": return "border-purple-400/30";
-    case "streak_milestone": return "border-orange-400/30";
-    default: return "border-white/10";
-  }
+function toDateString(d: Date) {
+  return d.toISOString().split("T")[0];
 }
 
 function timeAgo(dateStr: string): string {
@@ -117,42 +22,6 @@ function timeAgo(dateStr: string): string {
   if (hours < 24) return `${hours}h ago`;
   const days = Math.floor(hours / 24);
   return `${days}d ago`;
-}
-
-function rankForLevel(level: number) {
-  if (level >= 50) return { name: "PLATINUM", color: "text-cyan-200", border: "border-cyan-200/40", glow: "rgba(165,243,252,0.6)" };
-  if (level >= 25) return { name: "GOLD", color: "text-yellow-300", border: "border-yellow-300/40", glow: "rgba(250,204,21,0.6)" };
-  if (level >= 10) return { name: "SILVER", color: "text-slate-300", border: "border-slate-300/40", glow: "rgba(203,213,225,0.5)" };
-  return { name: "BRONZE", color: "text-amber-500", border: "border-amber-500/40", glow: "rgba(217,119,6,0.5)" };
-}
-
-function RankBadge({ level }: { level: number }) {
-  const rank = rankForLevel(level);
-  return (
-    <span
-      className={`inline-flex items-center gap-1.5 border ${rank.border} bg-white/5 px-3 py-1 rounded-md text-[10px] font-mono tracking-widest ${rank.color}`}
-      style={{ boxShadow: `0 0 12px -2px ${rank.glow}` }}
-    >
-      <Award size={12} />
-      {rank.name}
-    </span>
-  );
-}
-
-function StatRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: number }) {
-  return (
-    <div className="flex items-center gap-3 font-mono text-sm text-white/70">
-      <span className="text-[rgb(var(--accent-light-rgb))]">{icon}</span>
-      <span className="text-white/40">{label}:</span>
-      <GlassText className="font-bold text-base">{value}</GlassText>
-    </div>
-  );
-}
-
-type TodayPlan = { title: string; is_rest: boolean; count: number; sets: number; completed?: boolean };
-
-function toDateString(d: Date) {
-  return d.toISOString().split("T")[0];
 }
 
 export default function Dashboard() {
@@ -182,10 +51,10 @@ export default function Dashboard() {
   const [notifLoaded, setNotifLoaded] = useState(false);
 
   useEffect(() => {
-    const updateClock = () => setTime(new Date().toLocaleTimeString());
+    const updateClock = () => setTime(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
     updateClock();
     const id = setInterval(updateClock, 1000);
-    setToday(new Date().toLocaleDateString(undefined, { weekday: "short", day: "2-digit", month: "short" }).toUpperCase());
+    setToday(new Date().toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "short" }));
     return () => clearInterval(id);
   }, []);
 
@@ -205,23 +74,22 @@ export default function Dashboard() {
       const dateStr = toDateString(new Date());
       const weekday = new Date().getDay();
 
-      // Check if today's workout is already completed
       const { data: todaySession } = await supabase
         .from("workout_sessions")
         .select("id, total_sets, total_volume, xp_earned")
         .eq("user_id", user.id)
         .eq("date", dateStr)
         .eq("status", "completed")
-        .maybeSingle();
+        .limit(1);
 
-      if (todaySession) {
+      if (todaySession && todaySession.length > 0) {
         setTodayPlan({
-          title: "Session Complete ✓",
+          title: "Session Complete",
           is_rest: false,
           count: 0,
-          sets: todaySession.total_sets || 0,
+          sets: todaySession[0].total_sets || 0,
           completed: true,
-        } as any);
+        });
         setTodayLoading(false);
         return;
       }
@@ -264,7 +132,6 @@ export default function Dashboard() {
   useEffect(() => {
     async function loadStats() {
       if (!user) return;
-      // Fast cache
       const { data: c } = await supabase.from("user_stats").select("*").eq("user_id", user.id).maybeSingle();
       if (c) {
         const [{ data: wl }, { data: ls }, { data: pd }] = await Promise.all([
@@ -282,14 +149,12 @@ export default function Dashboard() {
       }
       const dateStr = toDateString(new Date());
 
-      // 1. Total completed workouts
       const { count: totalWorkouts } = await supabase
         .from("workout_sessions")
         .select("id", { count: "exact", head: true })
         .eq("user_id", user.id)
         .eq("status", "completed");
 
-      // 2. Current streak — consecutive days with completed sessions going backwards from today
       let streak = 0;
       if ((totalWorkouts ?? 0) > 0) {
         const { data: sessions } = await supabase
@@ -302,8 +167,6 @@ export default function Dashboard() {
 
         if (sessions && sessions.length > 0) {
           const completedDates = new Set(sessions.map((s: any) => s.date));
-
-          // Also load recurring plans to know which days are rest days (rest days don't break streaks)
           const { data: plans } = await supabase
             .from("recurring_plans")
             .select("weekday, is_rest")
@@ -311,7 +174,6 @@ export default function Dashboard() {
           const restWeekdays = new Set((plans ?? []).filter((p: any) => p.is_rest).map((p: any) => p.weekday));
 
           const checkDate = new Date(dateStr + "T00:00:00");
-          // If today has no completed session yet and it's not a rest day, start from yesterday
           const todayWeekday = checkDate.getDay();
           if (!completedDates.has(dateStr) && !restWeekdays.has(todayWeekday)) {
             checkDate.setDate(checkDate.getDate() - 1);
@@ -321,7 +183,6 @@ export default function Dashboard() {
             const d = toDateString(checkDate);
             const wd = checkDate.getDay();
             if (restWeekdays.has(wd)) {
-              // Rest day — doesn't break streak, doesn't add to it
               checkDate.setDate(checkDate.getDate() - 1);
               continue;
             }
@@ -335,7 +196,6 @@ export default function Dashboard() {
         }
       }
 
-      // 3. Weekly volume — total weight × reps this week (Monday to now)
       const now = new Date(dateStr + "T00:00:00");
       const dayOfWeek = now.getDay();
       const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
@@ -360,20 +220,16 @@ export default function Dashboard() {
         weeklyVolume = (setLogs ?? []).reduce((sum, l: any) => sum + ((Number(l.weight) || 0) * (Number(l.reps) || 0)), 0);
       }
 
-      // 4. PR count — number of distinct exercises where user has established a best weight
       let prCount = 0;
       const { data: prData } = await supabase
         .from("exercise_set_logs")
         .select("exercise_id, weight")
         .eq("user_id", user.id)
         .gt("weight", 0);
-
       if (prData && prData.length > 0) {
-        const exerciseIds = new Set(prData.map((r: any) => r.exercise_id));
-        prCount = exerciseIds.size;
+        prCount = new Set(prData.map((r: any) => r.exercise_id)).size;
       }
 
-      // 5. Total XP
       let totalXp = 0;
       const { data: xpData } = await supabase
         .from("workout_sessions")
@@ -382,7 +238,6 @@ export default function Dashboard() {
         .eq("status", "completed");
       totalXp = (xpData ?? []).reduce((sum, s: any) => sum + (s.xp_earned || 0), 0);
 
-      // 6. Discipline — average completion rate across last 10 sessions
       let discipline = 0;
       const { data: recentSessions } = await supabase
         .from("workout_sessions")
@@ -392,13 +247,12 @@ export default function Dashboard() {
         .order("date", { ascending: false })
         .limit(10);
       if (recentSessions && recentSessions.length > 0) {
-        // Get planned sets for comparison
         const { data: planData } = await supabase
           .from("recurring_plans")
           .select("template_id, is_rest")
           .eq("user_id", user.id);
         const templateIds = (planData ?? []).filter((p: any) => !p.is_rest && p.template_id).map((p: any) => p.template_id);
-        let avgPlannedSets = 20; // default fallback
+        let avgPlannedSets = 20;
         if (templateIds.length > 0) {
           const { data: templateSets } = await supabase
             .from("workout_template_exercises")
@@ -411,10 +265,8 @@ export default function Dashboard() {
         discipline = Math.min(100, Math.round((avgCompleted / avgPlannedSets) * 100));
       }
 
-      // 7. Consistency — streak as a percentage (cap at 30 days = 100%)
       const consistency = Math.min(100, Math.round((streak / 30) * 100));
 
-      // 8. Strength — based on volume progression (this week vs last week)
       let strength = 0;
       const lastWeekMonday = new Date(monday);
       lastWeekMonday.setDate(lastWeekMonday.getDate() - 7);
@@ -440,7 +292,6 @@ export default function Dashboard() {
         strength = weeklyVolume > 0 ? 50 : 0;
       }
 
-      // 9. Endurance — total cardio minutes this week
       let endurance = 0;
       if (weekSessions && weekSessions.length > 0) {
         const wsIds = weekSessions.map((s: any) => s.id);
@@ -450,10 +301,9 @@ export default function Dashboard() {
           .in("workout_session_id", wsIds)
           .eq("exercises.body_segment", "Cardio");
         const totalCardioMins = (cardioLogs ?? []).reduce((s, l: any) => s + ((l.duration_seconds || 0) / 60), 0);
-        endurance = Math.min(100, Math.round(totalCardioMins / 1.5)); // 150 min/week = 100%
+        endurance = Math.min(100, Math.round(totalCardioMins / 1.5));
       }
 
-      // 10. Body weight — latest log
       let bodyWeight: number | null = null;
       let bodyWeightChange: number | null = null;
       const { data: weightLogs } = await supabase
@@ -469,7 +319,6 @@ export default function Dashboard() {
         }
       }
 
-      // 11. Recovery — hours since last workout, simplified
       let recoveryPct: number | null = null;
       const { data: lastSession } = await supabase
         .from("workout_sessions")
@@ -483,10 +332,8 @@ export default function Dashboard() {
         recoveryPct = Math.min(100, Math.round((hoursSince / 48) * 100));
       }
 
-      // 12. Fatigue — inverse of recovery, weighted by recent volume
       const fatigue = recoveryPct !== null ? Math.max(0, 100 - recoveryPct) : 0;
 
-      // 13. Goal
       const { data: profileData } = await supabase
         .from("profiles")
         .select("goal")
@@ -515,7 +362,7 @@ export default function Dashboard() {
         .eq("user_id", user.id)
         .eq("read", false)
         .order("created_at", { ascending: false })
-        .limit(10);
+        .limit(5);
       setNotifications(data ?? []);
       setNotifLoaded(true);
     }
@@ -525,18 +372,6 @@ export default function Dashboard() {
   async function dismissNotification(id: string) {
     await supabase.from("notifications").update({ read: true }).eq("id", id);
     setNotifications((prev) => prev.filter((n) => n.id !== id));
-  }
-
-  async function dismissAllNotifications() {
-    if (!user || notifications.length === 0) return;
-    const ids = notifications.map((n) => n.id);
-    await supabase.from("notifications").update({ read: true }).in("id", ids);
-    setNotifications([]);
-  }
-
-  async function handleSignOut() {
-    await supabase.auth.signOut();
-    router.push("/login");
   }
 
   function handleTodayAction() {
@@ -550,271 +385,275 @@ export default function Dashboard() {
   }
 
   const estMinutes = todayPlan ? todayPlan.sets * 3 : 0;
+  const xpProgress = levelInfo.isMaxLevel ? 100 : Math.round(levelInfo.progress * 100);
 
   return (
-    <main className="relative min-h-screen bg-[#050914] text-white p-6 md:p-10 pb-24 md:pb-10 overflow-hidden">
-      <div className="pointer-events-none fixed top-[-10%] left-1/2 -translate-x-1/2 w-[700px] h-[700px] bg-blue-600/15 rounded-full blur-[150px]" />
-      <div className="pointer-events-none fixed bottom-[-15%] right-[5%] w-[500px] h-[500px] bg-[rgb(var(--accent-rgb)/0.1)] rounded-full blur-[130px]" />
-      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(ellipse_at_center,transparent_20%,rgba(0,0,0,0.7)_100%)]" />
+    <main className="min-h-screen bg-[#050914] text-white pb-24 md:pb-10">
+      <div className="max-w-xl mx-auto px-4 pt-6 space-y-4">
 
-      <div className="relative z-10 max-w-5xl mx-auto space-y-6">
-        {/* TOP BAR */}
-        <div className="flex items-center justify-end gap-3">
-          <div
-            className="flex items-center gap-4 rounded-md border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.05] backdrop-blur-xl px-5 py-2.5 text-xs"
-            style={{ boxShadow: "inset 0 1px 0 rgba(255,255,255,0.07)" }}
-          >
-            <div className="text-right font-mono">
-              <p className="text-white/40 tracking-widest">LOCAL TIME</p>
-              <GlassText className="text-sm">{time ?? "--:--:--"}</GlassText>
-            </div>
-            <span className="w-px h-6 bg-white/10" />
-            <span className="font-mono text-white/50">RANK: <GlassText className={`font-bold ${rank.color}`}>{rank.name}</GlassText></span>
-            {nextRank && (
-              <span className="hidden sm:block text-[9px] font-mono text-white/25 mt-1">Next: {nextRank.name} at Level {nextRank.minLevel}</span>
-            )}
-            <span className="font-mono text-white/50">LVL <GlassText className="font-bold">{statsLoaded ? level : 1}</GlassText></span>
-            <button onClick={() => router.push("/notifications")} className="relative text-white/50 hover:text-[rgb(var(--accent-light-rgb))] transition">
+        {/* ─── Header ─── */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold text-white/90">
+              {profile?.username ? `Hi, ${profile.username}` : "Dashboard"}
+            </h1>
+            <p className="text-[11px] font-mono text-white/30 mt-0.5">{today ?? "..."} {time ? `· ${time}` : ""}</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => router.push("/notifications")}
+              className="relative w-9 h-9 rounded-xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center text-white/40 hover:text-white/70 transition"
+            >
               <Bell size={16} />
               {notifLoaded && notifications.length > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-[rgb(var(--accent-rgb))] text-black text-[8px] font-bold flex items-center justify-center">{notifications.length}</span>
+                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[rgb(var(--accent-rgb))] text-black text-[8px] font-bold flex items-center justify-center">{notifications.length}</span>
               )}
             </button>
-            <span className="w-8 h-8 rounded-md bg-[rgb(var(--accent-rgb)/0.15)] border border-[rgb(var(--accent-light-rgb)/0.3)] flex items-center justify-center text-[rgb(var(--accent-light-rgb))] font-bold overflow-hidden shrink-0">
+            <button
+              onClick={() => router.push("/profile")}
+              className="w-9 h-9 rounded-xl bg-[rgb(var(--accent-rgb)/0.1)] border border-[rgb(var(--accent-rgb)/0.2)] flex items-center justify-center text-[rgb(var(--accent-rgb))] font-bold text-sm overflow-hidden shrink-0"
+            >
               {profile?.avatar_url ? (
-                <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
               ) : (
                 (profile?.username?.[0] ?? "?").toUpperCase()
               )}
-            </span>
-          </div>
-          <button onClick={handleSignOut} className="text-xs font-mono text-white/40 hover:text-white/70 transition">
-            Sign Out
-          </button>
-        </div>
-
-        {/* HEADER */}
-        <div>
-          <GlassText className="text-xl md:text-2xl font-bold tracking-wide">
-            WELCOME, {(profile?.username ?? "OPERATOR").toUpperCase()}
-          </GlassText>
-          <p className="text-white/40 text-sm mt-0.5">Your daily command center.</p>
-        </div>
-
-        {/* TODAY'S WORKOUT */}
-        <GlowPanel>
-          <div className="flex items-center justify-between gap-4 flex-wrap">
-            <div>
-              <p className="text-xs tracking-widest text-[rgb(var(--accent-light-rgb))] mb-1">TODAY · {today ?? "———"}</p>
-
-              {todayLoading ? (
-                <h2 className="text-lg font-bold text-white/40">LOADING...</h2>
-              ) : !todayPlan ? (
-                <>
-                  <h2 className="text-lg font-bold text-white/90">NO WORKOUT PLANNED</h2>
-                  <p className="text-xs font-mono text-white/40 mt-0.5">Head to Schedule to plan today's session.</p>
-                </>
-              ) : todayPlan.completed ? (
-                <>
-                  <h2 className="text-lg font-bold text-white/90">SESSION COMPLETE ✓</h2>
-                  <p className="text-xs font-mono text-white/40 mt-0.5">{todayPlan.sets} sets completed today.</p>
-                </>
-              ) : todayPlan.is_rest ? (
-                <>
-                  <h2 className="text-lg font-bold text-white/90">REST / RECOVERY</h2>
-                  <p className="text-xs font-mono text-white/40 mt-0.5">Recovery is part of the plan too.</p>
-                </>
-              ) : (
-                <>
-                  <h2 className="text-lg font-bold text-white/90">{todayPlan.title.toUpperCase()}</h2>
-                  <p className="text-xs font-mono text-white/40 mt-0.5">
-                    {todayPlan.count} EXERCISE{todayPlan.count === 1 ? "" : "S"} · {todayPlan.sets} SETS · ~{estMinutes} MIN
-                  </p>
-                </>
-              )}
-            </div>
-            <button
-              onClick={handleTodayAction}
-              className="shrink-0 rounded-md bg-[rgb(var(--accent-rgb))] text-black font-bold text-sm font-mono tracking-widest px-6 py-3 hover:bg-[rgb(var(--accent-light-rgb))] transition"
-              style={{ boxShadow: "0 0 25px -4px rgb(var(--accent-rgb) / 0.6)" }}
-            >
-              {todayPlan?.completed ? "VIEW PROGRESS" : todayPlan?.is_rest || !todayPlan || todayPlan.count === 0 ? "GO TO SCHEDULE" : "INITIATE WORKOUT"}
             </button>
           </div>
-        </GlowPanel>
-
-        {/* STATUS */}
-        <GlowPanel>
-          <h2 className="text-center text-base font-bold tracking-wide text-[rgb(var(--accent-light-rgb))]">STATUS</h2>
-          <DividerWithHyphens />
-          <div className="flex items-center justify-center gap-10 mb-4">
-            <div className="text-center">
-              <GlassText className="text-6xl font-bold">{statsLoaded ? level : "—"}</GlassText>
-              <p className="text-xs tracking-widest text-white/40 mt-2">LEVEL</p>
-            </div>
-            <div className="text-xs font-mono text-white/60 space-y-2">
-              <p>GOAL: {stats.goal ? (
-                <span className="text-white/90">{stats.goal}</span>
-              ) : (
-                <button onClick={() => router.push("/profile")} className="text-[rgb(var(--accent-light-rgb)/0.7)] hover:text-[rgb(var(--accent-light-rgb))] underline underline-offset-2 transition">Set Goal →</button>
-              )}</p>
-              <p>RANK: <span className={`font-bold ${rank.color}`}>{rank.name}</span></p>
-              {nextRank && <p className="text-[9px] text-white/25">Next: {nextRank.name} at Level {nextRank.minLevel}</p>}
-              <span
-                className={`inline-flex items-center gap-1.5 border ${rank.border} ${rank.bgClass} px-3 py-1 rounded-md text-[10px] font-mono tracking-widest ${rank.color}`}
-                style={{ boxShadow: `0 0 12px -2px ${rank.glow}` }}
-              >
-                <Award size={12} />
-                {rank.name}
-              </span>
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 mb-6 border-y border-white/10 py-4">
-            <div className="flex items-center gap-2">
-              <Zap size={14} className="text-[rgb(var(--accent-light-rgb))]" />
-              <div className="relative w-28 md:w-36 h-2 bg-white/10 rounded-full overflow-hidden">
-                <div className={`h-full rounded-full transition-all`} style={{ width: `${Math.min(100, levelInfo.progress * 100)}%`, background: `linear-gradient(90deg, rgb(var(--accent-rgb) / 0.8), rgb(var(--accent-rgb) / 1))`, boxShadow: "0 0 6px rgb(var(--accent-rgb) / 0.4)" }} />
-              </div>
-              <span className="text-[10px] font-mono text-white/40">
-                {levelInfo.isMaxLevel ? "MAX" : `${levelInfo.xpIntoCurrentLevel}/${levelInfo.xpNeededForNext}`}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <HeartPulse size={14} className="text-emerald-300" />
-              <div className="relative w-28 md:w-36 h-2 bg-white/10 rounded-full overflow-hidden">
-                <div className="h-full bg-emerald-300 rounded-full transition-all" style={{ width: `${stats.recoveryPct ?? 0}%` }} />
-              </div>
-              <span className="text-[10px] font-mono text-white/40">{stats.recoveryPct ?? 0}/100</span>
-            </div>
-            <div className="flex items-center gap-2 font-mono text-xs text-white/50">
-              <Gauge size={14} className="text-[rgb(var(--accent-light-rgb))]" />
-              <span>FATIGUE: <span className="text-white/90 font-bold">{stats.fatigue}%</span></span>
-              <span className="text-[8px] text-white/20 block mt-0.5">
-                {stats.fatigue >= 80 ? "Recently trained — rest recommended" : stats.fatigue >= 50 ? "Partially recovered" : stats.fatigue > 0 ? "Mostly recovered" : "Fully rested"}
-              </span>
-            </div>
-          </div>
-          <div className="grid grid-cols-4 gap-2 w-full">
-            <div className="text-center">
-              <div className="relative w-full aspect-square max-w-[60px] mx-auto mb-1">
-                <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
-                  <circle cx="18" cy="18" r="15.5" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="3" />
-                  <circle cx="18" cy="18" r="15.5" fill="none" stroke="rgb(var(--accent-rgb) / 0.7)" strokeWidth="3" strokeDasharray={`${stats.strength * 0.97} 97`} strokeLinecap="round" />
-                </svg>
-                <span className="absolute inset-0 flex items-center justify-center text-[10px] font-mono font-bold text-white/80">{stats.strength}</span>
-              </div>
-              <p className="text-[8px] font-mono text-white/40">STRENGTH</p>
-            </div>
-            <div className="text-center">
-              <div className="relative w-full aspect-square max-w-[60px] mx-auto mb-1">
-                <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
-                  <circle cx="18" cy="18" r="15.5" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="3" />
-                  <circle cx="18" cy="18" r="15.5" fill="none" stroke="rgba(52,211,153,0.7)" strokeWidth="3" strokeDasharray={`${stats.endurance * 0.97} 97`} strokeLinecap="round" />
-                </svg>
-                <span className="absolute inset-0 flex items-center justify-center text-[10px] font-mono font-bold text-white/80">{stats.endurance}</span>
-              </div>
-              <p className="text-[8px] font-mono text-white/40">ENDURANCE</p>
-            </div>
-            <div className="text-center">
-              <div className="relative w-full aspect-square max-w-[60px] mx-auto mb-1">
-                <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
-                  <circle cx="18" cy="18" r="15.5" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="3" />
-                  <circle cx="18" cy="18" r="15.5" fill="none" stroke="rgba(251,146,60,0.7)" strokeWidth="3" strokeDasharray={`${stats.consistency * 0.97} 97`} strokeLinecap="round" />
-                </svg>
-                <span className="absolute inset-0 flex items-center justify-center text-[10px] font-mono font-bold text-white/80">{stats.consistency}</span>
-              </div>
-              <p className="text-[8px] font-mono text-white/40">CONSISTENCY</p>
-            </div>
-            <div className="text-center">
-              <div className="relative w-full aspect-square max-w-[60px] mx-auto mb-1">
-                <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
-                  <circle cx="18" cy="18" r="15.5" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="3" />
-                  <circle cx="18" cy="18" r="15.5" fill="none" stroke="rgba(168,85,247,0.7)" strokeWidth="3" strokeDasharray={`${stats.discipline * 0.97} 97`} strokeLinecap="round" />
-                </svg>
-                <span className="absolute inset-0 flex items-center justify-center text-[10px] font-mono font-bold text-white/80">{stats.discipline}</span>
-              </div>
-              <p className="text-[8px] font-mono text-white/40">DISCIPLINE</p>
-            </div>
-          </div>
-        </GlowPanel>
-
-        {/* QUICK STATS */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <HoloCard icon={<Flame size={18} />} label="Streak" value={statsLoaded ? String(stats.streak) : "—"} sub="DAYS" />
-          <HoloCard icon={<Activity size={18} />} label="Workouts" value={statsLoaded ? String(stats.totalWorkouts) : "—"} sub="COMPLETED" />
-          <HoloCard icon={<Zap size={18} />} label="Weekly Vol" value={statsLoaded ? `${stats.weeklyVolume.toLocaleString()} KG` : "—"} sub="THIS WEEK" />
-          <HoloCard icon={<Trophy size={18} />} label="PRs" value={statsLoaded ? String(stats.prCount) : "—"} sub="EXERCISES" />
         </div>
 
-        {/* SECONDARY STATS */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <HoloCard
-            icon={<Dumbbell size={18} />}
-            label="Body Weight"
-            value={stats.bodyWeight !== null ? `${stats.bodyWeight} KG` : "— KG"}
-            sub={stats.bodyWeightChange !== null ? `${stats.bodyWeightChange > 0 ? "+" : ""}${stats.bodyWeightChange} KG` : "NO DATA"}
-          />
-          <div>
-            <HoloCard
-              icon={<HeartPulse size={18} />}
-              label="Recovery"
-              value={stats.recoveryPct !== null ? `${stats.recoveryPct}%` : "— %"}
-              sub={stats.recoveryPct !== null ? (stats.recoveryPct >= 80 ? "READY TO TRAIN" : stats.recoveryPct >= 50 ? "MODERATE — PROCEED WITH CARE" : "FATIGUED — REST SUGGESTED") : "PENDING"}
-            />
-          </div>
-        </div>
+        {/* ─── Today's Workout Card ─── */}
+        <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] overflow-hidden">
+          <div className="p-4">
+            <p className="text-[9px] font-mono tracking-widest text-white/25 mb-2">TODAY&apos;S WORKOUT</p>
 
-        {/* LIVE TELEMETRY */}
-        <div>
-          <p className="text-xs tracking-widest text-[rgb(var(--accent-light-rgb))] mb-3">LIVE TELEMETRY</p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div
-              className="rounded-lg border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.05] backdrop-blur-2xl px-5 py-5"
-              style={{ boxShadow: "inset 0 1px 0 rgba(255,255,255,0.07), 0 4px 24px -8px rgb(var(--accent-rgb) / 0.15)" }}
-            >
-              <div className="flex items-center justify-between mb-6">
-                <p className="text-xs tracking-widest text-white/50">WEIGHT TREND</p>
-                <span className="text-[10px] font-mono text-white/40">{stats.bodyWeight !== null ? `${stats.bodyWeight} KG` : "NO LOGS"}</span>
+            {todayLoading ? (
+              <div className="flex items-center gap-3 py-2">
+                <div className="w-5 h-5 border-2 border-[rgb(var(--accent-rgb)/0.4)] border-t-[rgb(var(--accent-rgb))] rounded-full animate-spin" />
+                <span className="text-sm text-white/40">Loading...</span>
               </div>
-              <div className="h-40 flex items-center justify-center border border-dashed border-white/10 rounded-md">
-                {stats.bodyWeight !== null ? (
-                  <div className="text-center">
-                    <p className="text-3xl font-bold font-mono text-white/90">{stats.bodyWeight} <span className="text-sm text-white/40">KG</span></p>
-                    {stats.bodyWeightChange !== null && (
-                      <p className={`text-xs font-mono mt-1 ${stats.bodyWeightChange > 0 ? "text-orange-300" : stats.bodyWeightChange < 0 ? "text-emerald-300" : "text-white/40"}`}>
-                        {stats.bodyWeightChange > 0 ? "↑" : stats.bodyWeightChange < 0 ? "↓" : "→"} {Math.abs(stats.bodyWeightChange)} KG from previous
-                      </p>
-                    )}
+            ) : !todayPlan ? (
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-base font-semibold text-white/80">No Workout Planned</p>
+                  <p className="text-[11px] text-white/30 mt-0.5">Set up your schedule to get started</p>
+                </div>
+                <button onClick={() => router.push("/schedule")} className="shrink-0 px-4 py-2 rounded-xl bg-white/[0.06] border border-white/[0.08] text-xs font-medium text-white/60 hover:text-white/90 hover:bg-white/[0.1] transition">
+                  Schedule
+                </button>
+              </div>
+            ) : todayPlan.completed ? (
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+                    <Trophy size={18} className="text-emerald-400" />
                   </div>
-                ) : (
-                  <p className="text-xs font-mono text-white/40 text-center px-4">No weight logs yet — log your body weight before a workout.</p>
-                )}
+                  <div>
+                    <p className="text-base font-semibold text-emerald-400">Session Complete</p>
+                    <p className="text-[11px] font-mono text-white/30 mt-0.5">{todayPlan.sets} sets completed</p>
+                  </div>
+                </div>
+                <button onClick={() => router.push("/progress")} className="shrink-0 px-4 py-2 rounded-xl bg-white/[0.06] border border-white/[0.08] text-xs font-medium text-white/60 hover:text-white/90 hover:bg-white/[0.1] transition flex items-center gap-1.5">
+                  Progress <ChevronRight size={12} />
+                </button>
               </div>
-            </div>
-            <div
-              className="rounded-lg border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.05] backdrop-blur-2xl px-5 py-5"
-              style={{ boxShadow: "inset 0 1px 0 rgba(255,255,255,0.07), 0 4px 24px -8px rgb(var(--accent-rgb) / 0.15)" }}
-            >
-              <div className="flex items-center justify-between mb-6">
-                <p className="text-xs tracking-widest text-white/50">CALORIE INTELLIGENCE</p>
-                <span className="text-[10px] font-mono text-white/30">COMING SOON</span>
+            ) : todayPlan.is_rest ? (
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
+                  <HeartPulse size={18} className="text-blue-400" />
+                </div>
+                <div>
+                  <p className="text-base font-semibold text-white/80">Rest Day</p>
+                  <p className="text-[11px] text-white/30 mt-0.5">Recovery is part of the plan</p>
+                </div>
               </div>
-              <div className="h-24 flex items-center justify-center border border-dashed border-white/10 rounded-md">
-                <p className="text-xs font-mono text-white/30 text-center px-4">Calorie tracking will be available in a future update.</p>
+            ) : (
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-[rgb(var(--accent-rgb)/0.1)] border border-[rgb(var(--accent-rgb)/0.2)] flex items-center justify-center">
+                    <Dumbbell size={18} className="text-[rgb(var(--accent-rgb))]" />
+                  </div>
+                  <div>
+                    <p className="text-base font-semibold text-white/80">{todayPlan.title}</p>
+                    <p className="text-[11px] font-mono text-white/30 mt-0.5">
+                      {todayPlan.count} exercise{todayPlan.count !== 1 ? "s" : ""} · {todayPlan.sets} sets · ~{estMinutes} min
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => router.push("/workout")}
+                  className="shrink-0 w-10 h-10 rounded-xl bg-[rgb(var(--accent-rgb))] flex items-center justify-center text-black hover:brightness-110 transition"
+                >
+                  <Play size={18} fill="black" />
+                </button>
               </div>
-              <div className="grid grid-cols-3 gap-2 mt-4 text-center">
-                <div><p className="text-[10px] text-white/40">CONSUMED</p><GlassText className="text-xl font-bold">—</GlassText><p className="text-[10px] text-white/40">KCAL</p></div>
-                <div><p className="text-[10px] text-white/40">TRAINING</p><GlassText className="text-xl font-bold">—</GlassText><p className="text-[10px] text-white/40">KCAL EST.</p></div>
-                <div><p className="text-[10px] text-white/40">NET</p><GlassText className="text-xl font-bold">—</GlassText><p className="text-[10px] text-white/40">KCAL</p></div>
-              </div>
-            </div>
-            <div className="flex justify-between text-[10px] font-mono border-t border-white/10 pt-3">
-              <span className="text-white/40">WEIGHT DATA</span><span className="text-emerald-300">LINKED</span>
-            </div>
+            )}
           </div>
         </div>
-      </div>
 
-    </main >
+        {/* ─── Level & Rank ─── */}
+        <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl bg-[rgb(var(--accent-rgb)/0.1)] border border-[rgb(var(--accent-rgb)/0.2)] flex items-center justify-center">
+                <span className="text-lg font-bold text-[rgb(var(--accent-rgb))]">{statsLoaded ? level : "—"}</span>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-white/80">Level {statsLoaded ? level : "—"}</p>
+                <p className="text-[10px] font-mono text-white/30 mt-0.5">
+                  <span className={rank.color}>{rank.name}</span>
+                  {nextRank && <span className="text-white/15"> · Next: {nextRank.name} at Lv.{nextRank.minLevel}</span>}
+                </p>
+              </div>
+            </div>
+            <span className={`flex items-center gap-1 px-2.5 py-1 rounded-lg border text-[9px] font-mono tracking-wider ${rank.color}`}
+              style={{ borderColor: `${rank.glow?.replace("0.6", "0.3") ?? "rgba(255,255,255,0.1)"}`, backgroundColor: `${rank.glow?.replace("0.6", "0.06") ?? "rgba(255,255,255,0.03)"}` }}
+            >
+              <Award size={10} />
+              {rank.name}
+            </span>
+          </div>
+
+          {/* XP Bar */}
+          <div className="flex items-center gap-2">
+            <Zap size={12} className="text-[rgb(var(--accent-rgb))] shrink-0" />
+            <div className="flex-1 h-2 bg-white/[0.06] rounded-full overflow-hidden">
+              <div className="h-full rounded-full transition-all duration-500" style={{ width: `${xpProgress}%`, background: `linear-gradient(90deg, rgb(var(--accent-rgb) / 0.7), rgb(var(--accent-rgb)))` }} />
+            </div>
+            <span className="text-[9px] font-mono text-white/25 shrink-0 min-w-[48px] text-right">
+              {levelInfo.isMaxLevel ? "MAX" : `${levelInfo.xpIntoCurrentLevel}/${levelInfo.xpNeededForNext}`}
+            </span>
+          </div>
+
+          {stats.goal && (
+            <div className="flex items-center gap-2 mt-2.5 pt-2.5 border-t border-white/[0.04]">
+              <Target size={12} className="text-white/20" />
+              <span className="text-[10px] font-mono text-white/30">Goal: <span className="text-white/50">{stats.goal}</span></span>
+            </div>
+          )}
+        </div>
+
+        {/* ─── Quick Stats Grid ─── */}
+        <div className="grid grid-cols-2 gap-2.5">
+          {[
+            { icon: <Flame size={16} />, label: "STREAK", value: statsLoaded ? `${stats.streak}` : "—", sub: "days", color: "text-orange-400", bg: "bg-orange-400/10", border: "border-orange-400/20" },
+            { icon: <Activity size={16} />, label: "WORKOUTS", value: statsLoaded ? `${stats.totalWorkouts}` : "—", sub: "completed", color: "text-blue-400", bg: "bg-blue-400/10", border: "border-blue-400/20" },
+            { icon: <TrendingUp size={16} />, label: "WEEKLY VOL", value: statsLoaded ? `${stats.weeklyVolume.toLocaleString()}` : "—", sub: "kg", color: "text-[rgb(var(--accent-rgb))]", bg: "bg-[rgb(var(--accent-rgb)/0.1)]", border: "border-[rgb(var(--accent-rgb)/0.2)]" },
+            { icon: <Trophy size={16} />, label: "PRs", value: statsLoaded ? `${stats.prCount}` : "—", sub: "exercises", color: "text-yellow-400", bg: "bg-yellow-400/10", border: "border-yellow-400/20" },
+          ].map((stat) => (
+            <div key={stat.label} className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-3">
+              <div className="flex items-center justify-between mb-2">
+                <span className={`w-7 h-7 rounded-lg ${stat.bg} ${stat.border} border flex items-center justify-center ${stat.color}`}>{stat.icon}</span>
+                <p className="text-[8px] font-mono tracking-wider text-white/20">{stat.label}</p>
+              </div>
+              <p className="text-2xl font-bold text-white/90 font-mono">{stat.value}</p>
+              <p className="text-[9px] font-mono text-white/20 mt-0.5">{stat.sub}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* ─── Attribute Rings ─── */}
+        <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-4">
+          <p className="text-[9px] font-mono tracking-widest text-white/25 mb-3">ATTRIBUTES</p>
+          <div className="grid grid-cols-4 gap-3">
+            {[
+              { label: "STR", value: stats.strength, color: "rgb(var(--accent-rgb))" },
+              { label: "END", value: stats.endurance, color: "rgb(52,211,153)" },
+              { label: "CON", value: stats.consistency, color: "rgb(251,146,60)" },
+              { label: "DIS", value: stats.discipline, color: "rgb(168,85,247)" },
+            ].map((attr) => (
+              <div key={attr.label} className="flex flex-col items-center">
+                <div className="relative w-14 h-14 mb-1.5">
+                  <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
+                    <circle cx="18" cy="18" r="15" fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="2.5" />
+                    <circle cx="18" cy="18" r="15" fill="none" stroke={attr.color} strokeWidth="2.5" strokeDasharray={`${attr.value * 0.94} 94`} strokeLinecap="round" opacity="0.7" />
+                  </svg>
+                  <span className="absolute inset-0 flex items-center justify-center text-[11px] font-mono font-bold text-white/70">{attr.value}</span>
+                </div>
+                <p className="text-[8px] font-mono text-white/25">{attr.label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ─── Recovery & Body ─── */}
+        <div className="grid grid-cols-2 gap-2.5">
+          <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-3">
+            <div className="flex items-center gap-1.5 mb-2">
+              <HeartPulse size={12} className="text-emerald-400" />
+              <p className="text-[8px] font-mono tracking-wider text-white/25">RECOVERY</p>
+            </div>
+            <p className="text-2xl font-bold font-mono text-white/90">{stats.recoveryPct ?? "—"}<span className="text-xs text-white/25">%</span></p>
+            <p className="text-[9px] font-mono text-white/20 mt-0.5">
+              {stats.recoveryPct !== null
+                ? stats.recoveryPct >= 80 ? "Ready to train" : stats.recoveryPct >= 50 ? "Partially recovered" : "Rest suggested"
+                : "No data"}
+            </p>
+          </div>
+          <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-3">
+            <div className="flex items-center gap-1.5 mb-2">
+              <Dumbbell size={12} className="text-white/30" />
+              <p className="text-[8px] font-mono tracking-wider text-white/25">BODY WEIGHT</p>
+            </div>
+            <p className="text-2xl font-bold font-mono text-white/90">
+              {stats.bodyWeight !== null ? stats.bodyWeight : "—"}<span className="text-xs text-white/25"> kg</span>
+            </p>
+            {stats.bodyWeightChange !== null ? (
+              <p className={`text-[9px] font-mono mt-0.5 ${stats.bodyWeightChange > 0 ? "text-orange-300/60" : stats.bodyWeightChange < 0 ? "text-emerald-300/60" : "text-white/20"}`}>
+                {stats.bodyWeightChange > 0 ? "+" : ""}{stats.bodyWeightChange} kg from previous
+              </p>
+            ) : (
+              <p className="text-[9px] font-mono text-white/20 mt-0.5">No trend data</p>
+            )}
+          </div>
+        </div>
+
+        {/* ─── Quick Links ─── */}
+        <div className="grid grid-cols-3 gap-2.5">
+          {[
+            { label: "Schedule", icon: <Calendar size={16} />, href: "/schedule" },
+            { label: "Progress", icon: <TrendingUp size={16} />, href: "/progress" },
+            { label: "Recovery", icon: <HeartPulse size={16} />, href: "/recovery" },
+          ].map((link) => (
+            <button
+              key={link.label}
+              onClick={() => router.push(link.href)}
+              className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-3 flex flex-col items-center gap-1.5 text-white/30 hover:text-white/60 hover:bg-white/[0.05] transition"
+            >
+              {link.icon}
+              <span className="text-[9px] font-mono tracking-wider">{link.label.toUpperCase()}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* ─── Recent Notifications ─── */}
+        {notifLoaded && notifications.length > 0 && (
+          <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] overflow-hidden">
+            <div className="flex items-center justify-between px-4 pt-3.5 pb-2">
+              <p className="text-[9px] font-mono tracking-widest text-white/25">RECENT NOTIFICATIONS</p>
+              <button onClick={() => router.push("/notifications")} className="text-[9px] font-mono text-[rgb(var(--accent-rgb)/0.5)] hover:text-[rgb(var(--accent-rgb))] transition">
+                View All
+              </button>
+            </div>
+            <div className="px-3 pb-3 space-y-1">
+              {notifications.slice(0, 3).map((n) => (
+                <button
+                  key={n.id}
+                  onClick={() => dismissNotification(n.id)}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/[0.02] transition text-left"
+                >
+                  <Bell size={12} className="text-white/20 shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[11px] text-white/60 truncate">{n.message}</p>
+                    <p className="text-[9px] font-mono text-white/15 mt-0.5">{timeAgo(n.created_at)}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+      </div>
+    </main>
   );
 }

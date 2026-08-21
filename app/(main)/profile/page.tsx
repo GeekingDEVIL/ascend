@@ -387,11 +387,9 @@ export default function ProfilePage() {
     }
 
     return (
-        <main className="relative min-h-screen w-full bg-[#050914] text-white p-4 md:p-10 pb-24 md:pb-10 overflow-x-hidden">
-            <div className="pointer-events-none fixed top-[-10%] left-1/2 -translate-x-1/2 w-[700px] h-[700px] bg-blue-600/15 rounded-full blur-[150px]" />
-            <div className="pointer-events-none fixed bottom-[-15%] right-[5%] w-[500px] h-[500px] bg-[rgb(var(--accent-rgb)/0.1)] rounded-full blur-[130px]" />
+        <main className="min-h-screen bg-[#050914] text-white pb-24 md:pb-10">
 
-            <div className="relative z-10 w-full max-w-2xl mx-auto space-y-5">
+            <div className="max-w-xl mx-auto px-4 pt-6 space-y-5">
                 {/* Header + Avatar */}
                 <div className="flex items-center gap-4">
                     <label
@@ -490,7 +488,7 @@ export default function ProfilePage() {
                 {section === "stats" && (
                     <div className="space-y-4">
                         <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4 space-y-4">
-                            <p className="text-[10px] font-mono tracking-widest text-white/40">BODY STATS</p>
+                            <p className="text-[10px] font-mono tracking-widest text-white/25">BODY STATS</p>
 
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
@@ -540,7 +538,7 @@ export default function ProfilePage() {
                         </div>
 
                         <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4">
-                            <p className="text-[10px] font-mono tracking-widest text-white/40 mb-3">INJURY / LIMITATION NOTES</p>
+                            <p className="text-[10px] font-mono tracking-widest text-white/25 mb-3">INJURY / LIMITATION NOTES</p>
                             <textarea
                                 value={data.injury_notes ?? ""}
                                 onChange={(e) => updateField("injury_notes", e.target.value)}
@@ -557,7 +555,7 @@ export default function ProfilePage() {
                 {section === "goals" && (
                     <div className="space-y-4">
                         <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4">
-                            <p className="text-[10px] font-mono tracking-widest text-white/40 mb-3">TRAINING GOAL</p>
+                            <p className="text-[10px] font-mono tracking-widest text-white/25 mb-3">TRAINING GOAL</p>
                             <CustomSelect
                                 options={GOAL_OPTIONS}
                                 value={data.goal}
@@ -568,7 +566,7 @@ export default function ProfilePage() {
                         </div>
 
                         <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4">
-                            <p className="text-[10px] font-mono tracking-widest text-white/40 mb-3">TARGET LIFTS</p>
+                            <p className="text-[10px] font-mono tracking-widest text-white/25 mb-3">TARGET LIFTS</p>
                             <p className="text-[9px] font-mono text-white/25 mb-3">Set weight goals for specific exercises. You'll get notified when you hit them.</p>
 
                             {targetLifts.length > 0 && (
@@ -613,7 +611,7 @@ export default function ProfilePage() {
                 {section === "training" && (
                     <div className="space-y-4">
                         <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4 space-y-4">
-                            <p className="text-[10px] font-mono tracking-widest text-white/40">TRAINING PROFILE</p>
+                            <p className="text-[10px] font-mono tracking-widest text-white/25">TRAINING PROFILE</p>
 
                             <div>
                                 <label className="text-[9px] font-mono text-white/30 mb-1 block">EXPERIENCE LEVEL</label>
@@ -662,7 +660,7 @@ export default function ProfilePage() {
                 {/* ══════════ SOCIAL ══════════ */}
                 {section === "social" && (
                     <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4 space-y-4">
-                        <p className="text-[10px] font-mono tracking-widest text-white/40">SOCIAL LINKS</p>
+                        <p className="text-[10px] font-mono tracking-widest text-white/25">SOCIAL LINKS</p>
 
                         <div>
                             <label className="text-[9px] font-mono text-white/30 mb-1 flex items-center gap-1"><AtSign size={10} /> INSTAGRAM</label>
@@ -676,7 +674,7 @@ export default function ProfilePage() {
                         </div>
 
                         <div>
-                            <p className="text-[10px] font-mono tracking-widest text-white/40 mt-4 mb-2">AVATAR COLOR</p>
+                            <p className="text-[10px] font-mono tracking-widest text-white/25 mt-4 mb-2">AVATAR COLOR</p>
                             <div className="flex gap-2 flex-wrap">
                                 {AVATAR_COLORS.map((color) => (
                                     <button key={color} onClick={() => updateField("avatar_color", color)}
@@ -693,7 +691,7 @@ export default function ProfilePage() {
                 {section === "preferences" && (
                     <div className="space-y-4">
                         <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4 space-y-4">
-                            <p className="text-[10px] font-mono tracking-widest text-white/40">UNITS</p>
+                            <p className="text-[10px] font-mono tracking-widest text-white/25">UNITS</p>
                             <div className="flex gap-2">
                                 <button onClick={() => updateField("unit_preference", "metric")}
                                     className={`flex-1 text-center py-3 rounded-lg border transition ${data.unit_preference === "metric" ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/10 text-white/40"}`}>
@@ -709,7 +707,7 @@ export default function ProfilePage() {
                         </div>
 
                         <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4 space-y-4">
-                            <p className="text-[10px] font-mono tracking-widest text-white/40">THEME</p>
+                            <p className="text-[10px] font-mono tracking-widest text-white/25">THEME</p>
                             <div className="flex gap-2">
                                 <button onClick={() => applyTheme("navy")}
                                     className={`flex-1 text-center py-3 rounded-lg border transition ${theme === "navy" ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/10 text-white/40"}`}>
@@ -725,7 +723,7 @@ export default function ProfilePage() {
                         </div>
 
                         <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4 space-y-4">
-                            <p className="text-[10px] font-mono tracking-widest text-white/40">ACCENT COLOR</p>
+                            <p className="text-[10px] font-mono tracking-widest text-white/25">ACCENT COLOR</p>
                             <div className="grid grid-cols-4 gap-2">
                                 {ACCENT_PRESETS.map((preset) => (
                                     <button
@@ -735,7 +733,7 @@ export default function ProfilePage() {
                                     >
                                         <span
                                             className="w-6 h-6 rounded-full border border-white/20"
-                                            style={{ backgroundColor: `rgb(${preset.rgb})`, boxShadow: accent === preset.key ? `0 0 10px -1px rgb(${preset.rgb})` : undefined }}
+                                            style={{ backgroundColor: `rgb(${preset.rgb})` }}
                                         />
                                         <span className="text-[9px] font-mono text-white/50">{preset.label.toUpperCase()}</span>
                                     </button>
@@ -744,7 +742,7 @@ export default function ProfilePage() {
                         </div>
 
                         <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4 space-y-4">
-                            <p className="text-[10px] font-mono tracking-widest text-white/40">PROFILE VISIBILITY</p>
+                            <p className="text-[10px] font-mono tracking-widest text-white/25">PROFILE VISIBILITY</p>
                             <div className="flex gap-2">
                                 {[
                                     { value: "public", label: "PUBLIC", desc: "Visible on leaderboard", icon: Eye },
@@ -767,7 +765,7 @@ export default function ProfilePage() {
                 {section === "data" && (
                     <div className="space-y-4">
                         <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4">
-                            <p className="text-[10px] font-mono tracking-widest text-white/40 mb-3">EXPORT DATA</p>
+                            <p className="text-[10px] font-mono tracking-widest text-white/25 mb-3">EXPORT DATA</p>
                             <p className="text-[10px] font-mono text-white/30 mb-3">Download your complete workout history as a CSV file.</p>
                             <button onClick={exportData} className="flex items-center gap-2 text-sm font-mono px-4 py-2.5 rounded-lg border border-[rgb(var(--accent-rgb)/0.3)] text-[rgb(var(--accent-light-rgb))] hover:bg-[rgb(var(--accent-rgb)/0.1)] transition">
                                 <Download size={14} /> EXPORT WORKOUT HISTORY

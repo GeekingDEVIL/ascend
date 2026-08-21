@@ -113,7 +113,7 @@ function estimateE1RM(weight: number, reps: number): number {
 const CustomTooltip = ({ active, payload, label }: any) => {
     if (!active || !payload?.length) return null;
     return (
-        <div className="rounded-lg border border-[rgb(var(--accent-rgb)/0.2)] bg-[#0a1120]/95 backdrop-blur-xl px-3 py-2 text-[10px] font-mono">
+        <div className="rounded-xl border border-white/[0.08] bg-[#080d18]/95 px-3 py-2 text-[10px] font-mono">
             <p className="text-white/50 mb-1">{label}</p>
             {payload.map((p: any, i: number) => (
                 <p key={i} style={{ color: p.color }}>
@@ -403,14 +403,12 @@ export default function ProgressPage() {
     ];
 
     return (
-        <main className="relative min-h-screen w-full bg-[#050914] text-white p-4 md:p-10 pb-24 md:pb-10 overflow-x-hidden">
-            <div className="pointer-events-none fixed top-[-10%] left-1/2 -translate-x-1/2 w-[700px] h-[700px] bg-blue-600/15 rounded-full blur-[150px]" />
-            <div className="pointer-events-none fixed bottom-[-15%] right-[5%] w-[500px] h-[500px] bg-[rgb(var(--accent-rgb)/0.1)] rounded-full blur-[130px]" />
+        <main className="min-h-screen bg-[#050914] text-white pb-24 md:pb-10">
 
-            <div className="relative z-10 w-full max-w-3xl mx-auto space-y-5">
+            <div className="max-w-xl mx-auto px-4 pt-6 space-y-5">
                 <div>
-                    <h1 className="text-xl md:text-2xl font-bold tracking-wide text-white/90">Progress</h1>
-                    <p className="text-white/40 text-sm mt-0.5">Track your training journey.</p>
+                    <h1 className="text-xl font-bold text-white/90">Progress</h1>
+                    <p className="text-[11px] text-white/30 mt-0.5">Track your training journey</p>
                 </div>
 
                 {/* Tabs */}
@@ -419,7 +417,7 @@ export default function ProgressPage() {
                         <button
                             key={t.key}
                             onClick={() => setTab(t.key)}
-                            className={`flex items-center justify-center gap-1.5 text-[10px] font-mono px-2 py-2 rounded-lg border transition ${tab === t.key ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/10 text-white/40 hover:text-white/70"
+                            className={`flex items-center justify-center gap-1.5 text-[10px] font-mono px-2 py-2 rounded-xl border transition ${tab === t.key ? "border-[rgb(var(--accent-rgb)/0.2)] bg-[rgb(var(--accent-rgb)/0.08)] text-[rgb(var(--accent-rgb))]" : "border-white/[0.06] text-white/30 hover:text-white/60"
                                 }`}
                         >
                             <t.icon size={12} /> {t.label}
@@ -438,14 +436,14 @@ export default function ProgressPage() {
                             <div className="space-y-4">
                                 {/* Total Activity */}
                                 <div>
-                                    <p className="text-[10px] font-mono tracking-widest text-white/40 mb-2.5">TOTAL ACTIVITY</p>
+                                    <p className="text-[10px] font-mono tracking-widest text-white/25 mb-2.5">TOTAL ACTIVITY</p>
                                     <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-3">
                                         <div className="flex flex-wrap gap-1.5 mb-4">
                                             {ACTIVITY_RANGES.map((r) => (
                                                 <button
                                                     key={r}
                                                     onClick={() => setActivityRange(r)}
-                                                    className={`text-[10px] font-mono px-3 py-1.5 rounded-full border transition ${activityRange === r ? "border-[rgb(var(--accent-rgb)/0.5)] bg-[rgb(var(--accent-rgb)/0.15)] text-[rgb(var(--accent-light-rgb))]" : "border-white/10 text-white/40 hover:text-white/70"}`}
+                                                    className={`text-[10px] font-mono px-3 py-1.5 rounded-full border transition ${activityRange === r ? "border-[rgb(var(--accent-rgb)/0.2)] bg-[rgb(var(--accent-rgb)/0.08)] text-[rgb(var(--accent-rgb))]" : "border-white/[0.06] text-white/30 hover:text-white/60"}`}
                                                 >
                                                     {r}
                                                 </button>
@@ -470,7 +468,7 @@ export default function ProgressPage() {
 
                                 {/* Your Workouts calendar */}
                                 <div>
-                                    <p className="text-[10px] font-mono tracking-widest text-white/40 mb-2.5">YOUR WORKOUTS</p>
+                                    <p className="text-[10px] font-mono tracking-widest text-white/25 mb-2.5">YOUR WORKOUTS</p>
                                     <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-4">
                                         <div className="flex items-center justify-between mb-3">
                                             <button onClick={() => setCalendarMonthOffset((o) => o - 1)} className="text-white/30 hover:text-white/70 transition px-1">‹</button>
@@ -504,7 +502,7 @@ export default function ProgressPage() {
                                 {leaderboardCard && (
                                     <div>
                                         <Link href="/rankings" className="flex items-center justify-between mb-2.5 group">
-                                            <p className="text-[10px] font-mono tracking-widest text-white/40">LEADERBOARDS</p>
+                                            <p className="text-[10px] font-mono tracking-widest text-white/25">LEADERBOARDS</p>
                                             <span className="flex items-center gap-0.5 text-[10px] font-mono text-white/30 group-hover:text-[rgb(var(--accent-light-rgb))] transition">
                                                 SEE ALL <ChevronRight size={12} />
                                             </span>
@@ -537,7 +535,7 @@ export default function ProgressPage() {
                                 {/* Latest Achievements */}
                                 <div>
                                     <Link href="/achievements" className="flex items-center justify-between mb-2.5 group">
-                                        <p className="text-[10px] font-mono tracking-widest text-white/40">LATEST ACHIEVEMENTS</p>
+                                        <p className="text-[10px] font-mono tracking-widest text-white/25">LATEST ACHIEVEMENTS</p>
                                         <span className="flex items-center gap-0.5 text-[10px] font-mono text-white/30 group-hover:text-[rgb(var(--accent-light-rgb))] transition">
                                             SEE ALL <ChevronRight size={12} />
                                         </span>
@@ -550,7 +548,6 @@ export default function ProgressPage() {
                                                 <div
                                                     key={a.key}
                                                     className={`shrink-0 w-20 flex flex-col items-center gap-1.5 rounded-lg border px-2 py-3 text-center ${isEarned ? `${colors.border} ${colors.bg}` : "border-white/[0.06] bg-white/[0.02]"}`}
-                                                    style={isEarned && colors.glow ? { boxShadow: colors.glow } : undefined}
                                                 >
                                                     <div className={`text-2xl ${isEarned ? "" : "grayscale opacity-25"}`}>{a.icon}</div>
                                                     <p className={`text-[9px] font-mono leading-tight ${isEarned ? colors.text : "text-white/25"}`}>{a.name}</p>
@@ -565,7 +562,7 @@ export default function ProgressPage() {
                                 {sessions.length === 0 ? (
                                     <div className="text-center py-16">
                                         <Calendar size={32} className="mx-auto mb-3 text-white/15" />
-                                        <p className="text-sm font-bold tracking-widest text-white/30">NO WORKOUTS YET</p>
+                                        <p className="text-sm font-semibold text-white/25">NO WORKOUTS YET</p>
                                         <p className="text-xs text-white/20 mt-1">Complete your first workout to see history here.</p>
                                     </div>
                                 ) : (
@@ -609,11 +606,11 @@ export default function ProgressPage() {
                             <div className="space-y-4">
                                 {/* PR Board */}
                                 <div>
-                                    <p className="text-[10px] font-mono tracking-widest text-white/40 mb-3">PERSONAL RECORDS</p>
+                                    <p className="text-[10px] font-mono tracking-widest text-white/25 mb-3">PERSONAL RECORDS</p>
                                     {prs.length === 0 ? (
                                         <div className="text-center py-12">
                                             <Trophy size={32} className="mx-auto mb-3 text-white/15" />
-                                            <p className="text-sm font-bold tracking-widest text-white/30">NO PRs YET</p>
+                                            <p className="text-sm font-semibold text-white/25">NO PRs YET</p>
                                             <p className="text-xs text-white/20 mt-1">Log workouts with weight to see PRs here.</p>
                                         </div>
                                     ) : (
@@ -714,7 +711,7 @@ export default function ProgressPage() {
                             <div className="space-y-4">
                                 {/* Measurements */}
                                 <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-4">
-                                    <p className="text-[10px] font-mono tracking-widest text-white/40 mb-4">MEASUREMENTS</p>
+                                    <p className="text-[10px] font-mono tracking-widest text-white/25 mb-4">MEASUREMENTS</p>
                                     <div className="flex items-end justify-between gap-2 h-28 mb-3">
                                         {MEASUREMENT_TYPES.map((m) => {
                                             const val = measurements[m.type];
@@ -745,7 +742,7 @@ export default function ProgressPage() {
 
                                 {/* Log weight */}
                                 <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-4">
-                                    <p className="text-[10px] font-mono tracking-widest text-white/40 mb-3">LOG BODY WEIGHT</p>
+                                    <p className="text-[10px] font-mono tracking-widest text-white/25 mb-3">LOG BODY WEIGHT</p>
                                     <div className="flex items-center gap-3">
                                         <input
                                             type="number"
@@ -770,7 +767,7 @@ export default function ProgressPage() {
 
                                 {/* Weight chart */}
                                 <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-4">
-                                    <p className="text-[10px] font-mono tracking-widest text-white/40 mb-3">WEIGHT TREND</p>
+                                    <p className="text-[10px] font-mono tracking-widest text-white/25 mb-3">WEIGHT TREND</p>
                                     {bodyWeightData.length < 2 ? (
                                         <div className="h-40 flex items-center justify-center border border-dashed border-white/10 rounded-lg">
                                             <p className="text-xs font-mono text-white/30 text-center px-4">
@@ -819,7 +816,7 @@ export default function ProgressPage() {
                         {tab === "volume" && (
                             <div className="space-y-4">
                                 <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-4">
-                                    <p className="text-[10px] font-mono tracking-widest text-white/40 mb-3">WEEKLY VOLUME (KG)</p>
+                                    <p className="text-[10px] font-mono tracking-widest text-white/25 mb-3">WEEKLY VOLUME (KG)</p>
                                     {weeklyVolumeData.length === 0 ? (
                                         <div className="h-40 flex items-center justify-center border border-dashed border-white/10 rounded-lg">
                                             <p className="text-xs font-mono text-white/30 text-center px-4">No data yet.</p>
@@ -840,7 +837,7 @@ export default function ProgressPage() {
                                 </div>
 
                                 <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-4">
-                                    <p className="text-[10px] font-mono tracking-widest text-white/40 mb-3">WEEKLY SETS</p>
+                                    <p className="text-[10px] font-mono tracking-widest text-white/25 mb-3">WEEKLY SETS</p>
                                     {weeklyVolumeData.length === 0 ? (
                                         <div className="h-40 flex items-center justify-center border border-dashed border-white/10 rounded-lg">
                                             <p className="text-xs font-mono text-white/30 text-center px-4">No data yet.</p>

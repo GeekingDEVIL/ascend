@@ -78,14 +78,12 @@ export default function RecoveryPage() {
   const fatiguedCount = trained.filter((r) => (r.recoveryPct ?? 0) < 50).length;
 
   return (
-    <main className="relative min-h-screen w-full bg-[#050914] text-white p-4 md:p-10 pb-24 md:pb-10 overflow-x-hidden">
-      <div className="pointer-events-none fixed top-[-10%] left-1/2 -translate-x-1/2 w-[700px] h-[700px] bg-emerald-600/10 rounded-full blur-[150px]" />
-      <div className="pointer-events-none fixed bottom-[-15%] right-[5%] w-[500px] h-[500px] bg-[rgb(var(--accent-rgb)/0.1)] rounded-full blur-[130px]" />
+    <main className="min-h-screen bg-[#050914] text-white pb-24 md:pb-10">
 
-      <div className="relative z-10 w-full max-w-3xl mx-auto space-y-5">
+      <div className="max-w-xl mx-auto px-4 pt-6 space-y-5">
         <div>
-          <h1 className="text-xl md:text-2xl font-bold tracking-wide text-white/90">Recovery</h1>
-          <p className="text-white/40 text-sm mt-0.5">Per-muscle readiness based on training history.</p>
+          <h1 className="text-xl font-bold text-white/90">Recovery</h1>
+          <p className="text-[11px] text-white/30 mt-0.5">Per-muscle readiness based on training history</p>
         </div>
 
         {loading ? (
@@ -93,14 +91,14 @@ export default function RecoveryPage() {
         ) : rows.length === 0 ? (
           <div className="text-center py-16">
             <div className="w-9 h-9 mx-auto mb-3 rotate-45 border-2 border-white/15 rounded-sm" />
-            <p className="text-sm font-bold tracking-widest text-white/30">NO TRAINING DATA</p>
+            <p className="text-sm font-semibold text-white/25">NO TRAINING DATA</p>
             <p className="text-xs text-white/20 mt-1">Complete a few workouts to see per-muscle recovery here.</p>
           </div>
         ) : (
           <>
             <div className="rounded-lg border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.03] p-4">
               <div className="flex items-center justify-between mb-3">
-                <p className="text-[10px] font-mono tracking-widest text-white/40">OVERALL READINESS</p>
+                <p className="text-[10px] font-mono tracking-widest text-white/25">OVERALL READINESS</p>
                 <HeartPulse size={16} className="text-[rgb(var(--accent-light-rgb))]" />
               </div>
               <div className="flex items-end gap-4">

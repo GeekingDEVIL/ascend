@@ -83,22 +83,20 @@ export default function NotificationsPage() {
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   return (
-    <main className="relative min-h-screen w-full bg-[#050914] text-white p-4 md:p-10 pb-24 md:pb-10 overflow-x-hidden">
-      <div className="pointer-events-none fixed top-[-10%] left-1/2 -translate-x-1/2 w-[700px] h-[700px] bg-blue-600/15 rounded-full blur-[150px]" />
-      <div className="pointer-events-none fixed bottom-[-15%] right-[5%] w-[500px] h-[500px] bg-[rgb(var(--accent-rgb)/0.1)] rounded-full blur-[130px]" />
+    <main className="min-h-screen bg-[#050914] text-white pb-24 md:pb-10">
 
-      <div className="relative z-10 w-full max-w-2xl mx-auto space-y-5">
+      <div className="max-w-xl mx-auto px-4 pt-6 space-y-5">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div>
-            <h1 className="text-xl md:text-2xl font-bold tracking-wide text-white/90">Notifications</h1>
-            <p className="text-white/40 text-sm mt-0.5">
+            <h1 className="text-xl font-bold text-white/90">Notifications</h1>
+            <p className="text-[11px] text-white/30 mt-0.5">
               {unreadCount > 0 ? `${unreadCount} unread` : "All caught up"}
             </p>
           </div>
           <div className="flex items-center gap-2">
             {unreadCount > 0 && (
-              <button onClick={dismissAll} className="text-[10px] font-mono px-3 py-1.5 rounded-lg border border-[rgb(var(--accent-rgb)/0.2)] text-[rgb(var(--accent-light-rgb)/0.7)] hover:bg-[rgb(var(--accent-rgb)/0.1)] transition">
-                MARK ALL READ
+              <button onClick={dismissAll} className="text-[10px] font-mono px-3 py-1.5 rounded-xl border border-white/[0.06] text-white/30 hover:text-white/60 hover:bg-white/[0.03] transition">
+                Mark All Read
               </button>
             )}
             {notifications.length > 0 && (
@@ -110,10 +108,10 @@ export default function NotificationsPage() {
         </div>
 
         <div className="flex gap-2">
-          <button onClick={() => setFilter("all")} className={`text-[10px] font-mono px-3 py-1.5 rounded-lg border transition ${filter === "all" ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/10 text-white/40 hover:text-white/70"}`}>
+          <button onClick={() => setFilter("all")} className={`text-[10px] font-mono px-3 py-1.5 rounded-lg border transition ${filter === "all" ? "border-[rgb(var(--accent-rgb)/0.2)] bg-[rgb(var(--accent-rgb)/0.08)] text-[rgb(var(--accent-rgb))]" : "border-white/[0.06] text-white/30 hover:text-white/60"}`}>
             ALL
           </button>
-          <button onClick={() => setFilter("unread")} className={`text-[10px] font-mono px-3 py-1.5 rounded-lg border transition ${filter === "unread" ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/10 text-white/40 hover:text-white/70"}`}>
+          <button onClick={() => setFilter("unread")} className={`text-[10px] font-mono px-3 py-1.5 rounded-lg border transition ${filter === "unread" ? "border-[rgb(var(--accent-rgb)/0.2)] bg-[rgb(var(--accent-rgb)/0.08)] text-[rgb(var(--accent-rgb))]" : "border-white/[0.06] text-white/30 hover:text-white/60"}`}>
             UNREAD {unreadCount > 0 && `(${unreadCount})`}
           </button>
         </div>
@@ -123,7 +121,7 @@ export default function NotificationsPage() {
         ) : notifications.length === 0 ? (
           <div className="text-center py-16">
             <Bell size={32} className="mx-auto mb-3 text-white/15" />
-            <p className="text-sm font-bold tracking-widest text-white/30">NO NOTIFICATIONS</p>
+            <p className="text-sm font-semibold text-white/25">NO NOTIFICATIONS</p>
             <p className="text-xs text-white/20 mt-1">{filter === "unread" ? "No unread notifications." : "Complete a workout to see alerts."}</p>
           </div>
         ) : (

@@ -72,31 +72,19 @@ function computeOverload(lastW: number | null, lastR: number | null, targetReps:
     return { type: "reps_up", text: `Got ${lastR} reps @ ${lastW}kg → aim for ${lastR + 1}+`, suggestedWeight: lastW };
 }
 
-/* ─── BEAM BORDER (reused from Dashboard) ─── */
-function BeamBorder({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+/* ─── CARD WRAPPER ─── */
+function CardPanel({ children, className = "" }: { children: React.ReactNode; className?: string }) {
     return (
-        <div className="relative">
-            <div className="relative p-[1.5px] rounded-lg overflow-hidden">
-                <style>{`@keyframes beamSpin { to { transform: rotate(360deg); } }`}</style>
-                <div
-                    className="absolute inset-[-60%] animate-[beamSpin_8s_linear_infinite] opacity-50"
-                    style={{
-                        background: "conic-gradient(from 0deg, transparent 0%, transparent 10%, rgb(var(--accent-rgb)) 20%, rgb(var(--accent-light-rgb)) 28%, rgb(var(--accent-rgb)) 36%, transparent 46%, transparent 54%, rgb(var(--accent-rgb)) 64%, rgb(var(--accent-light-rgb)) 72%, rgb(var(--accent-rgb)) 80%, transparent 90%, transparent 100%)",
-                        filter: "blur(3px)",
-                    }}
-                />
-                <div className={`relative rounded-lg bg-[#0a1120]/95 ${className}`}>{children}</div>
-            </div>
-        </div>
+        <div className={`rounded-2xl border border-white/[0.06] bg-white/[0.03] ${className}`}>{children}</div>
     );
 }
 
-/* ─── GLASS STAT ─── */
-function GlassStat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
+/* ─── STAT CELL ─── */
+function StatCell({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
     return (
-        <div className="rounded-lg border border-white/10 bg-white/[0.03] backdrop-blur-sm px-3 py-2.5 text-center">
-            <p className="text-[8px] font-mono tracking-widest text-white/30 mb-0.5">{label}</p>
-            <p className={`text-lg font-bold font-mono ${accent ? "text-[rgb(var(--accent-light-rgb))]" : "text-white/90"}`}>{value}</p>
+        <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] px-3 py-2.5 text-center">
+            <p className="text-[8px] font-mono tracking-widest text-white/25 mb-0.5">{label}</p>
+            <p className={`text-lg font-bold font-mono ${accent ? "text-[rgb(var(--accent-rgb))]" : "text-white/90"}`}>{value}</p>
         </div>
     );
 }
@@ -696,8 +684,8 @@ export default function WorkoutPage() {
     if (status === "loading") return (
         <main className="min-h-screen bg-[#050914] text-white flex items-center justify-center">
             <div className="text-center">
-                <div className="w-8 h-8 border-2 border-[rgb(var(--accent-rgb)/0.4)] border-t-[rgb(var(--accent-rgb))] rounded-full animate-spin mx-auto mb-3" />
-                <p className="text-xs font-mono text-white/40">Initializing protocol...</p>
+                <div className="w-7 h-7 border-2 border-[rgb(var(--accent-rgb)/0.4)] border-t-[rgb(var(--accent-rgb))] rounded-full animate-spin mx-auto mb-3" />
+                <p className="text-xs font-mono text-white/30">Loading workout...</p>
             </div>
         </main>
     );
@@ -706,37 +694,41 @@ export default function WorkoutPage() {
     if (status === "rest_day") return (
         <main className="min-h-screen bg-[#050914] text-white flex items-center justify-center p-6">
             <div className="text-center">
-                <div className="w-16 h-16 mx-auto mb-5 rounded-full border-2 border-emerald-400/40 bg-emerald-400/10 flex items-center justify-center" style={{ boxShadow: "0 0 30px -4px rgba(52,211,153,0.5)" }}>
-                    <Moon size={28} className="text-emerald-300" />
+                <div className="w-14 h-14 mx-auto mb-4 rounded-2xl border border-emerald-400/20 bg-emerald-400/10 flex items-center justify-center">
+                    <Moon size={24} className="text-emerald-400" />
                 </div>
-                <p className="text-lg font-bold tracking-widest text-emerald-300/90">REST DAY</p>
-                <p className="text-sm text-white/40 mt-2 max-w-xs mx-auto">Recovery is when your muscles grow. Nothing to log today.</p>
+                <p className="text-base font-semibold text-emerald-400">Rest Day</p>
+                <p className="text-[11px] text-white/30 mt-1.5 max-w-xs mx-auto">Recovery is when your muscles grow. Nothing to log today.</p>
             </div>
         </main>
     );
 
     // ── NO PLAN ──
     if (status === "no_plan") return (
-        <main className="min-h-screen bg-[#050914] text-white flex items-center justify-center p-6">
-            <div className="text-center w-full max-w-sm">
-                <div className="w-12 h-12 mx-auto mb-5 rotate-45 border-2 border-white/15 rounded-sm" />
-                <p className="text-sm font-bold tracking-widest text-white/30">NO WORKOUT PLANNED</p>
-                <p className="text-xs text-white/20 mt-2 mb-8 max-w-xs mx-auto">Nothing scheduled for today. Set up a recurring plan, or log a session on the fly.</p>
+        <main className="min-h-screen bg-[#050914] text-white p-4 pb-24">
+            <div className="max-w-xl mx-auto pt-10">
+                <div className="text-center mb-8">
+                    <div className="w-12 h-12 mx-auto mb-4 rounded-2xl border border-white/[0.08] bg-white/[0.03] flex items-center justify-center">
+                        <Dumbbell size={20} className="text-white/25" />
+                    </div>
+                    <p className="text-base font-semibold text-white/70">No Workout Planned</p>
+                    <p className="text-[11px] text-white/25 mt-1 max-w-xs mx-auto">Set up a recurring plan, or train freestyle.</p>
+                </div>
 
-                <div className="space-y-3 text-left">
-                    <div className="rounded-lg border border-[rgb(var(--accent-rgb)/0.2)] bg-[rgb(var(--accent-rgb))]/[0.04] p-4">
-                        <p className="text-sm font-bold text-white/90 mb-1">Create a weekly plan</p>
-                        <p className="text-[11px] text-white/40 mb-3">Set your training days once — it repeats automatically every week.</p>
-                        <button onClick={() => router.push("/schedule")} className="w-full text-sm font-bold py-3 rounded-lg bg-[rgb(var(--accent-rgb))] text-black hover:bg-[rgb(var(--accent-light-rgb))] transition" style={{ boxShadow: "0 0 20px -4px rgb(var(--accent-rgb) / 0.5)" }}>
-                            CREATE WEEKLY PLAN
+                <div className="space-y-3">
+                    <div className="rounded-2xl border border-[rgb(var(--accent-rgb)/0.15)] bg-[rgb(var(--accent-rgb)/0.03)] p-4">
+                        <p className="text-sm font-semibold text-white/85 mb-1">Create a weekly plan</p>
+                        <p className="text-[11px] text-white/30 mb-3">Set your training days once — repeats every week.</p>
+                        <button onClick={() => router.push("/schedule")} className="w-full text-sm font-semibold py-3 rounded-xl bg-[rgb(var(--accent-rgb))] text-black hover:brightness-110 transition">
+                            Go to Schedule
                         </button>
                     </div>
 
-                    <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-4">
-                        <p className="text-sm font-bold text-white/90 mb-1">Just train today</p>
-                        <p className="text-[11px] text-white/40 mb-3">No plan needed — pick exercises and log as you go.</p>
-                        <button onClick={() => setStatus("freestyle")} className="w-full text-sm font-mono font-bold py-3 rounded-lg border border-white/15 text-white/70 hover:border-[rgb(var(--accent-rgb)/0.4)] hover:text-[rgb(var(--accent-light-rgb))] transition">
-                            START FREESTYLE SESSION
+                    <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-4">
+                        <p className="text-sm font-semibold text-white/85 mb-1">Just train today</p>
+                        <p className="text-[11px] text-white/30 mb-3">No plan needed — pick exercises and log as you go.</p>
+                        <button onClick={() => setStatus("freestyle")} className="w-full text-sm font-medium py-3 rounded-xl border border-white/[0.1] text-white/60 hover:text-white/90 hover:bg-white/[0.05] transition">
+                            Start Freestyle Session
                         </button>
                     </div>
                 </div>
@@ -746,34 +738,33 @@ export default function WorkoutPage() {
 
     // ── FREESTYLE (BUILD) ──
     if (status === "freestyle") return (
-        <main className="min-h-screen bg-[#050914] text-white p-4 md:p-10 pb-24">
-            <div className="pointer-events-none fixed top-[-10%] left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[rgb(var(--accent-rgb)/0.1)] rounded-full blur-[130px]" />
-            <div className="relative z-10 w-full max-w-lg mx-auto">
+        <main className="min-h-screen bg-[#050914] text-white pb-24">
+            <div className="max-w-xl mx-auto px-4 pt-6">
                 <button onClick={() => { setFreestyleExercises([]); setStatus(exercisesList.length > 0 ? "not_started" : "no_plan"); }} className="text-[10px] font-mono text-white/30 hover:text-white/60 transition mb-4">
                     ← Back
                 </button>
-                <p className="text-[10px] font-mono tracking-[0.2em] text-[rgb(var(--accent-light-rgb)/0.6)] mb-0.5">FREESTYLE</p>
-                <h1 className="text-xl md:text-2xl font-bold text-white/90 mb-5">Freestyle Session</h1>
+                <h1 className="text-xl font-bold text-white/90 mb-1">Freestyle Session</h1>
+                <p className="text-[11px] text-white/30 mb-5">Pick exercises and start training</p>
 
-                <button onClick={() => setShowFreestyleAddModal(true)} className="w-full flex items-center justify-center gap-2 text-sm font-mono font-bold py-3.5 rounded-lg border border-[rgb(var(--accent-rgb)/0.3)] bg-[rgb(var(--accent-rgb))]/[0.05] text-[rgb(var(--accent-light-rgb))] hover:bg-[rgb(var(--accent-rgb)/0.1)] transition mb-4">
-                    <Plus size={16} /> ADD EXERCISE
+                <button onClick={() => setShowFreestyleAddModal(true)} className="w-full flex items-center justify-center gap-2 text-sm font-medium py-3 rounded-xl border border-[rgb(var(--accent-rgb)/0.2)] bg-[rgb(var(--accent-rgb)/0.05)] text-[rgb(var(--accent-rgb))] hover:bg-[rgb(var(--accent-rgb)/0.1)] transition mb-4">
+                    <Plus size={16} /> Add Exercise
                 </button>
 
                 {freestyleExercises.length === 0 ? (
                     <div className="text-center py-10">
-                        <p className="text-sm text-white/30">No exercises added yet.</p>
+                        <p className="text-[11px] text-white/25">No exercises added yet.</p>
                     </div>
                 ) : (
                     <div className="space-y-2 mb-6">
                         {freestyleExercises.map((ex, i) => (
-                            <div key={ex.id} className="flex items-center gap-3 rounded-lg border border-white/[0.08] bg-white/[0.02] px-4 py-3">
-                                <span className="text-[10px] font-mono text-[rgb(var(--accent-light-rgb)/0.4)] w-5 shrink-0">{String(i + 1).padStart(2, "0")}</span>
+                            <div key={ex.id} className="flex items-center gap-3 rounded-xl border border-white/[0.06] bg-white/[0.03] px-4 py-3">
+                                <span className="text-[10px] font-mono text-white/20 w-5 shrink-0">{String(i + 1).padStart(2, "0")}</span>
                                 <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-bold text-white/90 truncate">{ex.name}</p>
-                                    <p className="text-[10px] font-mono text-white/35">{ex.body_segment}</p>
+                                    <p className="text-[13px] font-medium text-white/80 truncate">{ex.name}</p>
+                                    <p className="text-[9px] font-mono text-white/25">{ex.body_segment}</p>
                                 </div>
-                                <button onClick={() => removeFreestyleExercise(ex.id)} className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg text-white/25 hover:text-red-400 transition">
-                                    <X size={16} />
+                                <button onClick={() => removeFreestyleExercise(ex.id)} className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg text-white/20 hover:text-red-400 transition">
+                                    <X size={14} />
                                 </button>
                             </div>
                         ))}
@@ -784,10 +775,9 @@ export default function WorkoutPage() {
                     <button
                         onClick={beginFreestyleSession}
                         disabled={startingFreestyle}
-                        className="w-full flex items-center justify-center gap-2.5 text-sm font-bold py-4 rounded-lg bg-[rgb(var(--accent-rgb))] text-black hover:bg-[rgb(var(--accent-light-rgb))] disabled:opacity-50 transition"
-                        style={{ boxShadow: "0 0 25px -4px rgb(var(--accent-rgb) / 0.6)" }}
+                        className="w-full flex items-center justify-center gap-2 text-sm font-semibold py-3.5 rounded-xl bg-[rgb(var(--accent-rgb))] text-black hover:brightness-110 disabled:opacity-50 transition"
                     >
-                        <Play size={18} fill="black" /> {startingFreestyle ? "STARTING..." : "BEGIN SESSION"}
+                        <Play size={16} fill="black" /> {startingFreestyle ? "Starting..." : "Begin Session"}
                     </button>
                 )}
             </div>
@@ -799,60 +789,59 @@ export default function WorkoutPage() {
     // ── COMPLETED ──
     if (status === "completed" && summary) return (
         <main className="min-h-screen bg-[#050914] text-white flex items-center justify-center p-4">
-            <div className="pointer-events-none fixed top-[-10%] left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[rgb(var(--accent-rgb)/0.2)] rounded-full blur-[150px]" />
-            <div className="relative z-10 w-full max-w-md">
-                <BeamBorder className="p-6">
+            <div className="w-full max-w-xl">
+                <CardPanel className="p-5">
                     <div className="text-center mb-5">
-                        <div className="w-14 h-14 mx-auto mb-3 rounded-full bg-[rgb(var(--accent-rgb)/0.15)] border border-[rgb(var(--accent-light-rgb)/0.3)] flex items-center justify-center" style={{ boxShadow: "0 0 25px -4px rgb(var(--accent-rgb) / 0.5)" }}>
-                            <Award size={26} className="text-[rgb(var(--accent-light-rgb))]" />
+                        <div className="w-12 h-12 mx-auto mb-3 rounded-2xl bg-[rgb(var(--accent-rgb)/0.1)] border border-[rgb(var(--accent-rgb)/0.2)] flex items-center justify-center">
+                            <Award size={22} className="text-[rgb(var(--accent-rgb))]" />
                         </div>
-                        <p className="text-[10px] font-mono tracking-[0.3em] text-[rgb(var(--accent-light-rgb)/0.7)]">SESSION COMPLETE</p>
-                        <p className="text-xl font-bold text-white/90 mt-1">{dayTitle}</p>
+                        <p className="text-[9px] font-mono tracking-widest text-white/25 mb-1">SESSION COMPLETE</p>
+                        <p className="text-lg font-bold text-white/90">{dayTitle}</p>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2.5 mb-5">
-                        <GlassStat label="DURATION" value={formatClock(summary.duration)} />
-                        <GlassStat label="SETS" value={String(summary.sets)} />
-                        <GlassStat label="VOLUME" value={`${Math.round(summary.volume).toLocaleString()} KG`} />
-                        <GlassStat label="XP EARNED" value={`+${summary.xpBreakdown.total}`} accent />
+                    <div className="grid grid-cols-2 gap-2 mb-4">
+                        <StatCell label="DURATION" value={formatClock(summary.duration)} />
+                        <StatCell label="SETS" value={String(summary.sets)} />
+                        <StatCell label="VOLUME" value={`${Math.round(summary.volume).toLocaleString()} kg`} />
+                        <StatCell label="XP EARNED" value={`+${summary.xpBreakdown.total}`} accent />
                     </div>
 
-                    <div className="rounded-lg border border-[rgb(var(--accent-rgb)/0.15)] bg-[rgb(var(--accent-rgb))]/[0.03] p-3 mb-5">
-                        <p className="text-[8px] font-mono tracking-widest text-[rgb(var(--accent-light-rgb)/0.5)] mb-2">XP BREAKDOWN</p>
+                    <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-3 mb-5">
+                        <p className="text-[8px] font-mono tracking-widest text-white/20 mb-2">XP BREAKDOWN</p>
                         {summary.xpBreakdown.details.map((d, i) => (
-                            <p key={i} className="text-[10px] font-mono text-white/50 leading-relaxed">{d}</p>
+                            <p key={i} className="text-[10px] font-mono text-white/40 leading-relaxed">{d}</p>
                         ))}
                     </div>
 
                     <div className="flex gap-2">
-                        <button onClick={() => router.push("/")} className="flex-1 text-sm font-mono font-bold py-3.5 rounded-lg border border-[rgb(var(--accent-rgb)/0.4)] text-[rgb(var(--accent-light-rgb))] hover:bg-[rgb(var(--accent-rgb)/0.1)] transition">
-                            DASHBOARD
+                        <button onClick={() => router.push("/")} className="flex-1 text-sm font-medium py-3 rounded-xl border border-white/[0.08] text-white/50 hover:text-white/80 hover:bg-white/[0.05] transition">
+                            Dashboard
                         </button>
-                        <button onClick={() => router.push("/progress")} className="flex-1 text-sm font-mono font-bold py-3.5 rounded-lg bg-[rgb(var(--accent-rgb))] text-black hover:bg-[rgb(var(--accent-light-rgb))] transition" style={{ boxShadow: "0 0 20px -4px rgb(var(--accent-rgb) / 0.6)" }}>
-                            VIEW PROGRESS
+                        <button onClick={() => router.push("/progress")} className="flex-1 text-sm font-semibold py-3 rounded-xl bg-[rgb(var(--accent-rgb))] text-black hover:brightness-110 transition">
+                            View Progress
                         </button>
-                        <button onClick={handleShare} disabled={sharing} title="Share" className="shrink-0 w-12 flex items-center justify-center rounded-lg border border-white/15 text-white/60 hover:text-[rgb(var(--accent-light-rgb))] hover:border-[rgb(var(--accent-rgb)/0.4)] disabled:opacity-40 transition">
-                            {sharing ? <div className="w-4 h-4 border-2 border-white/30 border-t-[rgb(var(--accent-rgb))] rounded-full animate-spin" /> : <Share2 size={16} />}
+                        <button onClick={handleShare} disabled={sharing} title="Share" className="shrink-0 w-11 flex items-center justify-center rounded-xl border border-white/[0.08] text-white/30 hover:text-white/60 disabled:opacity-40 transition">
+                            {sharing ? <div className="w-4 h-4 border-2 border-white/20 border-t-[rgb(var(--accent-rgb))] rounded-full animate-spin" /> : <Share2 size={14} />}
                         </button>
                     </div>
-                </BeamBorder>
+                </CardPanel>
             </div>
 
             {showFreestylePrompt && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-                    <div className="w-full max-w-sm rounded-lg border border-[rgb(var(--accent-rgb)/0.2)] bg-[#0a1120] p-5">
-                        <p className="text-sm font-bold text-white/90 mb-2">
-                            Want to make this your regular {new Date().toLocaleDateString(undefined, { weekday: "long" })} workout?
+                    <div className="w-full max-w-sm rounded-2xl border border-white/[0.08] bg-[#080d18] p-5">
+                        <p className="text-sm font-semibold text-white/85 mb-2">
+                            Save as {new Date().toLocaleDateString(undefined, { weekday: "long" })} workout?
                         </p>
-                        <p className="text-[11px] text-white/50 mb-4">
-                            It'll show up automatically every {new Date().toLocaleDateString(undefined, { weekday: "long" })} from now on.
+                        <p className="text-[11px] text-white/35 mb-4">
+                            It&apos;ll repeat every {new Date().toLocaleDateString(undefined, { weekday: "long" })} automatically.
                         </p>
                         <div className="flex gap-2">
-                            <button onClick={() => setShowFreestylePrompt(false)} className="flex-1 text-sm font-mono py-2.5 rounded-lg border border-white/15 text-white/50 hover:text-white/80 transition">
-                                NO THANKS
+                            <button onClick={() => setShowFreestylePrompt(false)} className="flex-1 text-sm font-medium py-2.5 rounded-xl border border-white/[0.08] text-white/50 hover:text-white/80 transition">
+                                No Thanks
                             </button>
-                            <button onClick={saveFreestyleAsRecurringPlan} disabled={savingFreestylePlan} className="flex-1 text-sm font-mono font-bold py-2.5 rounded-lg bg-[rgb(var(--accent-rgb))] text-black hover:bg-[rgb(var(--accent-light-rgb))] disabled:opacity-50 transition">
-                                {savingFreestylePlan ? "SAVING..." : "YES, SAVE IT"}
+                            <button onClick={saveFreestyleAsRecurringPlan} disabled={savingFreestylePlan} className="flex-1 text-sm font-semibold py-2.5 rounded-xl bg-[rgb(var(--accent-rgb))] text-black hover:brightness-110 disabled:opacity-50 transition">
+                                {savingFreestylePlan ? "Saving..." : "Yes, Save"}
                             </button>
                         </div>
                     </div>
@@ -864,49 +853,36 @@ export default function WorkoutPage() {
     if (status === "completed_today") {
         return (
             <main className="min-h-screen bg-[#050914] text-white flex items-center justify-center p-4">
-                <div className="pointer-events-none fixed top-[-10%] left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[rgb(var(--accent-rgb)/0.2)] rounded-full blur-[150px]" />
-                <div className="relative z-10 w-full max-w-md">
-                    <div className="rounded-xl border border-[rgb(var(--accent-rgb)/0.2)] bg-[#0a1120]/95 p-6">
+                <div className="w-full max-w-xl">
+                    <CardPanel className="p-5">
                         <div className="text-center mb-5">
-                            <div className="w-14 h-14 mx-auto mb-3 rounded-full bg-[rgb(var(--accent-rgb)/0.15)] border border-[rgb(var(--accent-light-rgb)/0.3)] flex items-center justify-center" style={{ boxShadow: "0 0 25px -4px rgb(var(--accent-rgb) / 0.5)" }}>
-                                <Check size={26} className="text-[rgb(var(--accent-light-rgb))]" />
+                            <div className="w-12 h-12 mx-auto mb-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+                                <Check size={22} className="text-emerald-400" />
                             </div>
-                            <p className="text-[10px] font-mono tracking-[0.3em] text-[rgb(var(--accent-light-rgb)/0.7)]">TODAY'S SESSION</p>
-                            <p className="text-xl font-bold text-white/90 mt-1">{dayTitle}</p>
+                            <p className="text-[9px] font-mono tracking-widest text-white/25 mb-1">COMPLETED TODAY</p>
+                            <p className="text-lg font-bold text-white/90">{dayTitle}</p>
                         </div>
 
                         {summary && (
-                            <div className="grid grid-cols-2 gap-2.5 mb-5">
-                                <div className="rounded-lg border border-white/10 bg-white/[0.03] p-3 text-center">
-                                    <p className="text-[8px] font-mono text-white/30">DURATION</p>
-                                    <p className="text-lg font-bold font-mono text-white/90">{formatClock(summary.duration)}</p>
-                                </div>
-                                <div className="rounded-lg border border-white/10 bg-white/[0.03] p-3 text-center">
-                                    <p className="text-[8px] font-mono text-white/30">SETS</p>
-                                    <p className="text-lg font-bold font-mono text-white/90">{summary.sets}</p>
-                                </div>
-                                <div className="rounded-lg border border-white/10 bg-white/[0.03] p-3 text-center">
-                                    <p className="text-[8px] font-mono text-white/30">VOLUME</p>
-                                    <p className="text-lg font-bold font-mono text-white/90">{Math.round(summary.volume).toLocaleString()} KG</p>
-                                </div>
-                                <div className="rounded-lg border border-[rgb(var(--accent-rgb)/0.2)] bg-[rgb(var(--accent-rgb))]/[0.05] p-3 text-center">
-                                    <p className="text-[8px] font-mono text-[rgb(var(--accent-light-rgb)/0.5)]">XP EARNED</p>
-                                    <p className="text-lg font-bold font-mono text-[rgb(var(--accent-light-rgb))]">+{summary.xpBreakdown.total}</p>
-                                </div>
+                            <div className="grid grid-cols-2 gap-2 mb-4">
+                                <StatCell label="DURATION" value={formatClock(summary.duration)} />
+                                <StatCell label="SETS" value={String(summary.sets)} />
+                                <StatCell label="VOLUME" value={`${Math.round(summary.volume).toLocaleString()} kg`} />
+                                <StatCell label="XP EARNED" value={`+${summary.xpBreakdown.total}`} accent />
                             </div>
                         )}
 
-                        <p className="text-[10px] font-mono text-white/25 text-center mb-5">Completed for today. Come back tomorrow.</p>
+                        <p className="text-[10px] font-mono text-white/20 text-center mb-4">Done for today. Come back tomorrow.</p>
 
                         <div className="flex gap-2">
-                            <button onClick={() => router.push("/")} className="flex-1 text-sm font-mono font-bold py-3 rounded-lg border border-[rgb(var(--accent-rgb)/0.4)] text-[rgb(var(--accent-light-rgb))] hover:bg-[rgb(var(--accent-rgb)/0.1)] transition">
-                                DASHBOARD
+                            <button onClick={() => router.push("/")} className="flex-1 text-sm font-medium py-3 rounded-xl border border-white/[0.08] text-white/50 hover:text-white/80 hover:bg-white/[0.05] transition">
+                                Dashboard
                             </button>
-                            <button onClick={() => router.push("/progress")} className="flex-1 text-sm font-mono font-bold py-3 rounded-lg bg-[rgb(var(--accent-rgb))] text-black hover:bg-[rgb(var(--accent-light-rgb))] transition">
-                                VIEW PROGRESS
+                            <button onClick={() => router.push("/progress")} className="flex-1 text-sm font-semibold py-3 rounded-xl bg-[rgb(var(--accent-rgb))] text-black hover:brightness-110 transition">
+                                View Progress
                             </button>
                         </div>
-                    </div>
+                    </CardPanel>
                 </div>
             </main>
         );
@@ -914,33 +890,30 @@ export default function WorkoutPage() {
 
     // ── NOT STARTED / ACTIVE ──
     return (
-        <main className="relative min-h-screen w-full bg-[#050914] text-white pb-36 md:pb-10 overflow-x-hidden">
-            {/* Ambient glow */}
-            <div className="pointer-events-none fixed top-[-10%] left-1/2 -translate-x-1/2 w-[700px] h-[700px] bg-blue-600/15 rounded-full blur-[150px]" />
-            <div className="pointer-events-none fixed bottom-[-15%] right-[5%] w-[500px] h-[500px] bg-[rgb(var(--accent-rgb)/0.1)] rounded-full blur-[130px]" />
+        <main className="min-h-screen bg-[#050914] text-white pb-36 md:pb-10">
 
-            <div className="relative z-10 w-full max-w-2xl mx-auto p-4 md:p-10 space-y-4">
+            <div className="max-w-xl mx-auto px-4 pt-6 space-y-4">
 
                 {/* ── TOP BAR ── */}
                 <div className="flex items-center justify-between">
                     <div>
-                        <p className="text-[10px] font-mono tracking-[0.2em] text-[rgb(var(--accent-light-rgb)/0.6)] mb-0.5">
-                            {status === "active" ? "ACTIVE SESSION" : "PROTOCOL READY"}
+                        <h1 className="text-xl font-bold text-white/90">{dayTitle}</h1>
+                        <p className="text-[10px] font-mono text-white/25 mt-0.5">
+                            {status === "active" ? "Active session" : "Ready to start"}
                         </p>
-                        <h1 className="text-xl md:text-2xl font-bold text-white/90">{dayTitle}</h1>
                     </div>
                     {status === "active" && (
-                        <div className="text-right shrink-0 rounded-lg border border-[rgb(var(--accent-rgb)/0.2)] bg-[rgb(var(--accent-rgb))]/[0.05] px-3 py-1.5">
-                            <p className="text-[8px] font-mono text-[rgb(var(--accent-light-rgb)/0.5)]">ELAPSED</p>
-                            <p className="text-lg font-bold font-mono text-[rgb(var(--accent-light-rgb))]">{formatClock(elapsed)}</p>
+                        <div className="text-right shrink-0 rounded-xl border border-[rgb(var(--accent-rgb)/0.15)] bg-[rgb(var(--accent-rgb)/0.05)] px-3 py-1.5">
+                            <p className="text-[8px] font-mono text-white/25">ELAPSED</p>
+                            <p className="text-lg font-bold font-mono text-[rgb(var(--accent-rgb))]">{formatClock(elapsed)}</p>
                         </div>
                     )}
                     {status === "not_started" && (
                         <button
                             onClick={() => router.push("/schedule")}
-                            className="shrink-0 flex items-center gap-1.5 text-[10px] font-mono px-3 py-2 rounded-lg border border-white/10 text-white/40 hover:text-[rgb(var(--accent-light-rgb))] hover:border-[rgb(var(--accent-rgb)/0.3)] transition"
+                            className="shrink-0 flex items-center gap-1.5 text-[10px] font-mono px-3 py-2 rounded-xl border border-white/[0.06] text-white/30 hover:text-white/60 hover:bg-white/[0.03] transition"
                         >
-                            <RefreshCw size={11} /> CHANGE SCHEDULE
+                            <RefreshCw size={11} /> Edit Schedule
                         </button>
                     )}
                 </div>
@@ -948,24 +921,24 @@ export default function WorkoutPage() {
                 {/* ── PROGRESS BAR ── */}
                 {status === "active" && (
                     <div className="flex items-center gap-3">
-                        <div className="flex-1 h-2 rounded-full bg-white/[0.06] overflow-hidden border border-white/[0.04]">
-                            <div className="h-full bg-gradient-to-r from-[rgb(var(--accent-rgb))] to-[rgb(var(--accent-light-rgb))] rounded-full transition-all" style={{ width: `${totalPlanned ? Math.min(100, (completedCount / totalPlanned) * 100) : 0}%`, boxShadow: "0 0 8px rgb(var(--accent-rgb) / 0.4)" }} />
+                        <div className="flex-1 h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+                            <div className="h-full bg-[rgb(var(--accent-rgb))] rounded-full transition-all" style={{ width: `${totalPlanned ? Math.min(100, (completedCount / totalPlanned) * 100) : 0}%` }} />
                         </div>
-                        <p className="text-[10px] font-mono text-white/40 shrink-0">{completedCount}/{totalPlanned}</p>
+                        <p className="text-[10px] font-mono text-white/25 shrink-0">{completedCount}/{totalPlanned}</p>
                     </div>
                 )}
 
                 {/* ── PRE-SESSION PREVIEW ── */}
                 {status === "not_started" && (
-                    <BeamBorder className="p-5">
-                        <div className="grid grid-cols-3 gap-2.5 mb-5">
-                            <GlassStat label="EXERCISES" value={String(exercisesList.length)} />
-                            <GlassStat label="SETS" value={String(totalPlanned)} />
-                            <GlassStat label="EST. TIME" value={`${totalPlanned * 3}m`} />
+                    <CardPanel className="p-4">
+                        <div className="grid grid-cols-3 gap-2 mb-4">
+                            <StatCell label="EXERCISES" value={String(exercisesList.length)} />
+                            <StatCell label="SETS" value={String(totalPlanned)} />
+                            <StatCell label="EST. TIME" value={`${totalPlanned * 3}m`} />
                         </div>
 
-                        <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-3 mb-4">
-                            <p className="text-[8px] font-mono tracking-widest text-white/30 mb-2">PRE-WORKOUT BODY WEIGHT</p>
+                        <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-3 mb-4">
+                            <p className="text-[8px] font-mono tracking-widest text-white/25 mb-2">PRE-WORKOUT BODY WEIGHT</p>
                             <div className="flex items-center gap-3">
                                 <input
                                     type="number" min="0" onWheel={(e) => (e.target as HTMLElement).blur()}
@@ -973,9 +946,9 @@ export default function WorkoutPage() {
                                     value={preWorkoutWeight}
                                     onChange={(e) => setPreWorkoutWeight(e.target.value)}
                                     placeholder="—"
-                                    className="flex-1 min-w-0 h-11 rounded-lg bg-white/[0.04] border border-white/[0.08] text-center text-lg font-bold font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition"
+                                    className="flex-1 min-w-0 h-11 rounded-xl bg-white/[0.04] border border-white/[0.06] text-center text-lg font-bold font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.3)] transition"
                                 />
-                                <span className="text-sm font-mono text-white/30 shrink-0">KG</span>
+                                <span className="text-sm font-mono text-white/25 shrink-0">kg</span>
                                 {preWorkoutWeight && !weightLogged && (
                                     <button
                                         onClick={async () => {
@@ -987,34 +960,33 @@ export default function WorkoutPage() {
                                             });
                                             setWeightLogged(true);
                                         }}
-                                        className="shrink-0 text-[10px] font-mono px-3 py-2 rounded-lg border border-[rgb(var(--accent-rgb)/0.3)] text-[rgb(var(--accent-light-rgb))] hover:bg-[rgb(var(--accent-rgb)/0.1)] transition"
+                                        className="shrink-0 text-[10px] font-mono px-3 py-2 rounded-xl border border-[rgb(var(--accent-rgb)/0.2)] text-[rgb(var(--accent-rgb))] hover:bg-[rgb(var(--accent-rgb)/0.1)] transition"
                                     >
-                                        LOG
+                                        Log
                                     </button>
                                 )}
-                                {weightLogged && <Check size={16} className="shrink-0 text-[rgb(var(--accent-light-rgb))]" />}
+                                {weightLogged && <Check size={16} className="shrink-0 text-[rgb(var(--accent-rgb))]" />}
                             </div>
-                            <p className="text-[9px] font-mono text-white/20 mt-1.5">Optional — helps track body composition over time.</p>
+                            <p className="text-[9px] font-mono text-white/15 mt-1.5">Optional — helps track body composition.</p>
                         </div>
 
-
-                        <button onClick={startWorkout} className="w-full flex items-center justify-center gap-2.5 text-sm font-bold py-4 rounded-lg bg-[rgb(var(--accent-rgb))] text-black hover:bg-[rgb(var(--accent-light-rgb))] transition" style={{ boxShadow: "0 0 25px -4px rgb(var(--accent-rgb) / 0.6)" }}>
-                            <Play size={18} fill="black" /> BEGIN SESSION
+                        <button onClick={startWorkout} className="w-full flex items-center justify-center gap-2 text-sm font-semibold py-3.5 rounded-xl bg-[rgb(var(--accent-rgb))] text-black hover:brightness-110 transition">
+                            <Play size={16} fill="black" /> Begin Session
                         </button>
-                        <button onClick={() => setStatus("freestyle")} className="w-full text-center text-[11px] font-mono text-white/30 hover:text-[rgb(var(--accent-light-rgb))] transition py-2.5 mb-2.5">
-                            Not feeling today's plan? Train freestyle instead
+                        <button onClick={() => setStatus("freestyle")} className="w-full text-center text-[11px] text-white/20 hover:text-white/50 transition py-2.5 mb-2">
+                            Not feeling today&apos;s plan? Train freestyle instead
                         </button>
 
-                        <div className="space-y-2 mb-5">
+                        <div className="space-y-2 mb-4">
                             {exercisesList.map((ex, i) => {
                                 const hint = overloadHints[ex.exercise_id];
                                 return (
-                                    <div key={ex.id} className="rounded-lg border border-white/[0.08] bg-white/[0.02] px-4 py-3">
+                                    <div key={ex.id} className="rounded-xl border border-white/[0.06] bg-white/[0.03] px-4 py-3">
                                         <div className="flex items-center gap-3">
-                                            <span className="text-[10px] font-mono text-[rgb(var(--accent-light-rgb)/0.4)] w-5 shrink-0">{String(i + 1).padStart(2, "0")}</span>
+                                            <span className="text-[10px] font-mono text-white/15 w-5 shrink-0">{String(i + 1).padStart(2, "0")}</span>
                                             <div className="flex-1 min-w-0">
-                                                <p className="text-sm font-bold text-white/90 truncate">{ex.name}</p>
-                                                <p className="text-[10px] font-mono text-white/35">{ex.body_segment}</p>
+                                                <p className="text-[13px] font-medium text-white/80 truncate">{ex.name}</p>
+                                                <p className="text-[9px] font-mono text-white/25">{ex.body_segment}</p>
                                             </div>
                                             <div className="flex items-center gap-3 shrink-0">
                                                 <div className="text-center">
@@ -1042,7 +1014,7 @@ export default function WorkoutPage() {
                                 );
                             })}
                         </div>
-                    </BeamBorder>
+                    </CardPanel>
                 )}
 
                 {/* ── ACTIVE EXERCISE LIST ── */}
@@ -1057,38 +1029,36 @@ export default function WorkoutPage() {
                             const allDone = done === sets.length && sets.length > 0;
 
                             return (
-                                <div key={ex.id} className={`rounded-lg border overflow-hidden transition-all ${allDone ? "border-[rgb(var(--accent-rgb)/0.3)] bg-[rgb(var(--accent-rgb))]/[0.03]" : "border-white/[0.08] bg-white/[0.02]"}`}
-                                    style={isOpen ? { boxShadow: "0 0 20px -8px rgb(var(--accent-rgb) / 0.25)" } : undefined}
-                                >
+                                <div key={ex.id} className={`rounded-xl border overflow-hidden transition-all ${allDone ? "border-[rgb(var(--accent-rgb)/0.2)] bg-[rgb(var(--accent-rgb)/0.03)]" : "border-white/[0.06] bg-white/[0.03]"}`}>
                                     {/* Exercise header */}
-                                    <button onClick={() => setExpandedId(isOpen ? null : ex.id)} className="w-full flex items-center gap-3 px-4 py-3.5 text-left">
-                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-[10px] font-mono font-bold ${allDone ? "bg-[rgb(var(--accent-rgb)/0.2)] text-[rgb(var(--accent-light-rgb))] border border-[rgb(var(--accent-rgb)/0.3)]" : "bg-white/[0.05] text-white/30 border border-white/10"}`}>
+                                    <button onClick={() => setExpandedId(isOpen ? null : ex.id)} className="w-full flex items-center gap-3 px-4 py-3 text-left">
+                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-[10px] font-mono font-bold ${allDone ? "bg-[rgb(var(--accent-rgb)/0.15)] text-[rgb(var(--accent-rgb))] border border-[rgb(var(--accent-rgb)/0.2)]" : "bg-white/[0.04] text-white/20 border border-white/[0.06]"}`}>
                                             {allDone ? <Check size={14} /> : String(i + 1).padStart(2, "0")}
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-bold text-white/90 truncate">{ex.name}</p>
-                                            <p className="text-[10px] font-mono text-white/35">
+                                            <p className="text-[13px] font-medium text-white/80 truncate">{ex.name}</p>
+                                            <p className="text-[9px] font-mono text-white/25">
                                                 {done}/{sets.length} sets
                                                 {last ? ` · Last: ${last.weight ?? "—"}${ex.isCardio ? "" : ex.isBodyweight ? " BW" : "kg"} × ${last.reps ?? "—"}` : ""}
                                             </p>
                                         </div>
-                                        <ChevronDown size={16} className={`text-white/25 shrink-0 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+                                        <ChevronDown size={14} className={`text-white/15 shrink-0 transition-transform ${isOpen ? "rotate-180" : ""}`} />
                                     </button>
 
                                     {/* Expanded content */}
                                     {isOpen && (
-                                        <div className="border-t border-white/[0.06]">
+                                        <div className="border-t border-white/[0.04]">
                                             {/* Overload hint */}
                                             {hint && hint.type !== "first_time" && (
-                                                <div className="mx-4 mt-3 flex items-center gap-2 rounded-lg bg-[rgb(var(--accent-rgb))]/[0.06] border border-[rgb(var(--accent-rgb)/0.15)] px-3 py-2">
-                                                    <TrendingUp size={12} className="text-[rgb(var(--accent-light-rgb)/0.6)] shrink-0" />
-                                                    <p className="text-[10px] font-mono text-[rgb(var(--accent-light-rgb)/0.7)]">{hint.text}</p>
+                                                <div className="mx-4 mt-3 flex items-center gap-2 rounded-lg bg-[rgb(var(--accent-rgb)/0.05)] border border-[rgb(var(--accent-rgb)/0.1)] px-3 py-2">
+                                                    <TrendingUp size={11} className="text-[rgb(var(--accent-rgb)/0.5)] shrink-0" />
+                                                    <p className="text-[10px] font-mono text-[rgb(var(--accent-rgb)/0.6)]">{hint.text}</p>
                                                 </div>
                                             )}
 
                                             {/* Swap button */}
                                             <div className="px-4 pt-2.5 pb-1">
-                                                <button onClick={() => setSwapTargetId(ex.id)} className="flex items-center gap-1.5 text-white/25 text-[10px] font-mono hover:text-[rgb(var(--accent-light-rgb)/0.6)] transition">
+                                                <button onClick={() => setSwapTargetId(ex.id)} className="flex items-center gap-1.5 text-white/15 text-[10px] font-mono hover:text-white/40 transition">
                                                     <RefreshCw size={10} /> Swap exercise
                                                 </button>
                                             </div>
@@ -1237,7 +1207,7 @@ export default function WorkoutPage() {
                             );
                         })}
 
-                        <button onClick={() => setShowAddModal(true)} className="flex items-center gap-2 text-[rgb(var(--accent-light-rgb)/0.6)] text-xs font-mono hover:text-[rgb(var(--accent-light-rgb))] transition py-2">
+                        <button onClick={() => setShowAddModal(true)} className="flex items-center gap-2 text-white/20 text-xs font-mono hover:text-white/50 transition py-2">
                             <Plus size={14} /> Add exercise
                         </button>
                     </div>
@@ -1246,18 +1216,18 @@ export default function WorkoutPage() {
 
             {/* ── REST TIMER (sticky bottom) ── */}
             {restRemaining !== null && status === "active" && (
-                <div className="fixed bottom-16 md:bottom-6 left-0 right-0 md:left-1/2 md:-translate-x-1/2 md:max-w-sm md:rounded-lg z-30">
-                    <div className="border-t md:border border-[rgb(var(--accent-rgb)/0.3)] bg-[#0a1120]/95 backdrop-blur-xl px-5 py-3.5 flex items-center justify-between md:rounded-lg" style={{ boxShadow: "0 -4px 30px -8px rgb(var(--accent-rgb) / 0.4)" }}>
+                <div className="fixed bottom-16 md:bottom-6 left-0 right-0 md:left-1/2 md:-translate-x-1/2 md:max-w-sm md:rounded-xl z-30">
+                    <div className="border-t md:border border-white/[0.08] bg-[#080d18]/95 backdrop-blur-xl px-5 py-3.5 flex items-center justify-between md:rounded-xl">
                         <div>
-                            <p className="text-[8px] font-mono tracking-widest text-[rgb(var(--accent-light-rgb)/0.5)]">REST TIMER</p>
-                            <p className="text-2xl font-bold font-mono text-[rgb(var(--accent-light-rgb))]">{formatClock(restRemaining)}</p>
+                            <p className="text-[8px] font-mono tracking-widest text-white/25">REST TIMER</p>
+                            <p className="text-2xl font-bold font-mono text-[rgb(var(--accent-rgb))]">{formatClock(restRemaining)}</p>
                         </div>
                         <div className="flex items-center gap-2">
-                            <button onClick={() => setRestRemaining((r) => (r !== null ? r + 15 : null))} className="text-[10px] font-mono px-2.5 py-2 rounded-lg border border-white/10 text-white/50 hover:text-white/80 active:scale-95 transition">+15s</button>
-                            <button onClick={() => setRestPaused((p) => !p)} className="w-10 h-10 flex items-center justify-center rounded-lg border border-white/10 text-white/50 hover:text-[rgb(var(--accent-light-rgb))] active:scale-95 transition">
+                            <button onClick={() => setRestRemaining((r) => (r !== null ? r + 15 : null))} className="text-[10px] font-mono px-2.5 py-2 rounded-lg border border-white/[0.08] text-white/40 hover:text-white/70 active:scale-95 transition">+15s</button>
+                            <button onClick={() => setRestPaused((p) => !p)} className="w-10 h-10 flex items-center justify-center rounded-lg border border-white/[0.08] text-white/40 hover:text-white/70 active:scale-95 transition">
                                 {restPaused ? <Play size={16} /> : <Pause size={16} />}
                             </button>
-                            <button onClick={() => { setRestRemaining(null); setRestPaused(false); }} className="w-10 h-10 flex items-center justify-center rounded-lg border border-white/10 text-white/50 hover:text-white/80 active:scale-95 transition">
+                            <button onClick={() => { setRestRemaining(null); setRestPaused(false); }} className="w-10 h-10 flex items-center justify-center rounded-lg border border-white/[0.08] text-white/40 hover:text-white/70 active:scale-95 transition">
                                 <SkipForward size={16} />
                             </button>
                         </div>
@@ -1267,42 +1237,41 @@ export default function WorkoutPage() {
 
             {/* ── STICKY ACTION BAR ── */}
             {status === "active" && restRemaining === null && completedCount > 0 && (
-                <div className="fixed bottom-16 md:bottom-6 left-0 right-0 md:left-1/2 md:-translate-x-1/2 md:max-w-sm md:rounded-lg z-20">
-                    <div className="border-t md:border border-[rgb(var(--accent-rgb)/0.15)] bg-[#0a1120]/95 backdrop-blur-xl px-5 py-3 md:rounded-lg flex items-center gap-2">
+                <div className="fixed bottom-16 md:bottom-6 left-0 right-0 md:left-1/2 md:-translate-x-1/2 md:max-w-sm md:rounded-xl z-20">
+                    <div className="border-t md:border border-white/[0.06] bg-[#080d18]/95 backdrop-blur-xl px-5 py-3 md:rounded-xl flex items-center gap-2">
                         <button
                             onClick={() => { setRestRemaining(90); setRestPaused(false); }}
-                            className="flex-1 text-[10px] font-mono font-bold py-3 rounded-lg border border-white/15 text-white/50 hover:text-white/80 transition"
+                            className="flex-1 text-[10px] font-mono font-medium py-3 rounded-xl border border-white/[0.08] text-white/40 hover:text-white/70 transition"
                         >
-                            REST TIMER
+                            Rest Timer
                         </button>
-                        <button onClick={() => setShowEndConfirm(true)} className="flex-1 text-sm font-bold py-3 rounded-lg border border-[rgb(var(--accent-rgb)/0.4)] text-[rgb(var(--accent-light-rgb))] hover:bg-[rgb(var(--accent-rgb)/0.1)] transition">
-                            COMPLETE · {completedCount} SETS
+                        <button onClick={() => setShowEndConfirm(true)} className="flex-1 text-sm font-semibold py-3 rounded-xl bg-[rgb(var(--accent-rgb))] text-black hover:brightness-110 transition">
+                            Complete · {completedCount} sets
                         </button>
                     </div>
                 </div>
-
             )}
 
             {/* ── MODALS ── */}
             {showEndConfirm && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-                    <div className="w-full max-w-sm rounded-lg border border-[rgb(var(--accent-rgb)/0.2)] bg-[#0a1120] p-5">
-                        <p className="text-sm font-bold text-white/90 mb-2">End workout?</p>
+                    <div className="w-full max-w-sm rounded-2xl border border-white/[0.08] bg-[#080d18] p-5">
+                        <p className="text-sm font-semibold text-white/85 mb-2">End workout?</p>
                         {completedCount < totalPlanned ? (
-                            <p className="text-[11px] text-white/50 mb-4">
-                                You've completed {completedCount} of {totalPlanned} planned sets. Unfinished sets won't be logged.
+                            <p className="text-[11px] text-white/35 mb-4">
+                                You&apos;ve completed {completedCount} of {totalPlanned} planned sets. Unfinished sets won&apos;t be logged.
                             </p>
                         ) : (
-                            <p className="text-[11px] text-white/50 mb-4">
+                            <p className="text-[11px] text-white/35 mb-4">
                                 All {completedCount} sets completed. Nice work.
                             </p>
                         )}
                         <div className="flex gap-2">
-                            <button onClick={() => setShowEndConfirm(false)} className="flex-1 text-sm font-mono py-2.5 rounded-lg border border-white/15 text-white/50 hover:text-white/80 transition">
-                                KEEP GOING
+                            <button onClick={() => setShowEndConfirm(false)} className="flex-1 text-sm font-medium py-2.5 rounded-xl border border-white/[0.08] text-white/50 hover:text-white/80 transition">
+                                Keep Going
                             </button>
-                            <button onClick={() => { setShowEndConfirm(false); finishWorkout(); }} className="flex-1 text-sm font-mono font-bold py-2.5 rounded-lg bg-[rgb(var(--accent-rgb))] text-black hover:bg-[rgb(var(--accent-light-rgb))] transition">
-                                FINISH
+                            <button onClick={() => { setShowEndConfirm(false); finishWorkout(); }} className="flex-1 text-sm font-semibold py-2.5 rounded-xl bg-[rgb(var(--accent-rgb))] text-black hover:brightness-110 transition">
+                                Finish
                             </button>
                         </div>
                     </div>
