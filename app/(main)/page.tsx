@@ -7,6 +7,7 @@ import { supabase } from "../lib/supabase";
 import { computeLevel, getRank, getNextRank } from "../lib/levelSystem";
 import { useAuth } from "../lib/AuthProvider";
 import { getFullCalorieSummary, ageFromDOB, type CalorieSummary, type GoalType, type ActivityLevel, type DietPreference, type Sex } from "../lib/calorieEngine";
+import { estimateObservedTdee, blendTdee } from "../lib/energyEstimator";
 
 type TodayPlan = { title: string; is_rest: boolean; count: number; sets: number; completed?: boolean };
 
@@ -359,14 +360,21 @@ export default function Dashboard() {
   useEffect(() => {
     async function loadCalories() {
       if (!user || !statsLoaded || !stats.bodyWeight) return;
-      const [{ data: prof }, { data: goalRows }] = await Promise.all([
+      const [{ data: prof }, { data: goalRows }, { data: trendRows }, { data: allIntake }] = await Promise.all([
         supabase.from("profiles").select("height_cm, date_of_birth, sex, activity_level").eq("id", user.id).maybeSingle(),
-        supabase.from("user_goals").select("goal_type, rate_per_week_kg, diet_preference, calorie_target_override").eq("user_id", user.id).eq("is_active", true).limit(1),
+        supabase.from("user_goals").select("goal_type, rate_per_week_kg, diet_preference, calorie_target_override, adaptive_mode").eq("user_id", user.id).eq("is_active", true).limit(1),
+        supabase.from("weight_trend").select("date, ema_kg").eq("user_id", user.id).order("date", { ascending: true }),
+        supabase.from("daily_intake").select("date, kcal").eq("user_id", user.id).order("date", { ascending: true }),
       ]);
       if (!prof?.height_cm || !prof?.date_of_birth || !prof?.sex) return;
-      const g = goalRows?.[0];
-      const summary = getFullCalorieSummary({
-        weightKg: stats.bodyWeight!,
+      const g = goalRows?.[0] as any;
+      const weightKg = (trendRows && trendRows.length > 0)
+        ? Number(trendRows[trendRows.length - 1].ema_kg)
+        : stats.bodyWeight!;
+
+      let blendedTdee: number | undefined;
+      const baseSummary = getFullCalorieSummary({
+        weightKg,
         heightCm: prof.height_cm,
         ageYears: ageFromDOB(prof.date_of_birth),
         sex: prof.sex as Sex,
@@ -376,6 +384,33 @@ export default function Dashboard() {
         diet: (g?.diet_preference as DietPreference) ?? "balanced",
         calorieOverride: g?.calorie_target_override ?? undefined,
       });
+
+      if (g?.adaptive_mode && allIntake && trendRows && trendRows.length >= 2) {
+        const estimate = estimateObservedTdee({
+          dailyIntakes: allIntake.map((r: any) => ({ date: r.date, kcal: Number(r.kcal) })),
+          trendWeights: trendRows.map((r: any) => ({ date: r.date, ema_kg: Number(r.ema_kg) })),
+          seedTdee: baseSummary.tdee,
+          previousEstimate: null,
+        });
+        if (estimate && estimate.method === "observed") {
+          blendedTdee = blendTdee(baseSummary.tdee, estimate);
+        }
+      }
+
+      const summary = blendedTdee
+        ? getFullCalorieSummary({
+            weightKg,
+            heightCm: prof.height_cm,
+            ageYears: ageFromDOB(prof.date_of_birth),
+            sex: prof.sex as Sex,
+            activity: (prof.activity_level as ActivityLevel) ?? "moderate",
+            goalType: (g?.goal_type as GoalType) ?? "general_fitness",
+            ratePerWeekKg: g?.rate_per_week_kg ?? undefined,
+            diet: (g?.diet_preference as DietPreference) ?? "balanced",
+            calorieOverride: g?.calorie_target_override ?? undefined,
+            blendedTdee,
+          })
+        : baseSummary;
       setCalorieSummary(summary);
 
       const todayStr = new Date().toISOString().split("T")[0];

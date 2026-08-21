@@ -123,7 +123,7 @@ export default function AddExerciseModal({
   if (!mounted) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center bg-black/75 backdrop-blur-sm p-0 md:p-6">
+    <div className="fixed inset-0 z-[200] flex items-end md:items-center justify-center bg-black/75 backdrop-blur-sm p-0 md:p-6">
       <style>{`
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

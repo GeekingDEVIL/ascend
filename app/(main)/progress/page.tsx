@@ -463,9 +463,13 @@ export default function ProgressPage() {
             setAdaptiveMode(!!g.adaptive_mode);
         }
 
-        const bwLatest = bodyWeightData.length > 0 ? bodyWeightData[bodyWeightData.length - 1].weight : null;
+        const bwLatestRaw = bodyWeightData.length > 0 ? bodyWeightData[bodyWeightData.length - 1].weight : null;
+        const bwLatest = (trendRows && trendRows.length > 0)
+            ? Number(trendRows[trendRows.length - 1].ema_kg)
+            : bwLatestRaw;
         if (prof?.height_cm && prof?.date_of_birth && prof?.sex && bwLatest) {
-            const summary = getFullCalorieSummary({
+            const isAdaptive = !!g?.adaptive_mode;
+            const baseSummary = getFullCalorieSummary({
                 weightKg: bwLatest,
                 heightCm: prof.height_cm,
                 ageYears: ageFromDOB(prof.date_of_birth),
@@ -476,6 +480,38 @@ export default function ProgressPage() {
                 diet: (g?.diet_preference as DietPreference) ?? "balanced",
                 calorieOverride: g?.calorie_target_override ?? undefined,
             });
+
+            let estimate: TdeeEstimate | null = null;
+            if (allIntake && trendRows && trendRows.length >= 2) {
+                estimate = estimateObservedTdee({
+                    dailyIntakes: allIntake.map((r: any) => ({ date: r.date, kcal: Number(r.kcal) })),
+                    trendWeights: trendRows.map((r: any) => ({ date: r.date, ema_kg: Number(r.ema_kg) })),
+                    seedTdee: baseSummary.tdee,
+                    previousEstimate: null,
+                });
+                setTdeeEstimate(estimate);
+            }
+
+            let blendedTdee: number | null = null;
+            if (isAdaptive && estimate && estimate.method === "observed") {
+                blendedTdee = blendTdee(baseSummary.tdee, estimate);
+            }
+
+            const summary = blendedTdee
+                ? getFullCalorieSummary({
+                    weightKg: bwLatest,
+                    heightCm: prof.height_cm,
+                    ageYears: ageFromDOB(prof.date_of_birth),
+                    sex: prof.sex as Sex,
+                    activity: (prof.activity_level as ActivityLevel) ?? "moderate",
+                    goalType: (g?.goal_type as GoalType) ?? "general_fitness",
+                    ratePerWeekKg: g?.rate_per_week_kg ?? undefined,
+                    diet: (g?.diet_preference as DietPreference) ?? "balanced",
+                    calorieOverride: g?.calorie_target_override ?? undefined,
+                    blendedTdee,
+                })
+                : baseSummary;
+
             setLedgerCalorieSummary(summary);
             if (allIntake && allIntake.length > 0) {
                 const today = new Date().toISOString().split("T")[0];
@@ -496,27 +532,14 @@ export default function ProgressPage() {
                 }));
             }
 
-            let estimate: TdeeEstimate | null = null;
-            if (allIntake && trendRows && trendRows.length >= 2) {
-                estimate = estimateObservedTdee({
-                    dailyIntakes: allIntake.map((r: any) => ({ date: r.date, kcal: Number(r.kcal) })),
-                    trendWeights: trendRows.map((r: any) => ({ date: r.date, ema_kg: Number(r.ema_kg) })),
-                    seedTdee: summary.tdee,
-                    previousEstimate: null,
-                });
-                setTdeeEstimate(estimate);
-            }
-
-            const isAdaptive = !!g?.adaptive_mode;
-            const blended = estimate && estimate.method === "observed" ? blendTdee(summary.tdee, estimate) : null;
             setEnergyReceipt(buildEnergyReceipt({
-                bmr: summary.bmr,
-                tdee: summary.tdee,
+                bmr: baseSummary.bmr,
+                tdee: baseSummary.tdee,
                 calorieTarget: summary.calorieTarget,
                 macros: summary.macros,
                 observedTdee: estimate?.method === "observed" ? estimate.value : null,
                 observedConfidence: estimate?.method === "observed" ? estimate.confidence : null,
-                blendedTdee: blended,
+                blendedTdee: blendedTdee,
                 adaptiveMode: isAdaptive,
                 hasOverride: !!g?.calorie_target_override,
                 goalType: g?.goal_type ?? "general_fitness",
