@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Calendar, Dumbbell, TrendingUp, Weight, Trophy, ChevronDown, ChevronRight, Lock, Flame, Trash2 } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../lib/AuthProvider";
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, CartesianGrid, ReferenceLine } from "recharts";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, CartesianGrid, ReferenceLine } from "recharts";
 import { ACHIEVEMENT_DEFS, RARITY_COLORS, type AchievementDef } from "../../lib/achievements";
 import MeasurementModal, { type MeasurementType } from "../../components/MeasurementModal";
 import { type WeightEntry, type WeightContext, lbsToKg, kgToLbs, rematerializeWeightTrend } from "../../lib/weightTrend";
@@ -184,7 +184,7 @@ export default function ProgressPage() {
     const [intakeFat, setIntakeFat] = useState("");
     const [intakeAdherence, setIntakeAdherence] = useState<number | null>(null);
     const [ledger, setLedger] = useState<DailyBalance[]>([]);
-    const [ledgerGoal, setLedgerGoal] = useState<{ targetWeightKg: number | null; targetDate: string | null } | null>(null);
+    const [ledgerGoal, setLedgerGoal] = useState<{ targetWeightKg: number | null; targetDate: string | null; goalType: string } | null>(null);
     const [ledgerCalorieSummary, setLedgerCalorieSummary] = useState<CalorieSummary | null>(null);
     const [feasibility, setFeasibility] = useState<FeasibilityVerdict | null>(null);
     const [tdeeEstimate, setTdeeEstimate] = useState<TdeeEstimate | null>(null);
@@ -433,7 +433,7 @@ export default function ProgressPage() {
 
         const g = goalRows?.[0] as any;
         if (g) {
-            setLedgerGoal({ targetWeightKg: g.target_weight_kg ? Number(g.target_weight_kg) : null, targetDate: g.target_date ?? null });
+            setLedgerGoal({ targetWeightKg: g.target_weight_kg ? Number(g.target_weight_kg) : null, targetDate: g.target_date ?? null, goalType: g.goal_type ?? "general_fitness" });
             setAdaptiveMode(!!g.adaptive_mode);
         }
 
@@ -452,7 +452,9 @@ export default function ProgressPage() {
             });
             setLedgerCalorieSummary(summary);
             if (allIntake && allIntake.length > 0) {
-                setLedger(buildLedger(allIntake.map((r: any) => ({ date: r.date, kcal: Number(r.kcal) })), summary.calorieTarget));
+                const today = new Date().toISOString().split("T")[0];
+                const completedDays = allIntake.filter((r: any) => r.date < today);
+                setLedger(buildLedger(completedDays.map((r: any) => ({ date: r.date, kcal: Number(r.kcal) })), summary.calorieTarget));
             }
 
             if (g?.target_weight_kg && bwLatest) {
@@ -1219,27 +1221,67 @@ export default function ProgressPage() {
                                     const hasTarget = ledgerGoal?.targetDate && ledgerGoal?.targetWeightKg;
                                     const daysLeft = hasTarget ? daysUntil(ledgerGoal!.targetDate!) : 0;
                                     const projectedKg = hasTarget && currentKg ? projectWeightAtDate(currentKg, avg, daysLeft) : null;
-                                    const isDeficit = avg < 0;
+
+                                    const goalType = ledgerGoal?.goalType ?? "general_fitness";
+                                    const wantsDeficit = goalType === "lose_weight" || goalType === "body_recomp";
+                                    const absAvg = Math.abs(avg);
+                                    const avgLabel = avg === 0 ? "On target" : avg < 0 ? `${absAvg} under target` : `${absAvg} over target`;
+                                    const avgGood = wantsDeficit ? avg <= 0 : avg >= 0;
+                                    const absWeightDelta = Math.abs(weightDelta);
+                                    const weightLabel = weightDelta === 0 ? "No change" : weightDelta < 0 ? `${absWeightDelta} kg lost` : `${absWeightDelta} kg gained`;
+                                    const weightGood = wantsDeficit ? weightDelta <= 0 : weightDelta >= 0;
+
+                                    const sparkData = ledger.slice(-14).map((d) => ({ date: d.date.slice(5), net: d.net }));
+
+                                    const weekCount = Math.ceil(ledger.length / 7);
+                                    const avgPerWeek = Math.abs(Math.round(weightDelta / weekCount * 100) / 100);
+                                    const contextParts: string[] = [];
+                                    if (avg !== 0) {
+                                        contextParts.push(`You've averaged ${absAvg} kcal ${avg < 0 ? "under" : "over"} your target over ${ledger.length} day${ledger.length !== 1 ? "s" : ""}`);
+                                    }
+                                    if (absWeightDelta >= 0.1) {
+                                        contextParts.push(`on pace to ${weightDelta < 0 ? "lose" : "gain"} ~${avgPerWeek} kg/week`);
+                                    }
+                                    const contextSentence = contextParts.length > 0 ? contextParts.join(" — ") + "." : "";
+
                                     return (
                                         <div className="rounded-lg border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.02] p-4" style={{ boxShadow: "inset 0 1px 0 rgb(var(--accent-rgb) / 0.06)" }}>
                                             <p className="text-[10px] font-mono tracking-widest text-white/25 mb-3">ENERGY LEDGER</p>
-                                            <div className="grid grid-cols-3 gap-2 mb-3">
-                                                <div className="text-center">
-                                                    <p className="text-[8px] font-mono text-white/30">AVG DAILY</p>
-                                                    <p className={`text-sm font-bold font-mono ${isDeficit ? "text-emerald-300" : "text-amber-300"}`}>{avg > 0 ? "+" : ""}{avg}</p>
+                                            <div className="grid grid-cols-2 gap-3 mb-3">
+                                                <div className="rounded-md bg-white/[0.03] border border-white/[0.04] p-2.5 text-center">
+                                                    <p className="text-[8px] font-mono text-white/30 mb-1">DAILY AVG VS TARGET</p>
+                                                    <p className={`text-sm font-bold font-mono ${avgGood ? "text-emerald-300" : "text-amber-300"}`}>{avgLabel}</p>
                                                     <p className="text-[7px] font-mono text-white/20">kcal/day</p>
                                                 </div>
-                                                <div className="text-center">
-                                                    <p className="text-[8px] font-mono text-white/30">CUMULATIVE</p>
-                                                    <p className={`text-sm font-bold font-mono ${cumul < 0 ? "text-emerald-300" : "text-amber-300"}`}>{cumul > 0 ? "+" : ""}{Math.round(cumul)}</p>
-                                                    <p className="text-[7px] font-mono text-white/20">kcal total</p>
-                                                </div>
-                                                <div className="text-center">
-                                                    <p className="text-[8px] font-mono text-white/30">WEIGHT Δ</p>
-                                                    <p className={`text-sm font-bold font-mono ${weightDelta < 0 ? "text-emerald-300" : "text-amber-300"}`}>{weightDelta > 0 ? "+" : ""}{weightDelta}</p>
-                                                    <p className="text-[7px] font-mono text-white/20">kg (est.)</p>
+                                                <div className="rounded-md bg-white/[0.03] border border-white/[0.04] p-2.5 text-center">
+                                                    <p className="text-[8px] font-mono text-white/30 mb-1">ESTIMATED IMPACT</p>
+                                                    <p className={`text-sm font-bold font-mono ${weightGood ? "text-emerald-300" : "text-amber-300"}`}>{weightLabel}</p>
+                                                    <p className="text-[7px] font-mono text-white/20">over {ledger.length} day{ledger.length !== 1 ? "s" : ""}</p>
                                                 </div>
                                             </div>
+
+                                            {sparkData.length >= 3 && (
+                                                <div className="mb-3 rounded-md bg-white/[0.02] border border-white/[0.04] p-2">
+                                                    <p className="text-[8px] font-mono text-white/25 mb-1">DAILY NET (last {sparkData.length}d)</p>
+                                                    <ResponsiveContainer width="100%" height={60}>
+                                                        <BarChart data={sparkData} margin={{ top: 2, right: 2, bottom: 0, left: 2 }}>
+                                                            <ReferenceLine y={0} stroke="rgba(255,255,255,0.08)" />
+                                                            <Bar dataKey="net" radius={[2, 2, 0, 0]} isAnimationActive={false}>
+                                                                {sparkData.map((d, i) => (
+                                                                    <Cell key={i} fill={d.net <= 0 ? "rgb(110, 231, 183)" : "rgb(252, 211, 77)"} fillOpacity={0.5} />
+                                                                ))}
+                                                            </Bar>
+                                                            <XAxis dataKey="date" tick={{ fontSize: 7, fill: "rgba(255,255,255,0.15)" }} axisLine={false} tickLine={false} />
+                                                            <Tooltip
+                                                                contentStyle={{ background: "#0a0f1a", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 6, fontSize: 10, fontFamily: "monospace" }}
+                                                                labelStyle={{ color: "rgba(255,255,255,0.4)" }}
+                                                                formatter={(v: any) => [`${v > 0 ? "+" : ""}${v} kcal`, v <= 0 ? "Under target" : "Over target"]}
+                                                            />
+                                                        </BarChart>
+                                                    </ResponsiveContainer>
+                                                </div>
+                                            )}
+
                                             {hasTarget && projectedKg !== null && (
                                                 <div className="rounded-md bg-white/[0.03] border border-white/[0.06] p-3 mt-2">
                                                     <div className="flex items-center justify-between">
@@ -1256,7 +1298,10 @@ export default function ProgressPage() {
                                                     </div>
                                                 </div>
                                             )}
-                                            <p className="text-[7px] font-mono text-white/15 mt-2 text-center">Based on {ledger.length} logged day{ledger.length !== 1 ? "s" : ""} · ~7,700 kcal per kg estimate</p>
+                                            {contextSentence && (
+                                                <p className="text-[8px] font-mono text-white/25 mt-3 text-center leading-relaxed">{contextSentence}</p>
+                                            )}
+                                            <p className="text-[7px] font-mono text-white/10 mt-1.5 text-center">{ledger.length} completed day{ledger.length !== 1 ? "s" : ""} · today excluded</p>
                                         </div>
                                     );
                                 })()}
