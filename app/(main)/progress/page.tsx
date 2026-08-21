@@ -461,6 +461,9 @@ export default function ProgressPage() {
                     targetKg: Number(g.target_weight_kg),
                     targetDate: g.target_date ?? null,
                     tdee: summary.tdee,
+                    bmr: summary.bmr,
+                    sex: prof.sex,
+                    heightCm: prof.height_cm,
                     goalType: g.goal_type,
                 }));
             }
@@ -470,18 +473,21 @@ export default function ProgressPage() {
                 estimate = estimateObservedTdee({
                     dailyIntakes: allIntake.map((r: any) => ({ date: r.date, kcal: Number(r.kcal) })),
                     trendWeights: trendRows.map((r: any) => ({ date: r.date, ema_kg: Number(r.ema_kg) })),
+                    seedTdee: summary.tdee,
+                    previousEstimate: null,
                 });
                 setTdeeEstimate(estimate);
             }
 
             const isAdaptive = !!g?.adaptive_mode;
-            const blended = estimate ? blendTdee(summary.tdee, estimate.observedTdee, estimate.days) : null;
+            const blended = estimate && estimate.method === "observed" ? blendTdee(summary.tdee, estimate) : null;
             setEnergyReceipt(buildEnergyReceipt({
                 bmr: summary.bmr,
                 tdee: summary.tdee,
                 calorieTarget: summary.calorieTarget,
                 macros: summary.macros,
-                observedTdee: estimate?.observedTdee ?? null,
+                observedTdee: estimate?.method === "observed" ? estimate.value : null,
+                observedConfidence: estimate?.method === "observed" ? estimate.confidence : null,
                 blendedTdee: blended,
                 adaptiveMode: isAdaptive,
                 hasOverride: !!g?.calorie_target_override,
@@ -1275,6 +1281,16 @@ export default function ProgressPage() {
                                         {feasibility.feasible && feasibility.requiredRateKgWeek > 0 && (
                                             <p className="text-[8px] font-mono text-white/20">Required rate: {feasibility.requiredRateKgWeek} kg/week · Safe max: {feasibility.safeRateKgWeek} kg/week</p>
                                         )}
+                                        {feasibility.violations.length > 0 && (
+                                            <div className="mt-2 space-y-1">
+                                                {feasibility.violations.map((v, i) => (
+                                                    <div key={i} className="text-[8px] font-mono text-white/25 flex gap-2">
+                                                        <span className="text-amber-300/50 shrink-0">⚠</span>
+                                                        <span><span className="text-white/40">{v.rule}:</span> {v.detail}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
                                 )}
 
@@ -1305,8 +1321,8 @@ export default function ProgressPage() {
                                                 <p className="text-[8px] font-mono text-white/30">OBSERVED TDEE</p>
                                                 {tdeeEstimate ? (
                                                     <>
-                                                        <p className="text-lg font-bold font-mono text-[rgb(var(--accent-light-rgb))]">{tdeeEstimate.observedTdee}</p>
-                                                        <p className="text-[7px] font-mono text-white/15">{tdeeEstimate.days}d data</p>
+                                                        <p className="text-lg font-bold font-mono text-[rgb(var(--accent-light-rgb))]">{tdeeEstimate.value}</p>
+                                                        <p className="text-[7px] font-mono text-white/15">{tdeeEstimate.windowDays}d data · {tdeeEstimate.method}</p>
                                                     </>
                                                 ) : (
                                                     <>
@@ -1320,7 +1336,7 @@ export default function ProgressPage() {
                                             <div className="mt-3 rounded-md bg-white/[0.03] border border-white/[0.06] p-2 text-center">
                                                 <p className="text-[8px] font-mono text-white/30">BLENDED TDEE</p>
                                                 <p className="text-sm font-bold font-mono text-[rgb(var(--accent-light-rgb))]">
-                                                    {blendTdee(ledgerCalorieSummary.tdee, tdeeEstimate.observedTdee, tdeeEstimate.days)} <span className="text-xs text-white/20">kcal</span>
+                                                    {blendTdee(ledgerCalorieSummary.tdee, tdeeEstimate)} <span className="text-xs text-white/20">kcal</span>
                                                 </p>
                                                 <p className="text-[7px] font-mono text-white/15">weighted blend · observed confidence ramps over 28 days</p>
                                             </div>

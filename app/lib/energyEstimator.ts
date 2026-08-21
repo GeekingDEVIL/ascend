@@ -1,60 +1,151 @@
+import { calcAdherence } from "./intakeLog";
+
 const KCAL_PER_KG = 7700;
-const MIN_DAYS_FOR_ESTIMATE = 14;
+const MIN_DAYS_FOR_OBSERVED = 14;
+const IDEAL_DAYS = 28;
+const MIN_ADHERENCE_PCT = 80;
+const DAMPING_FACTOR = 0.5;
+const MAX_ADJUSTMENT_PCT = 0.10;
 
 export type TdeeEstimate = {
+  value: number;
+  method: "seed" | "observed";
+  confidence: [number, number];
+  adherencePct: number;
+  windowDays: number;
+  inputs: { avgIntake: number; trendDeltaKg: number };
   periodStart: string;
   periodEnd: string;
-  days: number;
-  avgDailyIntake: number;
-  weightChangeKg: number;
-  observedTdee: number;
 };
 
 export function estimateObservedTdee(params: {
   dailyIntakes: { date: string; kcal: number }[];
   trendWeights: { date: string; ema_kg: number }[];
-}): TdeeEstimate | null {
-  const { dailyIntakes, trendWeights } = params;
+  seedTdee: number;
+  previousEstimate: number | null;
+  phase?: string;
+}): TdeeEstimate {
+  const { dailyIntakes, trendWeights, seedTdee, previousEstimate, phase } = params;
 
-  if (dailyIntakes.length < MIN_DAYS_FOR_ESTIMATE || trendWeights.length < 2) return null;
+  const baseTdee = previousEstimate ?? seedTdee;
+
+  if (phase === "maintenance" || phase === "diet_break") {
+    return makeSeedResult(baseTdee, "Phase hold — estimate frozen during " + (phase ?? "maintenance"));
+  }
+
+  if (trendWeights.length < 2) {
+    return makeSeedResult(baseTdee, "Need ≥2 trend weight entries");
+  }
 
   const sortedIntake = [...dailyIntakes].sort((a, b) => a.date.localeCompare(b.date));
   const sortedTrend = [...trendWeights].sort((a, b) => a.date.localeCompare(b.date));
 
-  const firstTrend = sortedTrend[0];
-  const lastTrend = sortedTrend[sortedTrend.length - 1];
+  const periodStart = sortedTrend[0].date > sortedIntake[0]?.date ? sortedTrend[0].date : sortedIntake[0]?.date;
+  const periodEnd = sortedTrend[sortedTrend.length - 1].date < sortedIntake[sortedIntake.length - 1]?.date
+    ? sortedTrend[sortedTrend.length - 1].date
+    : sortedIntake[sortedIntake.length - 1]?.date;
 
-  const periodStart = firstTrend.date > sortedIntake[0].date ? firstTrend.date : sortedIntake[0].date;
-  const periodEnd = lastTrend.date < sortedIntake[sortedIntake.length - 1].date ? lastTrend.date : sortedIntake[sortedIntake.length - 1].date;
+  if (!periodStart || !periodEnd) return makeSeedResult(baseTdee, "No overlapping data");
 
   const relevantIntake = sortedIntake.filter((d) => d.date >= periodStart && d.date <= periodEnd);
-  if (relevantIntake.length < MIN_DAYS_FOR_ESTIMATE) return null;
 
-  const startWeight = sortedTrend.find((t) => t.date >= periodStart)?.ema_kg ?? firstTrend.ema_kg;
-  const endWeight = sortedTrend.findLast((t) => t.date <= periodEnd)?.ema_kg ?? lastTrend.ema_kg;
+  if (relevantIntake.length < MIN_DAYS_FOR_OBSERVED) {
+    return makeSeedResult(baseTdee, `Need ≥${MIN_DAYS_FOR_OBSERVED} days of intake data (have ${relevantIntake.length})`);
+  }
+
+  const adherencePct = calcLoggingAdherence(relevantIntake, periodStart, periodEnd);
+  if (adherencePct < MIN_ADHERENCE_PCT) {
+    return makeSeedResult(baseTdee, `Adherence ${adherencePct}% < ${MIN_ADHERENCE_PCT}% minimum`);
+  }
+
+  const startWeight = sortedTrend.find((t) => t.date >= periodStart)?.ema_kg ?? sortedTrend[0].ema_kg;
+  const endWeight = sortedTrend.findLast((t) => t.date <= periodEnd)?.ema_kg ?? sortedTrend[sortedTrend.length - 1].ema_kg;
 
   const days = relevantIntake.length;
   const totalIntake = relevantIntake.reduce((s, d) => s + d.kcal, 0);
-  const avgDailyIntake = Math.round(totalIntake / days);
-  const weightChangeKg = Math.round((endWeight - startWeight) * 100) / 100;
+  const avgIntake = Math.round(totalIntake / days);
+  const trendDeltaKg = Math.round((endWeight - startWeight) * 100) / 100;
 
-  const energyFromWeight = (weightChangeKg * KCAL_PER_KG) / days;
-  const observedTdee = Math.round(avgDailyIntake - energyFromWeight);
+  const energyFromWeight = (trendDeltaKg * KCAL_PER_KG) / days;
+  let rawObserved = Math.round(avgIntake - energyFromWeight);
+  rawObserved = Math.max(rawObserved, 800);
+
+  let finalValue: number;
+  if (previousEstimate !== null) {
+    const diff = rawObserved - previousEstimate;
+    const maxChange = previousEstimate * MAX_ADJUSTMENT_PCT;
+    const clampedDiff = Math.max(-maxChange, Math.min(maxChange, diff * DAMPING_FACTOR));
+    finalValue = Math.round(previousEstimate + clampedDiff);
+  } else {
+    const diff = rawObserved - seedTdee;
+    const maxChange = seedTdee * MAX_ADJUSTMENT_PCT;
+    const clampedDiff = Math.max(-maxChange, Math.min(maxChange, diff * DAMPING_FACTOR));
+    finalValue = Math.round(seedTdee + clampedDiff);
+  }
+
+  const se = calcStandardError(relevantIntake, avgIntake, trendDeltaKg, days);
+  const confidence: [number, number] = [
+    Math.round(finalValue - 1.96 * se),
+    Math.round(finalValue + 1.96 * se),
+  ];
 
   return {
+    value: finalValue,
+    method: "observed",
+    confidence,
+    adherencePct,
+    windowDays: days,
+    inputs: { avgIntake, trendDeltaKg },
     periodStart,
     periodEnd,
-    days,
-    avgDailyIntake,
-    weightChangeKg,
-    observedTdee: Math.max(observedTdee, 800),
   };
 }
 
-export function blendTdee(calculatedTdee: number, observedTdee: number, confidenceDays: number): number {
+function makeSeedResult(seedTdee: number, _reason: string): TdeeEstimate {
+  return {
+    value: seedTdee,
+    method: "seed",
+    confidence: [Math.round(seedTdee * 0.9), Math.round(seedTdee * 1.1)],
+    adherencePct: 0,
+    windowDays: 0,
+    inputs: { avgIntake: 0, trendDeltaKg: 0 },
+    periodStart: "",
+    periodEnd: "",
+  };
+}
+
+function calcLoggingAdherence(intakes: { date: string }[], start: string, end: string): number {
+  const loggedDates = new Set(intakes.map((d) => d.date));
+  const startDate = new Date(start + "T00:00:00");
+  const endDate = new Date(end + "T00:00:00");
+  const totalDays = Math.round((endDate.getTime() - startDate.getTime()) / 86400000) + 1;
+  if (totalDays <= 0) return 0;
+  let count = 0;
+  for (let i = 0; i < totalDays; i++) {
+    const d = new Date(startDate);
+    d.setDate(d.getDate() + i);
+    if (loggedDates.has(d.toISOString().split("T")[0])) count++;
+  }
+  return Math.round((count / totalDays) * 100);
+}
+
+function calcStandardError(
+  intakes: { kcal: number }[],
+  mean: number,
+  _trendDelta: number,
+  days: number
+): number {
+  if (days < 3) return mean * 0.1;
+  const variance = intakes.reduce((s, d) => s + (d.kcal - mean) ** 2, 0) / (days - 1);
+  const sd = Math.sqrt(variance);
+  return sd / Math.sqrt(days);
+}
+
+export function blendTdee(calculatedTdee: number, estimate: TdeeEstimate): number {
+  if (estimate.method === "seed") return calculatedTdee;
   const maxConfidence = 0.7;
-  const rampDays = 28;
-  const observedWeight = Math.min(confidenceDays / rampDays, 1) * maxConfidence;
-  const blended = calculatedTdee * (1 - observedWeight) + observedTdee * observedWeight;
+  const rampDays = IDEAL_DAYS;
+  const observedWeight = Math.min(estimate.windowDays / rampDays, 1) * maxConfidence;
+  const blended = calculatedTdee * (1 - observedWeight) + estimate.value * observedWeight;
   return Math.round(blended);
 }

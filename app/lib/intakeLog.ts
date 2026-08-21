@@ -37,7 +37,8 @@ export async function rematerializeDailyIntake(userId: string, date: string): Pr
     .eq("user_id", userId)
     .eq("date", date);
 
-  const totals = (entries ?? []).reduce(
+  type DayTotals = { kcal: number; protein_g: number; carbs_g: number; fat_g: number; entry_count: number };
+  const totals = (entries ?? []).reduce<DayTotals>(
     (acc, e: any) => ({
       kcal: acc.kcal + (Number(e.kcal) || 0),
       protein_g: acc.protein_g + (Number(e.protein_g) || 0),
