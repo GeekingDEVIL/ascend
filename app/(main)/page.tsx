@@ -6,6 +6,7 @@ import { Dumbbell, Activity, Flame, Zap, HeartPulse, Trophy, Award, Bell, Chevro
 import { supabase } from "../lib/supabase";
 import { computeLevel, getRank, getNextRank } from "../lib/levelSystem";
 import { useAuth } from "../lib/AuthProvider";
+import { getFullCalorieSummary, ageFromDOB, type CalorieSummary, type GoalType, type ActivityLevel, type DietPreference, type Sex } from "../lib/calorieEngine";
 
 type TodayPlan = { title: string; is_rest: boolean; count: number; sets: number; completed?: boolean };
 
@@ -49,6 +50,7 @@ export default function Dashboard() {
 
   const [notifications, setNotifications] = useState<any[]>([]);
   const [notifLoaded, setNotifLoaded] = useState(false);
+  const [calorieSummary, setCalorieSummary] = useState<CalorieSummary | null>(null);
 
   useEffect(() => {
     const updateClock = () => setTime(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
@@ -354,6 +356,31 @@ export default function Dashboard() {
   }, [user]);
 
   useEffect(() => {
+    async function loadCalories() {
+      if (!user || !statsLoaded || !stats.bodyWeight) return;
+      const [{ data: prof }, { data: goalRows }] = await Promise.all([
+        supabase.from("profiles").select("height_cm, date_of_birth, sex, activity_level").eq("id", user.id).maybeSingle(),
+        supabase.from("user_goals").select("goal_type, rate_per_week_kg, diet_preference, calorie_target_override").eq("user_id", user.id).eq("is_active", true).limit(1),
+      ]);
+      if (!prof?.height_cm || !prof?.date_of_birth || !prof?.sex) return;
+      const g = goalRows?.[0];
+      const summary = getFullCalorieSummary({
+        weightKg: stats.bodyWeight!,
+        heightCm: prof.height_cm,
+        ageYears: ageFromDOB(prof.date_of_birth),
+        sex: prof.sex as Sex,
+        activity: (prof.activity_level as ActivityLevel) ?? "moderate",
+        goalType: (g?.goal_type as GoalType) ?? "general_fitness",
+        ratePerWeekKg: g?.rate_per_week_kg ?? undefined,
+        diet: (g?.diet_preference as DietPreference) ?? "balanced",
+        calorieOverride: g?.calorie_target_override ?? undefined,
+      });
+      setCalorieSummary(summary);
+    }
+    loadCalories();
+  }, [user, statsLoaded, stats.bodyWeight]);
+
+  useEffect(() => {
     async function loadNotifications() {
       if (!user) return;
       const { data } = await supabase
@@ -388,13 +415,15 @@ export default function Dashboard() {
   const xpProgress = levelInfo.isMaxLevel ? 100 : Math.round(levelInfo.progress * 100);
 
   return (
-    <main className="min-h-screen bg-[#050914] text-white pb-24 md:pb-10">
-      <div className="max-w-xl mx-auto px-4 pt-6 space-y-4">
+    <main className="min-h-screen bg-[#050914] text-white pb-24 md:pb-10 relative">
+      <div className="pointer-events-none fixed inset-0 opacity-[0.03]" style={{ backgroundImage: "repeating-linear-gradient(0deg, #fff 0px, #fff 1px, transparent 1px, transparent 3px)" }} />
+      <div className="pointer-events-none fixed top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[rgb(var(--accent-rgb)/0.06)] rounded-full blur-[120px]" />
+      <div className="relative z-10 max-w-xl mx-auto px-4 pt-6 space-y-4">
 
         {/* ─── Header ─── */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-white/90">
+            <h1 className="text-xl font-bold text-[rgb(var(--accent-light-rgb))]">
               {profile?.username ? `Hi, ${profile.username}` : "Dashboard"}
             </h1>
             <p className="text-[11px] font-mono text-white/30 mt-0.5">{today ?? "..."} {time ? `· ${time}` : ""}</p>
@@ -423,9 +452,9 @@ export default function Dashboard() {
         </div>
 
         {/* ─── Today's Workout Card ─── */}
-        <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] overflow-hidden">
+        <div className="rounded-2xl border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.03] overflow-hidden" style={{ boxShadow: "0 0 20px -5px rgb(var(--accent-rgb) / 0.1), inset 0 1px 0 rgb(var(--accent-rgb) / 0.05)" }}>
           <div className="p-4">
-            <p className="text-[9px] font-mono tracking-widest text-white/25 mb-2">TODAY&apos;S WORKOUT</p>
+            <p className="text-[9px] font-mono tracking-widest text-[rgb(var(--accent-light-rgb)/0.4)] mb-2">TODAY&apos;S WORKOUT</p>
 
             {todayLoading ? (
               <div className="flex items-center gap-3 py-2">
@@ -492,7 +521,7 @@ export default function Dashboard() {
         </div>
 
         {/* ─── Level & Rank ─── */}
-        <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-4">
+        <div className="rounded-2xl border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.03] p-4" style={{ boxShadow: "0 0 20px -5px rgb(var(--accent-rgb) / 0.1), inset 0 1px 0 rgb(var(--accent-rgb) / 0.05)" }}>
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-xl bg-[rgb(var(--accent-rgb)/0.1)] border border-[rgb(var(--accent-rgb)/0.2)] flex items-center justify-center">
@@ -541,7 +570,7 @@ export default function Dashboard() {
             { icon: <TrendingUp size={16} />, label: "WEEKLY VOL", value: statsLoaded ? `${stats.weeklyVolume.toLocaleString()}` : "—", sub: "kg", color: "text-[rgb(var(--accent-rgb))]", bg: "bg-[rgb(var(--accent-rgb)/0.1)]", border: "border-[rgb(var(--accent-rgb)/0.2)]" },
             { icon: <Trophy size={16} />, label: "PRs", value: statsLoaded ? `${stats.prCount}` : "—", sub: "exercises", color: "text-yellow-400", bg: "bg-yellow-400/10", border: "border-yellow-400/20" },
           ].map((stat) => (
-            <div key={stat.label} className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-3">
+            <div key={stat.label} className="rounded-xl border border-[rgb(var(--accent-rgb)/0.12)] bg-white/[0.03] p-3" style={{ boxShadow: "0 0 15px -5px rgb(var(--accent-rgb) / 0.08)" }}>
               <div className="flex items-center justify-between mb-2">
                 <span className={`w-7 h-7 rounded-lg ${stat.bg} ${stat.border} border flex items-center justify-center ${stat.color}`}>{stat.icon}</span>
                 <p className="text-[8px] font-mono tracking-wider text-white/20">{stat.label}</p>
@@ -553,8 +582,8 @@ export default function Dashboard() {
         </div>
 
         {/* ─── Attribute Rings ─── */}
-        <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-4">
-          <p className="text-[9px] font-mono tracking-widest text-white/25 mb-3">ATTRIBUTES</p>
+        <div className="rounded-2xl border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.03] p-4" style={{ boxShadow: "0 0 20px -5px rgb(var(--accent-rgb) / 0.1), inset 0 1px 0 rgb(var(--accent-rgb) / 0.05)" }}>
+          <p className="text-[9px] font-mono tracking-widest text-[rgb(var(--accent-light-rgb)/0.4)] mb-3">ATTRIBUTES</p>
           <div className="grid grid-cols-4 gap-3">
             {[
               { label: "STR", value: stats.strength, color: "rgb(var(--accent-rgb))" },
@@ -578,7 +607,7 @@ export default function Dashboard() {
 
         {/* ─── Recovery & Body ─── */}
         <div className="grid grid-cols-2 gap-2.5">
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-3">
+          <div className="rounded-xl border border-[rgb(var(--accent-rgb)/0.12)] bg-white/[0.03] p-3" style={{ boxShadow: "0 0 15px -5px rgb(var(--accent-rgb) / 0.08)" }}>
             <div className="flex items-center gap-1.5 mb-2">
               <HeartPulse size={12} className="text-emerald-400" />
               <p className="text-[8px] font-mono tracking-wider text-white/25">RECOVERY</p>
@@ -590,7 +619,7 @@ export default function Dashboard() {
                 : "No data"}
             </p>
           </div>
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-3">
+          <div className="rounded-xl border border-[rgb(var(--accent-rgb)/0.12)] bg-white/[0.03] p-3" style={{ boxShadow: "0 0 15px -5px rgb(var(--accent-rgb) / 0.08)" }}>
             <div className="flex items-center gap-1.5 mb-2">
               <Dumbbell size={12} className="text-white/30" />
               <p className="text-[8px] font-mono tracking-wider text-white/25">BODY WEIGHT</p>
@@ -608,6 +637,37 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {/* ─── Calorie Intelligence ─── */}
+        {calorieSummary && (
+          <div className="rounded-2xl border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.03] p-4" style={{ boxShadow: "0 0 20px -5px rgb(var(--accent-rgb) / 0.1), inset 0 1px 0 rgb(var(--accent-rgb) / 0.05)" }}>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Flame size={14} className="text-[rgb(var(--accent-light-rgb))]" />
+                <p className="text-[9px] font-mono tracking-widest text-[rgb(var(--accent-light-rgb)/0.4)]">DAILY TARGET</p>
+              </div>
+              <button onClick={() => router.push("/profile")} className="text-[9px] font-mono text-white/20 hover:text-white/50 transition">Edit</button>
+            </div>
+            <div className="flex items-baseline gap-1 mb-3">
+              <span className="text-3xl font-bold font-mono text-[rgb(var(--accent-light-rgb))]">{calorieSummary.calorieTarget}</span>
+              <span className="text-xs font-mono text-white/25">kcal</span>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              <div className="rounded-lg bg-white/[0.03] border border-white/[0.06] p-2 text-center">
+                <p className="text-[8px] font-mono text-white/25">PROTEIN</p>
+                <p className="text-sm font-bold font-mono text-emerald-300">{calorieSummary.macros.protein}g</p>
+              </div>
+              <div className="rounded-lg bg-white/[0.03] border border-white/[0.06] p-2 text-center">
+                <p className="text-[8px] font-mono text-white/25">FAT</p>
+                <p className="text-sm font-bold font-mono text-amber-300">{calorieSummary.macros.fat}g</p>
+              </div>
+              <div className="rounded-lg bg-white/[0.03] border border-white/[0.06] p-2 text-center">
+                <p className="text-[8px] font-mono text-white/25">CARBS</p>
+                <p className="text-sm font-bold font-mono text-cyan-300">{calorieSummary.macros.carbs}g</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* ─── Quick Links ─── */}
         <div className="grid grid-cols-3 gap-2.5">
           {[
@@ -618,7 +678,7 @@ export default function Dashboard() {
             <button
               key={link.label}
               onClick={() => router.push(link.href)}
-              className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-3 flex flex-col items-center gap-1.5 text-white/30 hover:text-white/60 hover:bg-white/[0.05] transition"
+              className="rounded-xl border border-[rgb(var(--accent-rgb)/0.12)] bg-white/[0.03] p-3 flex flex-col items-center gap-1.5 text-white/30 hover:text-[rgb(var(--accent-light-rgb))] hover:bg-[rgb(var(--accent-rgb)/0.05)] hover:border-[rgb(var(--accent-rgb)/0.25)] transition"
             >
               {link.icon}
               <span className="text-[9px] font-mono tracking-wider">{link.label.toUpperCase()}</span>
@@ -628,9 +688,9 @@ export default function Dashboard() {
 
         {/* ─── Recent Notifications ─── */}
         {notifLoaded && notifications.length > 0 && (
-          <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] overflow-hidden">
+          <div className="rounded-2xl border border-[rgb(var(--accent-rgb)/0.12)] bg-white/[0.03] overflow-hidden" style={{ boxShadow: "0 0 15px -5px rgb(var(--accent-rgb) / 0.08)" }}>
             <div className="flex items-center justify-between px-4 pt-3.5 pb-2">
-              <p className="text-[9px] font-mono tracking-widest text-white/25">RECENT NOTIFICATIONS</p>
+              <p className="text-[9px] font-mono tracking-widest text-[rgb(var(--accent-light-rgb)/0.4)]">RECENT NOTIFICATIONS</p>
               <button onClick={() => router.push("/notifications")} className="text-[9px] font-mono text-[rgb(var(--accent-rgb)/0.5)] hover:text-[rgb(var(--accent-rgb))] transition">
                 View All
               </button>

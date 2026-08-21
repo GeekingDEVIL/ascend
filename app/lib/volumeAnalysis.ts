@@ -180,10 +180,12 @@ export async function analyzeAdaptiveVolume(
       muscleWeeks[segment][weekStart] = { weekStart, sets: 0, e1rms: [] };
     }
 
-    muscleWeeks[segment][weekStart].sets += 1;
-
     const weight = Number(log.weight);
     const reps = Number(log.reps);
+    if (!reps && !weight) return;
+
+    muscleWeeks[segment][weekStart].sets += 1;
+
     if (weight > 0 && reps > 0) {
       muscleWeeks[segment][weekStart].e1rms.push(estimateE1RM(weight, reps));
     }

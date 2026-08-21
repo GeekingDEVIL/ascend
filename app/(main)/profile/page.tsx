@@ -1,19 +1,20 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { User, LogOut, Save, Plus, Trash2, Check, Download, AlertTriangle, Eye, EyeOff, Target, Dumbbell, Scale, Ruler, Calendar, Clock, Shield, Heart, AtSign, Globe, Camera, Pencil, X } from "lucide-react";
+import { User, LogOut, Plus, Trash2, Check, Download, AlertTriangle, Eye, EyeOff, Target, Dumbbell, Shield, Heart, AtSign, Globe, Camera, Pencil, X, Flame, Phone, Mail } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../lib/AuthProvider";
 import CustomSelect from "../../components/CustomSelect";
 import { GOAL_OPTIONS } from "../../lib/goals";
 import { updateUserStats } from "../../lib/updateUserStats";
 import { ACCENT_PRESETS, DEFAULT_ACCENT, getAccentPreset, applyAccent, type AccentKey } from "../../lib/theme";
+import { getFullCalorieSummary, ageFromDOB, type GoalType, type Sex, type ActivityLevel, type DietPreference, type CalorieSummary } from "../../lib/calorieEngine";
 
 type ProfileData = {
     goal: string;
     height_cm: number | null;
-    target_weight: number | null;
     experience: string;
     training_frequency: number;
     date_of_birth: string | null;
@@ -24,6 +25,21 @@ type ProfileData = {
     social_twitter: string | null;
     profile_visibility: string;
     avatar_color: string;
+    sex: Sex | null;
+    activity_level: ActivityLevel;
+};
+
+type UserGoals = {
+    id: string | null;
+    goal_type: GoalType;
+    target_weight_kg: number | null;
+    target_date: string | null;
+    rate_per_week_kg: number | null;
+    workouts_per_week: number;
+    preferred_days: string[];
+    diet_preference: DietPreference;
+    calorie_target_override: number | null;
+    protein_target_g: number | null;
 };
 
 type TargetLift = {
@@ -40,11 +56,44 @@ type Section = "stats" | "goals" | "training" | "social" | "preferences" | "data
 const AVATAR_COLORS = ["rgb(var(--accent-rgb))", "#34d399", "#a78bfa", "#f97316", "#ef4444", "#f59e0b", "#ec4899", "#6366f1"];
 
 const DEFAULT_PROFILE: ProfileData = {
-    goal: "", height_cm: null, target_weight: null, experience: "beginner",
+    goal: "", height_cm: null, experience: "beginner",
     training_frequency: 5, date_of_birth: null, unit_preference: "metric",
     workout_time_pref: null, injury_notes: null, social_instagram: null,
     social_twitter: null, profile_visibility: "public", avatar_color: "rgb(var(--accent-rgb))",
+    sex: null, activity_level: "moderate",
 };
+
+const DEFAULT_GOALS: UserGoals = {
+    id: null, goal_type: "general_fitness", target_weight_kg: null,
+    target_date: null, rate_per_week_kg: 0.5, workouts_per_week: 4,
+    preferred_days: [], diet_preference: "balanced",
+    calorie_target_override: null, protein_target_g: null,
+};
+
+const GOAL_TYPE_OPTIONS: { value: GoalType; label: string }[] = [
+    { value: "lose_weight", label: "Lose Weight" },
+    { value: "gain_muscle", label: "Gain Muscle" },
+    { value: "body_recomp", label: "Body Recomposition" },
+    { value: "maintain", label: "Maintain Weight" },
+    { value: "general_fitness", label: "General Fitness" },
+];
+
+const ACTIVITY_OPTIONS: { value: ActivityLevel; label: string; desc: string }[] = [
+    { value: "sedentary", label: "SEDENTARY", desc: "Desk job, little exercise" },
+    { value: "light", label: "LIGHT", desc: "1-2 days/week" },
+    { value: "moderate", label: "MODERATE", desc: "3-5 days/week" },
+    { value: "active", label: "ACTIVE", desc: "6-7 days/week" },
+    { value: "very_active", label: "VERY ACTIVE", desc: "Athlete / physical job" },
+];
+
+const DIET_OPTIONS: { value: DietPreference; label: string }[] = [
+    { value: "balanced", label: "Balanced" },
+    { value: "high_protein", label: "High Protein" },
+    { value: "low_carb", label: "Low Carb" },
+    { value: "keto", label: "Keto" },
+];
+
+const DAYS_OF_WEEK = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 export default function ProfilePage() {
     const { profile, user, refreshProfile } = useAuth();
@@ -52,7 +101,7 @@ export default function ProfilePage() {
     const [avatarUploading, setAvatarUploading] = useState(false);
     const [avatarError, setAvatarError] = useState<string | null>(null);
 
-    const [editingUsername, setEditingUsername] = useState(false);
+    const [showProfileModal, setShowProfileModal] = useState(false);
     const [usernameInput, setUsernameInput] = useState("");
     const [usernameError, setUsernameError] = useState<string | null>(null);
     const [usernameSaving, setUsernameSaving] = useState(false);
@@ -63,6 +112,8 @@ export default function ProfilePage() {
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
     const [section, setSection] = useState<Section>("stats");
+    const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const initialLoadRef = useRef(true);
     const [exercises, setExercises] = useState<{ id: string; name: string }[]>([]);
     const [newLiftExercise, setNewLiftExercise] = useState("");
     const [newLiftWeight, setNewLiftWeight] = useState("");
@@ -72,6 +123,10 @@ export default function ProfilePage() {
     const [totalVolume, setTotalVolume] = useState(0);
     const [theme, setTheme] = useState<"navy" | "oled">("navy");
     const [accent, setAccent] = useState<AccentKey>(DEFAULT_ACCENT);
+    const [goals, setGoals] = useState<UserGoals>(DEFAULT_GOALS);
+    const [calorieSummary, setCalorieSummary] = useState<CalorieSummary | null>(null);
+    const [weightInput, setWeightInput] = useState("");
+    const [weightSaving, setWeightSaving] = useState(false);
 
     useEffect(() => {
         const stored = localStorage.getItem("ascend_theme");
@@ -101,7 +156,7 @@ export default function ProfilePage() {
 
         const { data: p } = await supabase
             .from("profiles")
-            .select("goal, height_cm, target_weight, experience, training_frequency, date_of_birth, unit_preference, workout_time_pref, injury_notes, social_instagram, social_twitter, profile_visibility, avatar_color")
+            .select("goal, height_cm, experience, training_frequency, date_of_birth, unit_preference, workout_time_pref, injury_notes, social_instagram, social_twitter, profile_visibility, avatar_color, sex, activity_level")
             .eq("id", user.id)
             .maybeSingle();
 
@@ -109,7 +164,6 @@ export default function ProfilePage() {
             setData({
                 goal: p.goal ?? "",
                 height_cm: p.height_cm,
-                target_weight: p.target_weight,
                 experience: p.experience ?? "beginner",
                 training_frequency: p.training_frequency ?? 5,
                 date_of_birth: p.date_of_birth,
@@ -120,6 +174,30 @@ export default function ProfilePage() {
                 social_twitter: p.social_twitter,
                 profile_visibility: p.profile_visibility ?? "public",
                 avatar_color: p.avatar_color ?? "rgb(var(--accent-rgb))",
+                sex: p.sex as Sex | null,
+                activity_level: (p.activity_level as ActivityLevel) ?? "moderate",
+            });
+        }
+
+        const { data: g } = await supabase
+            .from("user_goals")
+            .select("id, goal_type, target_weight_kg, target_date, rate_per_week_kg, workouts_per_week, preferred_days, diet_preference, calorie_target_override, protein_target_g")
+            .eq("user_id", user.id)
+            .eq("is_active", true)
+            .limit(1);
+
+        if (g?.[0]) {
+            setGoals({
+                id: g[0].id,
+                goal_type: g[0].goal_type as GoalType,
+                target_weight_kg: g[0].target_weight_kg,
+                target_date: g[0].target_date,
+                rate_per_week_kg: g[0].rate_per_week_kg,
+                workouts_per_week: g[0].workouts_per_week ?? 4,
+                preferred_days: g[0].preferred_days ?? [],
+                diet_preference: (g[0].diet_preference as DietPreference) ?? "balanced",
+                calorie_target_override: g[0].calorie_target_override,
+                protein_target_g: g[0].protein_target_g,
             });
         }
 
@@ -141,7 +219,9 @@ export default function ProfilePage() {
 
         // Latest body weight
         const { data: bw } = await supabase.from("body_weight_logs").select("weight").eq("user_id", user.id).order("logged_at", { ascending: false }).limit(1);
-        setLatestWeight(bw?.[0]?.weight ?? null);
+        const lw = bw?.[0]?.weight ?? null;
+        setLatestWeight(lw);
+        if (lw !== null) setWeightInput(String(lw));
 
         // Summary stats
         const { data: sessions } = await supabase.from("workout_sessions").select("total_volume").eq("user_id", user.id).eq("status", "completed");
@@ -157,13 +237,12 @@ export default function ProfilePage() {
         setData((prev) => ({ ...prev, [field]: value }));
     }
 
-    async function saveProfile() {
+    const debouncedSave = useCallback(async () => {
         if (!user) return;
         setSaving(true);
         await supabase.from("profiles").update({
             goal: data.goal || null,
             height_cm: data.height_cm,
-            target_weight: data.target_weight,
             experience: data.experience,
             training_frequency: data.training_frequency,
             date_of_birth: data.date_of_birth || null,
@@ -174,10 +253,54 @@ export default function ProfilePage() {
             social_twitter: data.social_twitter || null,
             profile_visibility: data.profile_visibility,
             avatar_color: data.avatar_color,
+            sex: data.sex,
+            activity_level: data.activity_level,
         }).eq("id", user.id);
+
+        const goalPayload = {
+            user_id: user.id,
+            goal_type: goals.goal_type,
+            target_weight_kg: goals.target_weight_kg,
+            target_date: goals.target_date || null,
+            rate_per_week_kg: goals.rate_per_week_kg,
+            workouts_per_week: goals.workouts_per_week,
+            preferred_days: goals.preferred_days,
+            diet_preference: goals.diet_preference,
+            calorie_target_override: goals.calorie_target_override,
+            protein_target_g: goals.protein_target_g,
+            is_active: true,
+            updated_at: new Date().toISOString(),
+        };
+        if (goals.id) {
+            await supabase.from("user_goals").update(goalPayload).eq("id", goals.id);
+        } else {
+            const { data: inserted } = await supabase.from("user_goals").insert(goalPayload).select("id").limit(1);
+            if (inserted?.[0]) setGoals((prev) => ({ ...prev, id: inserted[0].id }));
+        }
+
         setSaving(false);
         setSaved(true);
         setTimeout(() => setSaved(false), 1500);
+    }, [user, data, goals]);
+
+    useEffect(() => {
+        if (initialLoadRef.current) {
+            initialLoadRef.current = false;
+            return;
+        }
+        if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = setTimeout(debouncedSave, 1500);
+        return () => { if (saveTimerRef.current) clearTimeout(saveTimerRef.current); };
+    }, [data, goals, debouncedSave]);
+
+    async function logWeight() {
+        if (!user || !weightInput) return;
+        const w = Number(weightInput);
+        if (w <= 0 || w === latestWeight) return;
+        setWeightSaving(true);
+        await supabase.from("body_weight_logs").insert({ user_id: user.id, weight: w, context: "profile" });
+        setLatestWeight(w);
+        setWeightSaving(false);
     }
 
     async function addTargetLift() {
@@ -322,17 +445,17 @@ export default function ProfilePage() {
         setAvatarUploading(false);
     }
 
-    function startEditingUsername() {
+    function openProfileModal() {
         setUsernameInput(profile?.username ?? "");
         setUsernameError(null);
-        setEditingUsername(true);
+        setShowProfileModal(true);
     }
 
     async function saveUsername() {
         if (!user) return;
         const next = usernameInput.trim();
         if (!next) { setUsernameError("Username can't be empty."); return; }
-        if (next === profile?.username) { setEditingUsername(false); return; }
+        if (next === profile?.username) { return; }
 
         setUsernameSaving(true);
         setUsernameError(null);
@@ -354,7 +477,6 @@ export default function ProfilePage() {
         await refreshProfile();
         await updateUserStats(user.id);
         setUsernameSaving(false);
-        setEditingUsername(false);
     }
 
     async function handleSignOut() {
@@ -362,12 +484,35 @@ export default function ProfilePage() {
         router.push("/login");
     }
 
+    function updateGoal(field: keyof UserGoals, value: any) {
+        setGoals((prev) => ({ ...prev, [field]: value }));
+    }
+
     const isMetric = data.unit_preference === "metric";
     const weightUnit = isMetric ? "KG" : "LBS";
     const heightUnit = isMetric ? "CM" : "FT/IN";
     const age = data.date_of_birth ? Math.floor((Date.now() - new Date(data.date_of_birth).getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : null;
     const bmi = data.height_cm && latestWeight ? Number((latestWeight / ((data.height_cm / 100) ** 2)).toFixed(1)) : null;
-    const weightToGoal = data.target_weight && latestWeight ? Number((latestWeight - data.target_weight).toFixed(1)) : null;
+    const weightToGoal = goals.target_weight_kg && latestWeight ? Number((latestWeight - goals.target_weight_kg).toFixed(1)) : null;
+
+    useEffect(() => {
+        if (!latestWeight || !data.height_cm || !data.date_of_birth || !data.sex) {
+            setCalorieSummary(null);
+            return;
+        }
+        const summary = getFullCalorieSummary({
+            weightKg: latestWeight,
+            heightCm: data.height_cm,
+            ageYears: ageFromDOB(data.date_of_birth),
+            sex: data.sex,
+            activity: data.activity_level,
+            goalType: goals.goal_type,
+            ratePerWeekKg: goals.rate_per_week_kg ?? undefined,
+            diet: goals.diet_preference,
+            calorieOverride: goals.calorie_target_override ?? undefined,
+        });
+        setCalorieSummary(summary);
+    }, [latestWeight, data.height_cm, data.date_of_birth, data.sex, data.activity_level, goals.goal_type, goals.rate_per_week_kg, goals.diet_preference, goals.calorie_target_override]);
 
     const SECTIONS: { key: Section; label: string; icon: any }[] = [
         { key: "stats", label: "STATS", icon: User },
@@ -387,13 +532,15 @@ export default function ProfilePage() {
     }
 
     return (
-        <main className="min-h-screen bg-[#050914] text-white pb-24 md:pb-10">
+        <main className="min-h-screen bg-[#050914] text-white pb-24 md:pb-10 relative">
+            <div className="pointer-events-none fixed inset-0 opacity-[0.03]" style={{ backgroundImage: "repeating-linear-gradient(0deg, #fff 0px, #fff 1px, transparent 1px, transparent 3px)" }} />
+            <div className="pointer-events-none fixed top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[rgb(var(--accent-rgb)/0.06)] rounded-full blur-[120px]" />
 
-            <div className="max-w-xl mx-auto px-4 pt-6 space-y-5">
-                {/* Header + Avatar */}
-                <div className="flex items-center gap-4">
-                    <label
-                        className="relative w-16 h-16 rounded-xl border-2 flex items-center justify-center text-2xl font-bold shrink-0 cursor-pointer overflow-hidden group"
+            <div className="relative z-10 max-w-xl mx-auto px-4 pt-6 space-y-5">
+                {/* Header — tap to edit profile */}
+                <button onClick={openProfileModal} className="w-full flex items-center gap-4 text-left group">
+                    <div
+                        className="relative w-16 h-16 rounded-xl border-2 flex items-center justify-center text-2xl font-bold shrink-0 overflow-hidden"
                         style={{ borderColor: data.avatar_color + "60", backgroundColor: data.avatar_color + "15", color: data.avatar_color }}
                     >
                         {profile?.avatar_url ? (
@@ -401,54 +548,24 @@ export default function ProfilePage() {
                         ) : (
                             (profile?.username?.[0] ?? "?").toUpperCase()
                         )}
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition">
-                            {avatarUploading ? (
-                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                            ) : (
-                                <Camera size={18} className="text-white" />
-                            )}
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition">
+                            <Pencil size={14} className="text-white" />
                         </div>
-                        <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={handleAvatarUpload} disabled={avatarUploading} />
-                    </label>
-                    <div className="flex-1 min-w-0">
-                        {editingUsername ? (
-                            <div className="flex items-center gap-1.5">
-                                <input
-                                    autoFocus
-                                    value={usernameInput}
-                                    onChange={(e) => setUsernameInput(e.target.value)}
-                                    onKeyDown={(e) => e.key === "Enter" && saveUsername()}
-                                    disabled={usernameSaving}
-                                    className="min-w-0 flex-1 h-9 rounded-md bg-white/[0.06] border border-[rgb(var(--accent-rgb)/0.3)] px-2.5 text-lg font-bold text-white/90 focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.6)] transition"
-                                />
-                                <button onClick={saveUsername} disabled={usernameSaving} className="shrink-0 w-8 h-8 rounded-md border border-[rgb(var(--accent-rgb)/0.3)] text-[rgb(var(--accent-light-rgb))] flex items-center justify-center hover:bg-[rgb(var(--accent-rgb)/0.1)] disabled:opacity-40 transition">
-                                    <Check size={14} />
-                                </button>
-                                <button onClick={() => setEditingUsername(false)} disabled={usernameSaving} className="shrink-0 w-8 h-8 rounded-md border border-white/10 text-white/40 flex items-center justify-center hover:text-white/70 disabled:opacity-40 transition">
-                                    <X size={14} />
-                                </button>
-                            </div>
-                        ) : (
-                            <button onClick={startEditingUsername} className="flex items-center gap-1.5 group max-w-full">
-                                <h1 className="text-xl font-bold text-white/90 truncate">{profile?.username ?? "Unknown"}</h1>
-                                <Pencil size={12} className="shrink-0 text-white/20 group-hover:text-[rgb(var(--accent-light-rgb))] transition" />
-                            </button>
-                        )}
-                        <p className="text-xs font-mono text-white/40">{user?.email}</p>
-                        <p className="text-[10px] font-mono text-white/25 mt-0.5">Member since {user?.created_at ? new Date(user.created_at).toLocaleDateString(undefined, { month: "long", year: "numeric" }) : "—"}</p>
-                        {avatarError && <p className="text-[10px] font-mono text-red-400 mt-0.5">{avatarError}</p>}
-                        {usernameError && <p className="text-[10px] font-mono text-red-400 mt-0.5">{usernameError}</p>}
                     </div>
-                    <button
-                        onClick={saveProfile}
-                        disabled={saving}
-                        className={`shrink-0 flex items-center gap-1.5 text-[10px] font-mono px-3 py-2 rounded-lg border transition ${saved ? "border-emerald-400/40 text-emerald-300" : "border-[rgb(var(--accent-rgb)/0.3)] text-[rgb(var(--accent-light-rgb))] hover:bg-[rgb(var(--accent-rgb)/0.1)]"
-                            }`}
-                    >
-                        {saved ? <Check size={12} /> : <Save size={12} />}
-                        {saved ? "SAVED" : saving ? "..." : "SAVE"}
-                    </button>
-                </div>
+                    <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5">
+                            <h1 className="text-xl font-bold text-white/90 truncate">{profile?.username ?? "Unknown"}</h1>
+                            <Pencil size={10} className="shrink-0 text-white/15 group-hover:text-[rgb(var(--accent-light-rgb))] transition" />
+                        </div>
+                        <p className="text-xs font-mono text-white/40 truncate">{user?.email}</p>
+                        <p className="text-[10px] font-mono text-white/25 mt-0.5">Member since {user?.created_at ? new Date(user.created_at).toLocaleDateString(undefined, { month: "long", year: "numeric" }) : "—"}</p>
+                    </div>
+                    {(saving || saved) && (
+                        <span className={`shrink-0 text-[9px] font-mono px-2 py-1 rounded-md border transition ${saved ? "border-emerald-400/30 text-emerald-300" : "border-white/10 text-white/30"}`}>
+                            {saved ? "SAVED" : "SAVING..."}
+                        </span>
+                    )}
+                </button>
 
                 {/* Quick Stats */}
                 <div className="grid grid-cols-4 gap-2">
@@ -464,9 +581,15 @@ export default function ProfilePage() {
                         <p className="text-[8px] font-mono text-white/30">WEIGHT</p>
                         <p className="text-base font-bold font-mono text-white/80">{latestWeight ?? "—"}</p>
                     </div>
-                    <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-2.5 text-center">
+                    <div onClick={() => { if (!bmi && latestWeight) setSection("stats"); }} className={`rounded-lg border border-white/[0.06] bg-white/[0.02] p-2.5 text-center ${!bmi && latestWeight ? "cursor-pointer" : ""}`}>
                         <p className="text-[8px] font-mono text-white/30">BMI</p>
-                        <p className="text-base font-bold font-mono text-white/80">{bmi ?? "—"}</p>
+                        {bmi ? (
+                            <p className="text-base font-bold font-mono text-white/80">{bmi}</p>
+                        ) : latestWeight ? (
+                            <p className="text-[9px] font-mono text-white/30 mt-0.5">Add height</p>
+                        ) : (
+                            <p className="text-base font-bold font-mono text-white/80">—</p>
+                        )}
                     </div>
                 </div>
 
@@ -497,9 +620,15 @@ export default function ProfilePage() {
                                         className="w-full h-11 rounded-lg bg-white/[0.04] border border-white/[0.08] text-center text-base font-bold font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition" />
                                 </div>
                                 <div>
-                                    <label className="text-[9px] font-mono text-white/30 mb-1 block">TARGET WEIGHT ({weightUnit})</label>
-                                    <input type="number" min="0" onWheel={(e) => (e.target as HTMLElement).blur()} value={data.target_weight ?? ""} onChange={(e) => updateField("target_weight", e.target.value ? Number(e.target.value) : null)} placeholder="—"
-                                        className="w-full h-11 rounded-lg bg-white/[0.04] border border-white/[0.08] text-center text-base font-bold font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition" />
+                                    <label className="text-[9px] font-mono text-white/30 mb-1 block">SEX</label>
+                                    <div className="flex gap-2">
+                                        {(["male", "female"] as const).map((s) => (
+                                            <button key={s} onClick={() => updateField("sex", s)}
+                                                className={`flex-1 text-[10px] font-mono py-2.5 rounded-lg border transition ${data.sex === s ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/10 text-white/40 hover:text-white/70"}`}>
+                                                {s.toUpperCase()}
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
                                 <div>
                                     <label className="text-[9px] font-mono text-white/30 mb-1 block">DATE OF BIRTH</label>
@@ -514,17 +643,18 @@ export default function ProfilePage() {
                                 </div>
                             </div>
 
-                            {weightToGoal !== null && (
-                                <div className="rounded-lg border border-[rgb(var(--accent-rgb)/0.15)] bg-[rgb(var(--accent-rgb))]/[0.03] p-3 text-center">
-                                    <p className="text-[9px] font-mono text-[rgb(var(--accent-light-rgb)/0.5)]">DISTANCE TO TARGET</p>
-                                    <p className={`text-xl font-bold font-mono ${weightToGoal > 0 ? "text-orange-300" : weightToGoal < 0 ? "text-emerald-300" : "text-[rgb(var(--accent-light-rgb))]"}`}>
-                                        {weightToGoal > 0 ? `-${weightToGoal}` : weightToGoal < 0 ? `+${Math.abs(weightToGoal)}` : "✓ AT GOAL"} {weightUnit}
-                                    </p>
-                                    <p className="text-[9px] font-mono text-white/25 mt-1">
-                                        Current: {latestWeight} → Target: {data.target_weight}
-                                    </p>
+                            <div>
+                                <label className="text-[9px] font-mono text-white/30 mb-1 block">CURRENT WEIGHT ({weightUnit})</label>
+                                <div className="flex gap-2">
+                                    <input type="number" min="0" step="0.1" onWheel={(e) => (e.target as HTMLElement).blur()} value={weightInput} onChange={(e) => setWeightInput(e.target.value)} placeholder="—"
+                                        className="flex-1 h-11 rounded-lg bg-white/[0.04] border border-white/[0.08] text-center text-base font-bold font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition" />
+                                    <button onClick={logWeight} disabled={weightSaving || !weightInput || Number(weightInput) === latestWeight}
+                                        className="shrink-0 h-11 px-4 rounded-lg border border-[rgb(var(--accent-rgb)/0.3)] text-[rgb(var(--accent-light-rgb))] text-[10px] font-mono hover:bg-[rgb(var(--accent-rgb)/0.1)] disabled:opacity-30 transition">
+                                        {weightSaving ? "..." : "LOG"}
+                                    </button>
                                 </div>
-                            )}
+                                {latestWeight && <p className="text-[8px] font-mono text-white/20 mt-1">Last logged: {latestWeight} {weightUnit.toLowerCase()}</p>}
+                            </div>
 
                             {bmi !== null && (
                                 <div className="flex items-center gap-3 text-[10px] font-mono text-white/40">
@@ -554,17 +684,165 @@ export default function ProfilePage() {
                 {/* ══════════ GOALS ══════════ */}
                 {section === "goals" && (
                     <div className="space-y-4">
+                        {/* Goal Type */}
+                        <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4 space-y-4">
+                            <p className="text-[10px] font-mono tracking-widest text-white/25">PRIMARY GOAL</p>
+                            <div className="grid grid-cols-2 gap-2">
+                                {GOAL_TYPE_OPTIONS.map((opt) => (
+                                    <button key={opt.value} onClick={() => updateGoal("goal_type", opt.value)}
+                                        className={`text-[10px] font-mono py-2.5 px-2 rounded-lg border transition text-center ${goals.goal_type === opt.value ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/10 text-white/40 hover:text-white/70"}`}>
+                                        {opt.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Weight Goal + Rate */}
+                        {(goals.goal_type === "lose_weight" || goals.goal_type === "gain_muscle") && (
+                            <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4 space-y-4">
+                                <p className="text-[10px] font-mono tracking-widest text-white/25">WEIGHT TARGET</p>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="text-[9px] font-mono text-white/30 mb-1 block">TARGET ({weightUnit})</label>
+                                        <input type="number" min="0" onWheel={(e) => (e.target as HTMLElement).blur()} value={goals.target_weight_kg ?? ""} onChange={(e) => updateGoal("target_weight_kg", e.target.value ? Number(e.target.value) : null)} placeholder="—"
+                                            className="w-full h-11 rounded-lg bg-white/[0.04] border border-white/[0.08] text-center text-base font-bold font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition" />
+                                    </div>
+                                    <div>
+                                        <label className="text-[9px] font-mono text-white/30 mb-1 block">RATE ({weightUnit}/WK)</label>
+                                        <input type="number" min="0.1" max="1.5" step="0.1" onWheel={(e) => (e.target as HTMLElement).blur()} value={goals.rate_per_week_kg ?? 0.5} onChange={(e) => updateGoal("rate_per_week_kg", Number(e.target.value))}
+                                            className="w-full h-11 rounded-lg bg-white/[0.04] border border-white/[0.08] text-center text-base font-bold font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="text-[9px] font-mono text-white/30 mb-1 block">TARGET DATE (OPTIONAL)</label>
+                                    <input type="date" value={goals.target_date ?? ""} onChange={(e) => updateGoal("target_date", e.target.value || null)}
+                                        className="w-full h-11 rounded-lg bg-white/[0.04] border border-white/[0.08] text-center text-sm font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition" />
+                                </div>
+                                {weightToGoal !== null && (
+                                    <div className="rounded-lg border border-[rgb(var(--accent-rgb)/0.15)] bg-[rgb(var(--accent-rgb))]/[0.03] p-3 text-center">
+                                        <p className="text-[9px] font-mono text-[rgb(var(--accent-light-rgb)/0.5)]">DISTANCE TO TARGET</p>
+                                        <p className={`text-xl font-bold font-mono ${weightToGoal > 0 ? "text-orange-300" : weightToGoal < 0 ? "text-emerald-300" : "text-[rgb(var(--accent-light-rgb))]"}`}>
+                                            {weightToGoal > 0 ? `-${weightToGoal}` : weightToGoal < 0 ? `+${Math.abs(weightToGoal)}` : "AT GOAL"} {weightUnit}
+                                        </p>
+                                        <p className="text-[9px] font-mono text-white/25 mt-1">
+                                            Current: {latestWeight} → Target: {goals.target_weight_kg}
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Activity Level */}
+                        <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4 space-y-3">
+                            <p className="text-[10px] font-mono tracking-widest text-white/25">ACTIVITY LEVEL</p>
+                            <div className="space-y-1.5">
+                                {ACTIVITY_OPTIONS.map((opt) => (
+                                    <button key={opt.value} onClick={() => updateField("activity_level", opt.value)}
+                                        className={`w-full flex items-center justify-between text-left px-3 py-2.5 rounded-lg border transition ${data.activity_level === opt.value ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)]" : "border-white/[0.06] hover:border-white/15"}`}>
+                                        <span className={`text-[10px] font-mono ${data.activity_level === opt.value ? "text-[rgb(var(--accent-light-rgb))]" : "text-white/50"}`}>{opt.label}</span>
+                                        <span className="text-[9px] font-mono text-white/25">{opt.desc}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Diet + Nutrition */}
+                        <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4 space-y-4">
+                            <p className="text-[10px] font-mono tracking-widest text-white/25">NUTRITION</p>
+                            <div>
+                                <label className="text-[9px] font-mono text-white/30 mb-1.5 block">DIET PREFERENCE</label>
+                                <div className="grid grid-cols-4 gap-2">
+                                    {DIET_OPTIONS.map((opt) => (
+                                        <button key={opt.value} onClick={() => updateGoal("diet_preference", opt.value)}
+                                            className={`text-[10px] font-mono py-2 rounded-lg border transition ${goals.diet_preference === opt.value ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/10 text-white/40 hover:text-white/70"}`}>
+                                            {opt.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            <div>
+                                <label className="text-[9px] font-mono text-white/30 mb-1 block">CALORIE OVERRIDE (OPTIONAL)</label>
+                                <input type="number" min="800" max="8000" onWheel={(e) => (e.target as HTMLElement).blur()} value={goals.calorie_target_override ?? ""} onChange={(e) => updateGoal("calorie_target_override", e.target.value ? Number(e.target.value) : null)} placeholder="Auto-calculated"
+                                    className="w-full h-11 rounded-lg bg-white/[0.04] border border-white/[0.08] text-center text-base font-bold font-mono placeholder:text-white/15 focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition" />
+                                <p className="text-[8px] font-mono text-white/20 mt-1">Leave empty to auto-calculate from your stats and goal</p>
+                            </div>
+                        </div>
+
+                        {/* Calorie Intelligence Card */}
+                        {calorieSummary && (
+                            <div className="rounded-lg border border-[rgb(var(--accent-rgb)/0.2)] bg-[rgb(var(--accent-rgb))]/[0.03] p-4 space-y-3">
+                                <div className="flex items-center gap-2">
+                                    <Flame size={14} className="text-[rgb(var(--accent-light-rgb))]" />
+                                    <p className="text-[10px] font-mono tracking-widest text-[rgb(var(--accent-light-rgb))]">CALORIE INTELLIGENCE</p>
+                                </div>
+                                <div className="grid grid-cols-3 gap-2">
+                                    <div className="rounded-lg bg-white/[0.03] border border-white/[0.06] p-2.5 text-center">
+                                        <p className="text-[8px] font-mono text-white/30">BMR</p>
+                                        <p className="text-base font-bold font-mono text-white/70">{calorieSummary.bmr}</p>
+                                    </div>
+                                    <div className="rounded-lg bg-white/[0.03] border border-white/[0.06] p-2.5 text-center">
+                                        <p className="text-[8px] font-mono text-white/30">TDEE</p>
+                                        <p className="text-base font-bold font-mono text-white/70">{calorieSummary.tdee}</p>
+                                    </div>
+                                    <div className="rounded-lg bg-[rgb(var(--accent-rgb)/0.08)] border border-[rgb(var(--accent-rgb)/0.2)] p-2.5 text-center">
+                                        <p className="text-[8px] font-mono text-[rgb(var(--accent-light-rgb)/0.5)]">TARGET</p>
+                                        <p className="text-base font-bold font-mono text-[rgb(var(--accent-light-rgb))]">{calorieSummary.calorieTarget}</p>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-3 gap-2">
+                                    <div className="rounded-lg bg-white/[0.03] border border-white/[0.06] p-2 text-center">
+                                        <p className="text-[8px] font-mono text-white/30">PROTEIN</p>
+                                        <p className="text-sm font-bold font-mono text-emerald-300">{calorieSummary.macros.protein}g</p>
+                                    </div>
+                                    <div className="rounded-lg bg-white/[0.03] border border-white/[0.06] p-2 text-center">
+                                        <p className="text-[8px] font-mono text-white/30">FAT</p>
+                                        <p className="text-sm font-bold font-mono text-amber-300">{calorieSummary.macros.fat}g</p>
+                                    </div>
+                                    <div className="rounded-lg bg-white/[0.03] border border-white/[0.06] p-2 text-center">
+                                        <p className="text-[8px] font-mono text-white/30">CARBS</p>
+                                        <p className="text-sm font-bold font-mono text-cyan-300">{calorieSummary.macros.carbs}g</p>
+                                    </div>
+                                </div>
+                                <p className="text-[8px] font-mono text-white/20 text-center">Based on Mifflin-St Jeor equation · {data.sex === "male" ? "Male" : "Female"} · {age}y · {latestWeight}kg · {data.height_cm}cm</p>
+                            </div>
+                        )}
+                        {!calorieSummary && (
+                            <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4 text-center">
+                                <Flame size={18} className="mx-auto text-white/15 mb-2" />
+                                <p className="text-[10px] font-mono text-white/25">Add your height, DOB, and sex in Stats to unlock calorie intelligence</p>
+                            </div>
+                        )}
+
+                        {/* Preferred Days */}
+                        <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4 space-y-3">
+                            <p className="text-[10px] font-mono tracking-widest text-white/25">PREFERRED TRAINING DAYS</p>
+                            <div className="flex gap-1.5">
+                                {DAYS_OF_WEEK.map((day) => {
+                                    const selected = goals.preferred_days.includes(day);
+                                    return (
+                                        <button key={day} onClick={() => updateGoal("preferred_days", selected ? goals.preferred_days.filter((d) => d !== day) : [...goals.preferred_days, day])}
+                                            className={`flex-1 text-[10px] font-mono py-2.5 rounded-lg border transition ${selected ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/10 text-white/30 hover:text-white/60"}`}>
+                                            {day}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                            <p className="text-[8px] font-mono text-white/20">{goals.preferred_days.length} days selected</p>
+                        </div>
+
+                        {/* Training Goal (legacy field) */}
                         <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4">
-                            <p className="text-[10px] font-mono tracking-widest text-white/25 mb-3">TRAINING GOAL</p>
+                            <p className="text-[10px] font-mono tracking-widest text-white/25 mb-3">TRAINING STYLE</p>
                             <CustomSelect
                                 options={GOAL_OPTIONS}
                                 value={data.goal}
                                 onChange={(v) => updateField("goal", v)}
-                                placeholder="Select a goal..."
+                                placeholder="Select a style..."
                                 searchable={false}
                             />
                         </div>
 
+                        {/* Target Lifts */}
                         <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4">
                             <p className="text-[10px] font-mono tracking-widest text-white/25 mb-3">TARGET LIFTS</p>
                             <p className="text-[9px] font-mono text-white/25 mb-3">Set weight goals for specific exercises. You'll get notified when you hit them.</p>
@@ -578,7 +856,7 @@ export default function ProfilePage() {
                                                 <p className="text-[10px] font-mono text-white/30">Target: {lift.target_weight} {weightUnit}</p>
                                             </div>
                                             {lift.achieved ? (
-                                                <span className="text-[9px] font-mono text-emerald-300 px-2 py-1 rounded bg-emerald-400/10 border border-emerald-400/20">ACHIEVED ✓</span>
+                                                <span className="text-[9px] font-mono text-emerald-300 px-2 py-1 rounded bg-emerald-400/10 border border-emerald-400/20">ACHIEVED</span>
                                             ) : (
                                                 <button onClick={() => deleteTargetLift(lift.id)} className="text-white/20 hover:text-red-400 transition"><Trash2 size={14} /></button>
                                             )}
@@ -632,15 +910,6 @@ export default function ProfilePage() {
                             </div>
 
                             <div>
-                                <label className="text-[9px] font-mono text-white/30 mb-1 block">TRAINING DAYS PER WEEK: {data.training_frequency}</label>
-                                <input type="range" min="1" max="7" value={data.training_frequency} onChange={(e) => updateField("training_frequency", Number(e.target.value))}
-                                    className="w-full accent-[rgb(var(--accent-rgb))]" />
-                                <div className="flex justify-between text-[8px] font-mono text-white/20 mt-0.5">
-                                    <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span>
-                                </div>
-                            </div>
-
-                            <div>
                                 <label className="text-[9px] font-mono text-white/30 mb-1 block">PREFERRED WORKOUT TIME</label>
                                 <div className="flex gap-2">
                                     {[{ value: "morning", label: "MORNING", sub: "5-9 AM" }, { value: "afternoon", label: "AFTERNOON", sub: "12-5 PM" }, { value: "evening", label: "EVENING", sub: "5-10 PM" }].map((t) => (
@@ -673,17 +942,6 @@ export default function ProfilePage() {
                                 className="w-full rounded-lg bg-white/[0.04] border border-white/[0.08] px-3 py-2.5 text-sm font-mono text-white/70 placeholder:text-white/20 focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition" />
                         </div>
 
-                        <div>
-                            <p className="text-[10px] font-mono tracking-widest text-white/25 mt-4 mb-2">AVATAR COLOR</p>
-                            <div className="flex gap-2 flex-wrap">
-                                {AVATAR_COLORS.map((color) => (
-                                    <button key={color} onClick={() => updateField("avatar_color", color)}
-                                        className={`w-9 h-9 rounded-lg border-2 transition ${data.avatar_color === color ? "border-white/60 scale-110" : "border-transparent hover:border-white/20"}`}
-                                        style={{ backgroundColor: color + "30", borderColor: data.avatar_color === color ? color : undefined }}
-                                    />
-                                ))}
-                            </div>
-                        </div>
                     </div>
                 )}
 
@@ -802,6 +1060,92 @@ export default function ProfilePage() {
                     </div>
                 )}
             </div>
+
+            {/* ══════════ PROFILE EDIT MODAL ══════════ */}
+            {showProfileModal && createPortal(
+                <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-0 sm:p-4" onClick={() => setShowProfileModal(false)}>
+                    <div className="w-full max-w-md rounded-t-2xl sm:rounded-2xl border border-white/[0.08] bg-[#080d18] p-5 space-y-5" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-between">
+                            <p className="text-sm font-bold text-white/80">Edit Profile</p>
+                            <button onClick={() => setShowProfileModal(false)} className="w-8 h-8 rounded-lg border border-white/10 flex items-center justify-center text-white/40 hover:text-white/70 transition">
+                                <X size={14} />
+                            </button>
+                        </div>
+
+                        {/* Avatar */}
+                        <div className="flex justify-center">
+                            <label
+                                className="relative w-24 h-24 rounded-2xl border-2 flex items-center justify-center text-3xl font-bold cursor-pointer overflow-hidden group"
+                                style={{ borderColor: data.avatar_color + "60", backgroundColor: data.avatar_color + "15", color: data.avatar_color }}
+                            >
+                                {profile?.avatar_url ? (
+                                    <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                                ) : (
+                                    (profile?.username?.[0] ?? "?").toUpperCase()
+                                )}
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition">
+                                    {avatarUploading ? (
+                                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    ) : (
+                                        <Camera size={22} className="text-white" />
+                                    )}
+                                </div>
+                                <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={handleAvatarUpload} disabled={avatarUploading} />
+                            </label>
+                        </div>
+                        {avatarError && <p className="text-[10px] font-mono text-red-400 text-center">{avatarError}</p>}
+
+                        {/* Username */}
+                        <div>
+                            <label className="text-[9px] font-mono text-white/30 mb-1 flex items-center gap-1"><User size={10} /> USERNAME</label>
+                            <div className="flex gap-2">
+                                <input
+                                    value={usernameInput}
+                                    onChange={(e) => setUsernameInput(e.target.value)}
+                                    onKeyDown={(e) => e.key === "Enter" && saveUsername()}
+                                    disabled={usernameSaving}
+                                    className="flex-1 rounded-lg bg-white/[0.04] border border-white/[0.08] px-3 py-2.5 text-sm font-mono text-white/80 focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition"
+                                />
+                                <button onClick={saveUsername} disabled={usernameSaving || usernameInput.trim() === profile?.username}
+                                    className="shrink-0 px-4 rounded-lg border border-[rgb(var(--accent-rgb)/0.3)] text-[rgb(var(--accent-light-rgb))] text-[10px] font-mono hover:bg-[rgb(var(--accent-rgb)/0.1)] disabled:opacity-30 transition">
+                                    {usernameSaving ? "..." : "UPDATE"}
+                                </button>
+                            </div>
+                            {usernameError && <p className="text-[10px] font-mono text-red-400 mt-1">{usernameError}</p>}
+                        </div>
+
+                        {/* Email (read-only) */}
+                        <div>
+                            <label className="text-[9px] font-mono text-white/30 mb-1 flex items-center gap-1"><Mail size={10} /> EMAIL</label>
+                            <div className="rounded-lg bg-white/[0.02] border border-white/[0.04] px-3 py-2.5 text-sm font-mono text-white/40">
+                                {user?.email ?? "—"}
+                            </div>
+                        </div>
+
+                        {/* Mobile (placeholder for future) */}
+                        <div>
+                            <label className="text-[9px] font-mono text-white/30 mb-1 flex items-center gap-1"><Phone size={10} /> MOBILE NUMBER</label>
+                            <div className="rounded-lg bg-white/[0.02] border border-white/[0.04] px-3 py-2.5 text-sm font-mono text-white/20 italic">
+                                Coming soon
+                            </div>
+                        </div>
+
+                        {/* Avatar Color */}
+                        <div>
+                            <p className="text-[9px] font-mono text-white/30 mb-1.5">AVATAR COLOR</p>
+                            <div className="flex gap-2 flex-wrap">
+                                {AVATAR_COLORS.map((color) => (
+                                    <button key={color} onClick={() => updateField("avatar_color", color)}
+                                        className={`w-8 h-8 rounded-lg border-2 transition ${data.avatar_color === color ? "border-white/60 scale-110" : "border-transparent hover:border-white/20"}`}
+                                        style={{ backgroundColor: color + "30", borderColor: data.avatar_color === color ? color : undefined }}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
         </main>
     );
 }

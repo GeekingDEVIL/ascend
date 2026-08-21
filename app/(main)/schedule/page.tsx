@@ -459,6 +459,7 @@ export default function SchedulePage() {
     const [importingTemplate, setImportingTemplate] = useState<string | null>(null);
     const [planBrowserOpen, setPlanBrowserOpen] = useState(false);
     const [importingPlan, setImportingPlan] = useState(false);
+    const [importConfirm, setImportConfirm] = useState<{ plan: WorkoutPlan; label: string } | null>(null);
     const [volumeExpanded, setVolumeExpanded] = useState(false);
 
     const sensors = useSensors(
@@ -582,33 +583,57 @@ export default function SchedulePage() {
         return weekdays;
     }
 
-    async function importPlanFromLibrary(plan: WorkoutPlan) {
+    function importPlanFromLibrary(plan: WorkoutPlan) {
         if (!user) return;
         if (hasPlan) {
             const currentPlanNames = [...new Set(Object.values(recurringPlans).filter(p => !p.is_rest && p.template_name).map(p => p.template_name))];
             const currentLabel = currentPlanNames.length > 0 ? currentPlanNames.join(", ") : "your current plan";
-            if (!confirm(`Switch from "${currentLabel}" to "${plan.name}"?\n\nThis will replace your weekly schedule on the days this plan uses.`)) return;
+            setImportConfirm({ plan, label: currentLabel });
+            return;
         }
+        executeImport(plan);
+    }
+
+    async function executeImport(plan: WorkoutPlan) {
+        if (!user) return;
+        setImportConfirm(null);
         setImportingPlan(true);
-        const allNames = Array.from(new Set(plan.workouts.flatMap((d) => d.exercises.map((e) => e.name).filter(Boolean))));
-        const { data: exRows } = await supabase.from("exercises").select("id, name").in("name", allNames);
-        const idByName: Record<string, string> = {};
-        (exRows ?? []).forEach((e: any) => { idByName[e.name] = e.id; });
-        const weekdays = parseSchedule(plan.schedule);
-        for (const day of plan.workouts) {
-            const wd = weekdays[day.dayNum - 1];
-            if (wd === undefined) continue;
-            const templateName = `${plan.name} — ${day.focus}`;
-            const { data: template } = await supabase.from("workout_templates").insert({ user_id: user.id, name: templateName }).select("id").single();
-            if (!template) continue;
+        try {
+            const allNames = Array.from(new Set(plan.workouts.flatMap((d) => d.exercises.map((e) => e.name).filter(Boolean))));
+            const { data: exRows } = await supabase.from("exercises").select("id, name").in("name", allNames);
+            const idByName: Record<string, string> = {};
+            (exRows ?? []).forEach((e: any) => { idByName[e.name] = e.id; });
+            const unmatched = allNames.filter((n) => !idByName[n]);
+            if (unmatched.length > 0) {
+                const { data: allEx } = await supabase.from("exercises").select("id, name");
+                if (allEx) {
+                    const lowerMap: Record<string, { id: string; name: string }> = {};
+                    allEx.forEach((e: any) => { lowerMap[e.name.toLowerCase()] = e; });
+                    for (const name of unmatched) {
+                        const found = lowerMap[name.toLowerCase()];
+                        if (found) idByName[name] = found.id;
+                    }
+                }
+            }
             function parseRest(rest: string): number | null { const m = rest.match(/(\d+)/); return m ? parseInt(m[1], 10) : null; }
-            const rows = day.exercises.map((ex, i) => ({ template_id: template.id, user_id: user.id, exercise_id: idByName[ex.name], order_index: i, target_sets: ex.sets, target_reps: ex.reps, rest_seconds: parseRest(ex.rest) })).filter((r) => r.exercise_id);
-            if (rows.length) await supabase.from("workout_template_exercises").insert(rows);
-            await supabase.from("recurring_plans").upsert({ user_id: user.id, weekday: wd, template_id: template.id, is_rest: false }, { onConflict: "user_id,weekday" });
+            const weekdays = parseSchedule(plan.schedule);
+            for (const day of plan.workouts) {
+                const wd = weekdays[day.dayNum - 1];
+                if (wd === undefined) continue;
+                const templateName = `${plan.name} — ${day.focus}`;
+                const { data: template } = await supabase.from("workout_templates").insert({ user_id: user.id, name: templateName }).select("id").single();
+                if (!template) continue;
+                const rows = day.exercises.map((ex, i) => ({ template_id: template.id, user_id: user.id, exercise_id: idByName[ex.name], order_index: i, target_sets: ex.sets, target_reps: ex.reps, rest_seconds: parseRest(ex.rest) })).filter((r) => r.exercise_id);
+                if (rows.length) await supabase.from("workout_template_exercises").insert(rows);
+                await supabase.from("recurring_plans").upsert({ user_id: user.id, weekday: wd, template_id: template.id, is_rest: false }, { onConflict: "user_id,weekday" });
+            }
+            await loadRecurring();
+            setPlanBrowserOpen(false);
+        } catch (e) {
+            console.error("Plan import failed:", e);
+        } finally {
+            setImportingPlan(false);
         }
-        await loadRecurring();
-        setImportingPlan(false);
-        setPlanBrowserOpen(false);
     }
 
     useEffect(() => {
@@ -685,12 +710,13 @@ export default function SchedulePage() {
             <div className="pointer-events-none fixed top-[-10%] left-1/2 -translate-x-1/2 w-[700px] h-[700px] bg-blue-600/15 rounded-full blur-[150px]" />
             <div className="pointer-events-none fixed bottom-[-15%] right-[5%] w-[500px] h-[500px] bg-[rgb(var(--accent-rgb)/0.1)] rounded-full blur-[130px]" />
             <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(ellipse_at_center,transparent_20%,rgba(0,0,0,0.7)_100%)]" />
+            <div className="pointer-events-none fixed inset-0 opacity-[0.03]" style={{ backgroundImage: "repeating-linear-gradient(0deg, #fff 0px, #fff 1px, transparent 1px, transparent 3px)" }} />
 
             <div className="relative z-10 w-full max-w-xl mx-auto space-y-5">
                 {/* ─── Header ─── */}
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-xl md:text-2xl font-bold tracking-wide text-white/90">Schedule</h1>
+                        <h1 className="text-xl md:text-2xl font-bold tracking-wide text-[rgb(var(--accent-light-rgb))]">Schedule</h1>
                         <p className="text-white/35 text-xs mt-0.5 font-mono">
                             {hasPlan ? `${trainingDays} training · ${restDays} rest · ${7 - trainingDays - restDays} unset` : "Set your week once. It repeats."}
                         </p>
@@ -1018,6 +1044,26 @@ export default function SchedulePage() {
             {showDatabase && <ExerciseDatabaseModal onClose={() => setShowDatabase(false)} />}
             {showMusclePicker && <MusclePickerModal onClose={() => setShowMusclePicker(false)} />}
             <PlanBrowserModal open={planBrowserOpen} onClose={() => setPlanBrowserOpen(false)} onImport={importPlanFromLibrary} importing={importingPlan} />
+
+            {importConfirm && createPortal(
+                <div className="fixed inset-0 z-[210] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+                    <div className="w-full max-w-sm rounded-2xl border border-white/[0.08] bg-[#080d18] p-5">
+                        <p className="text-sm font-semibold text-white/85 mb-2">Switch plan?</p>
+                        <p className="text-[11px] text-white/35 mb-4">
+                            Replace <span className="text-white/60">{importConfirm.label}</span> with <span className="text-white/60">{importConfirm.plan.name}</span>? This will update the days this plan uses.
+                        </p>
+                        <div className="flex gap-2">
+                            <button onClick={() => setImportConfirm(null)} className="flex-1 text-sm font-medium py-2.5 rounded-xl border border-white/[0.08] text-white/50 hover:text-white/80 transition">
+                                Cancel
+                            </button>
+                            <button onClick={() => executeImport(importConfirm.plan)} className="flex-1 text-sm font-semibold py-2.5 rounded-xl bg-[rgb(var(--accent-rgb))] text-black hover:brightness-110 transition">
+                                Switch
+                            </button>
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
         </main>
     );
 }

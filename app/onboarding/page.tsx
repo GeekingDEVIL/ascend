@@ -11,6 +11,7 @@ import { supabase } from "../lib/supabase";
 import { useAuth } from "../lib/AuthProvider";
 import { GOAL_OPTIONS } from "../lib/goals";
 import CustomSelect from "../components/CustomSelect";
+import type { GoalType, ActivityLevel, DietPreference, Sex } from "../lib/calorieEngine";
 
 const EXPERIENCE_LEVELS = ["beginner", "intermediate", "advanced"] as const;
 const GENDER_OPTIONS = ["Male", "Female", "Other", "Prefer not to say"];
@@ -63,7 +64,32 @@ const ALL_EQUIPMENT = EQUIPMENT_GROUPS.flatMap((g) => g.items.map((i) => i.value
 
 const DURATION_OPTIONS = ["15-30", "30-45", "45-60", "60-90", "90+"];
 
-const TOTAL_STEPS = 12;
+const ONBOARD_ACTIVITY_OPTIONS: { value: ActivityLevel; label: string; desc: string }[] = [
+    { value: "sedentary", label: "Sedentary", desc: "Desk job, little exercise" },
+    { value: "light", label: "Lightly Active", desc: "Light exercise 1-2 days/week" },
+    { value: "moderate", label: "Moderately Active", desc: "Moderate exercise 3-5 days/week" },
+    { value: "active", label: "Very Active", desc: "Hard exercise 6-7 days/week" },
+    { value: "very_active", label: "Athlete", desc: "Intense training / physical job" },
+];
+
+const ONBOARD_GOAL_TYPE_OPTIONS: { value: GoalType; label: string; desc: string }[] = [
+    { value: "lose_weight", label: "Lose Weight", desc: "Calorie deficit + strength training" },
+    { value: "gain_muscle", label: "Build Muscle", desc: "Calorie surplus + progressive overload" },
+    { value: "body_recomp", label: "Body Recomp", desc: "Lose fat + gain muscle simultaneously" },
+    { value: "maintain", label: "Maintain", desc: "Stay at current weight and fitness" },
+    { value: "general_fitness", label: "General Fitness", desc: "Overall health and performance" },
+];
+
+const ONBOARD_DIET_OPTIONS: { value: DietPreference; label: string }[] = [
+    { value: "balanced", label: "Balanced" },
+    { value: "high_protein", label: "High Protein" },
+    { value: "low_carb", label: "Low Carb" },
+    { value: "keto", label: "Keto" },
+];
+
+const DAYS_OF_WEEK = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+const TOTAL_STEPS = 15;
 
 type OnboardingProfilePatch = {
     goal?: string;
@@ -108,6 +134,13 @@ export default function OnboardingPage() {
     const [frequency, setFrequency] = useState(3);
     const [duration, setDuration] = useState("");
     const [saving, setSaving] = useState(false);
+
+    const [activityLevel, setActivityLevel] = useState<ActivityLevel>("moderate");
+    const [goalType, setGoalType] = useState<GoalType>("general_fitness");
+    const [targetWeight, setTargetWeight] = useState("");
+    const [ratePerWeek, setRatePerWeek] = useState("0.5");
+    const [dietPref, setDietPref] = useState<DietPreference>("balanced");
+    const [preferredDays, setPreferredDays] = useState<string[]>([]);
 
     const weightLoggedRef = useRef(false);
 
@@ -191,9 +224,44 @@ export default function OnboardingPage() {
     }
 
     async function handleGoToSchedule() {
+        if (!user) return;
         setSaving(true);
         await logWeightIfNeeded();
-        await persist({ ...currentPatch(), onboarding_step: TOTAL_STEPS, onboarding_completed_at: new Date().toISOString() });
+
+        const sex: Sex | null = gender === "Male" ? "male" : gender === "Female" ? "female" : null;
+        await persist({
+            ...currentPatch(),
+            onboarding_step: TOTAL_STEPS,
+            onboarding_completed_at: new Date().toISOString(),
+        });
+        await supabase.from("profiles").update({
+            sex,
+            activity_level: activityLevel,
+            onboarding_completed: true,
+        }).eq("id", user.id);
+
+        await supabase.from("user_goals").insert({
+            user_id: user.id,
+            goal_type: goalType,
+            target_weight_kg: targetWeight ? Number(targetWeight) : null,
+            rate_per_week_kg: ratePerWeek ? Number(ratePerWeek) : 0.5,
+            workouts_per_week: frequency,
+            preferred_days: preferredDays,
+            diet_preference: dietPref,
+            is_active: true,
+        });
+
+        const DAY_TO_WEEKDAY: Record<string, number> = { Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6, Sun: 0 };
+        if (preferredDays.length > 0) {
+            const rows = [0, 1, 2, 3, 4, 5, 6].map((wd) => ({
+                user_id: user.id,
+                weekday: wd,
+                template_id: null,
+                is_rest: !preferredDays.some((d) => DAY_TO_WEEKDAY[d] === wd),
+            }));
+            await supabase.from("recurring_plans").upsert(rows, { onConflict: "user_id,weekday" });
+        }
+
         setSaving(false);
         router.push("/schedule");
     }
@@ -325,7 +393,93 @@ export default function OnboardingPage() {
 
                     {step === 6 && (
                         <div>
-                            <StepHeader n={6} skippable />
+                            <p className="text-[10px] font-mono tracking-[0.2em] text-[rgb(var(--accent-light-rgb)/0.6)] mb-1">STEP 6 OF {TOTAL_STEPS}</p>
+                            <h2 className="text-2xl font-bold text-white/95 mb-1">How active are you?</h2>
+                            <p className="text-sm text-white/40 mb-6">Outside of your gym sessions, how active is your lifestyle?</p>
+                            <div className="space-y-2">
+                                {ONBOARD_ACTIVITY_OPTIONS.map((opt) => (
+                                    <button key={opt.value} onClick={() => setActivityLevel(opt.value)}
+                                        className={`w-full flex items-center justify-between text-left px-3.5 py-3 rounded-lg border transition ${activityLevel === opt.value ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)]" : "border-white/10 hover:border-white/20"}`}>
+                                        <span className={`text-sm font-mono ${activityLevel === opt.value ? "text-[rgb(var(--accent-light-rgb))]" : "text-white/70"}`}>{opt.label}</span>
+                                        <span className="text-[10px] font-mono text-white/25">{opt.desc}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {step === 7 && (
+                        <div>
+                            <p className="text-[10px] font-mono tracking-[0.2em] text-[rgb(var(--accent-light-rgb)/0.6)] mb-1">STEP 7 OF {TOTAL_STEPS}</p>
+                            <h2 className="text-2xl font-bold text-white/95 mb-1">What's your primary goal?</h2>
+                            <p className="text-sm text-white/40 mb-6">This drives your calorie and macro recommendations.</p>
+                            <div className="space-y-2">
+                                {ONBOARD_GOAL_TYPE_OPTIONS.map((opt) => (
+                                    <button key={opt.value} onClick={() => setGoalType(opt.value)}
+                                        className={`w-full text-left px-3.5 py-3 rounded-lg border transition ${goalType === opt.value ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)]" : "border-white/10 hover:border-white/20"}`}>
+                                        <span className={`block text-sm font-bold ${goalType === opt.value ? "text-white/95" : "text-white/80"}`}>{opt.label}</span>
+                                        <span className="block text-[11px] text-white/40">{opt.desc}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {step === 8 && (
+                        <div>
+                            <StepHeader n={8} skippable />
+                            <h2 className="text-2xl font-bold text-white/95 mb-1">Nutrition preferences</h2>
+                            <p className="text-sm text-white/40 mb-6">Fine-tune your calorie and macro targets.</p>
+
+                            {(goalType === "lose_weight" || goalType === "gain_muscle") && (
+                                <div className="space-y-3 mb-5">
+                                    <div>
+                                        <label className="text-[9px] font-mono text-white/30 mb-1 block">TARGET WEIGHT (KG)</label>
+                                        <input type="number" min="0" onWheel={(e) => (e.target as HTMLElement).blur()} value={targetWeight} onChange={(e) => setTargetWeight(e.target.value)} placeholder="Optional"
+                                            className="w-full h-11 rounded-lg bg-white/[0.04] border border-white/[0.08] text-center text-base font-bold font-mono placeholder:text-white/15 focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition" />
+                                    </div>
+                                    <div>
+                                        <label className="text-[9px] font-mono text-white/30 mb-1 block">RATE (KG/WEEK)</label>
+                                        <input type="number" min="0.1" max="1.5" step="0.1" onWheel={(e) => (e.target as HTMLElement).blur()} value={ratePerWeek} onChange={(e) => setRatePerWeek(e.target.value)}
+                                            className="w-full h-11 rounded-lg bg-white/[0.04] border border-white/[0.08] text-center text-base font-bold font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition" />
+                                        <p className="text-[8px] font-mono text-white/20 mt-1">{goalType === "lose_weight" ? "0.5 kg/week is safe and sustainable" : "0.25 kg/week minimizes fat gain"}</p>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div>
+                                <label className="text-[9px] font-mono text-white/30 mb-1.5 block">DIET STYLE</label>
+                                <div className="grid grid-cols-2 gap-2">
+                                    {ONBOARD_DIET_OPTIONS.map((opt) => (
+                                        <button key={opt.value} onClick={() => setDietPref(opt.value)}
+                                            className={`text-sm font-mono py-3 rounded-lg border transition ${dietPref === opt.value ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/10 text-white/40 hover:text-white/70"}`}>
+                                            {opt.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="mt-5">
+                                <label className="text-[9px] font-mono text-white/30 mb-1.5 block">PREFERRED TRAINING DAYS</label>
+                                <div className="flex gap-1.5">
+                                    {DAYS_OF_WEEK.map((day) => {
+                                        const sel = preferredDays.includes(day);
+                                        return (
+                                            <button key={day} onClick={() => setPreferredDays((prev) => sel ? prev.filter((d) => d !== day) : [...prev, day])}
+                                                className={`flex-1 text-[10px] font-mono py-2.5 rounded-lg border transition ${sel ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/10 text-white/30 hover:text-white/60"}`}>
+                                                {day}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                                <p className="text-[8px] font-mono text-white/20 mt-1">{preferredDays.length} days selected — editable later in Goals</p>
+                            </div>
+                        </div>
+                    )}
+
+                    {step === 9 && (
+                        <div>
+                            <StepHeader n={9} skippable />
                             <h2 className="text-2xl font-bold text-white/95 mb-1">Choose a balanced or focused plan</h2>
                             <p className="text-sm text-white/40 mb-6">This shapes exercise selection in your templates.</p>
                             <div className="space-y-2">
@@ -349,9 +503,9 @@ export default function OnboardingPage() {
                         </div>
                     )}
 
-                    {step === 7 && (
+                    {step === 10 && (
                         <div>
-                            <p className="text-[10px] font-mono tracking-[0.2em] text-[rgb(var(--accent-light-rgb)/0.6)] mb-1">STEP 7 OF {TOTAL_STEPS}</p>
+                            <p className="text-[10px] font-mono tracking-[0.2em] text-[rgb(var(--accent-light-rgb)/0.6)] mb-1">STEP 10 OF {TOTAL_STEPS}</p>
                             <h2 className="text-2xl font-bold text-white/95 mb-1">Where do you train?</h2>
                             <p className="text-sm text-white/40 mb-6">This tailors which equipment we'll suggest.</p>
                             <div className="space-y-2">
@@ -375,9 +529,9 @@ export default function OnboardingPage() {
                         </div>
                     )}
 
-                    {step === 8 && (
+                    {step === 11 && (
                         <div>
-                            <StepHeader n={8} skippable />
+                            <StepHeader n={11} skippable />
                             <h2 className="text-2xl font-bold text-white/95 mb-1">What equipment do you have access to?</h2>
                             <div className="flex items-center justify-between mb-4">
                                 <p className="text-sm text-white/40">Toggle what you have. Editable later in Settings.</p>
@@ -413,9 +567,9 @@ export default function OnboardingPage() {
                         </div>
                     )}
 
-                    {step === 9 && (
+                    {step === 12 && (
                         <div>
-                            <p className="text-[10px] font-mono tracking-[0.2em] text-[rgb(var(--accent-light-rgb)/0.6)] mb-1">STEP 9 OF {TOTAL_STEPS}</p>
+                            <p className="text-[10px] font-mono tracking-[0.2em] text-[rgb(var(--accent-light-rgb)/0.6)] mb-1">STEP 12 OF {TOTAL_STEPS}</p>
                             <h2 className="text-2xl font-bold text-white/95 mb-1">Training frequency</h2>
                             <p className="text-sm text-white/40 mb-6">How many days a week do you want to train?</p>
                             <label className="text-[9px] font-mono text-white/30 mb-1 block">DAYS PER WEEK: {frequency}</label>
@@ -426,9 +580,9 @@ export default function OnboardingPage() {
                         </div>
                     )}
 
-                    {step === 10 && (
+                    {step === 13 && (
                         <div>
-                            <p className="text-[10px] font-mono tracking-[0.2em] text-[rgb(var(--accent-light-rgb)/0.6)] mb-1">STEP 10 OF {TOTAL_STEPS}</p>
+                            <p className="text-[10px] font-mono tracking-[0.2em] text-[rgb(var(--accent-light-rgb)/0.6)] mb-1">STEP 13 OF {TOTAL_STEPS}</p>
                             <h2 className="text-2xl font-bold text-white/95 mb-1">Session length</h2>
                             <p className="text-sm text-white/40 mb-6">How long do you usually train for?</p>
                             <div className="grid grid-cols-2 gap-2">
@@ -442,18 +596,18 @@ export default function OnboardingPage() {
                         </div>
                     )}
 
-                    {step === 11 && (
+                    {step === 14 && (
                         <div className="text-center py-4">
                             <div className="w-14 h-14 mx-auto rounded-lg bg-[rgb(var(--accent-rgb)/0.15)] border border-[rgb(var(--accent-light-rgb)/0.3)] flex items-center justify-center mb-5">
                                 <BarChart3 size={26} className="text-[rgb(var(--accent-light-rgb))]" />
                             </div>
-                            <p className="text-[10px] font-mono tracking-[0.2em] text-[rgb(var(--accent-light-rgb)/0.6)] mb-1">STEP 11 OF {TOTAL_STEPS}</p>
+                            <p className="text-[10px] font-mono tracking-[0.2em] text-[rgb(var(--accent-light-rgb)/0.6)] mb-1">STEP 14 OF {TOTAL_STEPS}</p>
                             <h2 className="text-2xl font-bold text-white/95 mb-2">Your training adapts as you go</h2>
                             <p className="text-sm text-white/40 max-w-xs mx-auto">ASCEND tracks your volume, recovery, and PRs after every session, and adjusts recommendations automatically — no manual reprogramming needed.</p>
                         </div>
                     )}
 
-                    {step === 12 && (
+                    {step === 15 && (
                         <div>
                             <div className="w-12 h-12 rounded-lg bg-[rgb(var(--accent-rgb)/0.15)] border border-[rgb(var(--accent-light-rgb)/0.3)] flex items-center justify-center mb-4">
                                 <Sparkles size={22} className="text-[rgb(var(--accent-light-rgb))]" />

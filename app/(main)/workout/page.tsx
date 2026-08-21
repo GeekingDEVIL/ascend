@@ -165,6 +165,7 @@ export default function WorkoutPage() {
     const [startingFreestyle, setStartingFreestyle] = useState(false);
     const [showFreestylePrompt, setShowFreestylePrompt] = useState(false);
     const [savingFreestylePlan, setSavingFreestylePlan] = useState(false);
+    const [finishing, setFinishing] = useState(false);
 
     const today = toDateString(new Date());
     const loadInFlight = useRef(false);
@@ -434,17 +435,25 @@ export default function WorkoutPage() {
         if (!user || !sessionId) return;
         const set = logs[ex.id]?.find((s) => s.index === idx);
         if (!set) return;
+        if (ex.isCardio) {
+            if (!set.duration && !set.distance) return;
+        } else if (!ex.isBodyweight) {
+            if (!set.reps) return;
+        } else {
+            if (!set.reps) return;
+        }
         const payload: any = { workout_session_id: sessionId, user_id: user.id, exercise_id: ex.exercise_id, scheduled_exercise_id: ex.id, set_index: idx };
         if (ex.isCardio) { payload.duration_seconds = set.duration ? Number(set.duration) : null; payload.distance = set.distance ? Number(set.distance) : null; }
         else { payload.weight = ex.isBodyweight ? 0 : (set.weight ? Number(set.weight) : null); payload.reps = set.reps ? Number(set.reps) : null; }
 
+        setLogs((p) => ({ ...p, [ex.id]: p[ex.id].map((s) => (s.index === idx ? { ...s, completed: true } : s)) }));
+        if (navigator.vibrate) navigator.vibrate(50);
+        if (!ex.isCardio && !ex.isBodyweight && set.weight && set.reps) checkPR(ex.exercise_id, ex.name, Number(set.weight), Number(set.reps));
+
         let logId = set.logId;
         if (logId) { await supabase.from("exercise_set_logs").update(payload).eq("id", logId); }
         else { const { data } = await supabase.from("exercise_set_logs").insert(payload).select().single(); logId = data?.id ?? null; }
-
-        setLogs((p) => ({ ...p, [ex.id]: p[ex.id].map((s) => (s.index === idx ? { ...s, completed: true, logId } : s)) }));
-        if (navigator.vibrate) navigator.vibrate(50);
-        if (!ex.isCardio && !ex.isBodyweight && set.weight && set.reps) checkPR(ex.exercise_id, ex.name, Number(set.weight), Number(set.reps));
+        setLogs((p) => ({ ...p, [ex.id]: p[ex.id].map((s) => (s.index === idx ? { ...s, logId } : s)) }));
         // Don't auto-start rest timer — user taps to start if they want
     }
 
@@ -488,7 +497,8 @@ export default function WorkoutPage() {
     function addSet(exId: string) { setLogs((p) => ({ ...p, [exId]: [...p[exId], emptySet(p[exId].length)] })); }
 
     async function finishWorkout() {
-        if (!user || !sessionId || !startedAt) return;
+        if (!user || !sessionId || !startedAt || finishing) return;
+        setFinishing(true);
         const allSets = Object.values(logs).flat().filter((s) => s.completed);
         const totalSets = allSets.length;
         const totalVolume = allSets.reduce((sum, s) => sum + (Number(s.weight) || 0) * (Number(s.reps) || 0), 0);
@@ -552,6 +562,10 @@ export default function WorkoutPage() {
         const ctx = canvas.getContext("2d");
         if (!ctx) return null;
 
+        const raw = getComputedStyle(document.documentElement).getPropertyValue("--accent-rgb").trim();
+        const accent = raw ? `rgb(${raw})` : "#22d3ee";
+        const accentA = (a: number) => raw ? `rgba(${raw},${a})` : `rgba(34,211,238,${a})`;
+
         // Background
         const bg = ctx.createLinearGradient(0, 0, 0, 1920);
         bg.addColorStop(0, "#0a1524");
@@ -560,15 +574,15 @@ export default function WorkoutPage() {
         ctx.fillRect(0, 0, 1080, 1920);
 
         const glow = ctx.createRadialGradient(540, 300, 50, 540, 300, 700);
-        glow.addColorStop(0, "rgb(var(--accent-rgb) / 0.18)");
-        glow.addColorStop(1, "rgb(var(--accent-rgb) / 0)");
+        glow.addColorStop(0, accentA(0.18));
+        glow.addColorStop(1, accentA(0));
         ctx.fillStyle = glow;
         ctx.fillRect(0, 0, 1080, 1920);
 
         ctx.textAlign = "center";
 
         // Logo
-        ctx.fillStyle = "rgb(var(--accent-rgb))";
+        ctx.fillStyle = accent;
         ctx.font = "bold 64px ui-monospace, monospace";
         ctx.fillText("ASCEND", 540, 180);
         ctx.fillStyle = "rgba(255,255,255,0.3)";
@@ -576,7 +590,7 @@ export default function WorkoutPage() {
         ctx.fillText("YOUR TRAINING SYSTEM", 540, 220);
 
         // Title + date
-        ctx.fillStyle = "rgb(var(--accent-rgb) / 0.6)";
+        ctx.fillStyle = accentA(0.6);
         ctx.font = "28px ui-monospace, monospace";
         ctx.fillText("SESSION COMPLETE", 540, 420);
         ctx.fillStyle = "#ffffff";
@@ -590,12 +604,12 @@ export default function WorkoutPage() {
         const badgeText = `LVL ${summary.level} · ${summary.rankName}`;
         ctx.font = "bold 34px ui-monospace, monospace";
         const badgeW = Math.max(300, ctx.measureText(badgeText).width + 100);
-        ctx.strokeStyle = "rgb(var(--accent-rgb) / 0.5)";
+        ctx.strokeStyle = accentA(0.5);
         ctx.lineWidth = 3;
         ctx.beginPath();
         ctx.roundRect(540 - badgeW / 2, 650, badgeW, 90, 45);
         ctx.stroke();
-        ctx.fillStyle = "rgb(var(--accent-rgb))";
+        ctx.fillStyle = accent;
         ctx.fillText(badgeText, 540, 707);
 
         // Stats grid
@@ -620,7 +634,7 @@ export default function WorkoutPage() {
             ctx.fillStyle = "rgba(255,255,255,0.35)";
             ctx.font = "24px ui-monospace, monospace";
             ctx.fillText(label, x + cellW / 2, y + 70);
-            ctx.fillStyle = i === 3 ? "rgb(var(--accent-rgb))" : "#ffffff";
+            ctx.fillStyle = i === 3 ? accent : "#ffffff";
             ctx.font = "bold 56px ui-monospace, monospace";
             ctx.fillText(value, x + cellW / 2, y + 150);
         });
@@ -682,8 +696,10 @@ export default function WorkoutPage() {
 
     // ── LOADING ──
     if (status === "loading") return (
-        <main className="min-h-screen bg-[#050914] text-white flex items-center justify-center">
-            <div className="text-center">
+        <main className="min-h-screen bg-[#050914] text-white flex items-center justify-center relative">
+            <div className="pointer-events-none fixed inset-0 opacity-[0.03]" style={{ backgroundImage: "repeating-linear-gradient(0deg, #fff 0px, #fff 1px, transparent 1px, transparent 3px)" }} />
+            <div className="pointer-events-none fixed top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[rgb(var(--accent-rgb)/0.06)] rounded-full blur-[120px]" />
+            <div className="relative z-10 text-center">
                 <div className="w-7 h-7 border-2 border-[rgb(var(--accent-rgb)/0.4)] border-t-[rgb(var(--accent-rgb))] rounded-full animate-spin mx-auto mb-3" />
                 <p className="text-xs font-mono text-white/30">Loading workout...</p>
             </div>
@@ -692,8 +708,10 @@ export default function WorkoutPage() {
 
     // ── REST DAY ──
     if (status === "rest_day") return (
-        <main className="min-h-screen bg-[#050914] text-white flex items-center justify-center p-6">
-            <div className="text-center">
+        <main className="min-h-screen bg-[#050914] text-white flex items-center justify-center p-6 relative">
+            <div className="pointer-events-none fixed inset-0 opacity-[0.03]" style={{ backgroundImage: "repeating-linear-gradient(0deg, #fff 0px, #fff 1px, transparent 1px, transparent 3px)" }} />
+            <div className="pointer-events-none fixed top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[rgb(var(--accent-rgb)/0.06)] rounded-full blur-[120px]" />
+            <div className="relative z-10 text-center">
                 <div className="w-14 h-14 mx-auto mb-4 rounded-2xl border border-emerald-400/20 bg-emerald-400/10 flex items-center justify-center">
                     <Moon size={24} className="text-emerald-400" />
                 </div>
@@ -705,8 +723,10 @@ export default function WorkoutPage() {
 
     // ── NO PLAN ──
     if (status === "no_plan") return (
-        <main className="min-h-screen bg-[#050914] text-white p-4 pb-24">
-            <div className="max-w-xl mx-auto pt-10">
+        <main className="min-h-screen bg-[#050914] text-white p-4 pb-24 relative">
+            <div className="pointer-events-none fixed inset-0 opacity-[0.03]" style={{ backgroundImage: "repeating-linear-gradient(0deg, #fff 0px, #fff 1px, transparent 1px, transparent 3px)" }} />
+            <div className="pointer-events-none fixed top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[rgb(var(--accent-rgb)/0.06)] rounded-full blur-[120px]" />
+            <div className="relative z-10 max-w-xl mx-auto pt-10">
                 <div className="text-center mb-8">
                     <div className="w-12 h-12 mx-auto mb-4 rounded-2xl border border-white/[0.08] bg-white/[0.03] flex items-center justify-center">
                         <Dumbbell size={20} className="text-white/25" />
@@ -738,12 +758,14 @@ export default function WorkoutPage() {
 
     // ── FREESTYLE (BUILD) ──
     if (status === "freestyle") return (
-        <main className="min-h-screen bg-[#050914] text-white pb-24">
-            <div className="max-w-xl mx-auto px-4 pt-6">
+        <main className="min-h-screen bg-[#050914] text-white pb-24 relative">
+            <div className="pointer-events-none fixed inset-0 opacity-[0.03]" style={{ backgroundImage: "repeating-linear-gradient(0deg, #fff 0px, #fff 1px, transparent 1px, transparent 3px)" }} />
+            <div className="pointer-events-none fixed top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[rgb(var(--accent-rgb)/0.06)] rounded-full blur-[120px]" />
+            <div className="relative z-10 max-w-xl mx-auto px-4 pt-6">
                 <button onClick={() => { setFreestyleExercises([]); setStatus(exercisesList.length > 0 ? "not_started" : "no_plan"); }} className="text-[10px] font-mono text-white/30 hover:text-white/60 transition mb-4">
                     ← Back
                 </button>
-                <h1 className="text-xl font-bold text-white/90 mb-1">Freestyle Session</h1>
+                <h1 className="text-xl font-bold text-[rgb(var(--accent-light-rgb))] mb-1">Freestyle Session</h1>
                 <p className="text-[11px] text-white/30 mb-5">Pick exercises and start training</p>
 
                 <button onClick={() => setShowFreestyleAddModal(true)} className="w-full flex items-center justify-center gap-2 text-sm font-medium py-3 rounded-xl border border-[rgb(var(--accent-rgb)/0.2)] bg-[rgb(var(--accent-rgb)/0.05)] text-[rgb(var(--accent-rgb))] hover:bg-[rgb(var(--accent-rgb)/0.1)] transition mb-4">
@@ -788,8 +810,10 @@ export default function WorkoutPage() {
 
     // ── COMPLETED ──
     if (status === "completed" && summary) return (
-        <main className="min-h-screen bg-[#050914] text-white flex items-center justify-center p-4">
-            <div className="w-full max-w-xl">
+        <main className="min-h-screen bg-[#050914] text-white flex items-center justify-center p-4 relative">
+            <div className="pointer-events-none fixed inset-0 opacity-[0.03]" style={{ backgroundImage: "repeating-linear-gradient(0deg, #fff 0px, #fff 1px, transparent 1px, transparent 3px)" }} />
+            <div className="pointer-events-none fixed top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[rgb(var(--accent-rgb)/0.06)] rounded-full blur-[120px]" />
+            <div className="relative z-10 w-full max-w-xl">
                 <CardPanel className="p-5">
                     <div className="text-center mb-5">
                         <div className="w-12 h-12 mx-auto mb-3 rounded-2xl bg-[rgb(var(--accent-rgb)/0.1)] border border-[rgb(var(--accent-rgb)/0.2)] flex items-center justify-center">
@@ -852,8 +876,10 @@ export default function WorkoutPage() {
 
     if (status === "completed_today") {
         return (
-            <main className="min-h-screen bg-[#050914] text-white flex items-center justify-center p-4">
-                <div className="w-full max-w-xl">
+            <main className="min-h-screen bg-[#050914] text-white flex items-center justify-center p-4 relative">
+                <div className="pointer-events-none fixed inset-0 opacity-[0.03]" style={{ backgroundImage: "repeating-linear-gradient(0deg, #fff 0px, #fff 1px, transparent 1px, transparent 3px)" }} />
+                <div className="pointer-events-none fixed top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[rgb(var(--accent-rgb)/0.06)] rounded-full blur-[120px]" />
+                <div className="relative z-10 w-full max-w-xl">
                     <CardPanel className="p-5">
                         <div className="text-center mb-5">
                             <div className="w-12 h-12 mx-auto mb-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
@@ -890,14 +916,16 @@ export default function WorkoutPage() {
 
     // ── NOT STARTED / ACTIVE ──
     return (
-        <main className="min-h-screen bg-[#050914] text-white pb-36 md:pb-10">
+        <main className="min-h-screen bg-[#050914] text-white pb-36 md:pb-10 relative">
+            <div className="pointer-events-none fixed inset-0 opacity-[0.03]" style={{ backgroundImage: "repeating-linear-gradient(0deg, #fff 0px, #fff 1px, transparent 1px, transparent 3px)" }} />
+            <div className="pointer-events-none fixed top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[rgb(var(--accent-rgb)/0.06)] rounded-full blur-[120px]" />
 
-            <div className="max-w-xl mx-auto px-4 pt-6 space-y-4">
+            <div className="relative z-10 max-w-xl mx-auto px-4 pt-6 space-y-4">
 
                 {/* ── TOP BAR ── */}
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-xl font-bold text-white/90">{dayTitle}</h1>
+                        <h1 className="text-xl font-bold text-[rgb(var(--accent-light-rgb))]">{dayTitle}</h1>
                         <p className="text-[10px] font-mono text-white/25 mt-0.5">
                             {status === "active" ? "Active session" : "Ready to start"}
                         </p>
@@ -1270,8 +1298,8 @@ export default function WorkoutPage() {
                             <button onClick={() => setShowEndConfirm(false)} className="flex-1 text-sm font-medium py-2.5 rounded-xl border border-white/[0.08] text-white/50 hover:text-white/80 transition">
                                 Keep Going
                             </button>
-                            <button onClick={() => { setShowEndConfirm(false); finishWorkout(); }} className="flex-1 text-sm font-semibold py-2.5 rounded-xl bg-[rgb(var(--accent-rgb))] text-black hover:brightness-110 transition">
-                                Finish
+                            <button onClick={() => { setShowEndConfirm(false); finishWorkout(); }} disabled={finishing} className="flex-1 text-sm font-semibold py-2.5 rounded-xl bg-[rgb(var(--accent-rgb))] text-black hover:brightness-110 disabled:opacity-50 transition">
+                                {finishing ? "Finishing..." : "Finish"}
                             </button>
                         </div>
                     </div>

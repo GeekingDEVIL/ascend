@@ -102,11 +102,13 @@ export default function RankingsPage() {
     }
 
     return (
-        <main className="min-h-screen bg-[#050914] text-white pb-24 md:pb-10">
+        <main className="min-h-screen bg-[#050914] text-white pb-24 md:pb-10 relative">
+            <div className="pointer-events-none fixed inset-0 opacity-[0.03]" style={{ backgroundImage: "repeating-linear-gradient(0deg, #fff 0px, #fff 1px, transparent 1px, transparent 3px)" }} />
+            <div className="pointer-events-none fixed top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[rgb(var(--accent-rgb)/0.06)] rounded-full blur-[120px]" />
 
-            <div className="max-w-xl mx-auto px-4 pt-6 space-y-5">
+            <div className="relative z-10 max-w-xl mx-auto px-4 pt-6 space-y-5">
                 <div>
-                    <h1 className="text-xl font-bold text-white/90">Rankings</h1>
+                    <h1 className="text-xl font-bold text-[rgb(var(--accent-light-rgb))]">Rankings</h1>
                     <p className="text-[11px] text-white/30 mt-0.5">Your ascent through the ranks</p>
                 </div>
 
