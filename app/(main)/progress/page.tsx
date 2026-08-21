@@ -16,6 +16,15 @@ import { checkFeasibility, type FeasibilityVerdict } from "../../lib/energyGuard
 import { estimateObservedTdee, blendTdee, type TdeeEstimate } from "../../lib/energyEstimator";
 import { buildEnergyReceipt, type EnergyReceipt } from "../../lib/systemValue";
 import EnergyReceiptPanel from "../../components/EnergyReceipt";
+import { PredictionVsRealityCard, AnomalyCard, AdaptationCard, LeanMassCard, WeeklyBudgetCard, RecoveryCard, RecompCard, PatternWarningsCard } from "../../components/InsightsPanel";
+import { buildPredictionVsReality, type PredictionAccuracy } from "../../lib/predictionReality";
+import { explainWeightAnomaly, type AnomalyExplanation } from "../../lib/anomalyExplainer";
+import { detectAdaptation, type AdaptationSignal } from "../../lib/metabolicAdaptation";
+import { assessLeanMassSignal, type LeanMassSignal } from "../../lib/leanMassSignal";
+import { calcWeeklyBudget, type WeeklyBudget } from "../../lib/weeklyBudget";
+import { getRecoveryAdjustment, type RecoveryAdjustment } from "../../lib/recoveryEngine";
+import { assessRecomp, type RecompAssessment } from "../../lib/recompMode";
+import { detectPatterns, type PatternWarning } from "../../lib/energyGuardrails";
 
 const MEASUREMENT_TYPES: { type: MeasurementType; color: string; bar: string }[] = [
     { type: "Biceps", color: "text-pink-300", bar: "bg-pink-400" },
@@ -217,6 +226,14 @@ export default function ProgressPage() {
     const [adaptiveMode, setAdaptiveMode] = useState(false);
     const [energyReceipt, setEnergyReceipt] = useState<EnergyReceipt | null>(null);
     const [showReceipt, setShowReceipt] = useState(false);
+    const [insightPrediction, setInsightPrediction] = useState<PredictionAccuracy | null>(null);
+    const [insightAnomaly, setInsightAnomaly] = useState<AnomalyExplanation | null>(null);
+    const [insightAdaptation, setInsightAdaptation] = useState<AdaptationSignal | null>(null);
+    const [insightLeanMass, setInsightLeanMass] = useState<LeanMassSignal | null>(null);
+    const [insightBudget, setInsightBudget] = useState<WeeklyBudget | null>(null);
+    const [insightRecovery, setInsightRecovery] = useState<RecoveryAdjustment | null>(null);
+    const [insightRecomp, setInsightRecomp] = useState<RecompAssessment | null>(null);
+    const [insightPatterns, setInsightPatterns] = useState<PatternWarning[]>([]);
     const [myFoods, setMyFoods] = useState<{ id: string; label: string; kcal: number; protein_g: number; carbs_g: number; fat_g: number; use_count: number }[]>([]);
 
     const loadHistory = useCallback(async () => {
@@ -549,6 +566,85 @@ export default function ProgressPage() {
                 sex: prof.sex,
                 activity: prof.activity_level ?? "moderate",
             }));
+
+            const trendWeights = (trendRows ?? []).map((r: any) => ({ date: r.date, ema_kg: Number(r.ema_kg) }));
+            const dailyIntakes = (allIntake ?? []).map((r: any) => ({ date: r.date, kcal: Number(r.kcal) }));
+
+            if (trendWeights.length >= 7 && dailyIntakes.length >= 7) {
+                try {
+                    setInsightPrediction(buildPredictionVsReality({
+                        startDate: trendWeights[0].date,
+                        startWeightKg: trendWeights[0].ema_kg,
+                        dailyTarget: summary.calorieTarget,
+                        tdee: summary.tdee,
+                        actualWeights: trendWeights,
+                        intakes: dailyIntakes,
+                    }));
+                } catch { setInsightPrediction(null); }
+
+                try {
+                    const latestWeight = trendWeights[trendWeights.length - 1];
+                    const prevWeight = trendWeights.length >= 3 ? trendWeights[trendWeights.length - 3] : null;
+                    setInsightAnomaly(explainWeightAnomaly({
+                        todayKg: latestWeight.ema_kg,
+                        yesterdayKg: trendWeights.length >= 2 ? trendWeights[trendWeights.length - 2].ema_kg : null,
+                        trendKg: latestWeight.ema_kg,
+                        previousTrendKg: prevWeight?.ema_kg ?? null,
+                        recentCarbsG: null,
+                        hadLegDay: false,
+                        loggingAdherence: intakeAdherence ?? 0,
+                    }));
+                } catch { setInsightAnomaly(null); }
+
+                try {
+                    setInsightAdaptation(detectAdaptation({ tdeeEstimates: [] }));
+                } catch { setInsightAdaptation(null); }
+            }
+
+            const { data: strengthRows } = await supabase
+                .from("exercise_set_logs")
+                .select("created_at, weight, reps")
+                .eq("user_id", user!.id)
+                .gt("weight", 0)
+                .order("created_at", { ascending: true })
+                .limit(200);
+            const strengthData = (strengthRows ?? []).map((r: any) => ({
+                date: (r.created_at as string).split("T")[0],
+                estimated1rm: Number(r.weight) * (1 + Number(r.reps) / 30),
+            }));
+
+            if (trendWeights.length >= 7 && strengthData.length >= 3) {
+                try { setInsightLeanMass(assessLeanMassSignal({ weightTrend: trendWeights, strengthData })); } catch { setInsightLeanMass(null); }
+                if (g?.goal_type === "recomp" || g?.goal_type === "maintain") {
+                    try { setInsightRecomp(assessRecomp({ weightTrend: trendWeights, strengthData })); } catch { setInsightRecomp(null); }
+                } else { setInsightRecomp(null); }
+            }
+
+            const today = new Date().toISOString().split("T")[0];
+            const weekStart = new Date();
+            weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1);
+            const weekDays = dailyIntakes.filter(d => d.date >= weekStart.toISOString().split("T")[0] && d.date <= today);
+            try {
+                setInsightBudget(calcWeeklyBudget({
+                    dailyTarget: summary.calorieTarget,
+                    intakes: dailyIntakes,
+                    today,
+                }));
+            } catch { setInsightBudget(null); }
+
+            try {
+                setInsightRecovery(getRecoveryAdjustment({ tdee: summary.tdee, calorieTarget: summary.calorieTarget }));
+            } catch { setInsightRecovery(null); }
+
+            try {
+                setInsightPatterns(detectPatterns({
+                    currentKg: bwLatest,
+                    heightCm: prof.height_cm,
+                    targetKg: g?.target_weight_kg ? Number(g.target_weight_kg) : null,
+                    weightTrend: trendWeights.slice(-14),
+                    loggingAdherence: intakeAdherence ?? undefined,
+                }));
+            } catch { setInsightPatterns([]); }
         }
     }, [user, bodyWeightData]);
 
@@ -1726,6 +1822,21 @@ export default function ProgressPage() {
                                         <Flame size={20} className="mx-auto text-white/15 mb-2" />
                                         <p className="text-xs font-mono text-white/30">No entries for this day.</p>
                                         <p className="text-[9px] font-mono text-white/15 mt-1">Log your meals to track daily intake and build adherence.</p>
+                                    </div>
+                                )}
+
+                                {/* ── INSIGHTS ── */}
+                                {(insightBudget || insightPrediction || insightAnomaly || insightAdaptation || insightLeanMass || insightRecovery || insightRecomp || insightPatterns.length > 0) && (
+                                    <div className="space-y-3 mt-4">
+                                        <p className="text-[10px] font-mono tracking-widest text-white/25">INSIGHTS</p>
+                                        {insightPatterns.length > 0 && <PatternWarningsCard warnings={insightPatterns} />}
+                                        {insightBudget && <WeeklyBudgetCard data={insightBudget} />}
+                                        {insightRecovery && <RecoveryCard data={insightRecovery} />}
+                                        {insightAnomaly && <AnomalyCard data={insightAnomaly} />}
+                                        {insightPrediction && <PredictionVsRealityCard data={insightPrediction} />}
+                                        {insightAdaptation && <AdaptationCard data={insightAdaptation} />}
+                                        {insightLeanMass && <LeanMassCard data={insightLeanMass} />}
+                                        {insightRecomp && <RecompCard data={insightRecomp} />}
                                     </div>
                                 )}
                             </div>
