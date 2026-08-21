@@ -51,6 +51,7 @@ export default function Dashboard() {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [notifLoaded, setNotifLoaded] = useState(false);
   const [calorieSummary, setCalorieSummary] = useState<CalorieSummary | null>(null);
+  const [todayIntake, setTodayIntake] = useState<{ kcal: number; protein_g: number; carbs_g: number; fat_g: number } | null>(null);
 
   useEffect(() => {
     const updateClock = () => setTime(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
@@ -376,6 +377,17 @@ export default function Dashboard() {
         calorieOverride: g?.calorie_target_override ?? undefined,
       });
       setCalorieSummary(summary);
+
+      const todayStr = new Date().toISOString().split("T")[0];
+      const { data: di } = await supabase
+        .from("daily_intake")
+        .select("kcal, protein_g, carbs_g, fat_g")
+        .eq("user_id", user.id)
+        .eq("date", todayStr)
+        .limit(1);
+      if (di && di[0]) {
+        setTodayIntake({ kcal: di[0].kcal, protein_g: Number(di[0].protein_g), carbs_g: Number(di[0].carbs_g), fat_g: Number(di[0].fat_g) });
+      }
     }
     loadCalories();
   }, [user, statsLoaded, stats.bodyWeight]);
@@ -637,36 +649,58 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* ─── Calorie Intelligence ─── */}
-        {calorieSummary && (
-          <div className="rounded-2xl border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.03] p-4" style={{ boxShadow: "0 0 20px -5px rgb(var(--accent-rgb) / 0.1), inset 0 1px 0 rgb(var(--accent-rgb) / 0.05)" }}>
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Flame size={14} className="text-[rgb(var(--accent-light-rgb))]" />
-                <p className="text-[9px] font-mono tracking-widest text-[rgb(var(--accent-light-rgb)/0.4)]">DAILY TARGET</p>
+        {/* ─── Energy Dashboard ─── */}
+        {calorieSummary && (() => {
+          const eaten = todayIntake?.kcal ?? 0;
+          const target = calorieSummary.calorieTarget;
+          const remaining = target - eaten;
+          const pct = Math.min((eaten / target) * 100, 100);
+          const over = eaten > target;
+          return (
+            <div className="rounded-2xl border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.03] p-4" style={{ boxShadow: "0 0 20px -5px rgb(var(--accent-rgb) / 0.1), inset 0 1px 0 rgb(var(--accent-rgb) / 0.05)" }}>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Flame size={14} className="text-[rgb(var(--accent-light-rgb))]" />
+                  <p className="text-[9px] font-mono tracking-widest text-[rgb(var(--accent-light-rgb)/0.4)]">ENERGY</p>
+                </div>
+                <button onClick={() => router.push("/progress")} className="text-[9px] font-mono text-white/20 hover:text-white/50 transition">Log</button>
               </div>
-              <button onClick={() => router.push("/profile")} className="text-[9px] font-mono text-white/20 hover:text-white/50 transition">Edit</button>
+
+              {/* Target + remaining */}
+              <div className="flex items-baseline justify-between mb-2">
+                <div className="flex items-baseline gap-1">
+                  <span className="text-3xl font-bold font-mono text-[rgb(var(--accent-light-rgb))]">{remaining > 0 ? remaining : 0}</span>
+                  <span className="text-xs font-mono text-white/25">kcal left</span>
+                </div>
+                <span className="text-[9px] font-mono text-white/20">{eaten} / {target}</span>
+              </div>
+
+              {/* Progress bar */}
+              <div className="h-2 rounded-full bg-white/[0.06] mb-3 overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all duration-500 ${over ? "bg-red-400" : "bg-[rgb(var(--accent-rgb))]"}`}
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+
+              {/* Macros: eaten / target */}
+              <div className="grid grid-cols-3 gap-2">
+                <div className="rounded-lg bg-white/[0.03] border border-white/[0.06] p-2 text-center">
+                  <p className="text-[8px] font-mono text-white/25">PROTEIN</p>
+                  <p className="text-sm font-bold font-mono text-rose-300">{Math.round(todayIntake?.protein_g ?? 0)}<span className="text-white/20">/{calorieSummary.macros.protein}g</span></p>
+                </div>
+                <div className="rounded-lg bg-white/[0.03] border border-white/[0.06] p-2 text-center">
+                  <p className="text-[8px] font-mono text-white/25">CARBS</p>
+                  <p className="text-sm font-bold font-mono text-amber-300">{Math.round(todayIntake?.carbs_g ?? 0)}<span className="text-white/20">/{calorieSummary.macros.carbs}g</span></p>
+                </div>
+                <div className="rounded-lg bg-white/[0.03] border border-white/[0.06] p-2 text-center">
+                  <p className="text-[8px] font-mono text-white/25">FAT</p>
+                  <p className="text-sm font-bold font-mono text-blue-300">{Math.round(todayIntake?.fat_g ?? 0)}<span className="text-white/20">/{calorieSummary.macros.fat}g</span></p>
+                </div>
+              </div>
             </div>
-            <div className="flex items-baseline gap-1 mb-3">
-              <span className="text-3xl font-bold font-mono text-[rgb(var(--accent-light-rgb))]">{calorieSummary.calorieTarget}</span>
-              <span className="text-xs font-mono text-white/25">kcal</span>
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-              <div className="rounded-lg bg-white/[0.03] border border-white/[0.06] p-2 text-center">
-                <p className="text-[8px] font-mono text-white/25">PROTEIN</p>
-                <p className="text-sm font-bold font-mono text-emerald-300">{calorieSummary.macros.protein}g</p>
-              </div>
-              <div className="rounded-lg bg-white/[0.03] border border-white/[0.06] p-2 text-center">
-                <p className="text-[8px] font-mono text-white/25">FAT</p>
-                <p className="text-sm font-bold font-mono text-amber-300">{calorieSummary.macros.fat}g</p>
-              </div>
-              <div className="rounded-lg bg-white/[0.03] border border-white/[0.06] p-2 text-center">
-                <p className="text-[8px] font-mono text-white/25">CARBS</p>
-                <p className="text-sm font-bold font-mono text-cyan-300">{calorieSummary.macros.carbs}g</p>
-              </div>
-            </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* ─── Quick Links ─── */}
         <div className="grid grid-cols-3 gap-2.5">
