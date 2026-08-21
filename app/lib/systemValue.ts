@@ -59,9 +59,10 @@ export function buildEnergyReceipt(params: {
     params.hasOverride ? "Manually set by user" : `Derived from TDEE and ${params.goalType} goal`
   );
 
+  const isDeficit = params.goalType === "lose_weight" || params.goalType === "body_recomp";
   const macros = {
-    protein: sv(params.macros.protein, "formula", "Protein", `Based on ${params.weightKg}kg body weight`),
-    fat: sv(params.macros.fat, "formula", "Fat", `${Math.round((params.macros.fat * 9 / params.calorieTarget) * 100)}% of calorie target`),
+    protein: sv(params.macros.protein, "formula", "Protein", isDeficit ? `2.0–2.4 g/kg × ${params.weightKg}kg (deficit range)` : `Based on ${params.weightKg}kg body weight`),
+    fat: sv(params.macros.fat, "formula", "Fat", isDeficit ? `0.8–1.0 g/kg × ${params.weightKg}kg (deficit range)` : `${Math.round((params.macros.fat * 9 / params.calorieTarget) * 100)}% of calorie target`),
     carbs: sv(params.macros.carbs, "formula", "Carbs", "Fills remaining calories after protein and fat"),
   };
 

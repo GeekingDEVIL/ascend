@@ -44,29 +44,35 @@ export function calcMacros(
   goalType: GoalType,
   diet: DietPreference = "balanced"
 ): { protein: number; fat: number; carbs: number } {
-  let proteinMultiplier: number;
-  let fatPct: number;
+  const isDeficit = goalType === "lose_weight" || goalType === "body_recomp";
+
+  let proteinGkg: number;
+  let fatGkg: number | null = null;
+  let fatPct: number | null = null;
 
   switch (diet) {
     case "high_protein":
-      proteinMultiplier = 2.2;
-      fatPct = 0.25;
+      proteinGkg = isDeficit ? 2.4 : 2.2;
+      fatGkg = isDeficit ? 0.9 : null;
+      fatPct = isDeficit ? null : 0.25;
       break;
     case "low_carb":
-      proteinMultiplier = 2.0;
-      fatPct = 0.35;
+      proteinGkg = isDeficit ? 2.2 : 2.0;
+      fatGkg = isDeficit ? 1.0 : null;
+      fatPct = isDeficit ? null : 0.35;
       break;
     case "keto":
-      proteinMultiplier = 1.8;
+      proteinGkg = 1.8;
       fatPct = 0.65;
       break;
     default:
-      proteinMultiplier = goalType === "gain_muscle" ? 2.0 : 1.8;
-      fatPct = 0.25;
+      proteinGkg = isDeficit ? 2.2 : goalType === "gain_muscle" ? 2.0 : 1.8;
+      fatGkg = isDeficit ? 0.9 : null;
+      fatPct = isDeficit ? null : 0.25;
   }
 
-  const protein = Math.round(weightKg * proteinMultiplier);
-  const fat = Math.round((calorieTarget * fatPct) / 9);
+  const protein = Math.round(weightKg * proteinGkg);
+  const fat = fatGkg !== null ? Math.round(weightKg * fatGkg) : Math.round((calorieTarget * (fatPct ?? 0.25)) / 9);
   const remainingCals = calorieTarget - protein * 4 - fat * 9;
   const carbs = Math.max(Math.round(remainingCals / 4), 50);
 
