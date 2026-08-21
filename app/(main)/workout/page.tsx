@@ -898,7 +898,7 @@ export default function WorkoutPage() {
                             </div>
                         )}
 
-                        <p className="text-[10px] font-mono text-white/20 text-center mb-4">Done for today. Come back tomorrow.</p>
+                        <p className="text-[10px] font-mono text-white/20 text-center mb-4">Nice work! You can start another session or come back tomorrow.</p>
 
                         <div className="flex gap-2">
                             <button onClick={() => router.push("/")} className="flex-1 text-sm font-medium py-3 rounded-xl border border-white/[0.08] text-white/50 hover:text-white/80 hover:bg-white/[0.05] transition">
@@ -908,6 +908,12 @@ export default function WorkoutPage() {
                                 View Progress
                             </button>
                         </div>
+                        <button
+                            onClick={() => { setSummary(null); setSessionId(null); setStatus("not_started"); }}
+                            className="w-full mt-2 text-[10px] font-mono py-2.5 rounded-xl border border-white/[0.06] text-white/30 hover:text-white/60 hover:border-white/15 transition"
+                        >
+                            Start another workout
+                        </button>
                     </CardPanel>
                 </div>
             </main>
