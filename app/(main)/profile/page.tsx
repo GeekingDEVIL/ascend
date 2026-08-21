@@ -217,11 +217,14 @@ export default function ProfilePage() {
         const { data: exList } = await supabase.from("exercises").select("id, name").order("name").limit(500);
         setExercises(exList ?? []);
 
-        // Latest body weight
-        const { data: bw } = await supabase.from("body_weight_logs").select("weight").eq("user_id", user.id).order("logged_at", { ascending: false }).limit(1);
-        const lw = bw?.[0]?.weight ?? null;
+        // Latest body weight — prefer EMA trend for consistency with progress page
+        const [{ data: trendRow }, { data: bw }] = await Promise.all([
+            supabase.from("weight_trend").select("ema_kg").eq("user_id", user.id).order("date", { ascending: false }).limit(1),
+            supabase.from("body_weight_logs").select("weight").eq("user_id", user.id).order("logged_at", { ascending: false }).limit(1),
+        ]);
+        const lw = trendRow?.[0] ? Number(trendRow[0].ema_kg) : (bw?.[0]?.weight ?? null);
         setLatestWeight(lw);
-        if (lw !== null) setWeightInput(String(lw));
+        if (bw?.[0]?.weight != null) setWeightInput(String(bw[0].weight));
 
         // Summary stats
         const { data: sessions } = await supabase.from("workout_sessions").select("total_volume").eq("user_id", user.id).eq("status", "completed");

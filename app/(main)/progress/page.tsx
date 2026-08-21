@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import { Calendar, Dumbbell, TrendingUp, Weight, Trophy, ChevronDown, ChevronRight, Lock, Flame, Trash2 } from "lucide-react";
 import { supabase } from "../../lib/supabase";
@@ -16,7 +16,7 @@ import { checkFeasibility, type FeasibilityVerdict } from "../../lib/energyGuard
 import { estimateObservedTdee, blendTdee, type TdeeEstimate } from "../../lib/energyEstimator";
 import { buildEnergyReceipt, type EnergyReceipt } from "../../lib/systemValue";
 import EnergyReceiptPanel from "../../components/EnergyReceipt";
-import { PredictionVsRealityCard, AnomalyCard, AdaptationCard, LeanMassCard, WeeklyBudgetCard, RecoveryCard, RecompCard, PatternWarningsCard } from "../../components/InsightsPanel";
+import { PredictionVsRealityCard, AnomalyCard, AdaptationCard, LeanMassCard, WeeklyBudgetCard, RecoveryCard, RecompCard, PatternWarningsCard, ScenarioCard, DietBreakCard, CycleCard, ExerciseExpenditureCard } from "../../components/InsightsPanel";
 import { buildPredictionVsReality, type PredictionAccuracy } from "../../lib/predictionReality";
 import { explainWeightAnomaly, type AnomalyExplanation } from "../../lib/anomalyExplainer";
 import { detectAdaptation, type AdaptationSignal } from "../../lib/metabolicAdaptation";
@@ -25,6 +25,10 @@ import { calcWeeklyBudget, type WeeklyBudget } from "../../lib/weeklyBudget";
 import { getRecoveryAdjustment, type RecoveryAdjustment } from "../../lib/recoveryEngine";
 import { assessRecomp, type RecompAssessment } from "../../lib/recompMode";
 import { detectPatterns, type PatternWarning } from "../../lib/energyGuardrails";
+import { modelScenario, type ScenarioResult } from "../../lib/scenarioModeling";
+import { shouldSuggestDietBreak, planDietBreak } from "../../lib/dietBreaks";
+import { comparePhaseToPhase, estimateCyclePhase, getCyclePhaseInfo, type CycleAwareComparison } from "../../lib/cycleAwareTrend";
+import { estimateSessionExpenditure, type SessionExpenditure } from "../../lib/exerciseExpenditure";
 
 const MEASUREMENT_TYPES: { type: MeasurementType; color: string; bar: string }[] = [
     { type: "Biceps", color: "text-pink-300", bar: "bg-pink-400" },
@@ -234,7 +238,15 @@ export default function ProgressPage() {
     const [insightRecovery, setInsightRecovery] = useState<RecoveryAdjustment | null>(null);
     const [insightRecomp, setInsightRecomp] = useState<RecompAssessment | null>(null);
     const [insightPatterns, setInsightPatterns] = useState<PatternWarning[]>([]);
+    const [insightScenario, setInsightScenario] = useState<ScenarioResult | null>(null);
+    const [insightDietBreak, setInsightDietBreak] = useState<string | null>(null);
+    const [insightCycle, setInsightCycle] = useState<CycleAwareComparison | null>(null);
+    const [insightCyclePhaseInfo, setInsightCyclePhaseInfo] = useState<string>("");
+    const [insightExercise, setInsightExercise] = useState<SessionExpenditure | null>(null);
+    const [scenarioParams, setScenarioParams] = useState<{ currentKg: number; targetKg: number; tdee: number; bmr: number; sex: string; heightCm: number; goalType: string } | null>(null);
     const [myFoods, setMyFoods] = useState<{ id: string; label: string; kcal: number; protein_g: number; carbs_g: number; fat_g: number; use_count: number }[]>([]);
+    const [intakeLoading, setIntakeLoading] = useState(false);
+    const intakeLoadedDateRef = React.useRef<string | null>(null);
 
     const loadHistory = useCallback(async () => {
         if (!user) return;
@@ -428,8 +440,10 @@ export default function ProgressPage() {
         setWeeklyVolumeData(sorted);
     }, [user]);
 
-    const loadIntake = useCallback(async (date: string) => {
+    const loadIntake = useCallback(async (date: string, force = false) => {
         if (!user) return;
+        if (!force && intakeLoadedDateRef.current === date) return;
+        setIntakeLoading(true);
         const [{ data: entries }, { data: dailyRows }, { data: allIntake }, { data: goalRows }, { data: prof }, { data: trendRows }, { data: savedFoods }] = await Promise.all([
             supabase
                 .from("food_entries")
@@ -449,7 +463,7 @@ export default function ProgressPage() {
                 .order("date", { ascending: true }),
             supabase
                 .from("user_goals")
-                .select("goal_type, rate_per_week_kg, diet_preference, calorie_target_override, target_weight_kg, target_date, adaptive_mode")
+                .select("*")
                 .eq("user_id", user.id)
                 .eq("is_active", true)
                 .limit(1),
@@ -645,7 +659,65 @@ export default function ProgressPage() {
                     loggingAdherence: intakeAdherence ?? undefined,
                 }));
             } catch { setInsightPatterns([]); }
+
+            // Scenario modeling
+            if (g?.target_weight_kg && bwLatest) {
+                const sp = { currentKg: bwLatest, targetKg: Number(g.target_weight_kg), tdee: summary.tdee, bmr: summary.bmr, sex: prof.sex, heightCm: prof.height_cm, goalType: g.goal_type ?? "general_fitness" };
+                setScenarioParams(sp);
+                try { setInsightScenario(modelScenario(sp)); } catch { setInsightScenario(null); }
+            } else {
+                setScenarioParams(null);
+                setInsightScenario(null);
+            }
+
+            // Diet break suggestion
+            const deficitWeeks = dailyIntakes.length > 0 ? Math.floor(dailyIntakes.length / 7) : 0;
+            const tdeeDrop = insightAdaptation?.detected ? insightAdaptation.tdeeDrop : 0;
+            if (shouldSuggestDietBreak({ deficitWeeks, tdeeDrop, adherencePct: intakeAdherence ?? 100 })) {
+                const plan = planDietBreak({ tdee: summary.tdee, currentPhase: (g?.phase as any) ?? "active", deficitWeeks });
+                setInsightDietBreak(plan.reason);
+            } else {
+                setInsightDietBreak(null);
+            }
+
+            // Cycle-aware trend (only if cycle tracking enabled)
+            if (g?.cycle_tracking_enabled && trendWeights.length >= 7) {
+                try {
+                    const phase = estimateCyclePhase(g.cycle_start_date ?? trendWeights[0].date, today);
+                    const comparison = comparePhaseToPhase({
+                        currentPhase: phase,
+                        currentWeightKg: bwLatest,
+                        weightHistory: trendWeights.map(w => ({ date: w.date, ema_kg: w.ema_kg })),
+                    });
+                    setInsightCycle(comparison);
+                    setInsightCyclePhaseInfo(getCyclePhaseInfo(phase));
+                } catch { setInsightCycle(null); }
+            } else {
+                setInsightCycle(null);
+            }
+
+            // Exercise expenditure (latest session)
+            const { data: latestSession } = await supabase
+                .from("workout_sessions")
+                .select("duration_seconds, total_sets")
+                .eq("user_id", user!.id)
+                .eq("status", "completed")
+                .order("date", { ascending: false })
+                .limit(1);
+            if (latestSession?.[0] && bwLatest) {
+                try {
+                    setInsightExercise(estimateSessionExpenditure({
+                        bodyWeightKg: bwLatest,
+                        durationSeconds: latestSession[0].duration_seconds,
+                        totalSets: latestSession[0].total_sets,
+                    }));
+                } catch { setInsightExercise(null); }
+            } else {
+                setInsightExercise(null);
+            }
         }
+        intakeLoadedDateRef.current = date;
+        setIntakeLoading(false);
     }, [user, bodyWeightData]);
 
     useEffect(() => {
@@ -658,7 +730,10 @@ export default function ProgressPage() {
     }, [loadHistory, loadAchievements, loadLeaderboardCard, loadGoals, loadPRs, loadBodyWeight, loadMeasurements, loadWeeklyVolume]);
 
     useEffect(() => {
-        if (tab === "intake") loadIntake(intakeDate);
+        if (tab === "intake") {
+            const force = intakeLoadedDateRef.current !== null && intakeLoadedDateRef.current !== intakeDate;
+            loadIntake(intakeDate, force);
+        }
     }, [tab, intakeDate, loadIntake]);
 
     async function loadStrengthHistory(exerciseId: string) {
@@ -713,6 +788,29 @@ export default function ProgressPage() {
 
         setNewWeight("");
         await loadBodyWeight();
+    }
+
+    function handleScenarioDateChange(days: number) {
+        if (!scenarioParams) return;
+        const targetDate = new Date();
+        targetDate.setDate(targetDate.getDate() + days);
+        try {
+            setInsightScenario(modelScenario({ ...scenarioParams, targetDate: targetDate.toISOString().split("T")[0] }));
+        } catch { /* ignore */ }
+    }
+
+    function handleScenarioTargetChange(kcal: number) {
+        if (!scenarioParams) return;
+        try {
+            setInsightScenario(modelScenario({ ...scenarioParams, dailyTarget: kcal }));
+        } catch { /* ignore */ }
+    }
+
+    async function handleStartDietBreak() {
+        if (!user || !ledgerCalorieSummary) return;
+        const plan = planDietBreak({ tdee: ledgerCalorieSummary.tdee, currentPhase: "active", deficitWeeks: 8 });
+        await supabase.from("user_goals").update({ phase: "diet_break" }).eq("user_id", user.id).eq("is_active", true);
+        setInsightDietBreak(null);
     }
 
     const rangeStart = rangeStartDate(activityRange);
@@ -772,8 +870,23 @@ export default function ProgressPage() {
                 </div>
 
                 {loading ? (
-                    <div className="flex items-center justify-center py-20">
-                        <div className="w-8 h-8 border-2 border-[rgb(var(--accent-rgb)/0.4)] border-t-[rgb(var(--accent-rgb))] rounded-full animate-spin" />
+                    <div className="space-y-4 animate-pulse">
+                        <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4 space-y-3">
+                            <div className="h-3 w-24 rounded bg-white/[0.06]" />
+                            <div className="grid grid-cols-3 gap-3">
+                                <div className="h-12 rounded-md bg-white/[0.04]" />
+                                <div className="h-12 rounded-md bg-white/[0.04]" />
+                                <div className="h-12 rounded-md bg-white/[0.04]" />
+                            </div>
+                        </div>
+                        <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4 space-y-3">
+                            <div className="h-3 w-32 rounded bg-white/[0.06]" />
+                            <div className="h-32 rounded-md bg-white/[0.04]" />
+                        </div>
+                        <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4 space-y-3">
+                            <div className="h-3 w-20 rounded bg-white/[0.06]" />
+                            <div className="h-16 rounded-md bg-white/[0.04]" />
+                        </div>
                     </div>
                 ) : (
                     <>
@@ -1296,7 +1409,7 @@ export default function ProgressPage() {
                         {/* ══════════ INTAKE ══════════ */}
                         {tab === "intake" && (
                             <div className="space-y-4">
-                                {/* Date selector */}
+                                {/* Date selector — always visible */}
                                 <div className="flex items-center justify-between">
                                     <button
                                         onClick={() => { const d = new Date(intakeDate); d.setDate(d.getDate() - 1); setIntakeDate(d.toISOString().split("T")[0]); }}
@@ -1317,6 +1430,26 @@ export default function ProgressPage() {
                                     >›</button>
                                 </div>
 
+                                {intakeLoading && (
+                                    <div className="space-y-4 animate-pulse">
+                                        <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4 space-y-3">
+                                            <div className="h-3 w-28 rounded bg-white/[0.06]" />
+                                            <div className="h-8 w-24 mx-auto rounded bg-white/[0.06]" />
+                                            <div className="h-3 rounded-full bg-white/[0.04]" />
+                                            <div className="grid grid-cols-3 gap-2">
+                                                <div className="h-10 rounded-md bg-white/[0.04]" />
+                                                <div className="h-10 rounded-md bg-white/[0.04]" />
+                                                <div className="h-10 rounded-md bg-white/[0.04]" />
+                                            </div>
+                                        </div>
+                                        <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4 space-y-3">
+                                            <div className="h-3 w-20 rounded bg-white/[0.06]" />
+                                            <div className="h-24 rounded-md bg-white/[0.04]" />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {!intakeLoading && (<>
                                 {/* Card 1: Today's Progress */}
                                 {(() => {
                                     const totals = intakeEntries.reduce((acc, e) => ({
@@ -1741,7 +1874,7 @@ export default function ProgressPage() {
                                             setIntakeProtein("");
                                             setIntakeCarbs("");
                                             setIntakeFat("");
-                                            await loadIntake(intakeDate);
+                                            await loadIntake(intakeDate, true);
                                         }}
                                         disabled={!intakeKcal}
                                         className="w-full text-[10px] font-mono py-3 rounded-lg border border-[rgb(var(--accent-rgb)/0.3)] text-[rgb(var(--accent-light-rgb))] hover:bg-[rgb(var(--accent-rgb)/0.1)] disabled:opacity-30 disabled:cursor-not-allowed transition"
@@ -1772,7 +1905,7 @@ export default function ProgressPage() {
                                                         });
                                                         await rematerializeDailyIntake(user.id, intakeDate);
                                                         await supabase.from("my_foods").update({ use_count: food.use_count + 1, last_used_at: new Date().toISOString() }).eq("id", food.id);
-                                                        await loadIntake(intakeDate);
+                                                        await loadIntake(intakeDate, true);
                                                     }}
                                                     className="text-[9px] font-mono px-2.5 py-1.5 rounded-md border border-white/[0.08] text-white/40 hover:text-white/70 hover:border-[rgb(var(--accent-rgb)/0.3)] hover:bg-[rgb(var(--accent-rgb)/0.05)] transition"
                                                 >
@@ -1806,7 +1939,7 @@ export default function ProgressPage() {
                                                         if (!user) return;
                                                         await supabase.from("food_entries").delete().eq("id", entry.id);
                                                         await rematerializeDailyIntake(user.id, intakeDate);
-                                                        await loadIntake(intakeDate);
+                                                        await loadIntake(intakeDate, true);
                                                     }}
                                                     className="shrink-0 p-2 text-white/20 hover:text-red-400 transition"
                                                 >
@@ -1826,18 +1959,24 @@ export default function ProgressPage() {
                                 )}
 
                                 {/* ── INSIGHTS ── */}
-                                {(insightBudget || insightPrediction || insightAnomaly || insightAdaptation || insightLeanMass || insightRecovery || insightRecomp || insightPatterns.length > 0) && (
+                                {(insightBudget || insightPrediction || insightAnomaly || insightAdaptation || insightLeanMass || insightRecovery || insightRecomp || insightPatterns.length > 0 || insightScenario || insightDietBreak || insightCycle || insightExercise) && (
                                     <div className="space-y-3 mt-4">
                                         <p className="text-[10px] font-mono tracking-widest text-white/25">INSIGHTS</p>
                                         {insightPatterns.length > 0 && <PatternWarningsCard warnings={insightPatterns} />}
+                                        {insightDietBreak && <DietBreakCard onStart={handleStartDietBreak} suggestion={insightDietBreak} />}
                                         {insightBudget && <WeeklyBudgetCard data={insightBudget} />}
+                                        {insightExercise && <ExerciseExpenditureCard data={insightExercise} adaptiveMode={adaptiveMode} />}
                                         {insightRecovery && <RecoveryCard data={insightRecovery} />}
                                         {insightAnomaly && <AnomalyCard data={insightAnomaly} />}
                                         {insightPrediction && <PredictionVsRealityCard data={insightPrediction} />}
                                         {insightAdaptation && <AdaptationCard data={insightAdaptation} />}
                                         {insightLeanMass && <LeanMassCard data={insightLeanMass} />}
                                         {insightRecomp && <RecompCard data={insightRecomp} />}
+                                        {insightCycle && <CycleCard data={insightCycle} phaseInfo={insightCyclePhaseInfo} />}
+                                        {insightScenario && <ScenarioCard scenario={insightScenario} onDateChange={handleScenarioDateChange} onTargetChange={handleScenarioTargetChange} />}
                                     </div>
+                                )}
+                                </>
                                 )}
                             </div>
                         )}

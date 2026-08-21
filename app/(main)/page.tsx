@@ -359,18 +359,20 @@ export default function Dashboard() {
 
   useEffect(() => {
     async function loadCalories() {
-      if (!user || !statsLoaded || !stats.bodyWeight) return;
-      const [{ data: prof }, { data: goalRows }, { data: trendRows }, { data: allIntake }] = await Promise.all([
+      if (!user) return;
+      const [{ data: prof }, { data: goalRows }, { data: trendRows }, { data: allIntake }, { data: bwLogs }] = await Promise.all([
         supabase.from("profiles").select("height_cm, date_of_birth, sex, activity_level").eq("id", user.id).maybeSingle(),
-        supabase.from("user_goals").select("goal_type, rate_per_week_kg, diet_preference, calorie_target_override, adaptive_mode").eq("user_id", user.id).eq("is_active", true).limit(1),
+        supabase.from("user_goals").select("*").eq("user_id", user.id).eq("is_active", true).limit(1),
         supabase.from("weight_trend").select("date, ema_kg").eq("user_id", user.id).order("date", { ascending: true }),
         supabase.from("daily_intake").select("date, kcal").eq("user_id", user.id).order("date", { ascending: true }),
+        supabase.from("body_weight_logs").select("weight").eq("user_id", user.id).order("logged_at", { ascending: false }).limit(1),
       ]);
       if (!prof?.height_cm || !prof?.date_of_birth || !prof?.sex) return;
       const g = goalRows?.[0] as any;
       const weightKg = (trendRows && trendRows.length > 0)
         ? Number(trendRows[trendRows.length - 1].ema_kg)
-        : stats.bodyWeight!;
+        : (bwLogs?.[0] ? Number(bwLogs[0].weight) : null);
+      if (!weightKg) return;
 
       let blendedTdee: number | undefined;
       const baseSummary = getFullCalorieSummary({
@@ -425,7 +427,7 @@ export default function Dashboard() {
       }
     }
     loadCalories();
-  }, [user, statsLoaded, stats.bodyWeight]);
+  }, [user]);
 
   useEffect(() => {
     async function loadNotifications() {
@@ -504,9 +506,9 @@ export default function Dashboard() {
             <p className="text-[9px] font-mono tracking-widest text-[rgb(var(--accent-light-rgb)/0.4)] mb-2">TODAY&apos;S WORKOUT</p>
 
             {todayLoading ? (
-              <div className="flex items-center gap-3 py-2">
-                <div className="w-5 h-5 border-2 border-[rgb(var(--accent-rgb)/0.4)] border-t-[rgb(var(--accent-rgb))] rounded-full animate-spin" />
-                <span className="text-sm text-white/40">Loading...</span>
+              <div className="animate-pulse space-y-2 py-2">
+                <div className="h-5 w-40 rounded bg-white/[0.06]" />
+                <div className="h-3 w-28 rounded bg-white/[0.04]" />
               </div>
             ) : !todayPlan ? (
               <div className="flex items-center justify-between gap-3">
