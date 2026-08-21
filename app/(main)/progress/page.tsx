@@ -10,6 +10,8 @@ import { ACHIEVEMENT_DEFS, RARITY_COLORS, type AchievementDef } from "../../lib/
 import MeasurementModal, { type MeasurementType } from "../../components/MeasurementModal";
 import { type WeightEntry, type WeightContext, lbsToKg, kgToLbs, rematerializeWeightTrend } from "../../lib/weightTrend";
 import { type FoodEntry, type MealSlot, MEAL_SLOTS, rematerializeDailyIntake, calcAdherence } from "../../lib/intakeLog";
+import { buildLedger, avgDailyNet, projectWeightChange, projectWeightAtDate, daysUntil, type DailyBalance } from "../../lib/energyLedger";
+import { getFullCalorieSummary, ageFromDOB, type CalorieSummary, type GoalType, type ActivityLevel, type DietPreference, type Sex } from "../../lib/calorieEngine";
 
 const MEASUREMENT_TYPES: { type: MeasurementType; color: string; bar: string }[] = [
     { type: "Biceps", color: "text-pink-300", bar: "bg-pink-400" },
@@ -177,6 +179,9 @@ export default function ProgressPage() {
     const [intakeCarbs, setIntakeCarbs] = useState("");
     const [intakeFat, setIntakeFat] = useState("");
     const [intakeAdherence, setIntakeAdherence] = useState<number | null>(null);
+    const [ledger, setLedger] = useState<DailyBalance[]>([]);
+    const [ledgerGoal, setLedgerGoal] = useState<{ targetWeightKg: number | null; targetDate: string | null } | null>(null);
+    const [ledgerCalorieSummary, setLedgerCalorieSummary] = useState<CalorieSummary | null>(null);
 
     const loadHistory = useCallback(async () => {
         if (!user) return;
@@ -372,7 +377,7 @@ export default function ProgressPage() {
 
     const loadIntake = useCallback(async (date: string) => {
         if (!user) return;
-        const [{ data: entries }, { data: dailyRows }] = await Promise.all([
+        const [{ data: entries }, { data: dailyRows }, { data: allIntake }, { data: goalRows }, { data: prof }] = await Promise.all([
             supabase
                 .from("food_entries")
                 .select("id, date, meal_slot, label, kcal, protein_g, carbs_g, fat_g, logged_at")
@@ -384,10 +389,50 @@ export default function ProgressPage() {
                 .select("date")
                 .eq("user_id", user.id)
                 .gte("date", new Date(Date.now() - 30 * 86400000).toISOString().split("T")[0]),
+            supabase
+                .from("daily_intake")
+                .select("date, kcal")
+                .eq("user_id", user.id)
+                .order("date", { ascending: true }),
+            supabase
+                .from("user_goals")
+                .select("goal_type, rate_per_week_kg, diet_preference, calorie_target_override, target_weight_kg, target_date")
+                .eq("user_id", user.id)
+                .eq("is_active", true)
+                .limit(1),
+            supabase
+                .from("profiles")
+                .select("height_cm, date_of_birth, sex, activity_level")
+                .eq("id", user.id)
+                .maybeSingle(),
         ]);
         setIntakeEntries((entries ?? []) as FoodEntry[]);
         setIntakeAdherence(calcAdherence(dailyRows ?? [], 30));
-    }, [user]);
+
+        const g = goalRows?.[0];
+        if (g) {
+            setLedgerGoal({ targetWeightKg: g.target_weight_kg ? Number(g.target_weight_kg) : null, targetDate: g.target_date ?? null });
+        }
+
+        const bwLatest = bodyWeightData.length > 0 ? bodyWeightData[bodyWeightData.length - 1].weight : null;
+        if (prof?.height_cm && prof?.date_of_birth && prof?.sex && bwLatest) {
+            const summary = getFullCalorieSummary({
+                weightKg: bwLatest,
+                heightCm: prof.height_cm,
+                ageYears: ageFromDOB(prof.date_of_birth),
+                sex: prof.sex as Sex,
+                activity: (prof.activity_level as ActivityLevel) ?? "moderate",
+                goalType: (g?.goal_type as GoalType) ?? "general_fitness",
+                ratePerWeekKg: g?.rate_per_week_kg ?? undefined,
+                diet: (g?.diet_preference as DietPreference) ?? "balanced",
+                calorieOverride: g?.calorie_target_override ?? undefined,
+            });
+            setLedgerCalorieSummary(summary);
+            if (allIntake && allIntake.length > 0) {
+                setLedger(buildLedger(allIntake.map((r: any) => ({ date: r.date, kcal: Number(r.kcal) })), summary.calorieTarget));
+            }
+        }
+    }, [user, bodyWeightData]);
 
     useEffect(() => {
         async function load() {
@@ -1092,6 +1137,59 @@ export default function ProgressPage() {
                                                     <p className="text-lg font-bold font-mono text-blue-300">{Math.round(totals.fat)}g</p>
                                                 </div>
                                             </div>
+                                        </div>
+                                    );
+                                })()}
+
+                                {/* Energy Ledger */}
+                                {ledger.length > 0 && ledgerCalorieSummary && (() => {
+                                    const avg = avgDailyNet(ledger);
+                                    const cumul = ledger[ledger.length - 1].cumulative;
+                                    const weightDelta = projectWeightChange(cumul);
+                                    const bwLatest = bodyWeightData.length > 0 ? bodyWeightData[bodyWeightData.length - 1] : null;
+                                    const trendEntry = bodyWeightData.filter((d) => d.ema !== undefined);
+                                    const currentKg = trendEntry.length > 0 ? trendEntry[trendEntry.length - 1].ema! : bwLatest?.weight ?? null;
+                                    const hasTarget = ledgerGoal?.targetDate && ledgerGoal?.targetWeightKg;
+                                    const daysLeft = hasTarget ? daysUntil(ledgerGoal!.targetDate!) : 0;
+                                    const projectedKg = hasTarget && currentKg ? projectWeightAtDate(currentKg, avg, daysLeft) : null;
+                                    const isDeficit = avg < 0;
+                                    return (
+                                        <div className="rounded-lg border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.02] p-4" style={{ boxShadow: "inset 0 1px 0 rgb(var(--accent-rgb) / 0.06)" }}>
+                                            <p className="text-[10px] font-mono tracking-widest text-white/25 mb-3">ENERGY LEDGER</p>
+                                            <div className="grid grid-cols-3 gap-2 mb-3">
+                                                <div className="text-center">
+                                                    <p className="text-[8px] font-mono text-white/30">AVG DAILY</p>
+                                                    <p className={`text-sm font-bold font-mono ${isDeficit ? "text-emerald-300" : "text-amber-300"}`}>{avg > 0 ? "+" : ""}{avg}</p>
+                                                    <p className="text-[7px] font-mono text-white/20">kcal/day</p>
+                                                </div>
+                                                <div className="text-center">
+                                                    <p className="text-[8px] font-mono text-white/30">CUMULATIVE</p>
+                                                    <p className={`text-sm font-bold font-mono ${cumul < 0 ? "text-emerald-300" : "text-amber-300"}`}>{cumul > 0 ? "+" : ""}{Math.round(cumul)}</p>
+                                                    <p className="text-[7px] font-mono text-white/20">kcal total</p>
+                                                </div>
+                                                <div className="text-center">
+                                                    <p className="text-[8px] font-mono text-white/30">WEIGHT Δ</p>
+                                                    <p className={`text-sm font-bold font-mono ${weightDelta < 0 ? "text-emerald-300" : "text-amber-300"}`}>{weightDelta > 0 ? "+" : ""}{weightDelta}</p>
+                                                    <p className="text-[7px] font-mono text-white/20">kg (est.)</p>
+                                                </div>
+                                            </div>
+                                            {hasTarget && projectedKg !== null && (
+                                                <div className="rounded-md bg-white/[0.03] border border-white/[0.06] p-3 mt-2">
+                                                    <div className="flex items-center justify-between">
+                                                        <div>
+                                                            <p className="text-[8px] font-mono text-white/30">PROJECTED AT TARGET DATE</p>
+                                                            <p className="text-[8px] font-mono text-white/20 mt-0.5">
+                                                                {new Date(ledgerGoal!.targetDate! + "T12:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })} ({daysLeft}d left)
+                                                            </p>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <p className="text-lg font-bold font-mono text-[rgb(var(--accent-light-rgb))]">{projectedKg} <span className="text-xs text-white/30">kg</span></p>
+                                                            <p className="text-[8px] font-mono text-white/20">target: {Number(ledgerGoal!.targetWeightKg!)} kg</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            <p className="text-[7px] font-mono text-white/15 mt-2 text-center">Based on {ledger.length} logged day{ledger.length !== 1 ? "s" : ""} · ~7,700 kcal per kg estimate</p>
                                         </div>
                                     );
                                 })()}
