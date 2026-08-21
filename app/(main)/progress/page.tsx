@@ -2,13 +2,14 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { Calendar, Dumbbell, TrendingUp, Weight, Trophy, ChevronDown, ChevronRight, Lock } from "lucide-react";
+import { Calendar, Dumbbell, TrendingUp, Weight, Trophy, ChevronDown, ChevronRight, Lock, Flame, Trash2 } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../lib/AuthProvider";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, CartesianGrid, ReferenceLine } from "recharts";
 import { ACHIEVEMENT_DEFS, RARITY_COLORS, type AchievementDef } from "../../lib/achievements";
 import MeasurementModal, { type MeasurementType } from "../../components/MeasurementModal";
 import { type WeightEntry, type WeightContext, lbsToKg, kgToLbs, rematerializeWeightTrend } from "../../lib/weightTrend";
+import { type FoodEntry, type MealSlot, MEAL_SLOTS, rematerializeDailyIntake, calcAdherence } from "../../lib/intakeLog";
 
 const MEASUREMENT_TYPES: { type: MeasurementType; color: string; bar: string }[] = [
     { type: "Biceps", color: "text-pink-300", bar: "bg-pink-400" },
@@ -20,7 +21,7 @@ const MEASUREMENT_TYPES: { type: MeasurementType; color: string; bar: string }[]
     { type: "Calf", color: "text-yellow-300", bar: "bg-yellow-400" },
 ];
 
-type Tab = "history" | "strength" | "body" | "volume";
+type Tab = "history" | "strength" | "body" | "volume" | "intake";
 type ActivityRange = "7D" | "30D" | "6M" | "12M" | "All";
 
 const ACTIVITY_RANGES: ActivityRange[] = ["7D", "30D", "6M", "12M", "All"];
@@ -165,6 +166,17 @@ export default function ProgressPage() {
 
     // Volume
     const [weeklyVolumeData, setWeeklyVolumeData] = useState<WeeklyVolume[]>([]);
+
+    // Intake
+    const [intakeDate, setIntakeDate] = useState(() => new Date().toISOString().split("T")[0]);
+    const [intakeEntries, setIntakeEntries] = useState<FoodEntry[]>([]);
+    const [intakeMealSlot, setIntakeMealSlot] = useState<MealSlot>("breakfast");
+    const [intakeLabel, setIntakeLabel] = useState("");
+    const [intakeKcal, setIntakeKcal] = useState("");
+    const [intakeProtein, setIntakeProtein] = useState("");
+    const [intakeCarbs, setIntakeCarbs] = useState("");
+    const [intakeFat, setIntakeFat] = useState("");
+    const [intakeAdherence, setIntakeAdherence] = useState<number | null>(null);
 
     const loadHistory = useCallback(async () => {
         if (!user) return;
@@ -358,6 +370,25 @@ export default function ProgressPage() {
         setWeeklyVolumeData(sorted);
     }, [user]);
 
+    const loadIntake = useCallback(async (date: string) => {
+        if (!user) return;
+        const [{ data: entries }, { data: dailyRows }] = await Promise.all([
+            supabase
+                .from("food_entries")
+                .select("id, date, meal_slot, label, kcal, protein_g, carbs_g, fat_g, logged_at")
+                .eq("user_id", user.id)
+                .eq("date", date)
+                .order("logged_at", { ascending: true }),
+            supabase
+                .from("daily_intake")
+                .select("date")
+                .eq("user_id", user.id)
+                .gte("date", new Date(Date.now() - 30 * 86400000).toISOString().split("T")[0]),
+        ]);
+        setIntakeEntries((entries ?? []) as FoodEntry[]);
+        setIntakeAdherence(calcAdherence(dailyRows ?? [], 30));
+    }, [user]);
+
     useEffect(() => {
         async function load() {
             setLoading(true);
@@ -366,6 +397,10 @@ export default function ProgressPage() {
         }
         load();
     }, [loadHistory, loadAchievements, loadLeaderboardCard, loadGoals, loadPRs, loadBodyWeight, loadMeasurements, loadWeeklyVolume]);
+
+    useEffect(() => {
+        if (tab === "intake") loadIntake(intakeDate);
+    }, [tab, intakeDate, loadIntake]);
 
     async function loadStrengthHistory(exerciseId: string) {
         if (!user) return;
@@ -449,6 +484,7 @@ export default function ProgressPage() {
         { key: "strength", label: "STRENGTH", icon: Dumbbell },
         { key: "body", label: "BODY", icon: Weight },
         { key: "volume", label: "VOLUME", icon: TrendingUp },
+        { key: "intake", label: "INTAKE", icon: Flame },
     ];
 
     return (
@@ -463,7 +499,7 @@ export default function ProgressPage() {
                 </div>
 
                 {/* Tabs */}
-                <div className="grid grid-cols-4 gap-1.5">
+                <div className="grid grid-cols-5 gap-1">
                     {TABS.map((t) => (
                         <button
                             key={t.key}
@@ -996,6 +1032,185 @@ export default function ProgressPage() {
                                         </div>
                                     );
                                 })()}
+                            </div>
+                        )}
+                        {/* ══════════ INTAKE ══════════ */}
+                        {tab === "intake" && (
+                            <div className="space-y-4">
+                                {/* Date selector */}
+                                <div className="flex items-center justify-between">
+                                    <button
+                                        onClick={() => { const d = new Date(intakeDate); d.setDate(d.getDate() - 1); setIntakeDate(d.toISOString().split("T")[0]); }}
+                                        className="text-[10px] font-mono px-3 py-2 rounded-lg border border-white/[0.08] text-white/40 hover:text-white/70 transition"
+                                    >‹</button>
+                                    <div className="text-center">
+                                        <p className="text-sm font-bold font-mono text-white/80">
+                                            {new Date(intakeDate + "T12:00:00").toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}
+                                        </p>
+                                        {intakeDate !== new Date().toISOString().split("T")[0] && (
+                                            <button onClick={() => setIntakeDate(new Date().toISOString().split("T")[0])} className="text-[8px] font-mono text-[rgb(var(--accent-light-rgb)/0.5)] hover:text-[rgb(var(--accent-light-rgb))] transition">TODAY</button>
+                                        )}
+                                    </div>
+                                    <button
+                                        onClick={() => { const d = new Date(intakeDate); d.setDate(d.getDate() + 1); setIntakeDate(d.toISOString().split("T")[0]); }}
+                                        disabled={intakeDate >= new Date().toISOString().split("T")[0]}
+                                        className="text-[10px] font-mono px-3 py-2 rounded-lg border border-white/[0.08] text-white/40 hover:text-white/70 disabled:opacity-20 transition"
+                                    >›</button>
+                                </div>
+
+                                {/* Daily totals */}
+                                {(() => {
+                                    const totals = intakeEntries.reduce((acc, e) => ({
+                                        kcal: acc.kcal + e.kcal,
+                                        protein: acc.protein + Number(e.protein_g),
+                                        carbs: acc.carbs + Number(e.carbs_g),
+                                        fat: acc.fat + Number(e.fat_g),
+                                    }), { kcal: 0, protein: 0, carbs: 0, fat: 0 });
+                                    return (
+                                        <div className="rounded-lg border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.02] p-4" style={{ boxShadow: "inset 0 1px 0 rgb(var(--accent-rgb) / 0.06)" }}>
+                                            <div className="flex items-center justify-between mb-3">
+                                                <p className="text-[10px] font-mono tracking-widest text-white/25">DAILY TOTALS</p>
+                                                {intakeAdherence !== null && (
+                                                    <p className="text-[9px] font-mono text-white/30">30D ADHERENCE: <span className={intakeAdherence >= 80 ? "text-emerald-300" : intakeAdherence >= 50 ? "text-amber-300" : "text-red-300"}>{intakeAdherence}%</span></p>
+                                                )}
+                                            </div>
+                                            <div className="grid grid-cols-4 gap-2">
+                                                <div className="text-center">
+                                                    <p className="text-[8px] font-mono text-white/30">KCAL</p>
+                                                    <p className="text-lg font-bold font-mono text-[rgb(var(--accent-light-rgb))]">{totals.kcal}</p>
+                                                </div>
+                                                <div className="text-center">
+                                                    <p className="text-[8px] font-mono text-white/30">PROTEIN</p>
+                                                    <p className="text-lg font-bold font-mono text-rose-300">{Math.round(totals.protein)}g</p>
+                                                </div>
+                                                <div className="text-center">
+                                                    <p className="text-[8px] font-mono text-white/30">CARBS</p>
+                                                    <p className="text-lg font-bold font-mono text-amber-300">{Math.round(totals.carbs)}g</p>
+                                                </div>
+                                                <div className="text-center">
+                                                    <p className="text-[8px] font-mono text-white/30">FAT</p>
+                                                    <p className="text-lg font-bold font-mono text-blue-300">{Math.round(totals.fat)}g</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
+
+                                {/* Add entry form */}
+                                <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-4 space-y-3">
+                                    <p className="text-[10px] font-mono tracking-widest text-white/25">LOG FOOD</p>
+
+                                    {/* Meal slot */}
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {MEAL_SLOTS.map((s) => (
+                                            <button
+                                                key={s.value}
+                                                onClick={() => setIntakeMealSlot(s.value)}
+                                                className={`text-[9px] font-mono px-2.5 py-1.5 rounded-md border transition ${intakeMealSlot === s.value ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/[0.08] text-white/30 hover:text-white/50"}`}
+                                            >
+                                                {s.label}
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    {/* Label */}
+                                    <input
+                                        type="text"
+                                        value={intakeLabel}
+                                        onChange={(e) => setIntakeLabel(e.target.value)}
+                                        placeholder="What did you eat? (optional)"
+                                        className="w-full h-10 rounded-lg bg-white/[0.04] border border-white/[0.08] px-3 text-sm font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition placeholder:text-white/20"
+                                    />
+
+                                    {/* Macros grid */}
+                                    <div className="grid grid-cols-4 gap-2">
+                                        <div>
+                                            <label className="text-[8px] font-mono text-white/30 block mb-1">KCAL *</label>
+                                            <input type="number" min="0" inputMode="numeric" onWheel={(e) => (e.target as HTMLElement).blur()} value={intakeKcal} onChange={(e) => setIntakeKcal(e.target.value)} placeholder="—" className="w-full h-10 rounded-lg bg-white/[0.04] border border-white/[0.08] text-center text-sm font-bold font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition placeholder:text-white/15" />
+                                        </div>
+                                        <div>
+                                            <label className="text-[8px] font-mono text-rose-300/50 block mb-1">PROT (g)</label>
+                                            <input type="number" min="0" inputMode="decimal" onWheel={(e) => (e.target as HTMLElement).blur()} value={intakeProtein} onChange={(e) => setIntakeProtein(e.target.value)} placeholder="—" className="w-full h-10 rounded-lg bg-white/[0.04] border border-white/[0.08] text-center text-sm font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition placeholder:text-white/15" />
+                                        </div>
+                                        <div>
+                                            <label className="text-[8px] font-mono text-amber-300/50 block mb-1">CARBS (g)</label>
+                                            <input type="number" min="0" inputMode="decimal" onWheel={(e) => (e.target as HTMLElement).blur()} value={intakeCarbs} onChange={(e) => setIntakeCarbs(e.target.value)} placeholder="—" className="w-full h-10 rounded-lg bg-white/[0.04] border border-white/[0.08] text-center text-sm font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition placeholder:text-white/15" />
+                                        </div>
+                                        <div>
+                                            <label className="text-[8px] font-mono text-blue-300/50 block mb-1">FAT (g)</label>
+                                            <input type="number" min="0" inputMode="decimal" onWheel={(e) => (e.target as HTMLElement).blur()} value={intakeFat} onChange={(e) => setIntakeFat(e.target.value)} placeholder="—" className="w-full h-10 rounded-lg bg-white/[0.04] border border-white/[0.08] text-center text-sm font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition placeholder:text-white/15" />
+                                        </div>
+                                    </div>
+
+                                    <button
+                                        onClick={async () => {
+                                            if (!user || !intakeKcal) return;
+                                            await supabase.from("food_entries").insert({
+                                                user_id: user.id,
+                                                date: intakeDate,
+                                                meal_slot: intakeMealSlot,
+                                                label: intakeLabel.trim() || null,
+                                                kcal: Number(intakeKcal),
+                                                protein_g: Number(intakeProtein) || 0,
+                                                carbs_g: Number(intakeCarbs) || 0,
+                                                fat_g: Number(intakeFat) || 0,
+                                            });
+                                            await rematerializeDailyIntake(user.id, intakeDate);
+                                            setIntakeLabel("");
+                                            setIntakeKcal("");
+                                            setIntakeProtein("");
+                                            setIntakeCarbs("");
+                                            setIntakeFat("");
+                                            await loadIntake(intakeDate);
+                                        }}
+                                        disabled={!intakeKcal}
+                                        className="w-full text-[10px] font-mono py-3 rounded-lg border border-[rgb(var(--accent-rgb)/0.3)] text-[rgb(var(--accent-light-rgb))] hover:bg-[rgb(var(--accent-rgb)/0.1)] disabled:opacity-30 disabled:cursor-not-allowed transition"
+                                    >
+                                        LOG ENTRY
+                                    </button>
+                                </div>
+
+                                {/* Entries list */}
+                                {intakeEntries.length > 0 && (
+                                    <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-4 space-y-2">
+                                        <p className="text-[10px] font-mono tracking-widest text-white/25 mb-2">ENTRIES</p>
+                                        {intakeEntries.map((entry) => (
+                                            <div key={entry.id} className="flex items-center justify-between py-2 border-b border-white/[0.04] last:border-0">
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-[8px] font-mono px-1.5 py-0.5 rounded bg-white/[0.06] text-white/30 uppercase">{entry.meal_slot}</span>
+                                                        {entry.label && <span className="text-xs font-mono text-white/60 truncate">{entry.label}</span>}
+                                                    </div>
+                                                    <div className="flex items-center gap-3 mt-1">
+                                                        <span className="text-xs font-bold font-mono text-[rgb(var(--accent-light-rgb))]">{entry.kcal} kcal</span>
+                                                        <span className="text-[9px] font-mono text-rose-300/60">P{Math.round(Number(entry.protein_g))}</span>
+                                                        <span className="text-[9px] font-mono text-amber-300/60">C{Math.round(Number(entry.carbs_g))}</span>
+                                                        <span className="text-[9px] font-mono text-blue-300/60">F{Math.round(Number(entry.fat_g))}</span>
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={async () => {
+                                                        if (!user) return;
+                                                        await supabase.from("food_entries").delete().eq("id", entry.id);
+                                                        await rematerializeDailyIntake(user.id, intakeDate);
+                                                        await loadIntake(intakeDate);
+                                                    }}
+                                                    className="shrink-0 p-2 text-white/20 hover:text-red-400 transition"
+                                                >
+                                                    <Trash2 size={13} />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {intakeEntries.length === 0 && (
+                                    <div className="rounded-lg border border-dashed border-white/10 p-8 text-center">
+                                        <Flame size={20} className="mx-auto text-white/15 mb-2" />
+                                        <p className="text-xs font-mono text-white/30">No entries for this day.</p>
+                                        <p className="text-[9px] font-mono text-white/15 mt-1">Log your meals to track daily intake and build adherence.</p>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </>
