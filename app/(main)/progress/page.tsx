@@ -12,6 +12,7 @@ import { type WeightEntry, type WeightContext, lbsToKg, kgToLbs, rematerializeWe
 import { type FoodEntry, type MealSlot, MEAL_SLOTS, rematerializeDailyIntake, calcAdherence } from "../../lib/intakeLog";
 import { buildLedger, avgDailyNet, projectWeightChange, projectWeightAtDate, daysUntil, type DailyBalance } from "../../lib/energyLedger";
 import { getFullCalorieSummary, ageFromDOB, type CalorieSummary, type GoalType, type ActivityLevel, type DietPreference, type Sex } from "../../lib/calorieEngine";
+import { checkFeasibility, type FeasibilityVerdict } from "../../lib/energyGuardrails";
 
 const MEASUREMENT_TYPES: { type: MeasurementType; color: string; bar: string }[] = [
     { type: "Biceps", color: "text-pink-300", bar: "bg-pink-400" },
@@ -182,6 +183,7 @@ export default function ProgressPage() {
     const [ledger, setLedger] = useState<DailyBalance[]>([]);
     const [ledgerGoal, setLedgerGoal] = useState<{ targetWeightKg: number | null; targetDate: string | null } | null>(null);
     const [ledgerCalorieSummary, setLedgerCalorieSummary] = useState<CalorieSummary | null>(null);
+    const [feasibility, setFeasibility] = useState<FeasibilityVerdict | null>(null);
 
     const loadHistory = useCallback(async () => {
         if (!user) return;
@@ -430,6 +432,16 @@ export default function ProgressPage() {
             setLedgerCalorieSummary(summary);
             if (allIntake && allIntake.length > 0) {
                 setLedger(buildLedger(allIntake.map((r: any) => ({ date: r.date, kcal: Number(r.kcal) })), summary.calorieTarget));
+            }
+
+            if (g?.target_weight_kg && bwLatest) {
+                setFeasibility(checkFeasibility({
+                    currentKg: bwLatest,
+                    targetKg: Number(g.target_weight_kg),
+                    targetDate: g.target_date ?? null,
+                    tdee: summary.tdee,
+                    goalType: g.goal_type,
+                }));
             }
         }
     }, [user, bodyWeightData]);
@@ -1193,6 +1205,29 @@ export default function ProgressPage() {
                                         </div>
                                     );
                                 })()}
+
+                                {/* Feasibility verdict */}
+                                {feasibility && (
+                                    <div className={`rounded-lg border p-4 ${feasibility.feasible ? "border-emerald-400/20 bg-emerald-400/[0.03]" : "border-amber-400/20 bg-amber-400/[0.03]"}`}>
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <div className={`w-2 h-2 rounded-full ${feasibility.feasible ? "bg-emerald-400" : "bg-amber-400"}`} />
+                                            <p className="text-[10px] font-mono tracking-widest text-white/30">{feasibility.feasible ? "ON TRACK" : "ADJUST NEEDED"}</p>
+                                        </div>
+                                        <p className="text-xs font-mono text-white/60 mb-2">{feasibility.reason}</p>
+                                        {!feasibility.feasible && feasibility.suggestedDate && (
+                                            <div className="rounded-md bg-white/[0.04] border border-white/[0.06] p-2 mt-1">
+                                                <p className="text-[8px] font-mono text-white/30">SUGGESTED TARGET DATE</p>
+                                                <p className="text-sm font-bold font-mono text-[rgb(var(--accent-light-rgb))]">
+                                                    {new Date(feasibility.suggestedDate + "T12:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
+                                                </p>
+                                                <p className="text-[8px] font-mono text-white/20 mt-0.5">at {feasibility.safeRateKgWeek} kg/week safe rate</p>
+                                            </div>
+                                        )}
+                                        {feasibility.feasible && feasibility.requiredRateKgWeek > 0 && (
+                                            <p className="text-[8px] font-mono text-white/20">Required rate: {feasibility.requiredRateKgWeek} kg/week · Safe max: {feasibility.safeRateKgWeek} kg/week</p>
+                                        )}
+                                    </div>
+                                )}
 
                                 {/* Add entry form */}
                                 <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-4 space-y-3">
