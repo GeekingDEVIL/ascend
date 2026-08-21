@@ -13,6 +13,7 @@ import { type FoodEntry, type MealSlot, MEAL_SLOTS, rematerializeDailyIntake, ca
 import { buildLedger, avgDailyNet, projectWeightChange, projectWeightAtDate, daysUntil, type DailyBalance } from "../../lib/energyLedger";
 import { getFullCalorieSummary, ageFromDOB, type CalorieSummary, type GoalType, type ActivityLevel, type DietPreference, type Sex } from "../../lib/calorieEngine";
 import { checkFeasibility, type FeasibilityVerdict } from "../../lib/energyGuardrails";
+import { estimateObservedTdee, blendTdee, type TdeeEstimate } from "../../lib/energyEstimator";
 
 const MEASUREMENT_TYPES: { type: MeasurementType; color: string; bar: string }[] = [
     { type: "Biceps", color: "text-pink-300", bar: "bg-pink-400" },
@@ -184,6 +185,8 @@ export default function ProgressPage() {
     const [ledgerGoal, setLedgerGoal] = useState<{ targetWeightKg: number | null; targetDate: string | null } | null>(null);
     const [ledgerCalorieSummary, setLedgerCalorieSummary] = useState<CalorieSummary | null>(null);
     const [feasibility, setFeasibility] = useState<FeasibilityVerdict | null>(null);
+    const [tdeeEstimate, setTdeeEstimate] = useState<TdeeEstimate | null>(null);
+    const [adaptiveMode, setAdaptiveMode] = useState(false);
 
     const loadHistory = useCallback(async () => {
         if (!user) return;
@@ -379,7 +382,7 @@ export default function ProgressPage() {
 
     const loadIntake = useCallback(async (date: string) => {
         if (!user) return;
-        const [{ data: entries }, { data: dailyRows }, { data: allIntake }, { data: goalRows }, { data: prof }] = await Promise.all([
+        const [{ data: entries }, { data: dailyRows }, { data: allIntake }, { data: goalRows }, { data: prof }, { data: trendRows }] = await Promise.all([
             supabase
                 .from("food_entries")
                 .select("id, date, meal_slot, label, kcal, protein_g, carbs_g, fat_g, logged_at")
@@ -398,7 +401,7 @@ export default function ProgressPage() {
                 .order("date", { ascending: true }),
             supabase
                 .from("user_goals")
-                .select("goal_type, rate_per_week_kg, diet_preference, calorie_target_override, target_weight_kg, target_date")
+                .select("goal_type, rate_per_week_kg, diet_preference, calorie_target_override, target_weight_kg, target_date, adaptive_mode")
                 .eq("user_id", user.id)
                 .eq("is_active", true)
                 .limit(1),
@@ -407,13 +410,19 @@ export default function ProgressPage() {
                 .select("height_cm, date_of_birth, sex, activity_level")
                 .eq("id", user.id)
                 .maybeSingle(),
+            supabase
+                .from("weight_trend")
+                .select("date, ema_kg")
+                .eq("user_id", user.id)
+                .order("date", { ascending: true }),
         ]);
         setIntakeEntries((entries ?? []) as FoodEntry[]);
         setIntakeAdherence(calcAdherence(dailyRows ?? [], 30));
 
-        const g = goalRows?.[0];
+        const g = goalRows?.[0] as any;
         if (g) {
             setLedgerGoal({ targetWeightKg: g.target_weight_kg ? Number(g.target_weight_kg) : null, targetDate: g.target_date ?? null });
+            setAdaptiveMode(!!g.adaptive_mode);
         }
 
         const bwLatest = bodyWeightData.length > 0 ? bodyWeightData[bodyWeightData.length - 1].weight : null;
@@ -442,6 +451,14 @@ export default function ProgressPage() {
                     tdee: summary.tdee,
                     goalType: g.goal_type,
                 }));
+            }
+
+            if (allIntake && trendRows && trendRows.length >= 2) {
+                const estimate = estimateObservedTdee({
+                    dailyIntakes: allIntake.map((r: any) => ({ date: r.date, kcal: Number(r.kcal) })),
+                    trendWeights: trendRows.map((r: any) => ({ date: r.date, ema_kg: Number(r.ema_kg) })),
+                });
+                setTdeeEstimate(estimate);
             }
         }
     }, [user, bodyWeightData]);
@@ -1225,6 +1242,59 @@ export default function ProgressPage() {
                                         )}
                                         {feasibility.feasible && feasibility.requiredRateKgWeek > 0 && (
                                             <p className="text-[8px] font-mono text-white/20">Required rate: {feasibility.requiredRateKgWeek} kg/week · Safe max: {feasibility.safeRateKgWeek} kg/week</p>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Adaptive TDEE */}
+                                {ledgerCalorieSummary && (
+                                    <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-4">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <p className="text-[10px] font-mono tracking-widest text-white/25">ADAPTIVE MODE</p>
+                                            <button
+                                                onClick={async () => {
+                                                    if (!user) return;
+                                                    const next = !adaptiveMode;
+                                                    setAdaptiveMode(next);
+                                                    await supabase.from("user_goals").update({ adaptive_mode: next, updated_at: new Date().toISOString() }).eq("user_id", user.id).eq("is_active", true);
+                                                }}
+                                                className={`relative w-10 h-5 rounded-full transition-colors ${adaptiveMode ? "bg-[rgb(var(--accent-rgb))]" : "bg-white/10"}`}
+                                            >
+                                                <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${adaptiveMode ? "translate-x-5" : "translate-x-0.5"}`} />
+                                            </button>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div className="rounded-md bg-white/[0.03] border border-white/[0.06] p-3 text-center">
+                                                <p className="text-[8px] font-mono text-white/30">CALCULATED TDEE</p>
+                                                <p className="text-lg font-bold font-mono text-white/60">{ledgerCalorieSummary.tdee}</p>
+                                                <p className="text-[7px] font-mono text-white/15">from profile</p>
+                                            </div>
+                                            <div className={`rounded-md border p-3 text-center ${tdeeEstimate ? "bg-[rgb(var(--accent-rgb)/0.05)] border-[rgb(var(--accent-rgb)/0.2)]" : "bg-white/[0.03] border-white/[0.06]"}`}>
+                                                <p className="text-[8px] font-mono text-white/30">OBSERVED TDEE</p>
+                                                {tdeeEstimate ? (
+                                                    <>
+                                                        <p className="text-lg font-bold font-mono text-[rgb(var(--accent-light-rgb))]">{tdeeEstimate.observedTdee}</p>
+                                                        <p className="text-[7px] font-mono text-white/15">{tdeeEstimate.days}d data</p>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <p className="text-lg font-bold font-mono text-white/20">—</p>
+                                                        <p className="text-[7px] font-mono text-white/15">need 14+ days</p>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+                                        {adaptiveMode && tdeeEstimate && (
+                                            <div className="mt-3 rounded-md bg-white/[0.03] border border-white/[0.06] p-2 text-center">
+                                                <p className="text-[8px] font-mono text-white/30">BLENDED TDEE</p>
+                                                <p className="text-sm font-bold font-mono text-[rgb(var(--accent-light-rgb))]">
+                                                    {blendTdee(ledgerCalorieSummary.tdee, tdeeEstimate.observedTdee, tdeeEstimate.days)} <span className="text-xs text-white/20">kcal</span>
+                                                </p>
+                                                <p className="text-[7px] font-mono text-white/15">weighted blend · observed confidence ramps over 28 days</p>
+                                            </div>
+                                        )}
+                                        {adaptiveMode && !tdeeEstimate && (
+                                            <p className="text-[8px] font-mono text-white/20 mt-2 text-center">Log intake and morning weights for 14+ days to enable adaptive estimation.</p>
                                         )}
                                     </div>
                                 )}
