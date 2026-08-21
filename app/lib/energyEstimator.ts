@@ -149,3 +149,20 @@ export function blendTdee(calculatedTdee: number, estimate: TdeeEstimate): numbe
   const blended = calculatedTdee * (1 - observedWeight) + estimate.value * observedWeight;
   return Math.round(blended);
 }
+
+export function buildTdeeAuditRow(estimate: TdeeEstimate, userId: string) {
+  return {
+    user_id: userId,
+    period_start: estimate.periodStart,
+    period_end: estimate.periodEnd,
+    days: estimate.windowDays,
+    avg_daily_intake: estimate.inputs.avgIntake,
+    weight_change_kg: estimate.inputs.trendDeltaKg,
+    observed_tdee: estimate.value,
+    confidence_low: estimate.confidence[0],
+    confidence_high: estimate.confidence[1],
+    adherence_pct: estimate.adherencePct,
+    method: estimate.method,
+    window_days: estimate.windowDays,
+  };
+}

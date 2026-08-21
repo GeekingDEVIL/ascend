@@ -111,9 +111,11 @@ export function getFullCalorieSummary(params: {
   ratePerWeekKg?: number;
   diet?: DietPreference;
   calorieOverride?: number;
+  blendedTdee?: number;
 }): CalorieSummary {
   const bmr = calcBMR(params.weightKg, params.heightCm, params.ageYears, params.sex);
-  const tdee = calcTDEE(bmr, params.activity);
+  const formulaTdee = calcTDEE(bmr, params.activity);
+  const tdee = params.blendedTdee ?? formulaTdee;
   const calorieTarget = params.calorieOverride ?? calcCalorieTarget(tdee, params.goalType, params.ratePerWeekKg);
   const macros = calcMacros(calorieTarget, params.weightKg, params.goalType, params.diet);
   const bmi = calcBMI(params.weightKg, params.heightCm);

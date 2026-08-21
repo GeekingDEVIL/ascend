@@ -212,3 +212,64 @@ export function checkFeasibility(params: {
     violations,
   };
 }
+
+export type PatternWarning = {
+  pattern: string;
+  detail: string;
+  severity: "info" | "warning" | "concern";
+};
+
+export function detectPatterns(params: {
+  currentKg: number;
+  heightCm: number;
+  targetKg: number | null;
+  recentGoalEdits?: { date: string; targetKg: number }[];
+  weightTrend?: { date: string; ema_kg: number }[];
+  loggingAdherence?: number;
+}): PatternWarning[] {
+  const warnings: PatternWarning[] = [];
+  const { currentKg, heightCm, targetKg, recentGoalEdits, weightTrend, loggingAdherence } = params;
+
+  if (targetKg !== null) {
+    const targetBmi = calcBMI(targetKg, heightCm);
+    if (targetBmi < 18.5) {
+      warnings.push({
+        pattern: "Underweight target",
+        detail: `Goal weight of ${targetKg} kg gives a BMI of ${targetBmi}, which is below the healthy range (18.5+). Consider a higher target.`,
+        severity: "concern",
+      });
+    }
+  }
+
+  if (recentGoalEdits && recentGoalEdits.length >= 3) {
+    const sorted = [...recentGoalEdits].sort((a, b) => b.date.localeCompare(a.date));
+    const recent3 = sorted.slice(0, 3);
+    const allDecreasing = recent3.every((e, i) => i === 0 || e.targetKg < recent3[i - 1].targetKg);
+    if (allDecreasing) {
+      const firstDate = recent3[recent3.length - 1].date;
+      const lastDate = recent3[0].date;
+      const daySpan = Math.round((new Date(lastDate).getTime() - new Date(firstDate).getTime()) / 86400000);
+      if (daySpan <= 14) {
+        warnings.push({
+          pattern: "Rapid goal reduction",
+          detail: `Target weight lowered ${recent3.length} times in ${daySpan} days. Frequent reductions can lead to unsustainable deficits.`,
+          severity: "warning",
+        });
+      }
+    }
+  }
+
+  if (weightTrend && weightTrend.length >= 7 && loggingAdherence !== undefined) {
+    const recent = weightTrend.slice(-7);
+    const weekDelta = recent[recent.length - 1].ema_kg - recent[0].ema_kg;
+    if (weekDelta < -0.5 && loggingAdherence < 30) {
+      warnings.push({
+        pattern: "Weight dropping without logging",
+        detail: `Weight has dropped ${Math.abs(Math.round(weekDelta * 10) / 10)} kg this week but food logging adherence is only ${loggingAdherence}%. Please log meals so the system can keep you safe.`,
+        severity: "concern",
+      });
+    }
+  }
+
+  return warnings;
+}
