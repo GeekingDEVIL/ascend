@@ -29,7 +29,7 @@ function FlatButton({ icon, children, onClick }: { icon: React.ReactNode; childr
   return (
     <button
       onClick={onClick}
-      className="w-full flex items-center gap-4 rounded-md bg-white text-[#1a1a1a] font-semibold text-sm py-4 px-5 hover:bg-white/90 transition"
+      className="w-full flex items-center justify-center gap-3 rounded-md bg-white text-[#1a1a1a] font-semibold text-sm py-4 px-4 hover:bg-white/90 transition whitespace-nowrap"
     >
       {icon}
       {children}
@@ -68,7 +68,7 @@ function BeamBorder({ children }: { children: React.ReactNode }) {
               "conic-gradient(from 0deg, transparent 0%, transparent 3%, rgb(var(--accent-rgb)) 15%, #e0f7ff 25%, rgb(var(--accent-rgb)) 35%, transparent 47%, transparent 53%, rgb(var(--accent-rgb)) 65%, #e0f7ff 75%, rgb(var(--accent-rgb)) 85%, transparent 97%, transparent 100%)",
           }}
         />
-        <div className="relative rounded-md bg-[#0a1524] px-8 py-8">{children}</div>
+        <div className="relative rounded-md bg-[#0a1524] px-6 py-8">{children}</div>
       </div>
       <SideLine side="left" />
       <SideLine side="right" />
