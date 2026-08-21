@@ -27,6 +27,32 @@ const MEASUREMENT_TYPES: { type: MeasurementType; color: string; bar: string }[]
     { type: "Calf", color: "text-yellow-300", bar: "bg-yellow-400" },
 ];
 
+const ACRONYM_EXPLAINERS: Record<string, string> = {
+    TDEE: "Total Daily Energy Expenditure — how many calories your body burns in a day, including activity. Calculated as BMR × activity multiplier.",
+    BMR: "Basal Metabolic Rate — calories your body needs at complete rest just to stay alive. Calculated using the Mifflin-St Jeor equation from your weight, height, age, and sex.",
+    EMA: "Exponential Moving Average — a smoothed trend line that filters out daily weight fluctuations from water, food timing, etc. Shows your true weight direction.",
+    BMI: "Body Mass Index — your weight relative to height. Used to adjust safe weight-loss rates (slower if already lean).",
+};
+
+function InfoTip({ term }: { term: string }) {
+    const [open, setOpen] = useState(false);
+    const text = ACRONYM_EXPLAINERS[term];
+    if (!text) return null;
+    return (
+        <span className="relative inline-block ml-1">
+            <button
+                onClick={(e) => { e.stopPropagation(); setOpen(!open); }}
+                className="inline-flex items-center justify-center w-3 h-3 rounded-full border border-white/15 text-[6px] font-mono text-white/25 hover:text-white/50 hover:border-white/30 transition"
+            >i</button>
+            {open && (
+                <span className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-1 w-52 p-2 rounded-md bg-[#0d1320] border border-white/15 text-[8px] font-mono text-white/50 leading-relaxed shadow-lg" onClick={(e) => e.stopPropagation()}>
+                    <strong className="text-white/70">{term}</strong> — {text}
+                </span>
+            )}
+        </span>
+    );
+}
+
 type Tab = "history" | "strength" | "body" | "volume" | "intake";
 type ActivityRange = "7D" | "30D" | "6M" | "12M" | "All";
 
@@ -1028,7 +1054,7 @@ export default function ProgressPage() {
                                         </div>
                                     )}
                                     {bodyWeightData.length >= 2 && !bodyWeightData.some((d) => d.ema) && (
-                                        <p className="text-[9px] font-mono text-white/20 mt-2 text-center">Log morning weigh-ins to see the EMA trend line</p>
+                                        <p className="text-[9px] font-mono text-white/20 mt-2 text-center">Log morning weigh-ins to see the EMA<InfoTip term="EMA" /> trend line</p>
                                     )}
                                 </div>
 
@@ -1172,7 +1198,7 @@ export default function ProgressPage() {
                                     >›</button>
                                 </div>
 
-                                {/* Daily totals */}
+                                {/* Card 1: Today's Progress */}
                                 {(() => {
                                     const totals = intakeEntries.reduce((acc, e) => ({
                                         kcal: acc.kcal + e.kcal,
@@ -1180,37 +1206,122 @@ export default function ProgressPage() {
                                         carbs: acc.carbs + Number(e.carbs_g),
                                         fat: acc.fat + Number(e.fat_g),
                                     }), { kcal: 0, protein: 0, carbs: 0, fat: 0 });
+
+                                    const target = ledgerCalorieSummary?.calorieTarget ?? 0;
+                                    const remaining = Math.max(0, target - totals.kcal);
+                                    const pct = target > 0 ? Math.min((totals.kcal / target) * 100, 100) : 0;
+                                    const overTarget = totals.kcal > target;
+                                    const overBy = totals.kcal - target;
+                                    const isToday = intakeDate === new Date().toISOString().split("T")[0];
+
+                                    const mealColors: Record<string, string> = { breakfast: "rgb(251,191,36)", lunch: "rgb(52,211,153)", dinner: "rgb(129,140,248)", snack: "rgb(244,114,182)" };
+                                    const mealTotals = (["breakfast", "lunch", "dinner", "snack"] as const).map((slot) => ({
+                                        slot,
+                                        kcal: intakeEntries.filter((e) => e.meal_slot === slot).reduce((s, e) => s + e.kcal, 0),
+                                    })).filter((m) => m.kcal > 0);
+
+                                    const macroTargets = ledgerCalorieSummary?.macros;
+
                                     return (
                                         <div className="rounded-lg border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.02] p-4" style={{ boxShadow: "inset 0 1px 0 rgb(var(--accent-rgb) / 0.06)" }}>
                                             <div className="flex items-center justify-between mb-3">
-                                                <p className="text-[10px] font-mono tracking-widest text-white/25">DAILY TOTALS</p>
+                                                <p className="text-[10px] font-mono tracking-widest text-white/25">{isToday ? "TODAY'S PROGRESS" : "DAILY TOTALS"}</p>
                                                 {intakeAdherence !== null && (
                                                     <p className="text-[9px] font-mono text-white/30">30D ADHERENCE: <span className={intakeAdherence >= 80 ? "text-emerald-300" : intakeAdherence >= 50 ? "text-amber-300" : "text-red-300"}>{intakeAdherence}%</span></p>
                                                 )}
                                             </div>
-                                            <div className="grid grid-cols-4 gap-2">
-                                                <div className="text-center">
-                                                    <p className="text-[8px] font-mono text-white/30">KCAL</p>
-                                                    <p className="text-lg font-bold font-mono text-[rgb(var(--accent-light-rgb))]">{totals.kcal}</p>
+
+                                            {/* Remaining / Over display */}
+                                            {target > 0 && (
+                                                <div className="text-center mb-3">
+                                                    {overTarget ? (
+                                                        <>
+                                                            <p className="text-2xl font-bold font-mono text-red-400">{overBy}</p>
+                                                            <p className="text-[9px] font-mono text-red-300/60">kcal over target</p>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <p className="text-2xl font-bold font-mono text-emerald-300">{remaining}</p>
+                                                            <p className="text-[9px] font-mono text-emerald-300/60">{isToday ? "kcal remaining" : "kcal under target"}</p>
+                                                        </>
+                                                    )}
                                                 </div>
-                                                <div className="text-center">
-                                                    <p className="text-[8px] font-mono text-white/30">PROTEIN</p>
-                                                    <p className="text-lg font-bold font-mono text-rose-300">{Math.round(totals.protein)}g</p>
+                                            )}
+
+                                            {/* Progress bar with meal segments */}
+                                            {target > 0 && (
+                                                <div className="mb-3">
+                                                    <div className="h-3 rounded-full bg-white/[0.06] overflow-hidden flex">
+                                                        {mealTotals.map((m) => (
+                                                            <div
+                                                                key={m.slot}
+                                                                style={{ width: `${Math.min((m.kcal / target) * 100, 100)}%`, backgroundColor: mealColors[m.slot] }}
+                                                                className="h-full opacity-70 first:rounded-l-full last:rounded-r-full"
+                                                            />
+                                                        ))}
+                                                    </div>
+                                                    <div className="flex items-center justify-between mt-1.5">
+                                                        <div className="flex gap-2">
+                                                            {mealTotals.map((m) => (
+                                                                <div key={m.slot} className="flex items-center gap-1">
+                                                                    <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: mealColors[m.slot], opacity: 0.7 }} />
+                                                                    <span className="text-[7px] font-mono text-white/25 capitalize">{m.slot} {m.kcal}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                        <span className="text-[7px] font-mono text-white/20">{totals.kcal} / {target}</span>
+                                                    </div>
                                                 </div>
-                                                <div className="text-center">
-                                                    <p className="text-[8px] font-mono text-white/30">CARBS</p>
-                                                    <p className="text-lg font-bold font-mono text-amber-300">{Math.round(totals.carbs)}g</p>
+                                            )}
+
+                                            {/* Macro mini bars */}
+                                            {macroTargets && (
+                                                <div className="grid grid-cols-3 gap-2 mt-2">
+                                                    {([
+                                                        { label: "Protein", current: totals.protein, target: macroTargets.protein, color: "rgb(251,113,133)" },
+                                                        { label: "Carbs", current: totals.carbs, target: macroTargets.carbs, color: "rgb(251,191,36)" },
+                                                        { label: "Fat", current: totals.fat, target: macroTargets.fat, color: "rgb(96,165,250)" },
+                                                    ] as const).map((m) => {
+                                                        const mpct = m.target > 0 ? Math.min((m.current / m.target) * 100, 100) : 0;
+                                                        return (
+                                                            <div key={m.label} className="text-center">
+                                                                <p className="text-[7px] font-mono text-white/30 mb-0.5">{m.label}</p>
+                                                                <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+                                                                    <div className="h-full rounded-full transition-all duration-500" style={{ width: `${mpct}%`, backgroundColor: m.color, opacity: 0.6 }} />
+                                                                </div>
+                                                                <p className="text-[8px] font-mono mt-0.5" style={{ color: m.color }}>{Math.round(m.current)}<span className="text-white/20">/{m.target}g</span></p>
+                                                            </div>
+                                                        );
+                                                    })}
                                                 </div>
-                                                <div className="text-center">
-                                                    <p className="text-[8px] font-mono text-white/30">FAT</p>
-                                                    <p className="text-lg font-bold font-mono text-blue-300">{Math.round(totals.fat)}g</p>
+                                            )}
+
+                                            {/* No target fallback */}
+                                            {!target && (
+                                                <div className="grid grid-cols-4 gap-2">
+                                                    <div className="text-center">
+                                                        <p className="text-[8px] font-mono text-white/30">KCAL</p>
+                                                        <p className="text-lg font-bold font-mono text-[rgb(var(--accent-light-rgb))]">{totals.kcal}</p>
+                                                    </div>
+                                                    <div className="text-center">
+                                                        <p className="text-[8px] font-mono text-white/30">PROTEIN</p>
+                                                        <p className="text-lg font-bold font-mono text-rose-300">{Math.round(totals.protein)}g</p>
+                                                    </div>
+                                                    <div className="text-center">
+                                                        <p className="text-[8px] font-mono text-white/30">CARBS</p>
+                                                        <p className="text-lg font-bold font-mono text-amber-300">{Math.round(totals.carbs)}g</p>
+                                                    </div>
+                                                    <div className="text-center">
+                                                        <p className="text-[8px] font-mono text-white/30">FAT</p>
+                                                        <p className="text-lg font-bold font-mono text-blue-300">{Math.round(totals.fat)}g</p>
+                                                    </div>
                                                 </div>
-                                            </div>
+                                            )}
                                         </div>
                                     );
                                 })()}
 
-                                {/* Energy Ledger */}
+                                {/* Card 2: Weekly Trend */}
                                 {ledger.length > 0 && ledgerCalorieSummary && (() => {
                                     const avg = avgDailyNet(ledger);
                                     const cumul = ledger[ledger.length - 1].cumulative;
@@ -1225,41 +1336,67 @@ export default function ProgressPage() {
                                     const goalType = ledgerGoal?.goalType ?? "general_fitness";
                                     const wantsDeficit = goalType === "lose_weight" || goalType === "body_recomp";
                                     const absAvg = Math.abs(avg);
-                                    const avgLabel = avg === 0 ? "On target" : avg < 0 ? `${absAvg} under target` : `${absAvg} over target`;
                                     const avgGood = wantsDeficit ? avg <= 0 : avg >= 0;
                                     const absWeightDelta = Math.abs(weightDelta);
-                                    const weightLabel = weightDelta === 0 ? "No change" : weightDelta < 0 ? `${absWeightDelta} kg lost` : `${absWeightDelta} kg gained`;
                                     const weightGood = wantsDeficit ? weightDelta <= 0 : weightDelta >= 0;
 
                                     const sparkData = ledger.slice(-14).map((d) => ({ date: d.date.slice(5), net: d.net }));
 
-                                    const weekCount = Math.ceil(ledger.length / 7);
+                                    const weekCount = Math.max(1, Math.ceil(ledger.length / 7));
                                     const avgPerWeek = Math.abs(Math.round(weightDelta / weekCount * 100) / 100);
+
+                                    // Streak: consecutive days where intake was within ±10% of target
+                                    const target = ledgerCalorieSummary.calorieTarget;
+                                    const margin = target * 0.10;
+                                    const streakDots = ledger.slice(-7).map((d) => {
+                                        const diff = Math.abs(d.intake - target);
+                                        return { date: d.date, hit: diff <= margin };
+                                    });
+                                    const currentStreak = [...streakDots].reverse().reduce((s, d) => d.hit ? s + 1 : s, 0);
+
                                     const contextParts: string[] = [];
-                                    if (avg !== 0) {
-                                        contextParts.push(`You've averaged ${absAvg} kcal ${avg < 0 ? "under" : "over"} your target over ${ledger.length} day${ledger.length !== 1 ? "s" : ""}`);
-                                    }
+                                    contextParts.push(`Avg ${absAvg} kcal ${avg < 0 ? "under" : "over"} target across ${ledger.length} day${ledger.length !== 1 ? "s" : ""}`);
                                     if (absWeightDelta >= 0.1) {
                                         contextParts.push(`on pace to ${weightDelta < 0 ? "lose" : "gain"} ~${avgPerWeek} kg/week`);
                                     }
-                                    const contextSentence = contextParts.length > 0 ? contextParts.join(" — ") + "." : "";
 
                                     return (
                                         <div className="rounded-lg border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.02] p-4" style={{ boxShadow: "inset 0 1px 0 rgb(var(--accent-rgb) / 0.06)" }}>
-                                            <p className="text-[10px] font-mono tracking-widest text-white/25 mb-3">ENERGY LEDGER</p>
+                                            <p className="text-[10px] font-mono tracking-widest text-white/25 mb-3">WEEKLY TREND</p>
+
                                             <div className="grid grid-cols-2 gap-3 mb-3">
                                                 <div className="rounded-md bg-white/[0.03] border border-white/[0.04] p-2.5 text-center">
-                                                    <p className="text-[8px] font-mono text-white/30 mb-1">DAILY AVG VS TARGET</p>
-                                                    <p className={`text-sm font-bold font-mono ${avgGood ? "text-emerald-300" : "text-amber-300"}`}>{avgLabel}</p>
+                                                    <p className="text-[8px] font-mono text-white/30 mb-1">AVG VS TARGET</p>
+                                                    <p className={`text-sm font-bold font-mono ${avgGood ? "text-emerald-300" : "text-amber-300"}`}>
+                                                        {avg === 0 ? "On target" : `${absAvg} ${avg < 0 ? "under" : "over"}`}
+                                                    </p>
                                                     <p className="text-[7px] font-mono text-white/20">kcal/day</p>
                                                 </div>
                                                 <div className="rounded-md bg-white/[0.03] border border-white/[0.04] p-2.5 text-center">
-                                                    <p className="text-[8px] font-mono text-white/30 mb-1">ESTIMATED IMPACT</p>
-                                                    <p className={`text-sm font-bold font-mono ${weightGood ? "text-emerald-300" : "text-amber-300"}`}>{weightLabel}</p>
-                                                    <p className="text-[7px] font-mono text-white/20">over {ledger.length} day{ledger.length !== 1 ? "s" : ""}</p>
+                                                    <p className="text-[8px] font-mono text-white/30 mb-1">WEEKLY PACE</p>
+                                                    <p className={`text-sm font-bold font-mono ${weightGood ? "text-emerald-300" : "text-amber-300"}`}>
+                                                        ~{avgPerWeek} kg/{weightDelta < 0 ? "lost" : "gained"}
+                                                    </p>
+                                                    <p className="text-[7px] font-mono text-white/20">per week</p>
                                                 </div>
                                             </div>
 
+                                            {/* Streak dots */}
+                                            {streakDots.length > 0 && (
+                                                <div className="mb-3 flex items-center justify-between">
+                                                    <div className="flex items-center gap-1">
+                                                        <p className="text-[8px] font-mono text-white/30 mr-1">STREAK</p>
+                                                        {streakDots.map((d, i) => (
+                                                            <div key={i} className={`w-2 h-2 rounded-full ${d.hit ? "bg-emerald-400/70" : "bg-white/10"}`} title={d.date} />
+                                                        ))}
+                                                    </div>
+                                                    {currentStreak > 0 && (
+                                                        <p className="text-[8px] font-mono text-emerald-300/50">{currentStreak} day{currentStreak !== 1 ? "s" : ""} on target</p>
+                                                    )}
+                                                </div>
+                                            )}
+
+                                            {/* Sparkline */}
                                             {sparkData.length >= 3 && (
                                                 <div className="mb-3 rounded-md bg-white/[0.02] border border-white/[0.04] p-2">
                                                     <p className="text-[8px] font-mono text-white/25 mb-1">DAILY NET (last {sparkData.length}d)</p>
@@ -1298,10 +1435,7 @@ export default function ProgressPage() {
                                                     </div>
                                                 </div>
                                             )}
-                                            {contextSentence && (
-                                                <p className="text-[8px] font-mono text-white/25 mt-3 text-center leading-relaxed">{contextSentence}</p>
-                                            )}
-                                            <p className="text-[7px] font-mono text-white/10 mt-1.5 text-center">{ledger.length} completed day{ledger.length !== 1 ? "s" : ""} · today excluded</p>
+                                            <p className="text-[8px] font-mono text-white/20 mt-3 text-center leading-relaxed">{contextParts.join(" — ")}.</p>
                                         </div>
                                     );
                                 })()}
@@ -1358,12 +1492,12 @@ export default function ProgressPage() {
                                         </div>
                                         <div className="grid grid-cols-2 gap-3">
                                             <div className="rounded-md bg-white/[0.03] border border-white/[0.06] p-3 text-center">
-                                                <p className="text-[8px] font-mono text-white/30">CALCULATED TDEE</p>
+                                                <p className="text-[8px] font-mono text-white/30">CALCULATED TDEE<InfoTip term="TDEE" /></p>
                                                 <p className="text-lg font-bold font-mono text-white/60">{ledgerCalorieSummary.tdee}</p>
                                                 <p className="text-[7px] font-mono text-white/15">from profile</p>
                                             </div>
                                             <div className={`rounded-md border p-3 text-center ${tdeeEstimate ? "bg-[rgb(var(--accent-rgb)/0.05)] border-[rgb(var(--accent-rgb)/0.2)]" : "bg-white/[0.03] border-white/[0.06]"}`}>
-                                                <p className="text-[8px] font-mono text-white/30">OBSERVED TDEE</p>
+                                                <p className="text-[8px] font-mono text-white/30">OBSERVED TDEE<InfoTip term="TDEE" /></p>
                                                 {tdeeEstimate ? (
                                                     <>
                                                         <p className="text-lg font-bold font-mono text-[rgb(var(--accent-light-rgb))]">{tdeeEstimate.value}</p>
@@ -1379,7 +1513,7 @@ export default function ProgressPage() {
                                         </div>
                                         {adaptiveMode && tdeeEstimate && (
                                             <div className="mt-3 rounded-md bg-white/[0.03] border border-white/[0.06] p-2 text-center">
-                                                <p className="text-[8px] font-mono text-white/30">BLENDED TDEE</p>
+                                                <p className="text-[8px] font-mono text-white/30">BLENDED TDEE<InfoTip term="TDEE" /></p>
                                                 <p className="text-sm font-bold font-mono text-[rgb(var(--accent-light-rgb))]">
                                                     {blendTdee(ledgerCalorieSummary.tdee, tdeeEstimate)} <span className="text-xs text-white/20">kcal</span>
                                                 </p>
