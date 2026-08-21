@@ -191,6 +191,7 @@ export default function ProgressPage() {
     const [adaptiveMode, setAdaptiveMode] = useState(false);
     const [energyReceipt, setEnergyReceipt] = useState<EnergyReceipt | null>(null);
     const [showReceipt, setShowReceipt] = useState(false);
+    const [myFoods, setMyFoods] = useState<{ id: string; label: string; kcal: number; protein_g: number; carbs_g: number; fat_g: number; use_count: number }[]>([]);
 
     const loadHistory = useCallback(async () => {
         if (!user) return;
@@ -386,7 +387,7 @@ export default function ProgressPage() {
 
     const loadIntake = useCallback(async (date: string) => {
         if (!user) return;
-        const [{ data: entries }, { data: dailyRows }, { data: allIntake }, { data: goalRows }, { data: prof }, { data: trendRows }] = await Promise.all([
+        const [{ data: entries }, { data: dailyRows }, { data: allIntake }, { data: goalRows }, { data: prof }, { data: trendRows }, { data: savedFoods }] = await Promise.all([
             supabase
                 .from("food_entries")
                 .select("id, date, meal_slot, label, kcal, protein_g, carbs_g, fat_g, logged_at")
@@ -419,9 +420,16 @@ export default function ProgressPage() {
                 .select("date, ema_kg")
                 .eq("user_id", user.id)
                 .order("date", { ascending: true }),
+            supabase
+                .from("my_foods")
+                .select("id, label, kcal, protein_g, carbs_g, fat_g, use_count")
+                .eq("user_id", user.id)
+                .order("use_count", { ascending: false })
+                .limit(20),
         ]);
         setIntakeEntries((entries ?? []) as FoodEntry[]);
         setIntakeAdherence(calcAdherence(dailyRows ?? [], 30));
+        setMyFoods((savedFoods ?? []).map((f: any) => ({ ...f, protein_g: Number(f.protein_g), carbs_g: Number(f.carbs_g), fat_g: Number(f.fat_g) })));
 
         const g = goalRows?.[0] as any;
         if (g) {
@@ -1391,6 +1399,29 @@ export default function ProgressPage() {
                                                 fat_g: Number(intakeFat) || 0,
                                             });
                                             await rematerializeDailyIntake(user.id, intakeDate);
+                                            const trimmedLabel = intakeLabel.trim();
+                                            if (trimmedLabel) {
+                                                const existing = myFoods.find((f) => f.label.toLowerCase() === trimmedLabel.toLowerCase());
+                                                if (existing) {
+                                                    await supabase.from("my_foods").update({
+                                                        kcal: Number(intakeKcal),
+                                                        protein_g: Number(intakeProtein) || 0,
+                                                        carbs_g: Number(intakeCarbs) || 0,
+                                                        fat_g: Number(intakeFat) || 0,
+                                                        use_count: existing.use_count + 1,
+                                                        last_used_at: new Date().toISOString(),
+                                                    }).eq("id", existing.id);
+                                                } else {
+                                                    await supabase.from("my_foods").insert({
+                                                        user_id: user.id,
+                                                        label: trimmedLabel,
+                                                        kcal: Number(intakeKcal),
+                                                        protein_g: Number(intakeProtein) || 0,
+                                                        carbs_g: Number(intakeCarbs) || 0,
+                                                        fat_g: Number(intakeFat) || 0,
+                                                    });
+                                                }
+                                            }
                                             setIntakeLabel("");
                                             setIntakeKcal("");
                                             setIntakeProtein("");
@@ -1404,6 +1435,39 @@ export default function ProgressPage() {
                                         LOG ENTRY
                                     </button>
                                 </div>
+
+                                {/* My Foods — quick relog */}
+                                {myFoods.length > 0 && (
+                                    <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-4">
+                                        <p className="text-[10px] font-mono tracking-widest text-white/25 mb-2">MY FOODS</p>
+                                        <div className="flex flex-wrap gap-1.5">
+                                            {myFoods.map((food) => (
+                                                <button
+                                                    key={food.id}
+                                                    onClick={async () => {
+                                                        if (!user) return;
+                                                        await supabase.from("food_entries").insert({
+                                                            user_id: user.id,
+                                                            date: intakeDate,
+                                                            meal_slot: intakeMealSlot,
+                                                            label: food.label,
+                                                            kcal: food.kcal,
+                                                            protein_g: food.protein_g,
+                                                            carbs_g: food.carbs_g,
+                                                            fat_g: food.fat_g,
+                                                        });
+                                                        await rematerializeDailyIntake(user.id, intakeDate);
+                                                        await supabase.from("my_foods").update({ use_count: food.use_count + 1, last_used_at: new Date().toISOString() }).eq("id", food.id);
+                                                        await loadIntake(intakeDate);
+                                                    }}
+                                                    className="text-[9px] font-mono px-2.5 py-1.5 rounded-md border border-white/[0.08] text-white/40 hover:text-white/70 hover:border-[rgb(var(--accent-rgb)/0.3)] hover:bg-[rgb(var(--accent-rgb)/0.05)] transition"
+                                                >
+                                                    {food.label} <span className="text-white/20 ml-1">{food.kcal}</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
 
                                 {/* Entries list */}
                                 {intakeEntries.length > 0 && (
