@@ -4,10 +4,12 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { User, LogOut, Plus, Trash2, Check, Download, AlertTriangle, Eye, EyeOff, Target, Dumbbell, Shield, Heart, AtSign, Globe, Camera, Pencil, X, Flame, Phone, Mail, Trophy, Award, HeartPulse, Sparkles, Bell, ChevronRight } from "lucide-react";
+import { motion } from "framer-motion";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../lib/AuthProvider";
 import CubeLoader from "../../components/ui/cube-loader";
 import CustomSelect from "../../components/CustomSelect";
+import { staggerContainer, staggerItem } from "../../lib/motion";
 import { GOAL_OPTIONS } from "../../lib/goals";
 import { updateUserStats } from "../../lib/updateUserStats";
 import { ACCENT_PRESETS, DEFAULT_ACCENT, getAccentPreset, applyAccent, type AccentKey } from "../../lib/theme";
@@ -540,9 +542,9 @@ export default function ProfilePage() {
             <div className="pointer-events-none fixed inset-0 opacity-[0.03]" style={{ backgroundImage: "repeating-linear-gradient(0deg, #fff 0px, #fff 1px, transparent 1px, transparent 3px)" }} />
             <div className="pointer-events-none fixed top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[rgb(var(--accent-rgb)/0.06)] rounded-full blur-[120px]" />
 
-            <div className="relative z-10 max-w-xl mx-auto px-4 pt-6 space-y-5">
+            <motion.div className="relative z-10 max-w-xl mx-auto px-4 pt-6 space-y-5" variants={staggerContainer} initial="hidden" animate="visible">
                 {/* Header — tap to edit profile */}
-                <button onClick={openProfileModal} className="w-full flex items-center gap-4 text-left group">
+                <motion.button variants={staggerItem} onClick={openProfileModal} className="w-full flex items-center gap-4 text-left group">
                     <div
                         className="relative w-16 h-16 rounded-xl border-2 flex items-center justify-center text-2xl font-bold shrink-0 overflow-hidden"
                         style={{ borderColor: data.avatar_color + "60", backgroundColor: data.avatar_color + "15", color: data.avatar_color }}
@@ -569,10 +571,10 @@ export default function ProfilePage() {
                             {saved ? "SAVED" : "SAVING..."}
                         </span>
                     )}
-                </button>
+                </motion.button>
 
                 {/* Quick Stats */}
-                <div className="grid grid-cols-4 gap-2">
+                <motion.div variants={staggerItem} className="grid grid-cols-4 gap-2">
                     <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-2.5 text-center">
                         <p className="text-[8px] font-mono text-white/30">SESSIONS</p>
                         <p className="text-base font-bold font-mono text-white/80">{totalSessions}</p>
@@ -595,10 +597,10 @@ export default function ProfilePage() {
                             <p className="text-base font-bold font-mono text-white/80">—</p>
                         )}
                     </div>
-                </div>
+                </motion.div>
 
                 {/* Quick Links */}
-                <div className="space-y-1">
+                <motion.div variants={staggerItem} className="space-y-1">
                     {[
                         { icon: Trophy, label: "Rankings", desc: "Leaderboard & rank", href: "/rankings" },
                         { icon: Award, label: "Achievements", desc: "Milestones & badges", href: "/achievements" },
@@ -614,10 +616,10 @@ export default function ProfilePage() {
                             <ChevronRight size={14} className="text-white/15 shrink-0" />
                         </button>
                     ))}
-                </div>
+                </motion.div>
 
                 {/* Section Tabs */}
-                <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
+                <motion.div variants={staggerItem} className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
                     {SECTIONS.map((s) => (
                         <button
                             key={s.key}
@@ -628,7 +630,7 @@ export default function ProfilePage() {
                             <s.icon size={11} /> {s.label}
                         </button>
                     ))}
-                </div>
+                </motion.div>
 
                 {/* ══════════ STATS ══════════ */}
                 {section === "stats" && (
@@ -1082,7 +1084,7 @@ export default function ProfilePage() {
                         </button>
                     </div>
                 )}
-            </div>
+            </motion.div>
 
             {/* ══════════ PROFILE EDIT MODAL ══════════ */}
             {showProfileModal && createPortal(

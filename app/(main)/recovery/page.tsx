@@ -3,9 +3,11 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { HeartPulse, TrendingUp, TrendingDown, Minus, AlertCircle, ChevronLeft } from "lucide-react";
+import { motion } from "framer-motion";
 import { useAuth } from "../../lib/AuthProvider";
 import { analyzeAdaptiveVolume, getVolumeStatus, VOLUME_GUIDELINES, type AdaptiveVolumeData, type MuscleTrend } from "../../lib/volumeAnalysis";
 import CubeLoader from "../../components/ui/cube-loader";
+import { staggerContainer, staggerItem } from "../../lib/motion";
 
 const SEGMENT_ORDER = Object.keys(VOLUME_GUIDELINES);
 
@@ -148,9 +150,9 @@ export default function RecoveryPage() {
               </div>
             </div>
 
-            <div className="space-y-2">
+            <motion.div className="space-y-2" variants={staggerContainer} initial="hidden" animate="visible">
               {rows.map((r) => (
-                <div key={r.segment} className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3.5">
+                <motion.div key={r.segment} variants={staggerItem} className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3.5">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
                       <div className={`w-2.5 h-2.5 rounded-full ${recoveryColor(r.recoveryPct)}`} />
@@ -185,9 +187,9 @@ export default function RecoveryPage() {
                       <p className="text-[10px] text-white/40 leading-snug">{r.status.tip}</p>
                     </div>
                   )}
-                </div>
+                </motion.div>
               ))}
-            </div>
+            </motion.div>
           </>
         )}
       </div>

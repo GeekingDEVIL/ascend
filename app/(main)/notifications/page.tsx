@@ -3,9 +3,11 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Bell, X, Medal, Trophy, Star, Flame, Trash2, Award, ChevronLeft } from "lucide-react";
+import { motion } from "framer-motion";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../lib/AuthProvider";
 import CubeLoader from "../../components/ui/cube-loader";
+import { staggerContainer, staggerItem } from "../../lib/motion";
 
 function NotifIcon({ type }: { type: string }) {
   const map: Record<string, { icon: React.ReactNode; bg: string }> = {
@@ -156,9 +158,10 @@ export default function NotificationsPage() {
             {grouped.map((group) => (
               <div key={group.label}>
                 <p className="text-[9px] font-mono tracking-widest text-white/20 mb-2">{group.label.toUpperCase()}</p>
-                <div className="space-y-1.5">
+                <motion.div className="space-y-1.5" variants={staggerContainer} initial="hidden" animate="visible">
                   {group.items.map((n) => (
-                    <div
+                    <motion.div
+                      variants={staggerItem}
                       key={n.id}
                       className={`flex items-center gap-3 rounded-xl border border-white/[0.06] px-3.5 py-3 transition ${n.read ? "bg-white/[0.01] opacity-50" : "bg-white/[0.03]"}`}
                     >
@@ -176,9 +179,9 @@ export default function NotificationsPage() {
                           </button>
                         </div>
                       )}
-                    </div>
+                    </motion.div>
                   ))}
-                </div>
+                </motion.div>
               </div>
             ))}
           </div>

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Dumbbell, Activity, Flame, Zap, HeartPulse, Trophy, Award, Bell, ChevronRight, TrendingUp, Target, Play, Calendar } from "lucide-react";
+import { motion } from "framer-motion";
 import { supabase } from "../lib/supabase";
 import { computeLevel, getRank, getNextRank } from "../lib/levelSystem";
 import { useAuth } from "../lib/AuthProvider";
@@ -10,6 +11,7 @@ import { getFullCalorieSummary, ageFromDOB, type CalorieSummary, type GoalType, 
 import { estimateObservedTdee, blendTdee } from "../lib/energyEstimator";
 import { rematerializeDailyIntake } from "../lib/intakeLog";
 import { Plus } from "lucide-react";
+import { staggerContainer, staggerItem, fadeInUp } from "../lib/motion";
 
 type TodayPlan = { title: string; is_rest: boolean; count: number; sets: number; completed?: boolean };
 
@@ -498,10 +500,15 @@ export default function Dashboard() {
     <main className="min-h-screen bg-[#050914] text-white pb-24 md:pb-10 relative">
       <div className="pointer-events-none fixed inset-0 opacity-[0.03]" style={{ backgroundImage: "repeating-linear-gradient(0deg, #fff 0px, #fff 1px, transparent 1px, transparent 3px)" }} />
       <div className="pointer-events-none fixed top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[rgb(var(--accent-rgb)/0.06)] rounded-full blur-[120px]" />
-      <div className="relative z-10 max-w-xl mx-auto px-4 pt-6 space-y-4">
+      <motion.div
+        className="relative z-10 max-w-xl mx-auto px-4 pt-6 space-y-4"
+        variants={staggerContainer}
+        initial="hidden"
+        animate="visible"
+      >
 
         {/* ─── Header ─── */}
-        <div className="flex items-center justify-between">
+        <motion.div variants={staggerItem} className="flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold text-[rgb(var(--accent-light-rgb))]">
               {profile?.username ? `Hi, ${profile.username}` : "Dashboard"}
@@ -529,10 +536,10 @@ export default function Dashboard() {
               )}
             </button>
           </div>
-        </div>
+        </motion.div>
 
         {/* ─── Today's Workout Card ─── */}
-        <div className="rounded-2xl border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.03] overflow-hidden" style={{ boxShadow: "0 0 20px -5px rgb(var(--accent-rgb) / 0.1), inset 0 1px 0 rgb(var(--accent-rgb) / 0.05)" }}>
+        <motion.div variants={staggerItem} className="rounded-2xl border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.03] overflow-hidden" style={{ boxShadow: "0 0 20px -5px rgb(var(--accent-rgb) / 0.1), inset 0 1px 0 rgb(var(--accent-rgb) / 0.05)" }}>
           <div className="p-4">
             <p className="text-[9px] font-mono tracking-widest text-[rgb(var(--accent-light-rgb)/0.4)] mb-2">TODAY&apos;S WORKOUT</p>
 
@@ -598,10 +605,10 @@ export default function Dashboard() {
               </div>
             )}
           </div>
-        </div>
+        </motion.div>
 
         {/* ─── Level & Rank ─── */}
-        <div className="rounded-2xl border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.03] p-4" style={{ boxShadow: "0 0 20px -5px rgb(var(--accent-rgb) / 0.1), inset 0 1px 0 rgb(var(--accent-rgb) / 0.05)" }}>
+        <motion.div variants={staggerItem} className="rounded-2xl border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.03] p-4" style={{ boxShadow: "0 0 20px -5px rgb(var(--accent-rgb) / 0.1), inset 0 1px 0 rgb(var(--accent-rgb) / 0.05)" }}>
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-xl bg-[rgb(var(--accent-rgb)/0.1)] border border-[rgb(var(--accent-rgb)/0.2)] flex items-center justify-center">
@@ -640,10 +647,10 @@ export default function Dashboard() {
               <span className="text-[10px] font-mono text-white/30">Goal: <span className="text-white/50">{stats.goal}</span></span>
             </div>
           )}
-        </div>
+        </motion.div>
 
         {/* ─── Quick Stats Grid ─── */}
-        <div className="grid grid-cols-2 gap-2.5">
+        <motion.div variants={staggerItem} className="grid grid-cols-2 gap-2.5">
           {[
             { icon: <Flame size={16} />, label: "STREAK", value: statsLoaded ? `${stats.streak}` : "—", sub: "days", color: "text-orange-400", bg: "bg-orange-400/10", border: "border-orange-400/20" },
             { icon: <Activity size={16} />, label: "WORKOUTS", value: statsLoaded ? `${stats.totalWorkouts}` : "—", sub: "completed", color: "text-blue-400", bg: "bg-blue-400/10", border: "border-blue-400/20" },
@@ -659,10 +666,10 @@ export default function Dashboard() {
               <p className="text-[9px] font-mono text-white/20 mt-0.5">{stat.sub}</p>
             </div>
           ))}
-        </div>
+        </motion.div>
 
         {/* ─── Attribute Rings ─── */}
-        <div className="rounded-2xl border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.03] p-4" style={{ boxShadow: "0 0 20px -5px rgb(var(--accent-rgb) / 0.1), inset 0 1px 0 rgb(var(--accent-rgb) / 0.05)" }}>
+        <motion.div variants={staggerItem} className="rounded-2xl border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.03] p-4" style={{ boxShadow: "0 0 20px -5px rgb(var(--accent-rgb) / 0.1), inset 0 1px 0 rgb(var(--accent-rgb) / 0.05)" }}>
           <p className="text-[9px] font-mono tracking-widest text-[rgb(var(--accent-light-rgb)/0.4)] mb-3">ATTRIBUTES</p>
           <div className="grid grid-cols-4 gap-3">
             {[
@@ -683,10 +690,10 @@ export default function Dashboard() {
               </div>
             ))}
           </div>
-        </div>
+        </motion.div>
 
         {/* ─── Recovery & Body ─── */}
-        <div className="grid grid-cols-2 gap-2.5">
+        <motion.div variants={staggerItem} className="grid grid-cols-2 gap-2.5">
           <div className="rounded-xl border border-[rgb(var(--accent-rgb)/0.12)] bg-white/[0.03] p-3" style={{ boxShadow: "0 0 15px -5px rgb(var(--accent-rgb) / 0.08)" }}>
             <div className="flex items-center gap-1.5 mb-2">
               <HeartPulse size={12} className="text-emerald-400" />
@@ -715,7 +722,7 @@ export default function Dashboard() {
               <p className="text-[9px] font-mono text-white/20 mt-0.5">No trend data</p>
             )}
           </div>
-        </div>
+        </motion.div>
 
         {/* ─── Energy Dashboard ─── */}
         {calorieSummary && (() => {
@@ -725,7 +732,7 @@ export default function Dashboard() {
           const pct = Math.min((eaten / target) * 100, 100);
           const over = eaten > target;
           return (
-            <div className="rounded-2xl border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.03] p-4" style={{ boxShadow: "0 0 20px -5px rgb(var(--accent-rgb) / 0.1), inset 0 1px 0 rgb(var(--accent-rgb) / 0.05)" }}>
+            <motion.div variants={staggerItem} className="rounded-2xl border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.03] p-4" style={{ boxShadow: "0 0 20px -5px rgb(var(--accent-rgb) / 0.1), inset 0 1px 0 rgb(var(--accent-rgb) / 0.05)" }}>
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <Flame size={14} className="text-[rgb(var(--accent-light-rgb))]" />
@@ -795,12 +802,12 @@ export default function Dashboard() {
                   </button>
                 </div>
               )}
-            </div>
+            </motion.div>
           );
         })()}
 
         {/* ─── Quick Links ─── */}
-        <div className="grid grid-cols-3 gap-2.5">
+        <motion.div variants={staggerItem} className="grid grid-cols-3 gap-2.5">
           {[
             { label: "Schedule", icon: <Calendar size={16} />, href: "/schedule" },
             { label: "Progress", icon: <TrendingUp size={16} />, href: "/progress" },
@@ -815,11 +822,11 @@ export default function Dashboard() {
               <span className="text-[9px] font-mono tracking-wider">{link.label.toUpperCase()}</span>
             </button>
           ))}
-        </div>
+        </motion.div>
 
         {/* ─── Recent Notifications ─── */}
         {notifLoaded && notifications.length > 0 && (
-          <div className="rounded-2xl border border-[rgb(var(--accent-rgb)/0.12)] bg-white/[0.03] overflow-hidden" style={{ boxShadow: "0 0 15px -5px rgb(var(--accent-rgb) / 0.08)" }}>
+          <motion.div variants={staggerItem} className="rounded-2xl border border-[rgb(var(--accent-rgb)/0.12)] bg-white/[0.03] overflow-hidden" style={{ boxShadow: "0 0 15px -5px rgb(var(--accent-rgb) / 0.08)" }}>
             <div className="flex items-center justify-between px-4 pt-3.5 pb-2">
               <p className="text-[9px] font-mono tracking-widest text-[rgb(var(--accent-light-rgb)/0.4)]">RECENT NOTIFICATIONS</p>
               <button onClick={() => router.push("/notifications")} className="text-[9px] font-mono text-[rgb(var(--accent-rgb)/0.5)] hover:text-[rgb(var(--accent-rgb))] transition">
@@ -841,10 +848,10 @@ export default function Dashboard() {
                 </button>
               ))}
             </div>
-          </div>
+          </motion.div>
         )}
 
-      </div>
+      </motion.div>
     </main>
   );
 }

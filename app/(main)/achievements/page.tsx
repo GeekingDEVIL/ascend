@@ -3,10 +3,12 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Award, Lock, ChevronLeft, Sparkles } from "lucide-react";
+import { motion } from "framer-motion";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../lib/AuthProvider";
 import { ACHIEVEMENT_DEFS, RARITY_COLORS, type AchievementDef } from "../../lib/achievements";
 import CubeLoader from "../../components/ui/cube-loader";
+import { staggerContainer, staggerItem } from "../../lib/motion";
 
 export default function AchievementsPage() {
   const { user } = useAuth();
@@ -157,13 +159,14 @@ export default function AchievementsPage() {
           Object.entries(grouped).map(([category, achievements]) => (
             <div key={category}>
               <p className="text-[10px] font-mono tracking-widest text-[rgb(var(--accent-light-rgb)/0.6)] mb-2.5">{category.toUpperCase()}</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <motion.div className="grid grid-cols-1 sm:grid-cols-2 gap-2" variants={staggerContainer} initial="hidden" animate="visible">
                 {achievements.map((a) => {
                   const isEarned = earnedKeys.has(a.key);
                   const rarity = RARITY_COLORS[a.rarity];
                   return (
-                    <div
+                    <motion.div
                       key={a.key}
+                      variants={staggerItem}
                       className={`flex items-start gap-3 rounded-xl border p-3 transition ${
                         isEarned ? `${rarity.border} ${rarity.bg}` : "border-white/[0.06] bg-white/[0.01] opacity-50"
                       }`}
@@ -183,10 +186,10 @@ export default function AchievementsPage() {
                           <p className="text-[9px] font-mono text-white/25 mt-1">Earned {timeAgo(earnedDates[a.key])}</p>
                         )}
                       </div>
-                    </div>
+                    </motion.div>
                   );
                 })}
-              </div>
+              </motion.div>
             </div>
           ))
         )}

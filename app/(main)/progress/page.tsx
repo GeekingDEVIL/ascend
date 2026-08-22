@@ -3,6 +3,8 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import { Calendar, Dumbbell, Weight, Trophy, ChevronDown, ChevronRight, Lock, Flame, Trash2 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { tabContent } from "../../lib/motion";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../lib/AuthProvider";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, CartesianGrid, ReferenceLine } from "recharts";
@@ -888,10 +890,10 @@ export default function ProgressPage() {
                         </div>
                     </div>
                 ) : (
-                    <>
+                    <AnimatePresence mode="wait">
                         {/* ══════════ HISTORY ══════════ */}
                         {tab === "history" && (
-                            <div className="space-y-5">
+                            <motion.div key="history" className="space-y-5" variants={tabContent} initial="hidden" animate="visible" exit="exit">
                                 {sessions.length === 0 ? (
                                     <div className="text-center py-20">
                                         <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center">
@@ -1099,12 +1101,12 @@ export default function ProgressPage() {
                                         </div>
                                     </>
                                 )}
-                            </div>
+                            </motion.div>
                         )}
 
                         {/* ══════════ STRENGTH ══════════ */}
                         {tab === "strength" && (
-                            <div className="space-y-4">
+                            <motion.div key="strength" className="space-y-4" variants={tabContent} initial="hidden" animate="visible" exit="exit">
                                 {/* PR Board */}
                                 <div>
                                     <p className="text-[10px] font-mono tracking-widest text-white/25 mb-3">PERSONAL RECORDS</p>
@@ -1204,12 +1206,12 @@ export default function ProgressPage() {
                                         </div>
                                     )}
                                 </div>
-                            </div>
+                            </motion.div>
                         )}
 
                         {/* ══════════ BODY ══════════ */}
                         {tab === "body" && (
-                            <div className="space-y-4">
+                            <motion.div key="body" className="space-y-4" variants={tabContent} initial="hidden" animate="visible" exit="exit">
                                 {/* Measurements */}
                                 <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-4">
                                     <p className="text-[10px] font-mono tracking-widest text-white/25 mb-4">MEASUREMENTS</p>
@@ -1376,12 +1378,12 @@ export default function ProgressPage() {
                                         </div>
                                     );
                                 })()}
-                            </div>
+                            </motion.div>
                         )}
 
                         {/* ══════════ INTAKE ══════════ */}
                         {tab === "intake" && (
-                            <div className="space-y-4">
+                            <motion.div key="intake" className="space-y-4" variants={tabContent} initial="hidden" animate="visible" exit="exit">
                                 {/* Date selector — always visible */}
                                 <div className="flex items-center justify-between">
                                     <button
@@ -1951,9 +1953,9 @@ export default function ProgressPage() {
                                 )}
                                 </>
                                 )}
-                            </div>
+                            </motion.div>
                         )}
-                    </>
+                    </AnimatePresence>
                 )}
             </div>
 

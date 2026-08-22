@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Award, Lock, Zap, Users, User, Trophy, Flame, Dumbbell, TrendingUp, ChevronLeft, ChevronRight } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../lib/AuthProvider";
@@ -10,6 +11,7 @@ import CubeLoader from "../../components/ui/cube-loader";
 import { LeaderboardCard } from "../../components/ui/leaderboard-card";
 import type { LeaderboardRanking as PodiumRanking } from "../../components/ui/leaderboard-podium";
 import type { LeaderboardRankingItem } from "../../components/ui/leaderboard-rankings";
+import { staggerContainer, staggerItem, tabContent } from "../../lib/motion";
 
 type LeaderboardEntry = {
   user_id: string;
@@ -159,8 +161,9 @@ export default function RankingsPage() {
           </button>
         </div>
 
+        <AnimatePresence mode="wait">
         {tab === "personal" && (
-          <div className="space-y-4">
+          <motion.div key="personal" className="space-y-4" variants={tabContent} initial="hidden" animate="visible" exit="exit">
             {/* Hero rank card */}
             <div
               className={`relative rounded-2xl border-2 ${currentRank.border} overflow-hidden`}
@@ -304,11 +307,11 @@ export default function RankingsPage() {
               </div>
               <p className="text-[8px] font-mono text-white/15 mt-2 text-center">Max 300 XP per session</p>
             </div>
-          </div>
+          </motion.div>
         )}
 
         {tab === "leaderboard" && (
-          <div className="space-y-4">
+          <motion.div key="leaderboard" className="space-y-4" variants={tabContent} initial="hidden" animate="visible" exit="exit">
             <div className="flex flex-wrap gap-1.5">
               {SORT_OPTIONS.map((opt) => (
                 <button
@@ -369,8 +372,9 @@ export default function RankingsPage() {
                 />
               );
             })()}
-          </div>
+          </motion.div>
         )}
+        </AnimatePresence>
       </div>
     </main>
   );
