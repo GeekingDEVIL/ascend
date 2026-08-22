@@ -7,6 +7,9 @@ import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../lib/AuthProvider";
 import { computeLevel, getRank, getNextRank, RANK_TIERS } from "../../lib/levelSystem";
 import CubeLoader from "../../components/ui/cube-loader";
+import { LeaderboardCard } from "../../components/ui/leaderboard-card";
+import type { LeaderboardRanking as PodiumRanking } from "../../components/ui/leaderboard-podium";
+import type { LeaderboardRankingItem } from "../../components/ui/leaderboard-rankings";
 
 type LeaderboardEntry = {
   user_id: string;
@@ -328,50 +331,44 @@ export default function RankingsPage() {
                 <p className="text-sm font-semibold text-white/25">No Rankings Yet</p>
                 <p className="text-xs text-white/20 mt-1">Complete a workout to appear.</p>
               </div>
-            ) : (
-              <div className="space-y-1.5">
-                {leaderboard.map((entry, i) => {
-                  const rank = getRank(entry.level);
-                  const isMe = entry.user_id === user?.id;
-                  const position = i + 1;
-                  const medal = position === 1 ? "🥇" : position === 2 ? "🥈" : position === 3 ? "🥉" : null;
-                  return (
-                    <div
-                      key={entry.user_id}
-                      className={`flex items-center gap-3 rounded-xl border p-3 transition ${isMe ? "border-[rgb(var(--accent-rgb)/0.3)] bg-[rgb(var(--accent-rgb)/0.06)]" : position <= 3 ? "border-white/[0.08] bg-white/[0.03]" : "border-white/[0.04] bg-white/[0.01]"}`}
-                      style={isMe ? { boxShadow: "0 0 15px -6px rgb(var(--accent-rgb) / 0.3)" } : undefined}
-                    >
-                      <div className="w-7 text-center shrink-0">
-                        {medal ? (
-                          <span className="text-base">{medal}</span>
-                        ) : (
-                          <span className="text-xs font-bold font-mono text-white/30">{position}</span>
-                        )}
-                      </div>
-                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 text-sm font-bold overflow-hidden ${rank.bgClass} border ${isMe ? "border-[rgb(var(--accent-rgb))]" : rank.border} ${rank.color}`}>
-                        {entry.avatar_url ? (
-                          <img src={entry.avatar_url} alt={entry.username} className="w-full h-full object-cover" />
-                        ) : (
-                          entry.username?.[0]?.toUpperCase() ?? "?"
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <p className={`text-[13px] font-bold truncate ${isMe ? "text-[rgb(var(--accent-light-rgb))]" : "text-white/85"}`}>{entry.username}</p>
-                          {isMe && <span className="text-[7px] font-mono px-1.5 py-0.5 rounded-full bg-[rgb(var(--accent-rgb)/0.15)] border border-[rgb(var(--accent-rgb)/0.3)] text-[rgb(var(--accent-light-rgb))] shrink-0">YOU</span>}
-                        </div>
-                        <p className="text-[9px] font-mono text-white/25">LVL {entry.level} · {rank.name}</p>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <p className="text-sm font-bold font-mono text-white/80">{getSortValue(entry, sortBy)}</p>
-                        <p className="text-[7px] font-mono text-white/20">{getSortUnit(sortBy)}</p>
-                      </div>
-                    </div>
-                  );
-                })}
-                <p className="text-[8px] font-mono text-white/15 text-center pt-2">Rankings update after each completed workout.</p>
-              </div>
-            )}
+            ) : (() => {
+              const now = new Date();
+              const weekStart = new Date(now);
+              weekStart.setDate(now.getDate() - now.getDay() + (now.getDay() === 0 ? -6 : 1));
+              const weekEnd = new Date(weekStart);
+              weekEnd.setDate(weekStart.getDate() + 6);
+
+              const podiumRankings: PodiumRanking[] = leaderboard.slice(0, 3).map((entry, i) => ({
+                userId: entry.user_id,
+                userName: entry.username,
+                rank: (i + 1) as 1 | 2 | 3,
+                value: Number(getSortValue(entry, sortBy).replace(/[,KM]/g, "")) || entry.total_xp,
+                avatarUrl: entry.avatar_url,
+              }));
+
+              const allRankings: LeaderboardRankingItem[] = leaderboard.map((entry, i) => {
+                const rank = getRank(entry.level);
+                return {
+                  userId: entry.user_id,
+                  rank: i + 1,
+                  userName: entry.username,
+                  byline: `LVL ${entry.level} · ${rank.name}`,
+                  value: entry[sortBy] as number,
+                  avatarUrl: entry.avatar_url,
+                };
+              });
+
+              return (
+                <LeaderboardCard
+                  title={`${SORT_OPTIONS.find((o) => o.key === sortBy)?.label ?? "XP"} Rankings`}
+                  fromDate={weekStart}
+                  toDate={weekEnd}
+                  podiumRankings={podiumRankings}
+                  rankings={allRankings}
+                  currentUserId={user?.id}
+                />
+              );
+            })()}
           </div>
         )}
       </div>
