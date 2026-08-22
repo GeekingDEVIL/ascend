@@ -159,6 +159,7 @@ export default function WorkoutPage() {
     const [confirmedExercises, setConfirmedExercises] = useState<Set<string>>(new Set());
     const [prCount, setPrCount] = useState(0);
     const [summary, setSummary] = useState<{ duration: number; sets: number; volume: number; xpBreakdown: XPBreakdown; level: number; rankName: string } | null>(null);
+    const [todaySessions, setTodaySessions] = useState<{ id: string; duration: number; sets: number; volume: number; xp: number }[]>([]);
     const [sharing, setSharing] = useState(false);
     const [freestyleExercises, setFreestyleExercises] = useState<WorkoutExercise[]>([]);
     const [showFreestyleAddModal, setShowFreestyleAddModal] = useState(false);
@@ -239,17 +240,26 @@ export default function WorkoutPage() {
             .eq("user_id", user.id)
             .eq("date", today)
             .eq("status", "completed")
-            .limit(1);
-        const completedSession = completedSessions?.[0] ?? null;
-        if (completedSession) {
+            .order("created_at", { ascending: true });
+        if (completedSessions && completedSessions.length > 0) {
             setDayTitle(planTitle);
             const { data: statsRow } = await supabase.from("user_stats").select("total_xp").eq("user_id", user.id).maybeSingle();
             const curLevel = computeLevel(statsRow?.total_xp ?? 0).level;
+            const allSessions = completedSessions.map((s: any) => ({
+                id: s.id,
+                duration: s.duration_seconds || 0,
+                sets: s.total_sets || 0,
+                volume: Number(s.total_volume) || 0,
+                xp: s.xp_earned || 0,
+            }));
+            setTodaySessions(allSessions);
+            const latest = completedSessions[completedSessions.length - 1];
+            const totalXp = allSessions.reduce((sum: number, s: any) => sum + s.xp, 0);
             setSummary({
-                duration: completedSession.duration_seconds || 0,
-                sets: completedSession.total_sets || 0,
-                volume: Number(completedSession.total_volume) || 0,
-                xpBreakdown: { total: completedSession.xp_earned || 0, base: 0, setCompletion: 0, completionBonus: 0, prBonus: 0, progressionBonus: 0, consistencyBonus: 0, details: [] } as XPBreakdown,
+                duration: latest.duration_seconds || 0,
+                sets: latest.total_sets || 0,
+                volume: Number(latest.total_volume) || 0,
+                xpBreakdown: { total: latest.xp_earned || 0, base: 0, setCompletion: 0, completionBonus: 0, prBonus: 0, progressionBonus: 0, consistencyBonus: 0, details: [] } as XPBreakdown,
                 level: curLevel,
                 rankName: getRank(curLevel).name,
             });
@@ -549,6 +559,7 @@ export default function WorkoutPage() {
         }
 
         localStorage.removeItem("ascend_active_session");
+        setTodaySessions(prev => [...prev, { id: sessionId!, duration: dur, sets: totalSets, volume: totalVolume, xp: xp.total }]);
         setSummary({ duration: dur, sets: totalSets, volume: totalVolume, xpBreakdown: xp, level: lvlAfter, rankName: getRank(lvlAfter).name });
         setStatus("completed");
         setRestRemaining(null);
@@ -728,19 +739,27 @@ export default function WorkoutPage() {
             <div className="pointer-events-none fixed top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[rgb(var(--accent-rgb)/0.06)] rounded-full blur-[120px]" />
             <div className="relative z-10 max-w-xl mx-auto pt-10">
                 <div className="text-center mb-8">
-                    <div className="w-12 h-12 mx-auto mb-4 rounded-2xl border border-white/[0.08] bg-white/[0.03] flex items-center justify-center">
-                        <Dumbbell size={20} className="text-white/25" />
+                    <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-[rgb(var(--accent-rgb)/0.1)] border border-[rgb(var(--accent-rgb)/0.2)] flex items-center justify-center">
+                        <Dumbbell size={24} className="text-[rgb(var(--accent-rgb))]" />
                     </div>
-                    <p className="text-base font-semibold text-white/70">No Workout Planned</p>
-                    <p className="text-[11px] text-white/25 mt-1 max-w-xs mx-auto">Set up a recurring plan, or train freestyle.</p>
+                    <p className="text-lg font-bold text-white/85">Get Started</p>
+                    <p className="text-[11px] text-white/30 mt-1 max-w-xs mx-auto">Choose how you want to train</p>
                 </div>
 
                 <div className="space-y-3">
                     <div className="rounded-2xl border border-[rgb(var(--accent-rgb)/0.15)] bg-[rgb(var(--accent-rgb)/0.03)] p-4">
-                        <p className="text-sm font-semibold text-white/85 mb-1">Create a weekly plan</p>
-                        <p className="text-[11px] text-white/30 mb-3">Set your training days once — repeats every week.</p>
+                        <p className="text-sm font-semibold text-white/85 mb-1">Create personalized plan</p>
+                        <p className="text-[11px] text-white/30 mb-3">Build your own weekly schedule with custom exercises, sets, and rest days.</p>
                         <button onClick={() => router.push("/schedule")} className="w-full text-sm font-semibold py-3 rounded-xl bg-[rgb(var(--accent-rgb))] text-black hover:brightness-110 transition">
-                            Go to Schedule
+                            Create My Plan
+                        </button>
+                    </div>
+
+                    <div className="rounded-2xl border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.03] p-4">
+                        <p className="text-sm font-semibold text-white/85 mb-1">Select from existing plans</p>
+                        <p className="text-[11px] text-white/30 mb-3">Browse proven workout programs — PPL, Upper/Lower, Full Body, and more.</p>
+                        <button onClick={() => router.push("/schedule?browse=1")} className="w-full text-sm font-semibold py-3 rounded-xl border border-[rgb(var(--accent-rgb)/0.3)] text-[rgb(var(--accent-rgb))] hover:bg-[rgb(var(--accent-rgb)/0.05)] transition">
+                            Browse Plan Library
                         </button>
                     </div>
 
@@ -848,6 +867,12 @@ export default function WorkoutPage() {
                             {sharing ? <div className="w-4 h-4 border-2 border-white/20 border-t-[rgb(var(--accent-rgb))] rounded-full animate-spin" /> : <Share2 size={14} />}
                         </button>
                     </div>
+                    <button
+                        onClick={() => { setSummary(null); setSessionId(null); setStatus("not_started"); }}
+                        className="w-full mt-2 text-[10px] font-mono py-2.5 rounded-xl border border-white/[0.06] text-white/30 hover:text-white/60 hover:border-white/15 transition"
+                    >
+                        Start another workout
+                    </button>
                 </CardPanel>
             </div>
 
@@ -889,14 +914,36 @@ export default function WorkoutPage() {
                             <p className="text-lg font-bold text-white/90">{dayTitle}</p>
                         </div>
 
-                        {summary && (
+                        {todaySessions.length > 1 ? (
+                            <div className="space-y-2 mb-4">
+                                {todaySessions.map((s, i) => (
+                                    <div key={s.id} className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
+                                        <p className="text-[8px] font-mono tracking-widest text-white/25 mb-2">SESSION {i + 1}</p>
+                                        <div className="grid grid-cols-4 gap-2">
+                                            <StatCell label="TIME" value={formatClock(s.duration)} />
+                                            <StatCell label="SETS" value={String(s.sets)} />
+                                            <StatCell label="VOL" value={`${Math.round(s.volume).toLocaleString()}`} />
+                                            <StatCell label="XP" value={`+${s.xp}`} accent />
+                                        </div>
+                                    </div>
+                                ))}
+                                <div className="rounded-xl border border-[rgb(var(--accent-rgb)/0.15)] bg-[rgb(var(--accent-rgb)/0.05)] p-3">
+                                    <p className="text-[8px] font-mono tracking-widest text-[rgb(var(--accent-rgb)/0.5)] mb-2">TODAY&apos;S TOTAL</p>
+                                    <div className="grid grid-cols-3 gap-2">
+                                        <StatCell label="SESSIONS" value={String(todaySessions.length)} />
+                                        <StatCell label="TOTAL SETS" value={String(todaySessions.reduce((a, s) => a + s.sets, 0))} />
+                                        <StatCell label="TOTAL XP" value={`+${todaySessions.reduce((a, s) => a + s.xp, 0)}`} accent />
+                                    </div>
+                                </div>
+                            </div>
+                        ) : summary ? (
                             <div className="grid grid-cols-2 gap-2 mb-4">
                                 <StatCell label="DURATION" value={formatClock(summary.duration)} />
                                 <StatCell label="SETS" value={String(summary.sets)} />
                                 <StatCell label="VOLUME" value={`${Math.round(summary.volume).toLocaleString()} kg`} />
                                 <StatCell label="XP EARNED" value={`+${summary.xpBreakdown.total}`} accent />
                             </div>
-                        )}
+                        ) : null}
 
                         <p className="text-[10px] font-mono text-white/20 text-center mb-4">Nice work! You can start another session or come back tomorrow.</p>
 
@@ -1287,7 +1334,14 @@ export default function WorkoutPage() {
             )}
 
             {/* ── MODALS ── */}
-            {showEndConfirm && (
+            {finishing && (
+                <div className="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-black/80 backdrop-blur-md">
+                    <div className="w-10 h-10 border-2 border-white/10 border-t-[rgb(var(--accent-rgb))] rounded-full animate-spin mb-4" />
+                    <p className="text-sm font-mono text-white/50">Saving workout...</p>
+                </div>
+            )}
+
+            {showEndConfirm && !finishing && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
                     <div className="w-full max-w-sm rounded-2xl border border-white/[0.08] bg-[#080d18] p-5">
                         <p className="text-sm font-semibold text-white/85 mb-2">End workout?</p>
@@ -1304,8 +1358,8 @@ export default function WorkoutPage() {
                             <button onClick={() => setShowEndConfirm(false)} className="flex-1 text-sm font-medium py-2.5 rounded-xl border border-white/[0.08] text-white/50 hover:text-white/80 transition">
                                 Keep Going
                             </button>
-                            <button onClick={() => { setShowEndConfirm(false); finishWorkout(); }} disabled={finishing} className="flex-1 text-sm font-semibold py-2.5 rounded-xl bg-[rgb(var(--accent-rgb))] text-black hover:brightness-110 disabled:opacity-50 transition">
-                                {finishing ? "Finishing..." : "Finish"}
+                            <button onClick={() => { setShowEndConfirm(false); finishWorkout(); }} className="flex-1 text-sm font-semibold py-2.5 rounded-xl bg-[rgb(var(--accent-rgb))] text-black hover:brightness-110 transition">
+                                Finish
                             </button>
                         </div>
                     </div>

@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { Plus, Trash2, GripVertical, Pencil, Database, Settings2, Play, Moon, Flame, PersonStanding, ChevronDown, ChevronUp, X, Dumbbell, BarChart3, BookOpen } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { DndContext, closestCenter, PointerSensor, MouseSensor, TouchSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -438,6 +438,7 @@ function DayEditorModal({
 export default function SchedulePage() {
     const { user } = useAuth();
     const router = useRouter();
+    const searchParams = useSearchParams();
 
     const [activeTab, setActiveTab] = useState<"week" | "today">("week");
     const [weekOffset, setWeekOffset] = useState(0);
@@ -457,7 +458,7 @@ export default function SchedulePage() {
     const [adaptiveData, setAdaptiveData] = useState<Record<string, AdaptiveVolumeData>>({});
     const [adaptiveLoaded, setAdaptiveLoaded] = useState(false);
     const [importingTemplate, setImportingTemplate] = useState<string | null>(null);
-    const [planBrowserOpen, setPlanBrowserOpen] = useState(false);
+    const [planBrowserOpen, setPlanBrowserOpen] = useState(searchParams.get("browse") === "1");
     const [importingPlan, setImportingPlan] = useState(false);
     const [importConfirm, setImportConfirm] = useState<{ plan: WorkoutPlan; label: string } | null>(null);
     const [volumeExpanded, setVolumeExpanded] = useState(false);

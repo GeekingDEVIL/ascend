@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { User, LogOut, Plus, Trash2, Check, Download, AlertTriangle, Eye, EyeOff, Target, Dumbbell, Shield, Heart, AtSign, Globe, Camera, Pencil, X, Flame, Phone, Mail } from "lucide-react";
+import { User, LogOut, Plus, Trash2, Check, Download, AlertTriangle, Eye, EyeOff, Target, Dumbbell, Shield, Heart, AtSign, Globe, Camera, Pencil, X, Flame, Phone, Mail, Trophy, Award, HeartPulse, Sparkles, Bell, ChevronRight } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../lib/AuthProvider";
 import CustomSelect from "../../components/CustomSelect";
@@ -594,6 +594,25 @@ export default function ProfilePage() {
                             <p className="text-base font-bold font-mono text-white/80">—</p>
                         )}
                     </div>
+                </div>
+
+                {/* Quick Links */}
+                <div className="space-y-1">
+                    {[
+                        { icon: Trophy, label: "Rankings", desc: "Leaderboard & rank", href: "/rankings" },
+                        { icon: Award, label: "Achievements", desc: "Milestones & badges", href: "/achievements" },
+                        { icon: HeartPulse, label: "Recovery", desc: "Recovery status", href: "/recovery" },
+                        { icon: Sparkles, label: "AI Coach", desc: "Training advisor", href: "/coach" },
+                        { icon: Bell, label: "Notifications", desc: "Alerts & updates", href: "/notifications" },
+                    ].map((item) => (
+                        <button key={item.label} onClick={() => router.push(item.href)} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.04] hover:border-white/[0.1] transition text-left">
+                            <item.icon size={16} className="text-white/30 shrink-0" />
+                            <div className="flex-1 min-w-0">
+                                <p className="text-sm font-mono text-white/70">{item.label}</p>
+                            </div>
+                            <ChevronRight size={14} className="text-white/15 shrink-0" />
+                        </button>
+                    ))}
                 </div>
 
                 {/* Section Tabs */}

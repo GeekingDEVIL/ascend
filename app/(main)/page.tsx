@@ -8,6 +8,8 @@ import { computeLevel, getRank, getNextRank } from "../lib/levelSystem";
 import { useAuth } from "../lib/AuthProvider";
 import { getFullCalorieSummary, ageFromDOB, type CalorieSummary, type GoalType, type ActivityLevel, type DietPreference, type Sex } from "../lib/calorieEngine";
 import { estimateObservedTdee, blendTdee } from "../lib/energyEstimator";
+import { rematerializeDailyIntake } from "../lib/intakeLog";
+import { Plus } from "lucide-react";
 
 type TodayPlan = { title: string; is_rest: boolean; count: number; sets: number; completed?: boolean };
 
@@ -53,6 +55,13 @@ export default function Dashboard() {
   const [notifLoaded, setNotifLoaded] = useState(false);
   const [calorieSummary, setCalorieSummary] = useState<CalorieSummary | null>(null);
   const [todayIntake, setTodayIntake] = useState<{ kcal: number; protein_g: number; carbs_g: number; fat_g: number } | null>(null);
+  const [showQuickLog, setShowQuickLog] = useState(false);
+  const [qlLabel, setQlLabel] = useState("");
+  const [qlKcal, setQlKcal] = useState("");
+  const [qlProtein, setQlProtein] = useState("");
+  const [qlCarbs, setQlCarbs] = useState("");
+  const [qlFat, setQlFat] = useState("");
+  const [qlSaving, setQlSaving] = useState(false);
 
   useEffect(() => {
     const updateClock = () => setTime(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
@@ -450,6 +459,28 @@ export default function Dashboard() {
     setNotifications((prev) => prev.filter((n) => n.id !== id));
   }
 
+  async function handleQuickLog() {
+    if (!user || !qlKcal) return;
+    setQlSaving(true);
+    const dateStr = toDateString(new Date());
+    await supabase.from("food_entries").insert({
+      user_id: user.id,
+      date: dateStr,
+      meal_slot: "snack",
+      label: qlLabel.trim() || null,
+      kcal: Number(qlKcal),
+      protein_g: Number(qlProtein) || 0,
+      carbs_g: Number(qlCarbs) || 0,
+      fat_g: Number(qlFat) || 0,
+    });
+    await rematerializeDailyIntake(user.id, dateStr);
+    const { data: di } = await supabase.from("daily_intake").select("kcal, protein_g, carbs_g, fat_g").eq("user_id", user.id).eq("date", dateStr).limit(1);
+    if (di?.[0]) setTodayIntake({ kcal: di[0].kcal, protein_g: Number(di[0].protein_g), carbs_g: Number(di[0].carbs_g), fat_g: Number(di[0].fat_g) });
+    setQlLabel(""); setQlKcal(""); setQlProtein(""); setQlCarbs(""); setQlFat("");
+    setShowQuickLog(false);
+    setQlSaving(false);
+  }
+
   function handleTodayAction() {
     if (todayPlan?.completed) {
       router.push("/progress");
@@ -700,7 +731,9 @@ export default function Dashboard() {
                   <Flame size={14} className="text-[rgb(var(--accent-light-rgb))]" />
                   <p className="text-[9px] font-mono tracking-widest text-[rgb(var(--accent-light-rgb)/0.4)]">ENERGY</p>
                 </div>
-                <button onClick={() => router.push("/progress")} className="text-[9px] font-mono text-white/20 hover:text-white/50 transition">Log</button>
+                <button onClick={() => setShowQuickLog(!showQuickLog)} className="flex items-center gap-1 text-[9px] font-mono text-[rgb(var(--accent-rgb)/0.6)] hover:text-[rgb(var(--accent-rgb))] transition">
+                  <Plus size={10} /> Log Food
+                </button>
               </div>
 
               {/* Target + remaining */}
@@ -735,6 +768,33 @@ export default function Dashboard() {
                   <p className="text-sm font-bold font-mono text-blue-300">{Math.round(todayIntake?.fat_g ?? 0)}<span className="text-white/20">/{calorieSummary.macros.fat}g</span></p>
                 </div>
               </div>
+
+              {showQuickLog && (
+                <div className="mt-3 pt-3 border-t border-white/[0.06] space-y-2">
+                  <input type="text" value={qlLabel} onChange={(e) => setQlLabel(e.target.value)} placeholder="What did you eat?" className="w-full h-9 rounded-lg bg-white/[0.04] border border-white/[0.08] px-3 text-sm font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition placeholder:text-white/15" />
+                  <div className="grid grid-cols-4 gap-2">
+                    <div>
+                      <label className="text-[8px] font-mono text-white/30 block mb-1">KCAL *</label>
+                      <input type="number" min="0" inputMode="numeric" onWheel={(e) => (e.target as HTMLElement).blur()} value={qlKcal} onChange={(e) => setQlKcal(e.target.value)} placeholder="—" className="w-full h-9 rounded-lg bg-white/[0.04] border border-white/[0.08] text-center text-sm font-bold font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition placeholder:text-white/15" />
+                    </div>
+                    <div>
+                      <label className="text-[8px] font-mono text-rose-300/50 block mb-1">PROT</label>
+                      <input type="number" min="0" inputMode="decimal" onWheel={(e) => (e.target as HTMLElement).blur()} value={qlProtein} onChange={(e) => setQlProtein(e.target.value)} placeholder="—" className="w-full h-9 rounded-lg bg-white/[0.04] border border-white/[0.08] text-center text-sm font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition placeholder:text-white/15" />
+                    </div>
+                    <div>
+                      <label className="text-[8px] font-mono text-amber-300/50 block mb-1">CARB</label>
+                      <input type="number" min="0" inputMode="decimal" onWheel={(e) => (e.target as HTMLElement).blur()} value={qlCarbs} onChange={(e) => setQlCarbs(e.target.value)} placeholder="—" className="w-full h-9 rounded-lg bg-white/[0.04] border border-white/[0.08] text-center text-sm font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition placeholder:text-white/15" />
+                    </div>
+                    <div>
+                      <label className="text-[8px] font-mono text-blue-300/50 block mb-1">FAT</label>
+                      <input type="number" min="0" inputMode="decimal" onWheel={(e) => (e.target as HTMLElement).blur()} value={qlFat} onChange={(e) => setQlFat(e.target.value)} placeholder="—" className="w-full h-9 rounded-lg bg-white/[0.04] border border-white/[0.08] text-center text-sm font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition placeholder:text-white/15" />
+                    </div>
+                  </div>
+                  <button onClick={handleQuickLog} disabled={!qlKcal || qlSaving} className="w-full py-2 rounded-lg bg-[rgb(var(--accent-rgb))] text-black text-xs font-semibold hover:brightness-110 disabled:opacity-40 transition">
+                    {qlSaving ? "Saving..." : "Log Entry"}
+                  </button>
+                </div>
+              )}
             </div>
           );
         })()}

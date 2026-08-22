@@ -2,20 +2,21 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Dumbbell, Calendar, TrendingUp, HeartPulse, Sparkles, Trophy, User, Award } from "lucide-react";
+import { LayoutDashboard, Dumbbell, Calendar, TrendingUp, HeartPulse, Sparkles, Trophy, User, Award, Bell } from "lucide-react";
 
 const mainNav = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/" },
   { icon: Dumbbell, label: "Workout", href: "/workout" },
   { icon: Calendar, label: "Schedule", href: "/schedule" },
   { icon: TrendingUp, label: "Progress", href: "/progress" },
-  { icon: Trophy, label: "Rankings", href: "/rankings" },
-  { icon: Award, label: "Achievements", href: "/achievements" },
 ];
 
-const secondaryNav = [
+const profileNav = [
+  { icon: Trophy, label: "Rankings", href: "/rankings" },
+  { icon: Award, label: "Achievements", href: "/achievements" },
   { icon: HeartPulse, label: "Recovery", href: "/recovery" },
   { icon: Sparkles, label: "AI Coach", href: "/coach" },
+  { icon: Bell, label: "Notifications", href: "/notifications" },
 ];
 
 export default function Sidebar() {
@@ -54,7 +55,7 @@ export default function Sidebar() {
       <nav className="flex-1 space-y-1">
         {mainNav.map((item) => <NavLink key={item.label} item={item} />)}
         <div className="h-px bg-white/5 my-3" />
-        {secondaryNav.map((item) => <NavLink key={item.label} item={item} />)}
+        {profileNav.map((item) => <NavLink key={item.label} item={item} />)}
       </nav>
 
       <Link

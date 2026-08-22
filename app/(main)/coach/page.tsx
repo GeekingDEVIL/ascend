@@ -1,14 +1,19 @@
 "use client";
 
-import { Sparkles } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Sparkles, ChevronLeft } from "lucide-react";
 
 export default function CoachPage() {
+  const router = useRouter();
   return (
     <main className="relative min-h-screen w-full bg-[#050914] text-white p-4 md:p-10 pb-24 md:pb-10 overflow-x-hidden">
       <div className="pointer-events-none fixed top-[-10%] left-1/2 -translate-x-1/2 w-[700px] h-[700px] bg-blue-600/15 rounded-full blur-[150px]" />
       <div className="pointer-events-none fixed bottom-[-15%] right-[5%] w-[500px] h-[500px] bg-[rgb(var(--accent-rgb)/0.1)] rounded-full blur-[130px]" />
 
       <div className="relative z-10 w-full max-w-3xl mx-auto space-y-5">
+        <button onClick={() => router.push("/profile")} className="flex items-center gap-1 text-[10px] font-mono text-white/30 hover:text-white/60 transition">
+          <ChevronLeft size={14} /> Profile
+        </button>
         <div>
           <h1 className="text-xl md:text-2xl font-bold tracking-wide text-white/90">AI Coach</h1>
           <p className="text-white/40 text-sm mt-0.5">Your personal training advisor.</p>

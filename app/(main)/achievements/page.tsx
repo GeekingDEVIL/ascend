@@ -1,13 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Award, Lock } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Award, Lock, ChevronLeft, Sparkles } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../lib/AuthProvider";
 import { ACHIEVEMENT_DEFS, RARITY_COLORS, type AchievementDef } from "../../lib/achievements";
 
 export default function AchievementsPage() {
   const { user } = useAuth();
+  const router = useRouter();
   const [earnedKeys, setEarnedKeys] = useState<Set<string>>(new Set());
   const [earnedDates, setEarnedDates] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
@@ -50,6 +52,11 @@ export default function AchievementsPage() {
   const totalAchievements = ACHIEVEMENT_DEFS.length;
   const completionPct = Math.round((totalEarned / totalAchievements) * 100);
 
+  const recentlyEarned = ACHIEVEMENT_DEFS
+    .filter((a) => earnedKeys.has(a.key) && earnedDates[a.key])
+    .sort((a, b) => new Date(earnedDates[b.key]).getTime() - new Date(earnedDates[a.key]).getTime())
+    .slice(0, 3);
+
   function timeAgo(dateStr: string): string {
     const diff = Date.now() - new Date(dateStr).getTime();
     const mins = Math.floor(diff / 60000);
@@ -67,27 +74,50 @@ export default function AchievementsPage() {
       <div className="pointer-events-none fixed top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[rgb(var(--accent-rgb)/0.06)] rounded-full blur-[120px]" />
 
       <div className="relative z-10 max-w-xl mx-auto px-4 pt-6 space-y-5">
-        <div>
-          <h1 className="text-xl font-bold text-[rgb(var(--accent-light-rgb))]">Achievements</h1>
-          <p className="text-[11px] text-white/30 mt-0.5">Your training milestones and records</p>
+        <button onClick={() => router.push("/profile")} className="flex items-center gap-1 text-[10px] font-mono text-white/30 hover:text-white/60 transition">
+          <ChevronLeft size={14} /> Profile
+        </button>
+
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold text-[rgb(var(--accent-light-rgb))]">Achievements</h1>
+            <p className="text-[11px] text-white/30 mt-0.5">Your training milestones and records</p>
+          </div>
+          <div className="text-right">
+            <p className="text-2xl font-bold font-mono text-white/90">{totalEarned}<span className="text-sm text-white/30">/{totalAchievements}</span></p>
+            <p className="text-[9px] font-mono text-white/30">{completionPct}% complete</p>
+          </div>
         </div>
 
-        {/* Progress overview */}
-        <div className="rounded-lg border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.03] p-4">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-[10px] font-mono tracking-widest text-white/25">COMPLETION</p>
-            <p className="text-sm font-bold font-mono text-white/80">{totalEarned}/{totalAchievements}</p>
-          </div>
-          <div className="h-2.5 rounded-full bg-white/[0.06] overflow-hidden border border-white/[0.04]">
-            <div
-              className="h-full bg-gradient-to-r from-[rgb(var(--accent-rgb))] to-[rgb(var(--accent-light-rgb))] rounded-full transition-all"
-              style={{ width: `${completionPct}%` }}
-            />
-          </div>
-          <p className="text-[9px] font-mono text-white/30 mt-1.5">{completionPct}% complete</p>
+        <div className="h-2.5 rounded-full bg-white/[0.06] overflow-hidden border border-white/[0.04]">
+          <div
+            className="h-full bg-gradient-to-r from-[rgb(var(--accent-rgb))] to-[rgb(var(--accent-light-rgb))] rounded-full transition-all"
+            style={{ width: `${completionPct}%` }}
+          />
         </div>
 
-        {/* Filters */}
+        {recentlyEarned.length > 0 && (
+          <div>
+            <div className="flex items-center gap-1.5 mb-2.5">
+              <Sparkles size={12} className="text-yellow-300" />
+              <p className="text-[10px] font-mono tracking-widest text-white/25">RECENTLY EARNED</p>
+            </div>
+            <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+              {recentlyEarned.map((a) => {
+                const rarity = RARITY_COLORS[a.rarity];
+                return (
+                  <div key={a.key} className={`flex-shrink-0 w-32 rounded-xl border ${rarity.border} ${rarity.bg} p-3 text-center`}>
+                    <div className="text-3xl mb-1.5">{a.icon}</div>
+                    <p className="text-[11px] font-bold text-white/90 truncate">{a.name}</p>
+                    <span className={`text-[8px] font-mono ${rarity.text}`}>{a.rarity}</span>
+                    <p className="text-[9px] font-mono text-white/25 mt-1">{timeAgo(earnedDates[a.key])}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         <div className="flex gap-2 flex-wrap">
           {(["all", "earned", "locked"] as const).map((f) => (
             <button
@@ -114,7 +144,6 @@ export default function AchievementsPage() {
           ))}
         </div>
 
-        {/* Achievement cards */}
         {loading ? (
           <div className="flex items-center justify-center py-12"><div className="w-6 h-6 border-2 border-[rgb(var(--accent-rgb)/0.4)] border-t-[rgb(var(--accent-rgb))] rounded-full animate-spin" /></div>
         ) : Object.keys(grouped).length === 0 ? (
@@ -134,7 +163,7 @@ export default function AchievementsPage() {
                   return (
                     <div
                       key={a.key}
-                      className={`flex items-start gap-3 rounded-lg border p-3 transition ${
+                      className={`flex items-start gap-3 rounded-xl border p-3 transition ${
                         isEarned ? `${rarity.border} ${rarity.bg}` : "border-white/[0.06] bg-white/[0.01] opacity-50"
                       }`}
                     >

@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { HeartPulse, TrendingUp, TrendingDown, Minus, AlertCircle } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { HeartPulse, TrendingUp, TrendingDown, Minus, AlertCircle, ChevronLeft } from "lucide-react";
 import { useAuth } from "../../lib/AuthProvider";
 import { analyzeAdaptiveVolume, getVolumeStatus, VOLUME_GUIDELINES, type AdaptiveVolumeData, type MuscleTrend } from "../../lib/volumeAnalysis";
 
@@ -47,8 +48,16 @@ function TrendBadge({ trend }: { trend?: MuscleTrend }) {
   );
 }
 
+function recoveryColor(pct: number | null): string {
+  if (pct === null) return "bg-white/10";
+  if (pct >= 80) return "bg-emerald-400";
+  if (pct >= 50) return "bg-amber-300";
+  return "bg-orange-400";
+}
+
 export default function RecoveryPage() {
   const { user } = useAuth();
+  const router = useRouter();
   const [adaptiveData, setAdaptiveData] = useState<Record<string, AdaptiveVolumeData>>({});
   const [loading, setLoading] = useState(true);
 
@@ -83,47 +92,67 @@ export default function RecoveryPage() {
       <div className="pointer-events-none fixed top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[rgb(var(--accent-rgb)/0.06)] rounded-full blur-[120px]" />
 
       <div className="relative z-10 max-w-xl mx-auto px-4 pt-6 space-y-5">
-        <div>
-          <h1 className="text-xl font-bold text-[rgb(var(--accent-light-rgb))]">Recovery</h1>
-          <p className="text-[11px] text-white/30 mt-0.5">Per-muscle readiness based on training history</p>
+        <button onClick={() => router.push("/profile")} className="flex items-center gap-1 text-[10px] font-mono text-white/30 hover:text-white/60 transition">
+          <ChevronLeft size={14} /> Profile
+        </button>
+
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold text-[rgb(var(--accent-light-rgb))]">Recovery</h1>
+            <p className="text-[11px] text-white/30 mt-0.5">Per-muscle readiness based on training history</p>
+          </div>
+          {avgRecovery !== null && (
+            <div className="text-right">
+              <p className="text-2xl font-bold font-mono text-white/90">{avgRecovery}%</p>
+              <p className="text-[9px] font-mono text-white/30">overall</p>
+            </div>
+          )}
         </div>
 
         {loading ? (
           <div className="flex items-center justify-center py-12"><div className="w-6 h-6 border-2 border-[rgb(var(--accent-rgb)/0.4)] border-t-[rgb(var(--accent-rgb))] rounded-full animate-spin" /></div>
         ) : rows.length === 0 ? (
           <div className="text-center py-16">
-            <div className="w-9 h-9 mx-auto mb-3 rotate-45 border-2 border-white/15 rounded-sm" />
-            <p className="text-sm font-semibold text-white/25">NO TRAINING DATA</p>
+            <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center">
+              <HeartPulse size={24} className="text-white/15" />
+            </div>
+            <p className="text-sm font-semibold text-white/25">No Training Data</p>
             <p className="text-xs text-white/20 mt-1">Complete a few workouts to see per-muscle recovery here.</p>
           </div>
         ) : (
           <>
-            <div className="rounded-lg border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.03] p-4">
+            {/* Heat map summary */}
+            <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
               <div className="flex items-center justify-between mb-3">
-                <p className="text-[10px] font-mono tracking-widest text-white/25">OVERALL READINESS</p>
-                <HeartPulse size={16} className="text-[rgb(var(--accent-light-rgb))]" />
-              </div>
-              <div className="flex items-end gap-4">
-                <p className="text-3xl font-bold text-white">{avgRecovery ?? "—"}%</p>
-                <div className="flex-1 space-y-1 pb-1">
-                  <div className="h-2 rounded-full bg-white/[0.06] overflow-hidden border border-white/[0.04]">
-                    <div
-                      className="h-full bg-gradient-to-r from-emerald-400 to-[rgb(var(--accent-light-rgb))] rounded-full transition-all"
-                      style={{ width: `${avgRecovery ?? 0}%` }}
-                    />
-                  </div>
-                  <p className="text-[9px] font-mono text-white/30">
-                    {readyCount} ready · {trained.length - readyCount - fatiguedCount} moderate · {fatiguedCount} fatigued
-                  </p>
+                <p className="text-[9px] font-mono tracking-widest text-white/20">MUSCLE STATUS</p>
+                <div className="flex items-center gap-3 text-[8px] font-mono text-white/25">
+                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-400" />Ready</span>
+                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-300" />Moderate</span>
+                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-orange-400" />Fatigued</span>
                 </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {rows.map((r) => (
+                  <div key={r.segment} className="flex items-center gap-1.5 rounded-lg border border-white/[0.06] bg-white/[0.02] px-2.5 py-1.5">
+                    <div className={`w-2.5 h-2.5 rounded-full ${recoveryColor(r.recoveryPct)}`} />
+                    <span className="text-[10px] font-mono text-white/60">{r.segment}</span>
+                    <span className="text-[10px] font-mono text-white/30">{r.recoveryPct ?? 0}%</span>
+                  </div>
+                ))}
+              </div>
+              <div className="flex items-center gap-4 mt-3 pt-3 border-t border-white/[0.04] text-[10px] font-mono text-white/30">
+                <span>{readyCount} ready</span>
+                <span>{trained.length - readyCount - fatiguedCount} moderate</span>
+                <span>{fatiguedCount} fatigued</span>
               </div>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-2">
               {rows.map((r) => (
-                <div key={r.segment} className="rounded-md border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.03] p-3.5">
+                <div key={r.segment} className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3.5">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
+                      <div className={`w-2.5 h-2.5 rounded-full ${recoveryColor(r.recoveryPct)}`} />
                       <p className="text-sm font-bold text-white/90">{r.segment}</p>
                       <TrendBadge trend={r.adaptive?.trend} />
                     </div>
@@ -135,9 +164,7 @@ export default function RecoveryPage() {
                   <div className="flex items-center gap-3 mb-1.5">
                     <div className="flex-1 h-2 rounded-full bg-white/[0.06] overflow-hidden border border-white/[0.04]">
                       <div
-                        className={`h-full rounded-full transition-all ${
-                          r.recoveryPct === null ? "bg-white/10" : r.recoveryPct >= 80 ? "bg-emerald-400" : r.recoveryPct >= 50 ? "bg-amber-300" : "bg-orange-400"
-                        }`}
+                        className={`h-full rounded-full transition-all ${recoveryColor(r.recoveryPct)}`}
                         style={{ width: `${r.recoveryPct ?? 0}%` }}
                       />
                     </div>

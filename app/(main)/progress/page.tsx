@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
-import { Calendar, Dumbbell, TrendingUp, Weight, Trophy, ChevronDown, ChevronRight, Lock, Flame, Trash2 } from "lucide-react";
+import { Calendar, Dumbbell, Weight, Trophy, ChevronDown, ChevronRight, Lock, Flame, Trash2 } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../lib/AuthProvider";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, CartesianGrid, ReferenceLine } from "recharts";
@@ -66,7 +66,7 @@ function InfoTip({ term }: { term: string }) {
     );
 }
 
-type Tab = "history" | "strength" | "body" | "volume" | "intake";
+type Tab = "history" | "strength" | "body" | "intake";
 type ActivityRange = "7D" | "30D" | "6M" | "12M" | "All";
 
 const ACTIVITY_RANGES: ActivityRange[] = ["7D", "30D", "6M", "12M", "All"];
@@ -181,7 +181,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 export default function ProgressPage() {
     const { user } = useAuth();
-    const [tab, setTab] = useState<Tab>("history");
+    const [tab, setTab] = useState<Tab>("intake");
     const [loading, setLoading] = useState(true);
 
     // History
@@ -837,11 +837,10 @@ export default function ProgressPage() {
     const achievementStrip: AchievementDef[] = [...earnedSorted, ...lockedInOrder].slice(0, 10);
 
     const TABS: { key: Tab; label: string; icon: any }[] = [
+        { key: "intake", label: "INTAKE", icon: Flame },
         { key: "history", label: "HISTORY", icon: Calendar },
         { key: "strength", label: "STRENGTH", icon: Dumbbell },
         { key: "body", label: "BODY", icon: Weight },
-        { key: "volume", label: "VOLUME", icon: TrendingUp },
-        { key: "intake", label: "INTAKE", icon: Flame },
     ];
 
     return (
@@ -856,7 +855,7 @@ export default function ProgressPage() {
                 </div>
 
                 {/* Tabs */}
-                <div className="grid grid-cols-5 gap-1">
+                <div className="grid grid-cols-4 gap-1.5">
                     {TABS.map((t) => (
                         <button
                             key={t.key}
@@ -892,170 +891,213 @@ export default function ProgressPage() {
                     <>
                         {/* ══════════ HISTORY ══════════ */}
                         {tab === "history" && (
-                            <div className="space-y-4">
-                                {/* Total Activity */}
-                                <div>
-                                    <p className="text-[10px] font-mono tracking-widest text-white/25 mb-2.5">TOTAL ACTIVITY</p>
-                                    <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-3">
-                                        <div className="flex flex-wrap gap-1.5 mb-4">
-                                            {ACTIVITY_RANGES.map((r) => (
-                                                <button
-                                                    key={r}
-                                                    onClick={() => setActivityRange(r)}
-                                                    className={`text-[10px] font-mono px-3 py-1.5 rounded-full border transition ${activityRange === r ? "border-[rgb(var(--accent-rgb)/0.2)] bg-[rgb(var(--accent-rgb)/0.08)] text-[rgb(var(--accent-rgb))]" : "border-white/[0.06] text-white/30 hover:text-white/60"}`}
-                                                >
-                                                    {r}
-                                                </button>
-                                            ))}
-                                        </div>
-                                        <div className="grid grid-cols-3 gap-2 text-center">
-                                            <div>
-                                                <p className="text-xl font-bold font-mono text-white/90">{rangeWorkoutCount}</p>
-                                                <p className="text-[9px] font-mono text-white/30 mt-1 leading-tight">Number of<br />Workouts</p>
-                                            </div>
-                                            <div>
-                                                <p className="text-xl font-bold font-mono text-white/90">{rangeHours.toFixed(1)}</p>
-                                                <p className="text-[9px] font-mono text-white/30 mt-1 leading-tight">Hours at<br />the Gym</p>
-                                            </div>
-                                            <div>
-                                                <p className="text-xl font-bold font-mono text-[rgb(var(--accent-light-rgb))]">{Math.round(rangeVolume).toLocaleString()}</p>
-                                                <p className="text-[9px] font-mono text-white/30 mt-1 leading-tight">Total Weight<br />Lifted (kg)</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Your Workouts calendar */}
-                                <div>
-                                    <p className="text-[10px] font-mono tracking-widest text-white/25 mb-2.5">YOUR WORKOUTS</p>
-                                    <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-4">
-                                        <div className="flex items-center justify-between mb-3">
-                                            <button onClick={() => setCalendarMonthOffset((o) => o - 1)} className="text-white/30 hover:text-white/70 transition px-1">‹</button>
-                                            <p className="text-sm font-bold text-white/85">{calendarBase.toLocaleDateString(undefined, { month: "long", year: "numeric" })}</p>
-                                            <button onClick={() => setCalendarMonthOffset((o) => o + 1)} disabled={calendarMonthOffset >= 0} className="text-white/30 hover:text-white/70 disabled:opacity-20 disabled:hover:text-white/30 transition px-1">›</button>
-                                        </div>
-                                        <div className="grid grid-cols-7 gap-1 text-center mb-1.5">
-                                            {["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"].map((d) => (
-                                                <p key={d} className="text-[8px] font-mono text-white/25">{d}</p>
-                                            ))}
-                                        </div>
-                                        <div className="grid grid-cols-7 gap-1">
-                                            {calendarCells.map((day, i) => {
-                                                if (day === null) return <div key={`empty-${i}`} />;
-                                                const cellDate = `${calendarYear}-${String(calendarMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-                                                const hasWorkout = sessionDates.has(cellDate);
-                                                const isToday = cellDate === todayStr;
-                                                return (
-                                                    <div key={cellDate} className="aspect-square flex items-center justify-center">
-                                                        <span className={`w-full h-full flex items-center justify-center rounded-md text-[11px] font-mono ${hasWorkout ? "bg-[rgb(var(--accent-rgb)/0.2)] text-[rgb(var(--accent-light-rgb))] font-bold" : "text-white/30"} ${isToday ? "ring-1 ring-[rgb(var(--accent-rgb)/0.6)]" : ""}`}>
-                                                            {day}
-                                                        </span>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Leaderboard */}
-                                {leaderboardCard && (
-                                    <div>
-                                        <Link href="/rankings" className="flex items-center justify-between mb-2.5 group">
-                                            <p className="text-[10px] font-mono tracking-widest text-white/25">LEADERBOARDS</p>
-                                            <span className="flex items-center gap-0.5 text-[10px] font-mono text-white/30 group-hover:text-[rgb(var(--accent-light-rgb))] transition">
-                                                SEE ALL <ChevronRight size={12} />
-                                            </span>
-                                        </Link>
-                                        <div className="rounded-lg border border-[rgb(var(--accent-rgb)/0.2)] bg-white/[0.03] p-4">
-                                            <p className="text-base font-bold text-white/95">{leaderboardCard.exerciseName}</p>
-                                            <p className="text-[10px] font-mono text-[rgb(var(--accent-light-rgb)/0.6)] mt-0.5">Max Weight Lifted</p>
-                                            <p className="text-[10px] font-mono text-white/30">Global, All-Time</p>
-                                            <div className="space-y-1.5 mt-3">
-                                                {leaderboardCard.top.map((row, i) => (
-                                                    <div key={row.user_id} className={`flex items-center gap-3 rounded-lg px-3 py-2 ${row.user_id === user?.id ? "bg-[rgb(var(--accent-rgb)/0.15)] border border-[rgb(var(--accent-rgb)/0.3)]" : "bg-white/[0.02]"}`}>
-                                                        <span className="text-xs font-mono text-white/40 w-4 shrink-0">{i + 1}</span>
-                                                        <span className="text-sm font-bold text-white/85 flex-1 min-w-0 truncate">{row.username}</span>
-                                                        <span className="text-sm font-mono text-white/70 shrink-0">{row.best_weight}kg</span>
-                                                    </div>
-                                                ))}
-                                                {leaderboardCard.myRank > 3 && (
-                                                    <div className="flex items-center gap-3 rounded-lg px-3 py-2 bg-[rgb(var(--accent-rgb)/0.15)] border border-[rgb(var(--accent-rgb)/0.3)]">
-                                                        <span className="text-xs font-mono text-white/40 w-4 shrink-0">#{leaderboardCard.myRank}</span>
-                                                        <span className="text-sm font-bold text-white/85 flex-1 min-w-0 truncate">You</span>
-                                                        <span className="text-sm font-mono text-white/70 shrink-0">{leaderboardCard.myWeight}kg</span>
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <p className="text-[9px] font-mono text-white/25 mt-2.5">Ranked #{leaderboardCard.myRank} of {leaderboardCard.total}</p>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Latest Achievements */}
-                                <div>
-                                    <Link href="/achievements" className="flex items-center justify-between mb-2.5 group">
-                                        <p className="text-[10px] font-mono tracking-widest text-white/25">LATEST ACHIEVEMENTS</p>
-                                        <span className="flex items-center gap-0.5 text-[10px] font-mono text-white/30 group-hover:text-[rgb(var(--accent-light-rgb))] transition">
-                                            SEE ALL <ChevronRight size={12} />
-                                        </span>
-                                    </Link>
-                                    <div className="flex gap-2.5 overflow-x-auto no-scrollbar pb-1">
-                                        {achievementStrip.map((a) => {
-                                            const isEarned = earnedKeys.has(a.key);
-                                            const colors = RARITY_COLORS[a.rarity];
-                                            return (
-                                                <div
-                                                    key={a.key}
-                                                    className={`shrink-0 w-20 flex flex-col items-center gap-1.5 rounded-lg border px-2 py-3 text-center ${isEarned ? `${colors.border} ${colors.bg}` : "border-white/[0.06] bg-white/[0.02]"}`}
-                                                >
-                                                    <div className={`text-2xl ${isEarned ? "" : "grayscale opacity-25"}`}>{a.icon}</div>
-                                                    <p className={`text-[9px] font-mono leading-tight ${isEarned ? colors.text : "text-white/25"}`}>{a.name}</p>
-                                                    {!isEarned && <Lock size={9} className="text-white/15" />}
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-
-                                {/* Session list */}
+                            <div className="space-y-5">
                                 {sessions.length === 0 ? (
-                                    <div className="text-center py-16">
-                                        <Calendar size={32} className="mx-auto mb-3 text-white/15" />
+                                    <div className="text-center py-20">
+                                        <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center">
+                                            <Calendar size={28} className="text-white/15" />
+                                        </div>
                                         <p className="text-sm font-semibold text-white/25">NO WORKOUTS YET</p>
                                         <p className="text-xs text-white/20 mt-1">Complete your first workout to see history here.</p>
                                     </div>
                                 ) : (
-                                    <div className="space-y-2">
-                                        {sessions.map((s) => (
-                                            <div key={s.id} className="flex items-center gap-3 rounded-lg border border-white/[0.06] bg-white/[0.02] px-4 py-3">
-                                                <div className="w-10 h-10 rounded-lg bg-[rgb(var(--accent-rgb)/0.1)] border border-[rgb(var(--accent-rgb)/0.2)] flex items-center justify-center shrink-0">
-                                                    <Dumbbell size={16} className="text-[rgb(var(--accent-light-rgb))]" />
+                                    <>
+                                        {/* Hero Stats */}
+                                        <div
+                                            className="relative overflow-hidden rounded-2xl border border-[rgb(var(--accent-rgb)/0.2)] p-5"
+                                            style={{ background: "linear-gradient(135deg, rgb(var(--accent-rgb) / 0.12) 0%, rgb(var(--accent-rgb) / 0.03) 60%, transparent 100%)" }}
+                                        >
+                                            <div className="pointer-events-none absolute -top-10 -right-10 w-40 h-40 rounded-full bg-[rgb(var(--accent-rgb)/0.15)] blur-[60px]" />
+                                            <div className="relative z-10">
+                                                <div className="flex items-center justify-between mb-4">
+                                                    <p className="text-[9px] font-mono tracking-[0.2em] text-[rgb(var(--accent-light-rgb)/0.5)]">TRAINING OVERVIEW</p>
+                                                    <div className="flex gap-1">
+                                                        {ACTIVITY_RANGES.map((r) => (
+                                                            <button
+                                                                key={r}
+                                                                onClick={() => setActivityRange(r)}
+                                                                className={`text-[9px] font-mono px-2 py-1 rounded-md transition ${activityRange === r ? "bg-[rgb(var(--accent-rgb)/0.25)] text-[rgb(var(--accent-light-rgb))]" : "text-white/25 hover:text-white/50"}`}
+                                                            >
+                                                                {r}
+                                                            </button>
+                                                        ))}
+                                                    </div>
                                                 </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <p className="text-sm font-bold text-white/90 truncate">{s.title || "Workout"}</p>
-                                                    <p className="text-[10px] font-mono text-white/35">{formatDateFull(s.date)}</p>
-                                                </div>
-                                                <div className="flex items-center gap-3 sm:gap-4 shrink-0 text-right">
-                                                    <div className="hidden sm:block">
-                                                        <p className="text-[8px] font-mono text-white/25">DURATION</p>
-                                                        <p className="text-xs font-mono text-white/70">{formatDuration(s.duration_seconds || 0)}</p>
+                                                <div className="grid grid-cols-3 gap-4">
+                                                    <div>
+                                                        <p className="text-3xl font-bold font-mono text-white/95 leading-none">{rangeWorkoutCount}</p>
+                                                        <p className="text-[9px] font-mono text-white/30 mt-1.5">Workouts</p>
                                                     </div>
                                                     <div>
-                                                        <p className="text-[8px] font-mono text-white/25">SETS</p>
-                                                        <p className="text-xs font-mono text-white/70">{s.total_sets}</p>
+                                                        <p className="text-3xl font-bold font-mono text-white/95 leading-none">{rangeHours.toFixed(1)}</p>
+                                                        <p className="text-[9px] font-mono text-white/30 mt-1.5">Hours</p>
                                                     </div>
                                                     <div>
-                                                        <p className="text-[8px] font-mono text-white/25">VOL</p>
-                                                        <p className="text-xs font-mono text-white/70">{Math.round(Number(s.total_volume) || 0).toLocaleString()}</p>
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-[8px] font-mono text-[rgb(var(--accent-light-rgb)/0.5)]">XP</p>
-                                                        <p className="text-xs font-mono text-[rgb(var(--accent-light-rgb))]">+{s.xp_earned}</p>
+                                                        <p className="text-3xl font-bold font-mono text-[rgb(var(--accent-light-rgb))] leading-none">{rangeVolume >= 1000 ? `${(rangeVolume / 1000).toFixed(1)}k` : Math.round(rangeVolume)}</p>
+                                                        <p className="text-[9px] font-mono text-white/30 mt-1.5">Volume (kg)</p>
                                                     </div>
                                                 </div>
                                             </div>
-                                        ))}
-                                    </div>
+                                        </div>
+
+                                        {/* Calendar */}
+                                        <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4">
+                                            <div className="flex items-center justify-between mb-4">
+                                                <button onClick={() => setCalendarMonthOffset((o) => o - 1)} className="w-7 h-7 rounded-lg border border-white/[0.06] flex items-center justify-center text-white/40 hover:text-white/70 hover:border-white/[0.12] transition">
+                                                    <ChevronRight size={14} className="rotate-180" />
+                                                </button>
+                                                <p className="text-sm font-bold text-white/85 tracking-wide">{calendarBase.toLocaleDateString(undefined, { month: "long", year: "numeric" })}</p>
+                                                <button onClick={() => setCalendarMonthOffset((o) => o + 1)} disabled={calendarMonthOffset >= 0} className="w-7 h-7 rounded-lg border border-white/[0.06] flex items-center justify-center text-white/40 hover:text-white/70 hover:border-white/[0.12] disabled:opacity-20 transition">
+                                                    <ChevronRight size={14} />
+                                                </button>
+                                            </div>
+                                            <div className="grid grid-cols-7 gap-1 text-center mb-2">
+                                                {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
+                                                    <p key={i} className="text-[9px] font-mono text-white/20 py-1">{d}</p>
+                                                ))}
+                                            </div>
+                                            <div className="grid grid-cols-7 gap-1">
+                                                {calendarCells.map((day, i) => {
+                                                    if (day === null) return <div key={`empty-${i}`} />;
+                                                    const cellDate = `${calendarYear}-${String(calendarMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+                                                    const hasWorkout = sessionDates.has(cellDate);
+                                                    const isToday = cellDate === todayStr;
+                                                    return (
+                                                        <div key={cellDate} className="aspect-square flex items-center justify-center">
+                                                            <span
+                                                                className={`w-full h-full flex items-center justify-center rounded-lg text-[11px] font-mono transition-all ${
+                                                                    hasWorkout
+                                                                        ? "bg-[rgb(var(--accent-rgb)/0.25)] text-[rgb(var(--accent-light-rgb))] font-bold border border-[rgb(var(--accent-rgb)/0.3)]"
+                                                                        : "text-white/25"
+                                                                } ${isToday ? "ring-1 ring-white/30" : ""}`}
+                                                                style={hasWorkout ? { boxShadow: "0 0 8px -2px rgb(var(--accent-rgb) / 0.4)" } : undefined}
+                                                            >
+                                                                {day}
+                                                            </span>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                            {(() => {
+                                                const monthSessions = sessions.filter(s => {
+                                                    const d = new Date(s.date + "T00:00:00");
+                                                    return d.getFullYear() === calendarYear && d.getMonth() === calendarMonth;
+                                                });
+                                                return (
+                                                    <div className="flex items-center gap-4 mt-3 pt-3 border-t border-white/[0.04] text-[10px] font-mono text-white/30">
+                                                        <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded bg-[rgb(var(--accent-rgb)/0.3)] border border-[rgb(var(--accent-rgb)/0.4)]" /> {monthSessions.length} sessions</span>
+                                                        <span>{monthSessions.length > 0 ? `${Math.round(monthSessions.reduce((s, r) => s + (Number(r.total_volume) || 0), 0)).toLocaleString()} kg total` : "No workouts"}</span>
+                                                    </div>
+                                                );
+                                            })()}
+                                        </div>
+
+                                        {/* Weekly Volume */}
+                                        {weeklyVolumeData.length > 0 && (() => {
+                                            const latest = weeklyVolumeData[weeklyVolumeData.length - 1];
+                                            const maxVol = Math.max(...weeklyVolumeData.map(w => w.volume));
+                                            const prev = weeklyVolumeData.length >= 2 ? weeklyVolumeData[weeklyVolumeData.length - 2] : null;
+                                            const volChange = prev && prev.volume > 0 ? Math.round(((latest.volume - prev.volume) / prev.volume) * 100) : 0;
+                                            return (
+                                                <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4">
+                                                    <div className="flex items-center justify-between mb-4">
+                                                        <p className="text-[9px] font-mono tracking-[0.2em] text-white/20">WEEKLY VOLUME</p>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-sm font-bold font-mono text-[rgb(var(--accent-light-rgb))]">{latest.volume.toLocaleString()}<span className="text-[9px] text-white/25 ml-0.5">kg</span></span>
+                                                            {volChange !== 0 && (
+                                                                <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded-md ${volChange > 0 ? "text-emerald-300 bg-emerald-400/10" : "text-orange-300 bg-orange-400/10"}`}>
+                                                                    {volChange > 0 ? "+" : ""}{volChange}%
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-end gap-[3px] h-20">
+                                                        {weeklyVolumeData.slice(-8).map((w, i, arr) => {
+                                                            const pct = maxVol > 0 ? Math.max(6, (w.volume / maxVol) * 100) : 6;
+                                                            const isCurrent = i === arr.length - 1;
+                                                            return (
+                                                                <div key={i} className="flex-1 flex flex-col items-center">
+                                                                    <div
+                                                                        className={`w-full rounded-md transition-all ${isCurrent ? "bg-gradient-to-t from-[rgb(var(--accent-rgb))] to-[rgb(var(--accent-light-rgb))]" : "bg-white/[0.06]"}`}
+                                                                        style={{ height: `${pct}%`, ...(isCurrent ? { boxShadow: "0 0 12px -3px rgb(var(--accent-rgb) / 0.5)" } : {}) }}
+                                                                    />
+                                                                    <p className={`text-[7px] font-mono mt-1.5 ${isCurrent ? "text-[rgb(var(--accent-light-rgb)/0.6)]" : "text-white/15"}`}>
+                                                                        {w.week.slice(5)}
+                                                                    </p>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })()}
+
+                                        {/* Session List — grouped by date */}
+                                        <div>
+                                            <p className="text-[9px] font-mono tracking-[0.2em] text-white/20 mb-3">WORKOUT LOG</p>
+                                            {(() => {
+                                                const now = new Date();
+                                                const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                                                const weekAgo = new Date(todayStart.getTime() - 7 * 86400000);
+                                                const monthAgo = new Date(todayStart.getTime() - 30 * 86400000);
+
+                                                const groups: { label: string; items: SessionRecord[] }[] = [];
+                                                const today: SessionRecord[] = [];
+                                                const thisWeek: SessionRecord[] = [];
+                                                const thisMonth: SessionRecord[] = [];
+                                                const earlier: SessionRecord[] = [];
+
+                                                sessions.forEach((s) => {
+                                                    const d = new Date(s.date + "T00:00:00");
+                                                    if (d >= todayStart) today.push(s);
+                                                    else if (d >= weekAgo) thisWeek.push(s);
+                                                    else if (d >= monthAgo) thisMonth.push(s);
+                                                    else earlier.push(s);
+                                                });
+
+                                                if (today.length) groups.push({ label: "Today", items: today });
+                                                if (thisWeek.length) groups.push({ label: "This Week", items: thisWeek });
+                                                if (thisMonth.length) groups.push({ label: "This Month", items: thisMonth });
+                                                if (earlier.length) groups.push({ label: "Earlier", items: earlier.slice(0, 20) });
+
+                                                return (
+                                                    <div className="space-y-4">
+                                                        {groups.map((group) => (
+                                                            <div key={group.label}>
+                                                                <p className="text-[8px] font-mono tracking-widest text-white/15 mb-2">{group.label.toUpperCase()}</p>
+                                                                <div className="space-y-1.5">
+                                                                    {group.items.map((s) => (
+                                                                        <div key={s.id} className="group flex items-center gap-3 rounded-xl border border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.04] hover:border-white/[0.1] px-3.5 py-3 transition-all">
+                                                                            <div className="w-10 h-10 rounded-xl bg-[rgb(var(--accent-rgb)/0.1)] border border-[rgb(var(--accent-rgb)/0.15)] flex items-center justify-center shrink-0" style={{ boxShadow: "0 0 10px -4px rgb(var(--accent-rgb) / 0.3)" }}>
+                                                                                <Dumbbell size={15} className="text-[rgb(var(--accent-light-rgb))]" />
+                                                                            </div>
+                                                                            <div className="flex-1 min-w-0">
+                                                                                <p className="text-[13px] font-bold text-white/90 truncate">{s.title || "Workout"}</p>
+                                                                                <div className="flex items-center gap-2 mt-0.5">
+                                                                                    <span className="text-[10px] font-mono text-white/25">{formatDate(s.date)}</span>
+                                                                                    <span className="w-0.5 h-0.5 rounded-full bg-white/15" />
+                                                                                    <span className="text-[10px] font-mono text-white/25">{formatDuration(s.duration_seconds || 0)}</span>
+                                                                                </div>
+                                                                            </div>
+                                                                            <div className="flex items-center gap-2.5 shrink-0">
+                                                                                <div className="text-right">
+                                                                                    <p className="text-[11px] font-mono text-white/60">{s.total_sets} sets</p>
+                                                                                    <p className="text-[10px] font-mono text-white/25">{Math.round(Number(s.total_volume) || 0).toLocaleString()} kg</p>
+                                                                                </div>
+                                                                                <div className="px-2 py-1 rounded-lg bg-[rgb(var(--accent-rgb)/0.1)] border border-[rgb(var(--accent-rgb)/0.15)]">
+                                                                                    <p className="text-[10px] font-mono font-bold text-[rgb(var(--accent-light-rgb))]">+{s.xp_earned}</p>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                );
+                                            })()}
+                                        </div>
+                                    </>
                                 )}
                             </div>
                         )}
@@ -1337,75 +1379,6 @@ export default function ProgressPage() {
                             </div>
                         )}
 
-                        {/* ══════════ VOLUME ══════════ */}
-                        {tab === "volume" && (
-                            <div className="space-y-4">
-                                <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-4">
-                                    <p className="text-[10px] font-mono tracking-widest text-white/25 mb-3">WEEKLY VOLUME (KG)</p>
-                                    {weeklyVolumeData.length === 0 ? (
-                                        <div className="h-40 flex items-center justify-center border border-dashed border-white/10 rounded-lg">
-                                            <p className="text-xs font-mono text-white/30 text-center px-4">No data yet.</p>
-                                        </div>
-                                    ) : (
-                                        <div className="h-56">
-                                            <ResponsiveContainer width="100%" height="100%">
-                                                <BarChart data={weeklyVolumeData}>
-                                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-                                                    <XAxis dataKey="week" tick={{ fontSize: 9, fill: "rgba(255,255,255,0.3)" }} />
-                                                    <YAxis tick={{ fontSize: 9, fill: "rgba(255,255,255,0.3)" }} />
-                                                    <Tooltip content={<CustomTooltip />} />
-                                                    <Bar dataKey="volume" fill="rgb(var(--accent-rgb) / 0.6)" radius={[4, 4, 0, 0]} name="Volume (kg)" />
-                                                </BarChart>
-                                            </ResponsiveContainer>
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-4">
-                                    <p className="text-[10px] font-mono tracking-widest text-white/25 mb-3">WEEKLY SETS</p>
-                                    {weeklyVolumeData.length === 0 ? (
-                                        <div className="h-40 flex items-center justify-center border border-dashed border-white/10 rounded-lg">
-                                            <p className="text-xs font-mono text-white/30 text-center px-4">No data yet.</p>
-                                        </div>
-                                    ) : (
-                                        <div className="h-48">
-                                            <ResponsiveContainer width="100%" height="100%">
-                                                <BarChart data={weeklyVolumeData}>
-                                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-                                                    <XAxis dataKey="week" tick={{ fontSize: 9, fill: "rgba(255,255,255,0.3)" }} />
-                                                    <YAxis tick={{ fontSize: 9, fill: "rgba(255,255,255,0.3)" }} />
-                                                    <Tooltip content={<CustomTooltip />} />
-                                                    <Bar dataKey="sets" fill="rgba(52,211,153,0.5)" radius={[4, 4, 0, 0]} name="Sets" />
-                                                </BarChart>
-                                            </ResponsiveContainer>
-                                        </div>
-                                    )}
-                                </div>
-
-                                {weeklyVolumeData.length >= 2 && (() => {
-                                    const latest = weeklyVolumeData[weeklyVolumeData.length - 1];
-                                    const prev = weeklyVolumeData[weeklyVolumeData.length - 2];
-                                    const volChange = latest.volume - prev.volume;
-                                    const setChange = latest.sets - prev.sets;
-                                    return (
-                                        <div className="grid grid-cols-2 gap-2">
-                                            <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-3 text-center">
-                                                <p className="text-[8px] font-mono text-white/30">VOL VS LAST WEEK</p>
-                                                <p className={`text-lg font-bold font-mono ${volChange > 0 ? "text-[rgb(var(--accent-light-rgb))]" : volChange < 0 ? "text-orange-300" : "text-white/50"}`}>
-                                                    {volChange > 0 ? "+" : ""}{volChange.toLocaleString()} <span className="text-xs text-white/30">KG</span>
-                                                </p>
-                                            </div>
-                                            <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-3 text-center">
-                                                <p className="text-[8px] font-mono text-white/30">SETS VS LAST WEEK</p>
-                                                <p className={`text-lg font-bold font-mono ${setChange > 0 ? "text-[rgb(var(--accent-light-rgb))]" : setChange < 0 ? "text-orange-300" : "text-white/50"}`}>
-                                                    {setChange > 0 ? "+" : ""}{setChange} <span className="text-xs text-white/30">SETS</span>
-                                                </p>
-                                            </div>
-                                        </div>
-                                    );
-                                })()}
-                            </div>
-                        )}
                         {/* ══════════ INTAKE ══════════ */}
                         {tab === "intake" && (
                             <div className="space-y-4">
