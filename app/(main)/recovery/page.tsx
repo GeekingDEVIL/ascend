@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { HeartPulse, TrendingUp, TrendingDown, Minus, AlertCircle, ChevronLeft } from "lucide-react";
 import { useAuth } from "../../lib/AuthProvider";
 import { analyzeAdaptiveVolume, getVolumeStatus, VOLUME_GUIDELINES, type AdaptiveVolumeData, type MuscleTrend } from "../../lib/volumeAnalysis";
+import CubeLoader from "../../components/ui/cube-loader";
 
 const SEGMENT_ORDER = Object.keys(VOLUME_GUIDELINES);
 
@@ -110,7 +111,7 @@ export default function RecoveryPage() {
         </div>
 
         {loading ? (
-          <div className="flex items-center justify-center py-12"><div className="w-6 h-6 border-2 border-[rgb(var(--accent-rgb)/0.4)] border-t-[rgb(var(--accent-rgb))] rounded-full animate-spin" /></div>
+          <CubeLoader message="Loading recovery data…" />
         ) : rows.length === 0 ? (
           <div className="text-center py-16">
             <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center">

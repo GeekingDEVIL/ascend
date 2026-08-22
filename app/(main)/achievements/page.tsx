@@ -6,6 +6,7 @@ import { Award, Lock, ChevronLeft, Sparkles } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../lib/AuthProvider";
 import { ACHIEVEMENT_DEFS, RARITY_COLORS, type AchievementDef } from "../../lib/achievements";
+import CubeLoader from "../../components/ui/cube-loader";
 
 export default function AchievementsPage() {
   const { user } = useAuth();
@@ -145,7 +146,7 @@ export default function AchievementsPage() {
         </div>
 
         {loading ? (
-          <div className="flex items-center justify-center py-12"><div className="w-6 h-6 border-2 border-[rgb(var(--accent-rgb)/0.4)] border-t-[rgb(var(--accent-rgb))] rounded-full animate-spin" /></div>
+          <CubeLoader message="Loading achievements…" />
         ) : Object.keys(grouped).length === 0 ? (
           <div className="text-center py-16">
             <Award size={32} className="mx-auto mb-3 text-white/15" />

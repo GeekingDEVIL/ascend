@@ -6,6 +6,7 @@ import { Check, Plus, Play, X, RefreshCw, Pause, SkipForward, ChevronDown, Moon,
 import { useSwipeable } from "react-swipeable";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../lib/AuthProvider";
+import CubeLoader from "../../components/ui/cube-loader";
 import { calculateSessionXP, type XPBreakdown } from "../../lib/xpEngine";
 import { computeLevel, getRank } from "../../lib/levelSystem";
 import { checkAndAwardAchievements } from "../../lib/achievements";
@@ -710,9 +711,8 @@ export default function WorkoutPage() {
         <main className="min-h-screen bg-[#050914] text-white flex items-center justify-center relative">
             <div className="pointer-events-none fixed inset-0 opacity-[0.03]" style={{ backgroundImage: "repeating-linear-gradient(0deg, #fff 0px, #fff 1px, transparent 1px, transparent 3px)" }} />
             <div className="pointer-events-none fixed top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[rgb(var(--accent-rgb)/0.06)] rounded-full blur-[120px]" />
-            <div className="relative z-10 text-center">
-                <div className="w-7 h-7 border-2 border-[rgb(var(--accent-rgb)/0.4)] border-t-[rgb(var(--accent-rgb))] rounded-full animate-spin mx-auto mb-3" />
-                <p className="text-xs font-mono text-white/30">Loading workout...</p>
+            <div className="relative z-10">
+                <CubeLoader message="Loading workout…" />
             </div>
         </main>
     );
@@ -1335,9 +1335,8 @@ export default function WorkoutPage() {
 
             {/* ── MODALS ── */}
             {finishing && (
-                <div className="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-black/80 backdrop-blur-md">
-                    <div className="w-10 h-10 border-2 border-white/10 border-t-[rgb(var(--accent-rgb))] rounded-full animate-spin mb-4" />
-                    <p className="text-sm font-mono text-white/50">Saving workout...</p>
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-md">
+                    <CubeLoader message="Saving your workout…" />
                 </div>
             )}
 

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { User, LogOut, Plus, Trash2, Check, Download, AlertTriangle, Eye, EyeOff, Target, Dumbbell, Shield, Heart, AtSign, Globe, Camera, Pencil, X, Flame, Phone, Mail, Trophy, Award, HeartPulse, Sparkles, Bell, ChevronRight } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../lib/AuthProvider";
+import CubeLoader from "../../components/ui/cube-loader";
 import CustomSelect from "../../components/CustomSelect";
 import { GOAL_OPTIONS } from "../../lib/goals";
 import { updateUserStats } from "../../lib/updateUserStats";
@@ -529,7 +530,7 @@ export default function ProfilePage() {
     if (loading) {
         return (
             <main className="min-h-screen bg-[#050914] text-white flex items-center justify-center">
-                <div className="w-8 h-8 border-2 border-[rgb(var(--accent-rgb)/0.4)] border-t-[rgb(var(--accent-rgb))] rounded-full animate-spin" />
+                <CubeLoader message="Loading profile…" />
             </main>
         );
     }

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../lib/AuthProvider";
 import { computeLevel, getRank, getNextRank, RANK_TIERS } from "../../lib/levelSystem";
+import CubeLoader from "../../components/ui/cube-loader";
 
 type LeaderboardEntry = {
   user_id: string;
@@ -126,7 +127,7 @@ export default function RankingsPage() {
   if (loading) {
     return (
       <main className="min-h-screen bg-[#050914] text-white flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-[rgb(var(--accent-rgb)/0.4)] border-t-[rgb(var(--accent-rgb))] rounded-full animate-spin" />
+        <CubeLoader message="Loading rankings…" />
       </main>
     );
   }

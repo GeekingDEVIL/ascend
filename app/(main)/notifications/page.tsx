@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Bell, X, Medal, Trophy, Star, Flame, Trash2, Award, ChevronLeft } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../lib/AuthProvider";
+import CubeLoader from "../../components/ui/cube-loader";
 
 function NotifIcon({ type }: { type: string }) {
   const map: Record<string, { icon: React.ReactNode; bg: string }> = {
@@ -141,7 +142,7 @@ export default function NotificationsPage() {
         </div>
 
         {loading ? (
-          <div className="flex items-center justify-center py-12"><div className="w-6 h-6 border-2 border-[rgb(var(--accent-rgb)/0.4)] border-t-[rgb(var(--accent-rgb))] rounded-full animate-spin" /></div>
+          <CubeLoader message="Loading notifications…" />
         ) : notifications.length === 0 ? (
           <div className="text-center py-16">
             <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center">
