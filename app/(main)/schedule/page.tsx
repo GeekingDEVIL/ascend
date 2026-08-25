@@ -8,8 +8,9 @@ import { DndContext, closestCenter, PointerSensor, MouseSensor, TouchSensor, use
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { supabase } from "../../lib/supabase";
-import { analyzeAdaptiveVolume, getVolumeStatus, VOLUME_GUIDELINES, type AdaptiveVolumeData, type MuscleTrend } from "../../lib/volumeAnalysis";
+import { analyzeAdaptiveVolume, getVolumeStatus, getVolumeGuidelines, type AdaptiveVolumeData, type MuscleTrend } from "../../lib/volumeAnalysis";
 import { analyzeRecovery, type MuscleRecoveryData } from "../../lib/muscleRecovery";
+import type { Sex } from "../../lib/calorieEngine";
 import { QUICK_START_TEMPLATES, type QuickStartTemplate } from "../../lib/quickStartTemplates";
 import { useAuth } from "../../lib/AuthProvider";
 import AddExerciseModal from "../../components/AddExerciseModal";
@@ -464,6 +465,7 @@ export default function SchedulePage() {
     const [importConfirm, setImportConfirm] = useState<{ plan: WorkoutPlan; label: string } | null>(null);
     const [volumeExpanded, setVolumeExpanded] = useState(false);
     const [todayAddModal, setTodayAddModal] = useState(false);
+    const [userSex, setUserSex] = useState<Sex | null>(null);
 
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -641,6 +643,9 @@ export default function SchedulePage() {
 
     useEffect(() => {
         if (!user) return;
+        supabase.from("profiles").select("sex").eq("id", user.id).single().then(({ data }) => {
+            setUserSex((data?.sex as Sex) ?? null);
+        });
         analyzeAdaptiveVolume(user.id).then((data) => { setAdaptiveData(data); setAdaptiveLoaded(true); });
     }, [user]);
 
@@ -671,7 +676,7 @@ export default function SchedulePage() {
         if (user) {
             const todaysMuscles = new Set((rows ?? []).map((r: any) => r.exercises?.body_segment).filter(Boolean));
             if (todaysMuscles.size > 0) {
-                const recoveryMap = await analyzeRecovery(user.id);
+                const recoveryMap = await analyzeRecovery(user.id, userSex);
                 const warnings: { segment: string; pct: number; status: string; lastTrained: string }[] = [];
                 for (const seg of todaysMuscles) {
                     const rd = recoveryMap[seg];
@@ -687,7 +692,7 @@ export default function SchedulePage() {
                 setRecoveryWarnings(warnings.sort((a, b) => a.pct - b.pct));
             } else { setRecoveryWarnings([]); }
         }
-    }, [selectedDate, recurringPlans, recurringLoaded, user]);
+    }, [selectedDate, recurringPlans, recurringLoaded, user, userSex]);
 
     useEffect(() => { loadSelectedDayView(); }, [loadSelectedDayView]);
 
@@ -872,9 +877,9 @@ export default function SchedulePage() {
                                 {volumeExpanded && (
                                     <div className="px-4 pb-4 space-y-3">
                                         {weeklyVolume.map((v) => {
-                                            const guide = VOLUME_GUIDELINES[v.segment] ?? { min: 8, max: 20, note: "" };
+                                            const guide = getVolumeGuidelines(userSex)[v.segment] ?? { min: 8, max: 20, note: "" };
                                             const adaptive = adaptiveData[v.segment];
-                                            const status = getVolumeStatus(v.segment, v.sets, adaptive);
+                                            const status = getVolumeStatus(v.segment, v.sets, adaptive, userSex);
                                             const usePersonal = adaptive?.hasEnoughData && adaptive.personalMin !== null && adaptive.personalMax !== null;
                                             const min = usePersonal ? adaptive!.personalMin! : guide.min;
                                             const max = usePersonal ? adaptive!.personalMax! : guide.max;

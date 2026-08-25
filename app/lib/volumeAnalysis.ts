@@ -1,8 +1,10 @@
 import { supabase } from "./supabase";
+import type { Sex } from "./calorieEngine";
 
 export type MuscleTrend = "improving" | "maintaining" | "stalling" | "declining" | "insufficient";
 
-export const VOLUME_GUIDELINES: Record<string, { min: number; max: number; note: string }> = {
+// Male baseline volume guidelines (Schoenfeld, 2017; Israetel MEV/MRV ranges)
+const VOLUME_GUIDELINES_MALE: Record<string, { min: number; max: number; note: string }> = {
   Chest: { min: 10, max: 20, note: "10–20 sets/week. Compounds (bench, dips) hit front delts and triceps too." },
   Back: { min: 10, max: 25, note: "10–25 sets/week. Back recovers well — can handle higher volume." },
   Shoulders: { min: 8, max: 20, note: "8–20 sets/week (direct). Front delts get volume from pressing." },
@@ -16,12 +18,36 @@ export const VOLUME_GUIDELINES: Record<string, { min: number; max: number; note:
   "Full Body": { min: 0, max: 99, note: "Volume varies — these are compound/conditioning movements." },
 };
 
+// Female-adjusted guidelines: faster inter-set recovery (Judge & Burke, 2010),
+// can tolerate ~10-20% higher relative volume, emphasis on glute/lower body
+const VOLUME_GUIDELINES_FEMALE: Record<string, { min: number; max: number; note: string }> = {
+  Chest: { min: 8, max: 16, note: "8–16 sets/week. Lower priority but supports pressing strength and posture." },
+  Back: { min: 10, max: 25, note: "10–25 sets/week. Critical for posture and upper body balance." },
+  Shoulders: { min: 10, max: 22, note: "10–22 sets/week. Shoulder development balances physique proportions." },
+  Traps: { min: 6, max: 14, note: "6–14 sets/week. Rows and deadlifts provide indirect volume." },
+  Biceps: { min: 6, max: 16, note: "6–16 sets/week. Pulling movements add indirect volume." },
+  Triceps: { min: 6, max: 16, note: "6–16 sets/week. Pressing movements add indirect volume." },
+  Forearms: { min: 4, max: 10, note: "4–10 sets/week. Most lifters get enough from gripping heavy loads." },
+  Core: { min: 8, max: 18, note: "8–18 sets/week. Core stability is critical for compound lifts." },
+  Legs: { min: 14, max: 26, note: "14–26 sets/week. Females recover faster from lower body work — can handle higher volume." },
+  Glutes: { min: 12, max: 24, note: "12–24 sets/week. Glutes respond well to higher frequency and volume in females." },
+  "Full Body": { min: 0, max: 99, note: "Volume varies — these are compound/conditioning movements." },
+};
+
+export const VOLUME_GUIDELINES = VOLUME_GUIDELINES_MALE;
+
+export function getVolumeGuidelines(sex?: Sex | null): Record<string, { min: number; max: number; note: string }> {
+  return sex === "female" ? VOLUME_GUIDELINES_FEMALE : VOLUME_GUIDELINES_MALE;
+}
+
 export function getVolumeStatus(
   segment: string,
   sets: number,
-  adaptive?: AdaptiveVolumeData
+  adaptive?: AdaptiveVolumeData,
+  sex?: Sex | null
 ): { label: string; color: string; tip: string | null; source: "personal" | "general"; trend?: MuscleTrend } {
-  const guide = VOLUME_GUIDELINES[segment] ?? { min: 8, max: 20, note: "" };
+  const guidelines = getVolumeGuidelines(sex);
+  const guide = guidelines[segment] ?? { min: 8, max: 20, note: "" };
   const usePersonal = adaptive?.hasEnoughData && adaptive.personalMin !== null && adaptive.personalMax !== null;
 
   const min = usePersonal ? adaptive!.personalMin! : guide.min;

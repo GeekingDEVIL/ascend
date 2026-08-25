@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import type { Sex } from "./calorieEngine";
 
 // Evidence-based muscle recovery model
 // Sources: ACSM (2009), NSCA Essentials of Strength Training (Haff & Triplett),
@@ -22,7 +23,7 @@ export type MuscleRecoveryData = {
 
 // ACSM/NSCA muscle group recovery windows (hours to full recovery)
 // Larger muscles need longer; compound movements create more systemic fatigue
-const BASE_RECOVERY_HOURS: Record<string, { min: number; max: number }> = {
+const BASE_RECOVERY_HOURS_MALE: Record<string, { min: number; max: number }> = {
   Legs:      { min: 48, max: 72 },
   Back:      { min: 48, max: 72 },
   Chest:     { min: 48, max: 72 },
@@ -34,6 +35,26 @@ const BASE_RECOVERY_HOURS: Record<string, { min: number; max: number }> = {
   Triceps:   { min: 36, max: 48 },
   Forearms:  { min: 24, max: 36 },
 };
+
+// Females recover ~10-15% faster between bouts (Judge & Burke, 2010; Häkkinen, 1993)
+// due to lower absolute force production, less muscle damage per session,
+// and faster phosphocreatine resynthesis
+const BASE_RECOVERY_HOURS_FEMALE: Record<string, { min: number; max: number }> = {
+  Legs:      { min: 40, max: 62 },
+  Back:      { min: 40, max: 62 },
+  Chest:     { min: 40, max: 60 },
+  Glutes:    { min: 40, max: 60 },
+  Shoulders: { min: 30, max: 50 },
+  Traps:     { min: 30, max: 48 },
+  Core:      { min: 20, max: 40 },
+  Biceps:    { min: 30, max: 42 },
+  Triceps:   { min: 30, max: 42 },
+  Forearms:  { min: 20, max: 30 },
+};
+
+function getBaseRecoveryHours(sex?: Sex | null): Record<string, { min: number; max: number }> {
+  return sex === "female" ? BASE_RECOVERY_HOURS_FEMALE : BASE_RECOVERY_HOURS_MALE;
+}
 
 // Volume-intensity scaling: more sets and heavier loads = longer recovery
 // Based on Schoenfeld (2016): recovery time increases ~15% per additional 5 sets beyond 10
@@ -113,7 +134,7 @@ function estimateRPE(sets: { weight: number; reps: number }[]): number {
   return totalEffort / sets.length;
 }
 
-export async function analyzeRecovery(userId: string): Promise<Record<string, MuscleRecoveryData>> {
+export async function analyzeRecovery(userId: string, sex?: Sex | null): Promise<Record<string, MuscleRecoveryData>> {
   const result: Record<string, MuscleRecoveryData> = {};
 
   const twoWeeksAgo = new Date();
@@ -172,7 +193,8 @@ export async function analyzeRecovery(userId: string): Promise<Record<string, Mu
   const weekStartStr = weekStart.toISOString().split("T")[0];
 
   for (const [segment, data] of Object.entries(muscleData)) {
-    const baseRecovery = BASE_RECOVERY_HOURS[segment] ?? { min: 36, max: 60 };
+    const recoveryTable = getBaseRecoveryHours(sex);
+    const baseRecovery = recoveryTable[segment] ?? { min: 36, max: 60 };
     const hoursElapsed = (now - new Date(data.lastTrainedAt).getTime()) / (1000 * 60 * 60);
 
     // Find the most recent session's volume and intensity

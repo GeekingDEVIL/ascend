@@ -1,3 +1,5 @@
+import type { Sex } from "./calorieEngine";
+
 export type AdaptationSignal = {
   detected: boolean;
   tdeeDrop: number;
@@ -10,8 +12,12 @@ export function detectAdaptation(params: {
   tdeeEstimates: { computed_at: string; observed_tdee: number }[];
   minWeeks?: number;
   significantDropKcal?: number;
+  sex?: Sex | null;
 }): AdaptationSignal {
-  const { tdeeEstimates, minWeeks = 4, significantDropKcal = 100 } = params;
+  // Females show higher adaptive thermogenesis (Müller et al., 2015)
+  // — lower detection threshold catches adaptation earlier
+  const defaultDrop = params.sex === "female" ? 80 : 100;
+  const { tdeeEstimates, minWeeks = 4, significantDropKcal = defaultDrop } = params;
 
   if (tdeeEstimates.length < 2) {
     return { detected: false, tdeeDrop: 0, overWeeks: 0, message: "Not enough estimates to detect adaptation.", suggestDietBreak: false };
@@ -35,7 +41,9 @@ export function detectAdaptation(params: {
     return { detected: false, tdeeDrop, overWeeks: weeksBetween, message: "No significant metabolic adaptation detected.", suggestDietBreak: false };
   }
 
-  const suggestDietBreak = tdeeDrop >= 150 && weeksBetween >= 6;
+  const breakThreshold = params.sex === "female" ? 120 : 150;
+  const breakWeeks = params.sex === "female" ? 5 : 6;
+  const suggestDietBreak = tdeeDrop >= breakThreshold && weeksBetween >= breakWeeks;
 
   return {
     detected: true,

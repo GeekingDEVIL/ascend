@@ -1,3 +1,5 @@
+import type { Sex } from "./calorieEngine";
+
 export type RecoveryAdjustment = {
   deficitPct: number;
   volumeMultiplier: number;
@@ -10,8 +12,9 @@ export function getRecoveryAdjustment(params: {
   calorieTarget: number;
   sleepHours?: number;
   trainingDaysPerWeek?: number;
+  sex?: Sex | null;
 }): RecoveryAdjustment {
-  const { tdee, calorieTarget, sleepHours, trainingDaysPerWeek } = params;
+  const { tdee, calorieTarget, sleepHours, trainingDaysPerWeek, sex } = params;
   const deficitPct = Math.round(((tdee - calorieTarget) / tdee) * 100);
 
   if (deficitPct <= 5) {
@@ -43,6 +46,10 @@ export function getRecoveryAdjustment(params: {
 
   if (trainingDaysPerWeek !== undefined && trainingDaysPerWeek >= 6 && deficitPct > 10) {
     adjustments.push(`${trainingDaysPerWeek} training days/week in a ${deficitPct}% deficit is demanding — consider dropping to 4-5 days`);
+  }
+
+  if (sex === "female" && deficitPct > 15) {
+    adjustments.push("Prolonged aggressive deficits can disrupt menstrual cycle and bone density — prioritize adequate fueling");
   }
 
   return {

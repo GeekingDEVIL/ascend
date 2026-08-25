@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation";
 import { HeartPulse, TrendingUp, TrendingDown, Minus, AlertCircle, ChevronLeft, Zap, Clock, Dumbbell, Activity, ShieldCheck, ShieldAlert, Shield, ShieldX } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAuth } from "../../lib/AuthProvider";
+import { supabase } from "../../lib/supabase";
 import { analyzeRecovery, type MuscleRecoveryData, type RecoveryStatus } from "../../lib/muscleRecovery";
-import { analyzeAdaptiveVolume, getVolumeStatus, VOLUME_GUIDELINES, type AdaptiveVolumeData } from "../../lib/volumeAnalysis";
+import { analyzeAdaptiveVolume, getVolumeStatus, getVolumeGuidelines, type AdaptiveVolumeData } from "../../lib/volumeAnalysis";
+import type { Sex } from "../../lib/calorieEngine";
 import CubeLoader from "../../components/ui/cube-loader";
 import { staggerContainer, staggerItem } from "../../lib/motion";
 
@@ -89,17 +91,22 @@ export default function RecoveryPage() {
   const [adaptiveData, setAdaptiveData] = useState<Record<string, AdaptiveVolumeData>>({});
   const [loading, setLoading] = useState(true);
   const [expandedSegment, setExpandedSegment] = useState<string | null>(null);
+  const [userSex, setUserSex] = useState<Sex | null>(null);
 
   useEffect(() => {
     if (!user) return;
-    Promise.all([
-      analyzeRecovery(user.id),
-      analyzeAdaptiveVolume(user.id),
-    ]).then(([recovery, adaptive]) => {
+    (async () => {
+      const { data: prof } = await supabase.from("profiles").select("sex").eq("id", user.id).single();
+      const sex = (prof?.sex as Sex) ?? null;
+      setUserSex(sex);
+      const [recovery, adaptive] = await Promise.all([
+        analyzeRecovery(user.id, sex),
+        analyzeAdaptiveVolume(user.id),
+      ]);
       setRecoveryData(recovery);
       setAdaptiveData(adaptive);
       setLoading(false);
-    });
+    })();
   }, [user]);
 
   const currentWeekStart = getWeekStart(new Date());
@@ -213,7 +220,7 @@ export default function RecoveryPage() {
                 const config = statusConfig(r.status);
                 const adaptive = adaptiveData[r.segment];
                 const weekSets = adaptive?.weeklyHistory.find(w => w.weekLabel === currentWeekStart)?.sets ?? r.weeklyVolume;
-                const volumeStatus = getVolumeStatus(r.segment, weekSets, adaptive);
+                const volumeStatus = getVolumeStatus(r.segment, weekSets, adaptive, userSex);
                 const isExpanded = expandedSegment === r.segment;
 
                 return (

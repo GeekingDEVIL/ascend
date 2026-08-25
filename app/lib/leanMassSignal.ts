@@ -1,3 +1,5 @@
+import type { Sex } from "./calorieEngine";
+
 export type LeanMassSignal = {
   signal: "favorable" | "neutral" | "concerning";
   weightTrend: "falling" | "stable" | "rising";
@@ -9,8 +11,9 @@ export function assessLeanMassSignal(params: {
   weightTrend: { date: string; ema_kg: number }[];
   strengthData: { date: string; estimated1rm: number }[];
   windowDays?: number;
+  sex?: Sex | null;
 }): LeanMassSignal {
-  const { weightTrend, strengthData, windowDays = 28 } = params;
+  const { weightTrend, strengthData, windowDays = 28, sex } = params;
 
   if (weightTrend.length < 7 || strengthData.length < 2) {
     return { signal: "neutral", weightTrend: "stable", strengthTrend: "stable", message: "Not enough data to assess body composition signal." };
@@ -37,8 +40,13 @@ export function assessLeanMassSignal(params: {
   const sDelta = sEnd - sStart;
   const sPct = sStart > 0 ? (sDelta / sStart) * 100 : 0;
 
-  const wTrend: "falling" | "stable" | "rising" = wPct < -0.5 ? "falling" : wPct > 0.5 ? "rising" : "stable";
-  const sTrend: "falling" | "stable" | "rising" = sPct < -2 ? "falling" : sPct > 2 ? "rising" : "stable";
+  // Females have slower absolute strength progression and more hormonal weight fluctuation
+  // — use wider "stable" band to avoid false alarms (Lowe et al., 2006)
+  const wStableThreshold = sex === "female" ? 0.8 : 0.5;
+  const sStableThreshold = sex === "female" ? 1.5 : 2;
+
+  const wTrend: "falling" | "stable" | "rising" = wPct < -wStableThreshold ? "falling" : wPct > wStableThreshold ? "rising" : "stable";
+  const sTrend: "falling" | "stable" | "rising" = sPct < -sStableThreshold ? "falling" : sPct > sStableThreshold ? "rising" : "stable";
 
   let signal: "favorable" | "neutral" | "concerning" = "neutral";
   let message = "";

@@ -613,7 +613,7 @@ export default function ProgressPage() {
                 } catch { setInsightAnomaly(null); }
 
                 try {
-                    setInsightAdaptation(detectAdaptation({ tdeeEstimates: [] }));
+                    setInsightAdaptation(detectAdaptation({ tdeeEstimates: [], sex: prof.sex as Sex }));
                 } catch { setInsightAdaptation(null); }
             }
 
@@ -630,9 +630,9 @@ export default function ProgressPage() {
             }));
 
             if (trendWeights.length >= 7 && strengthData.length >= 3) {
-                try { setInsightLeanMass(assessLeanMassSignal({ weightTrend: trendWeights, strengthData })); } catch { setInsightLeanMass(null); }
+                try { setInsightLeanMass(assessLeanMassSignal({ weightTrend: trendWeights, strengthData, sex: prof.sex as Sex })); } catch { setInsightLeanMass(null); }
                 if (g?.goal_type === "recomp" || g?.goal_type === "maintain") {
-                    try { setInsightRecomp(assessRecomp({ weightTrend: trendWeights, strengthData })); } catch { setInsightRecomp(null); }
+                    try { setInsightRecomp(assessRecomp({ weightTrend: trendWeights, strengthData, sex: prof.sex as Sex })); } catch { setInsightRecomp(null); }
                 } else { setInsightRecomp(null); }
             }
 
@@ -649,7 +649,7 @@ export default function ProgressPage() {
             } catch { setInsightBudget(null); }
 
             try {
-                setInsightRecovery(getRecoveryAdjustment({ tdee: summary.tdee, calorieTarget: summary.calorieTarget }));
+                setInsightRecovery(getRecoveryAdjustment({ tdee: summary.tdee, calorieTarget: summary.calorieTarget, sex: prof.sex as Sex }));
             } catch { setInsightRecovery(null); }
 
             try {
@@ -675,15 +675,15 @@ export default function ProgressPage() {
             // Diet break suggestion
             const deficitWeeks = dailyIntakes.length > 0 ? Math.floor(dailyIntakes.length / 7) : 0;
             const tdeeDrop = insightAdaptation?.detected ? insightAdaptation.tdeeDrop : 0;
-            if (shouldSuggestDietBreak({ deficitWeeks, tdeeDrop, adherencePct: intakeAdherence ?? 100 })) {
-                const plan = planDietBreak({ tdee: summary.tdee, currentPhase: (g?.phase as any) ?? "active", deficitWeeks });
+            if (shouldSuggestDietBreak({ deficitWeeks, tdeeDrop, adherencePct: intakeAdherence ?? 100, sex: prof.sex as Sex })) {
+                const plan = planDietBreak({ tdee: summary.tdee, currentPhase: (g?.phase as any) ?? "active", deficitWeeks, sex: prof.sex as Sex });
                 setInsightDietBreak(plan.reason);
             } else {
                 setInsightDietBreak(null);
             }
 
-            // Cycle-aware trend (only if cycle tracking enabled)
-            if (g?.cycle_tracking_enabled && trendWeights.length >= 7) {
+            // Cycle-aware trend (female-only, when cycle tracking enabled)
+            if (prof.sex === "female" && g?.cycle_tracking_enabled && trendWeights.length >= 7) {
                 try {
                     const phase = estimateCyclePhase(g.cycle_start_date ?? trendWeights[0].date, today);
                     const comparison = comparePhaseToPhase({
@@ -810,7 +810,7 @@ export default function ProgressPage() {
 
     async function handleStartDietBreak() {
         if (!user || !ledgerCalorieSummary) return;
-        const plan = planDietBreak({ tdee: ledgerCalorieSummary.tdee, currentPhase: "active", deficitWeeks: 8 });
+        const plan = planDietBreak({ tdee: ledgerCalorieSummary.tdee, currentPhase: "active", deficitWeeks: 8, sex: (scenarioParams?.sex as Sex) ?? undefined });
         await supabase.from("user_goals").update({ phase: "diet_break" }).eq("user_id", user.id).eq("is_active", true);
         setInsightDietBreak(null);
     }

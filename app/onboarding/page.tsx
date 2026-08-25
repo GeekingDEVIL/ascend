@@ -228,7 +228,7 @@ export default function OnboardingPage() {
         setSaving(true);
         await logWeightIfNeeded();
 
-        const sex: Sex | null = gender === "Male" ? "male" : gender === "Female" ? "female" : null;
+        const sex: Sex = gender === "Female" ? "female" : "male";
         await persist({
             ...currentPatch(),
             onboarding_step: TOTAL_STEPS,

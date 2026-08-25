@@ -42,9 +42,12 @@ export function calcMacros(
   calorieTarget: number,
   weightKg: number,
   goalType: GoalType,
-  diet: DietPreference = "balanced"
+  diet: DietPreference = "balanced",
+  sex: Sex = "male"
 ): { protein: number; fat: number; carbs: number } {
   const isDeficit = goalType === "lose_weight" || goalType === "body_recomp";
+  // ISSN: females need higher minimum fat for estrogen synthesis and hormonal health
+  const fatFloorGkg = sex === "female" ? 0.9 : 0.7;
 
   let proteinGkg: number;
   let fatGkg: number | null = null;
@@ -53,12 +56,12 @@ export function calcMacros(
   switch (diet) {
     case "high_protein":
       proteinGkg = isDeficit ? 2.4 : 2.2;
-      fatGkg = isDeficit ? 0.9 : null;
-      fatPct = isDeficit ? null : 0.25;
+      fatGkg = isDeficit ? Math.max(0.9, fatFloorGkg) : null;
+      fatPct = isDeficit ? null : (sex === "female" ? 0.28 : 0.25);
       break;
     case "low_carb":
       proteinGkg = isDeficit ? 2.2 : 2.0;
-      fatGkg = isDeficit ? 1.0 : null;
+      fatGkg = isDeficit ? Math.max(1.0, fatFloorGkg) : null;
       fatPct = isDeficit ? null : 0.35;
       break;
     case "keto":
@@ -67,12 +70,13 @@ export function calcMacros(
       break;
     default:
       proteinGkg = isDeficit ? 2.2 : goalType === "gain_muscle" ? 2.0 : 1.8;
-      fatGkg = isDeficit ? 0.9 : null;
-      fatPct = isDeficit ? null : 0.25;
+      fatGkg = isDeficit ? Math.max(0.9, fatFloorGkg) : null;
+      fatPct = isDeficit ? null : (sex === "female" ? 0.28 : 0.25);
   }
 
   const protein = Math.round(weightKg * proteinGkg);
-  const fat = fatGkg !== null ? Math.round(weightKg * fatGkg) : Math.round((calorieTarget * (fatPct ?? 0.25)) / 9);
+  let fat = fatGkg !== null ? Math.round(weightKg * fatGkg) : Math.round((calorieTarget * (fatPct ?? 0.25)) / 9);
+  fat = Math.max(fat, Math.round(weightKg * fatFloorGkg));
   const remainingCals = calorieTarget - protein * 4 - fat * 9;
   const carbs = Math.max(Math.round(remainingCals / 4), 50);
 
@@ -117,7 +121,7 @@ export function getFullCalorieSummary(params: {
   const formulaTdee = calcTDEE(bmr, params.activity);
   const tdee = params.blendedTdee ?? formulaTdee;
   const calorieTarget = params.calorieOverride ?? calcCalorieTarget(tdee, params.goalType, params.ratePerWeekKg);
-  const macros = calcMacros(calorieTarget, params.weightKg, params.goalType, params.diet);
+  const macros = calcMacros(calorieTarget, params.weightKg, params.goalType, params.diet, params.sex);
   const bmi = calcBMI(params.weightKg, params.heightCm);
   return { bmr, tdee, calorieTarget, macros, bmi };
 }

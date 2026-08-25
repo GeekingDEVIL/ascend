@@ -1,4 +1,5 @@
 import { type LeanMassSignal, assessLeanMassSignal } from "./leanMassSignal";
+import type { Sex } from "./calorieEngine";
 
 export type RecompAssessment = {
   weightStable: boolean;
@@ -13,9 +14,10 @@ export function assessRecomp(params: {
   weightTrend: { date: string; ema_kg: number }[];
   strengthData: { date: string; estimated1rm: number }[];
   windowDays?: number;
+  sex?: Sex | null;
 }): RecompAssessment {
   const windowDays = params.windowDays ?? 28;
-  const leanMassSignal = assessLeanMassSignal({ ...params, windowDays });
+  const leanMassSignal = assessLeanMassSignal({ ...params, windowDays, sex: params.sex });
 
   const weeksTracked = Math.round(windowDays / 7);
   const weightStable = leanMassSignal.weightTrend === "stable";
