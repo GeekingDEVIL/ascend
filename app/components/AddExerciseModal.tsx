@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { createPortal } from "react-dom";
-import { Search, X, SlidersHorizontal, ChevronDown } from "lucide-react";
+import { Search, X, SlidersHorizontal, ChevronDown, Star, Clock, Flame } from "lucide-react";
 import { supabase } from "../lib/supabase";
+import { useAuth } from "../lib/AuthProvider";
 
 type Exercise = {
   id: string;
@@ -21,14 +22,31 @@ type Exercise = {
 };
 
 const BODY_SEGMENTS = ["All", "Chest", "Back", "Shoulders", "Traps", "Biceps", "Triceps", "Forearms", "Core", "Legs", "Glutes", "Full Body", "Cardio"];
+
+const PRIMARY_MUSCLES: Record<string, string[]> = {
+  Chest: ["Chest"],
+  Back: ["Lats", "Lower Back", "Traps"],
+  Shoulders: ["Shoulders"],
+  Traps: ["Traps"],
+  Biceps: ["Biceps"],
+  Triceps: ["Triceps"],
+  Forearms: ["Forearms"],
+  Core: ["Abs", "Obliques"],
+  Legs: ["Quads", "Hamstrings", "Calves", "Adductors", "Abductors"],
+  Glutes: ["Glutes"],
+};
+
 const EQUIPMENT = ["All", "Barbell", "Dumbbell", "Cable", "Machine", "Bodyweight", "Kettlebell", "Resistance Band", "Other"];
+const CATEGORIES = ["All", "Compound", "Isolation", "Isometric", "Cardio"];
 const DIFFICULTIES = ["All", "Beginner", "Intermediate", "Advanced"];
 
-function Chip({ active, children, onClick }: { active: boolean; children: React.ReactNode; onClick: () => void }) {
+function Chip({ active, children, onClick, size = "sm" }: { active: boolean; children: React.ReactNode; onClick: () => void; size?: "sm" | "xs" }) {
   return (
     <button
       onClick={onClick}
-      className={`shrink-0 rounded-md border px-3 py-1.5 text-xs font-mono transition ${
+      className={`shrink-0 rounded-md border transition ${
+        size === "xs" ? "px-2 py-1 text-[10px]" : "px-3 py-1.5 text-xs"
+      } font-mono ${
         active ? "border-[rgb(var(--accent-rgb)/0.6)] bg-[rgb(var(--accent-rgb)/0.15)] text-[rgb(var(--accent-light-rgb))]" : "border-white/10 bg-white/[0.03] text-white/50 hover:text-white/80"
       }`}
     >
@@ -37,17 +55,14 @@ function Chip({ active, children, onClick }: { active: boolean; children: React.
   );
 }
 
-function ChipRow({ children }: { children: React.ReactNode }) {
+function Tag({ children, variant = "default" }: { children: React.ReactNode; variant?: "default" | "muted" | "accent" }) {
+  const classes = {
+    default: "bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))] border-[rgb(var(--accent-rgb)/0.2)]",
+    muted: "bg-white/5 text-white/40 border-white/10",
+    accent: "bg-emerald-400/10 text-emerald-300 border-emerald-400/20",
+  };
   return (
-    <div className="flex flex-wrap gap-1.5">
-      {children}
-    </div>
-  );
-}
-
-function Tag({ children, variant = "default" }: { children: React.ReactNode; variant?: "default" | "muted" }) {
-  return (
-    <span className={`text-[10px] font-mono px-2 py-0.5 rounded border ${variant === "default" ? "bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))] border-[rgb(var(--accent-rgb)/0.2)]" : "bg-white/5 text-white/40 border-white/10"}`}>
+    <span className={`text-[10px] font-mono px-2 py-0.5 rounded border ${classes[variant]}`}>
       {children}
     </span>
   );
@@ -81,17 +96,29 @@ export default function AddExerciseModal({
   existingIds?: Set<string>;
   defaultSegment?: string;
 }) {
+  const { user } = useAuth();
   const [mounted, setMounted] = useState(false);
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [bodySegment, setBodySegment] = useState(defaultSegment || "All");
+  const [primaryMuscle, setPrimaryMuscle] = useState("All");
   const [equipment, setEquipment] = useState("All");
+  const [category, setCategory] = useState("All");
   const [difficulty, setDifficulty] = useState("All");
   const [justAdded, setJustAdded] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
+  const [recentExerciseIds, setRecentExerciseIds] = useState<Set<string>>(new Set());
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
+  const [sortBy, setSortBy] = useState<"name" | "recent" | "popular">("name");
+  const searchRef = useRef<HTMLInputElement>(null);
 
-  const activeFilterCount = [bodySegment, equipment, difficulty].filter((f) => f !== "All").length;
+  const availableMuscles = bodySegment !== "All" && PRIMARY_MUSCLES[bodySegment]
+    ? PRIMARY_MUSCLES[bodySegment]
+    : [];
+
+  const activeFilterCount = [bodySegment, equipment, category, difficulty].filter(f => f !== "All").length
+    + (primaryMuscle !== "All" ? 1 : 0);
 
   useEffect(() => {
     setMounted(true);
@@ -101,23 +128,87 @@ export default function AddExerciseModal({
       setLoading(false);
     }
     load();
+    setTimeout(() => searchRef.current?.focus(), 300);
   }, []);
 
+  useEffect(() => {
+    if (!user) return;
+    async function loadUserData() {
+      const twoWeeksAgo = new Date();
+      twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
+      const { data: logs } = await supabase
+        .from("exercise_set_logs")
+        .select("exercise_id, workout_sessions!inner(user_id, status)")
+        .eq("workout_sessions.user_id", user!.id)
+        .eq("workout_sessions.status", "completed")
+        .gte("completed_at", twoWeeksAgo.toISOString())
+        .limit(200);
+      if (logs) setRecentExerciseIds(new Set(logs.map((l: any) => l.exercise_id)));
+
+      const { data: favs } = await supabase
+        .from("favorite_exercises")
+        .select("exercise_id")
+        .eq("user_id", user!.id);
+      if (favs) setFavoriteIds(new Set(favs.map((f: any) => f.exercise_id)));
+    }
+    loadUserData();
+  }, [user]);
+
+  // Reset primary muscle when body segment changes
+  useEffect(() => { setPrimaryMuscle("All"); }, [bodySegment]);
+
   const filtered = useMemo(() => {
-    const base = exercises.filter((ex) => {
-      const matchesSegment = bodySegment === "All" || ex.body_segment === bodySegment;
-      const matchesEquipment = equipment === "All" || ex.equipment === equipment;
-      const matchesDifficulty = difficulty === "All" || ex.difficulty === difficulty;
-      return matchesSegment && matchesEquipment && matchesDifficulty;
+    let base = exercises.filter((ex) => {
+      if (bodySegment !== "All" && ex.body_segment !== bodySegment) return false;
+      if (primaryMuscle !== "All" && ex.primary_muscle !== primaryMuscle) return false;
+      if (equipment !== "All" && ex.equipment !== equipment) return false;
+      if (category !== "All" && ex.category !== category) return false;
+      if (difficulty !== "All" && ex.difficulty !== difficulty) return false;
+      return true;
     });
-    if (!query.trim()) return base;
-    return base.map((ex) => ({ ex, score: scoreMatch(ex, query) })).filter((r) => r.score > 0).sort((a, b) => b.score - a.score).map((r) => r.ex);
-  }, [exercises, query, bodySegment, equipment, difficulty]);
+
+    if (query.trim()) {
+      base = base.map(ex => ({ ex, score: scoreMatch(ex, query) }))
+        .filter(r => r.score > 0)
+        .sort((a, b) => b.score - a.score)
+        .map(r => r.ex);
+    } else {
+      // Apply sort
+      if (sortBy === "recent") {
+        base.sort((a, b) => {
+          const aRecent = recentExerciseIds.has(a.id) ? 1 : 0;
+          const bRecent = recentExerciseIds.has(b.id) ? 1 : 0;
+          if (aRecent !== bRecent) return bRecent - aRecent;
+          return a.name.localeCompare(b.name);
+        });
+      } else if (sortBy === "popular") {
+        base.sort((a, b) => {
+          const aFav = favoriteIds.has(a.id) ? 1 : 0;
+          const bFav = favoriteIds.has(b.id) ? 1 : 0;
+          if (aFav !== bFav) return bFav - aFav;
+          const aRecent = recentExerciseIds.has(a.id) ? 1 : 0;
+          const bRecent = recentExerciseIds.has(b.id) ? 1 : 0;
+          if (aRecent !== bRecent) return bRecent - aRecent;
+          return a.name.localeCompare(b.name);
+        });
+      }
+    }
+
+    return base;
+  }, [exercises, query, bodySegment, primaryMuscle, equipment, category, difficulty, sortBy, recentExerciseIds, favoriteIds]);
 
   function handleAdd(ex: Exercise) {
     onAdd(ex);
     setJustAdded(ex.id);
     setTimeout(() => setJustAdded(null), 1200);
+  }
+
+  function clearFilters() {
+    setBodySegment("All");
+    setPrimaryMuscle("All");
+    setEquipment("All");
+    setCategory("All");
+    setDifficulty("All");
   }
 
   if (!mounted) return null;
@@ -137,6 +228,7 @@ export default function AddExerciseModal({
         className="relative w-full md:max-w-xl h-[90vh] md:h-[85vh] rounded-t-2xl md:rounded-md border border-[rgb(var(--accent-rgb)/0.25)] bg-[#0a1120]/95 backdrop-blur-2xl flex flex-col overflow-hidden"
         style={{ boxShadow: "0 0 60px -12px rgb(var(--accent-rgb) / 0.3), inset 0 1px 0 rgba(255,255,255,0.06)" }}
       >
+        {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-[rgb(var(--accent-rgb)/0.1)] shrink-0">
           <div>
             <p className="font-bold text-white/90">Add Exercise</p>
@@ -147,20 +239,28 @@ export default function AddExerciseModal({
           </button>
         </div>
 
-        <div className="p-4 space-y-3 shrink-0 border-b border-[rgb(var(--accent-rgb)/0.1)]">
+        {/* Search + Filters */}
+        <div className="px-4 pt-3 pb-2 space-y-2.5 shrink-0 border-b border-[rgb(var(--accent-rgb)/0.1)]">
+          {/* Search bar */}
           <div className="flex gap-2">
             <div className="relative flex-1">
               <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-[rgb(var(--accent-light-rgb)/0.5)]" />
               <input
+                ref={searchRef}
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search exercises..."
+                placeholder="Search by name, muscle, equipment..."
                 className="w-full rounded-md bg-white/[0.04] border border-[rgb(var(--accent-rgb)/0.2)] pl-11 pr-4 py-2.5 text-sm focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.5)] transition"
               />
+              {query && (
+                <button onClick={() => setQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60">
+                  <X size={14} />
+                </button>
+              )}
             </div>
             <button
-              onClick={() => setShowFilters((v) => !v)}
+              onClick={() => setShowFilters(v => !v)}
               className={`shrink-0 flex items-center gap-1.5 rounded-md border px-3 text-xs font-mono transition ${
                 activeFilterCount > 0 || showFilters ? "border-[rgb(var(--accent-rgb)/0.5)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/10 text-white/50 hover:text-white/80"
               }`}
@@ -173,31 +273,100 @@ export default function AddExerciseModal({
             </button>
           </div>
 
+          {/* Quick segment bar (always visible) */}
+          <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1 -mx-1 px-1">
+            {BODY_SEGMENTS.map(s => (
+              <Chip key={s} active={bodySegment === s} onClick={() => setBodySegment(s)} size="xs">{s}</Chip>
+            ))}
+          </div>
+
+          {/* Expanded filters */}
           {showFilters && (
-            <div className="space-y-2.5 pt-1">
-              <div>
-                <p className="text-[9px] font-mono tracking-widest text-[rgb(var(--accent-light-rgb)/0.6)] mb-1.5">BODY SEGMENT</p>
-                <ChipRow>{BODY_SEGMENTS.map((s) => <Chip key={s} active={bodySegment === s} onClick={() => setBodySegment(s)}>{s}</Chip>)}</ChipRow>
-              </div>
+            <div className="space-y-2.5 pt-1 pb-1">
+              {/* Primary Muscle (contextual — only shows muscles in selected segment) */}
+              {availableMuscles.length > 0 && (
+                <div>
+                  <p className="text-[9px] font-mono tracking-widest text-[rgb(var(--accent-light-rgb)/0.6)] mb-1.5">PRIMARY MUSCLE</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    <Chip active={primaryMuscle === "All"} onClick={() => setPrimaryMuscle("All")} size="xs">All</Chip>
+                    {availableMuscles.map(m => (
+                      <Chip key={m} active={primaryMuscle === m} onClick={() => setPrimaryMuscle(m)} size="xs">{m}</Chip>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Equipment */}
               <div>
                 <p className="text-[9px] font-mono tracking-widest text-[rgb(var(--accent-light-rgb)/0.6)] mb-1.5">EQUIPMENT</p>
-                <ChipRow>{EQUIPMENT.map((eq) => <Chip key={eq} active={equipment === eq} onClick={() => setEquipment(eq)}>{eq}</Chip>)}</ChipRow>
+                <div className="flex flex-wrap gap-1.5">
+                  {EQUIPMENT.map(eq => <Chip key={eq} active={equipment === eq} onClick={() => setEquipment(eq)} size="xs">{eq}</Chip>)}
+                </div>
               </div>
+
+              {/* Category (Compound / Isolation / Isometric) */}
+              <div>
+                <p className="text-[9px] font-mono tracking-widest text-[rgb(var(--accent-light-rgb)/0.6)] mb-1.5">TYPE</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {CATEGORIES.map(c => <Chip key={c} active={category === c} onClick={() => setCategory(c)} size="xs">{c}</Chip>)}
+                </div>
+              </div>
+
+              {/* Difficulty */}
               <div>
                 <p className="text-[9px] font-mono tracking-widest text-[rgb(var(--accent-light-rgb)/0.6)] mb-1.5">DIFFICULTY</p>
-                <ChipRow>{DIFFICULTIES.map((d) => <Chip key={d} active={difficulty === d} onClick={() => setDifficulty(d)}>{d}</Chip>)}</ChipRow>
+                <div className="flex flex-wrap gap-1.5">
+                  {DIFFICULTIES.map(d => <Chip key={d} active={difficulty === d} onClick={() => setDifficulty(d)} size="xs">{d}</Chip>)}
+                </div>
               </div>
+
+              {/* Clear filters */}
+              {activeFilterCount > 0 && (
+                <button onClick={clearFilters} className="text-[10px] font-mono text-white/30 hover:text-white/60 transition underline underline-offset-2">
+                  Clear all filters
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Sort bar */}
+          {!query && (
+            <div className="flex items-center gap-1.5 pt-0.5 pb-1">
+              <p className="text-[9px] font-mono text-white/20 mr-1">SORT</p>
+              <button onClick={() => setSortBy("name")} className={`flex items-center gap-1 text-[10px] font-mono px-2 py-1 rounded border transition ${sortBy === "name" ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/[0.06] text-white/30 hover:text-white/60"}`}>
+                A–Z
+              </button>
+              <button onClick={() => setSortBy("recent")} className={`flex items-center gap-1 text-[10px] font-mono px-2 py-1 rounded border transition ${sortBy === "recent" ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/[0.06] text-white/30 hover:text-white/60"}`}>
+                <Clock size={10} /> Recent
+              </button>
+              <button onClick={() => setSortBy("popular")} className={`flex items-center gap-1 text-[10px] font-mono px-2 py-1 rounded border transition ${sortBy === "popular" ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/[0.06] text-white/30 hover:text-white/60"}`}>
+                <Flame size={10} /> Popular
+              </button>
             </div>
           )}
         </div>
 
-        <div className="flex-1 overflow-y-auto custom-scroll px-5 py-4 pb-24 space-y-2.5">
+        {/* Exercise list */}
+        <div className="flex-1 overflow-y-auto custom-scroll px-5 py-4 pb-24 space-y-2">
           {loading && <p className="text-center text-white/40 text-sm py-10">Loading...</p>}
-          {!loading && filtered.length === 0 && <p className="text-center text-white/40 text-sm py-10">No exercises match your search.</p>}
+          {!loading && filtered.length === 0 && (
+            <div className="text-center py-10">
+              <p className="text-white/40 text-sm mb-2">No exercises match your filters.</p>
+              {activeFilterCount > 0 && (
+                <button onClick={clearFilters} className="text-xs font-mono text-[rgb(var(--accent-light-rgb))] hover:underline">Clear filters</button>
+              )}
+            </div>
+          )}
           {filtered.map((ex) => {
             const alreadyInDay = existingIds?.has(ex.id);
+            const isRecent = recentExerciseIds.has(ex.id);
+            const isFav = favoriteIds.has(ex.id);
             return (
-              <div key={ex.id} className="flex items-center justify-between gap-3 rounded-md border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.03] px-4 py-3.5 hover:border-[rgb(var(--accent-rgb)/0.35)] hover:bg-white/[0.05] transition">
+              <div key={ex.id} className={`flex items-center justify-between gap-3 rounded-md border px-4 py-3.5 transition ${
+                alreadyInDay
+                  ? "border-white/[0.06] bg-white/[0.01]"
+                  : "border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.03] hover:border-[rgb(var(--accent-rgb)/0.35)] hover:bg-white/[0.05]"
+              }`}>
                 <div className="flex items-center gap-3 min-w-0">
                   {ex.image_url ? (
                     <img src={ex.image_url} alt="" className="w-12 h-12 rounded-md object-cover shrink-0 border border-white/10" />
@@ -205,11 +374,15 @@ export default function AddExerciseModal({
                     <div className="w-12 h-12 rounded-md shrink-0 bg-white/5 border border-white/10" />
                   )}
                   <div className="min-w-0">
-                    <p className="font-bold text-sm text-white/90 mb-1.5">{ex.name}</p>
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <p className="font-bold text-sm text-white/90 truncate">{ex.name}</p>
+                      {isFav && <Star size={11} className="text-yellow-300 shrink-0" fill="currentColor" />}
+                    </div>
                     <div className="flex flex-wrap gap-1.5">
                       <Tag>{ex.primary_muscle}</Tag>
                       <Tag variant="muted">{ex.equipment}</Tag>
                       <Tag variant="muted">{ex.category}</Tag>
+                      {isRecent && <Tag variant="accent">Recent</Tag>}
                     </div>
                   </div>
                 </div>

@@ -9,6 +9,7 @@ import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } 
 import { CSS } from "@dnd-kit/utilities";
 import { supabase } from "../../lib/supabase";
 import { analyzeAdaptiveVolume, getVolumeStatus, VOLUME_GUIDELINES, type AdaptiveVolumeData, type MuscleTrend } from "../../lib/volumeAnalysis";
+import { analyzeRecovery, type MuscleRecoveryData } from "../../lib/muscleRecovery";
 import { QUICK_START_TEMPLATES, type QuickStartTemplate } from "../../lib/quickStartTemplates";
 import { useAuth } from "../../lib/AuthProvider";
 import AddExerciseModal from "../../components/AddExerciseModal";
@@ -440,7 +441,7 @@ export default function SchedulePage() {
     const router = useRouter();
     const searchParams = useSearchParams();
 
-    const [activeTab, setActiveTab] = useState<"week" | "today">("week");
+    const [activeTab, setActiveTab] = useState<"week" | "today">("today");
     const [weekOffset, setWeekOffset] = useState(0);
     const [selectedDate, setSelectedDate] = useState(toDateString(new Date()));
     const [showDatabase, setShowDatabase] = useState(false);
@@ -453,7 +454,7 @@ export default function SchedulePage() {
 
     const [viewLoading, setViewLoading] = useState(true);
     const [viewExercises, setViewExercises] = useState<LocalExercise[]>([]);
-    const [recoveryWarnings, setRecoveryWarnings] = useState<{ segment: string; pct: number; lastTrained: string }[]>([]);
+    const [recoveryWarnings, setRecoveryWarnings] = useState<{ segment: string; pct: number; status: string; lastTrained: string }[]>([]);
     const [weeklyVolume, setWeeklyVolume] = useState<{ segment: string; sets: number; days: number }[]>([]);
     const [adaptiveData, setAdaptiveData] = useState<Record<string, AdaptiveVolumeData>>({});
     const [adaptiveLoaded, setAdaptiveLoaded] = useState(false);
@@ -462,6 +463,7 @@ export default function SchedulePage() {
     const [importingPlan, setImportingPlan] = useState(false);
     const [importConfirm, setImportConfirm] = useState<{ plan: WorkoutPlan; label: string } | null>(null);
     const [volumeExpanded, setVolumeExpanded] = useState(false);
+    const [todayAddModal, setTodayAddModal] = useState(false);
 
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -669,26 +671,18 @@ export default function SchedulePage() {
         if (user) {
             const todaysMuscles = new Set((rows ?? []).map((r: any) => r.exercises?.body_segment).filter(Boolean));
             if (todaysMuscles.size > 0) {
-                const threeDaysAgo = new Date();
-                threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
-                const { data: recentLogs } = await supabase
-                    .from("exercise_set_logs")
-                    .select("exercise_id, completed_at, exercises!inner(body_segment), workout_sessions!inner(status, user_id)")
-                    .eq("workout_sessions.user_id", user.id)
-                    .eq("workout_sessions.status", "completed")
-                    .gte("completed_at", threeDaysAgo.toISOString());
-                const lastTrainedMap: Record<string, Date> = {};
-                (recentLogs ?? []).forEach((log: any) => {
-                    const seg = log.exercises?.body_segment;
-                    if (!seg || !todaysMuscles.has(seg)) return;
-                    const d = new Date(log.completed_at);
-                    if (!lastTrainedMap[seg] || d > lastTrainedMap[seg]) lastTrainedMap[seg] = d;
-                });
-                const warnings: { segment: string; pct: number; lastTrained: string }[] = [];
-                for (const [seg, lastDate] of Object.entries(lastTrainedMap)) {
-                    const hoursAgo = (Date.now() - lastDate.getTime()) / (1000 * 60 * 60);
-                    const pct = Math.min(100, Math.round((hoursAgo / 48) * 100));
-                    if (pct < 85) warnings.push({ segment: seg, pct, lastTrained: lastDate.toLocaleDateString(undefined, { weekday: "short" }) });
+                const recoveryMap = await analyzeRecovery(user.id);
+                const warnings: { segment: string; pct: number; status: string; lastTrained: string }[] = [];
+                for (const seg of todaysMuscles) {
+                    const rd = recoveryMap[seg];
+                    if (rd && rd.recoveryPct < 85) {
+                        warnings.push({
+                            segment: seg,
+                            pct: rd.recoveryPct,
+                            status: rd.status,
+                            lastTrained: rd.lastTrainedAt ? new Date(rd.lastTrainedAt).toLocaleDateString(undefined, { weekday: "short" }) : "—",
+                        });
+                    }
                 }
                 setRecoveryWarnings(warnings.sort((a, b) => a.pct - b.pct));
             } else { setRecoveryWarnings([]); }
@@ -696,6 +690,21 @@ export default function SchedulePage() {
     }, [selectedDate, recurringPlans, recurringLoaded, user]);
 
     useEffect(() => { loadSelectedDayView(); }, [loadSelectedDayView]);
+
+    async function handleAddExerciseToday(exercise: { id: string; name: string; body_segment?: string }) {
+        if (!user || !selectedPlan?.template_id) return;
+        const segment = exercise.body_segment || "Other";
+        const cardio = segment === "Cardio";
+        await supabase.from("workout_template_exercises").insert({
+            template_id: selectedPlan.template_id, user_id: user.id, exercise_id: exercise.id,
+            order_index: viewExercises.length,
+            target_sets: cardio ? 1 : 3, target_reps: cardio ? "" : "8-10", target_weight: null,
+            rest_seconds: cardio ? null : 90, notes: "",
+            target_duration_minutes: cardio ? 10 : null, target_incline: null, target_speed: null,
+        });
+        loadSelectedDayView();
+        loadRecurring();
+    }
 
     const dayLabel = new Date(selectedDate + "T00:00:00").toLocaleDateString(undefined, { weekday: "long" });
     const selectedWeekday = new Date(selectedDate + "T00:00:00").getDay();
@@ -732,16 +741,16 @@ export default function SchedulePage() {
                 {/* ─── Tabs ─── */}
                 <div className="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-white/[0.03] border border-white/[0.06]">
                     <button
-                        onClick={() => setActiveTab("week")}
-                        className={`py-2 rounded-lg text-xs font-bold tracking-wide transition ${activeTab === "week" ? "bg-[rgb(var(--accent-rgb)/0.15)] text-[rgb(var(--accent-light-rgb))] border border-[rgb(var(--accent-rgb)/0.3)]" : "text-white/40 hover:text-white/60 border border-transparent"}`}
-                    >
-                        MY WEEK
-                    </button>
-                    <button
                         onClick={() => setActiveTab("today")}
                         className={`py-2 rounded-lg text-xs font-bold tracking-wide transition ${activeTab === "today" ? "bg-[rgb(var(--accent-rgb)/0.15)] text-[rgb(var(--accent-light-rgb))] border border-[rgb(var(--accent-rgb)/0.3)]" : "text-white/40 hover:text-white/60 border border-transparent"}`}
                     >
                         TODAY
+                    </button>
+                    <button
+                        onClick={() => setActiveTab("week")}
+                        className={`py-2 rounded-lg text-xs font-bold tracking-wide transition ${activeTab === "week" ? "bg-[rgb(var(--accent-rgb)/0.15)] text-[rgb(var(--accent-light-rgb))] border border-[rgb(var(--accent-rgb)/0.3)]" : "text-white/40 hover:text-white/60 border border-transparent"}`}
+                    >
+                        MY WEEK
                     </button>
                 </div>
 
@@ -1006,9 +1015,9 @@ export default function SchedulePage() {
                                                 <div key={w.segment} className="flex items-center gap-3">
                                                     <p className="text-[10px] font-mono text-white/50 w-20 shrink-0">{w.segment}</p>
                                                     <div className="flex-1 h-1.5 rounded-full bg-white/5 overflow-hidden">
-                                                        <div className={`h-full rounded-full ${w.pct < 50 ? "bg-red-400/70" : w.pct < 70 ? "bg-amber-400/70" : "bg-yellow-300/60"}`} style={{ width: `${w.pct}%` }} />
+                                                        <div className={`h-full rounded-full ${w.pct < 25 ? "bg-red-400/70" : w.pct < 50 ? "bg-orange-400/70" : w.pct < 80 ? "bg-amber-300/70" : "bg-cyan-400/60"}`} style={{ width: `${w.pct}%` }} />
                                                     </div>
-                                                    <p className={`text-[10px] font-mono font-bold w-10 text-right ${w.pct < 50 ? "text-red-400" : w.pct < 70 ? "text-amber-300" : "text-yellow-200"}`}>{w.pct}%</p>
+                                                    <p className={`text-[10px] font-mono font-bold w-10 text-right ${w.pct < 25 ? "text-red-400" : w.pct < 50 ? "text-orange-400" : w.pct < 80 ? "text-amber-300" : "text-cyan-300"}`}>{w.pct}%</p>
                                                 </div>
                                             ))}
                                         </div>
@@ -1024,6 +1033,13 @@ export default function SchedulePage() {
                                             </div>
                                         ))}
                                     </div>
+
+                                    <button
+                                        onClick={() => setTodayAddModal(true)}
+                                        className="w-full mt-3 flex items-center justify-center gap-2 rounded-xl border border-dashed border-[rgb(var(--accent-rgb)/0.25)] py-3 text-xs font-mono text-[rgb(var(--accent-light-rgb)/0.6)] hover:border-[rgb(var(--accent-rgb)/0.5)] hover:text-[rgb(var(--accent-light-rgb))] hover:bg-[rgb(var(--accent-rgb)/0.05)] transition"
+                                    >
+                                        <Plus size={14} /> Add Exercise
+                                    </button>
                                 </>
                             )}
                         </div>
@@ -1040,6 +1056,13 @@ export default function SchedulePage() {
                     onSaved={() => loadRecurring()}
                     sensors={sensors}
                     user={user}
+                />
+            )}
+            {todayAddModal && selectedPlan?.template_id && (
+                <AddExerciseModal
+                    onAdd={handleAddExerciseToday}
+                    onClose={() => setTodayAddModal(false)}
+                    existingIds={new Set(viewExercises.map(e => e.exercise_id))}
                 />
             )}
             {showDatabase && <ExerciseDatabaseModal onClose={() => setShowDatabase(false)} />}

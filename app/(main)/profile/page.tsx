@@ -400,20 +400,30 @@ export default function ProfilePage() {
 
     async function deleteAccount() {
         if (!user) return;
-        // Delete all user data
-        await supabase.from("notifications").delete().eq("user_id", user.id);
-        await supabase.from("achievements").delete().eq("user_id", user.id);
-        await supabase.from("target_lifts").delete().eq("user_id", user.id);
-        await supabase.from("user_stats").delete().eq("user_id", user.id);
-        await supabase.from("body_weight_logs").delete().eq("user_id", user.id);
-        await supabase.from("exercise_set_logs").delete().eq("user_id", user.id);
-        await supabase.from("workout_sessions").delete().eq("user_id", user.id);
-        await supabase.from("scheduled_exercises").delete().eq("user_id", user.id);
-        await supabase.from("scheduled_days").delete().eq("user_id", user.id);
-        await supabase.from("workout_template_exercises").delete().eq("user_id", user.id);
-        await supabase.from("workout_templates").delete().eq("user_id", user.id);
-        await supabase.from("recurring_plans").delete().eq("user_id", user.id);
-        await supabase.from("profiles").delete().eq("id", user.id);
+        const uid = user.id;
+        await supabase.from("notifications").delete().eq("user_id", uid);
+        await supabase.from("achievements").delete().eq("user_id", uid);
+        await supabase.from("target_lifts").delete().eq("user_id", uid);
+        await supabase.from("exercise_goals").delete().eq("user_id", uid);
+        await supabase.from("exercise_leaderboard").delete().eq("user_id", uid);
+        await supabase.from("favorite_exercises").delete().eq("user_id", uid);
+        await supabase.from("body_measurements").delete().eq("user_id", uid);
+        await supabase.from("food_entries").delete().eq("user_id", uid);
+        await supabase.from("daily_intake").delete().eq("user_id", uid);
+        await supabase.from("my_foods").delete().eq("user_id", uid);
+        await supabase.from("tdee_estimates").delete().eq("user_id", uid);
+        await supabase.from("weight_trend").delete().eq("user_id", uid);
+        await supabase.from("user_stats").delete().eq("user_id", uid);
+        await supabase.from("body_weight_logs").delete().eq("user_id", uid);
+        await supabase.from("exercise_set_logs").delete().eq("user_id", uid);
+        await supabase.from("workout_sessions").delete().eq("user_id", uid);
+        await supabase.from("scheduled_exercises").delete().eq("user_id", uid);
+        await supabase.from("scheduled_days").delete().eq("user_id", uid);
+        await supabase.from("workout_template_exercises").delete().eq("user_id", uid);
+        await supabase.from("workout_templates").delete().eq("user_id", uid);
+        await supabase.from("recurring_plans").delete().eq("user_id", uid);
+        await supabase.from("user_goals").delete().eq("user_id", uid);
+        await supabase.from("profiles").delete().eq("id", uid);
         await supabase.auth.signOut();
         router.push("/login");
     }
