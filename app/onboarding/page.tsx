@@ -330,15 +330,33 @@ export default function OnboardingPage() {
                     {step === 3 && (
                         <div>
                             <StepHeader n={3} skippable />
-                            <h2 className="text-2xl font-bold text-white/95 mb-1">What's your gender?</h2>
-                            <p className="text-sm text-white/40 mb-6">Helps calibrate stats and benchmarks.</p>
-                            <div className="grid grid-cols-2 gap-2">
-                                {GENDER_OPTIONS.map((g) => (
-                                    <button key={g} onClick={() => setGender(g)}
-                                        className={`text-sm font-mono py-3 rounded-lg border transition ${gender === g ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/10 text-white/40 hover:text-white/70"}`}>
-                                        {g}
+                            <h2 className="text-2xl font-bold text-white/95 mb-1">Choose your profile mode</h2>
+                            <p className="text-sm text-white/40 mb-6">This tailors your entire experience — recovery, nutrition, plans, leaderboards, and recommendations. You can switch anytime in Settings.</p>
+                            <div className="space-y-2">
+                                {[
+                                    { value: "Male", symbol: "♂", color: "border-blue-500/30 bg-blue-500/5", activeColor: "border-blue-500/50 bg-blue-500/10 text-blue-400", desc: "Male physiology calibration" },
+                                    { value: "Female", symbol: "♀", color: "border-pink-500/30 bg-pink-500/5", activeColor: "border-pink-500/50 bg-pink-500/10 text-pink-400", desc: "Female physiology calibration + cycle tracking" },
+                                ].map((opt) => (
+                                    <button key={opt.value} onClick={() => setGender(opt.value)}
+                                        className={`w-full flex items-center gap-4 py-4 px-4 rounded-xl border transition ${gender === opt.value ? opt.activeColor : "border-white/10 text-white/40 hover:text-white/70"}`}>
+                                        <span className="text-3xl">{opt.symbol}</span>
+                                        <div className="text-left">
+                                            <p className="text-sm font-mono font-bold">{opt.value}</p>
+                                            <p className="text-[10px] font-mono text-white/30">{opt.desc}</p>
+                                        </div>
                                     </button>
                                 ))}
+                                <div className="flex gap-2 mt-2">
+                                    {["Other", "Prefer not to say"].map((g) => (
+                                        <button key={g} onClick={() => setGender(g)}
+                                            className={`flex-1 text-[11px] font-mono py-2.5 rounded-lg border transition ${gender === g ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/10 text-white/40 hover:text-white/70"}`}>
+                                            {g}
+                                        </button>
+                                    ))}
+                                </div>
+                                {(gender === "Other" || gender === "Prefer not to say") && (
+                                    <p className="text-[9px] font-mono text-white/25 mt-1 text-center">Defaults to male calibration. You can switch to female mode anytime in Settings.</p>
+                                )}
                             </div>
                         </div>
                     )}

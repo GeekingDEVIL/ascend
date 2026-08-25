@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { HeartPulse, TrendingUp, TrendingDown, Minus, AlertCircle, ChevronLeft, Zap, Clock, Dumbbell, Activity, ShieldCheck, ShieldAlert, Shield, ShieldX } from "lucide-react";
+import { HeartPulse, TrendingUp, TrendingDown, Minus, AlertCircle, ChevronLeft, Zap, Clock, Dumbbell, Activity, ShieldCheck, ShieldAlert, Shield, ShieldX, Droplets } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAuth } from "../../lib/AuthProvider";
 import { supabase } from "../../lib/supabase";
@@ -150,6 +150,18 @@ export default function RecoveryPage() {
             </div>
           )}
         </div>
+
+        {userSex === "female" && (
+          <button onClick={() => router.push("/cycle")}
+            className="w-full flex items-center gap-3 rounded-xl border border-pink-500/20 bg-pink-500/5 px-4 py-3 hover:bg-pink-500/10 transition">
+            <Droplets size={16} className="text-pink-400 shrink-0" />
+            <div className="flex-1 text-left">
+              <p className="text-[11px] font-mono text-pink-300">Cycle Tracking</p>
+              <p className="text-[9px] font-mono text-white/25">Log periods, symptoms & phase-aware recommendations</p>
+            </div>
+            <ChevronLeft size={14} className="text-white/20 rotate-180" />
+          </button>
+        )}
 
         {loading ? (
           <CubeLoader message="Analyzing recovery…" />

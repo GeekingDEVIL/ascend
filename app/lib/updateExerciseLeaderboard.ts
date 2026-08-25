@@ -9,11 +9,12 @@ function estimateE1RM(weight: number, reps: number): number {
 export async function updateExerciseLeaderboard(userId: string) {
   const { data: profile } = await supabase
     .from("profiles")
-    .select("username, avatar_url")
+    .select("username, avatar_url, sex")
     .eq("id", userId)
     .maybeSingle();
   const username = profile?.username ?? "Unknown";
   const avatarUrl = profile?.avatar_url ?? null;
+  const sex = profile?.sex ?? "male";
 
   const { data: logs } = await supabase
     .from("exercise_set_logs")
@@ -40,6 +41,7 @@ export async function updateExerciseLeaderboard(userId: string) {
     exercise_name: b.name,
     username,
     avatar_url: avatarUrl,
+    sex,
     best_weight: b.weight,
     best_reps: b.reps,
     best_e1rm: b.e1rm,

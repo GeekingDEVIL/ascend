@@ -29,7 +29,7 @@ import { assessRecomp, type RecompAssessment } from "../../lib/recompMode";
 import { detectPatterns, type PatternWarning } from "../../lib/energyGuardrails";
 import { modelScenario, type ScenarioResult } from "../../lib/scenarioModeling";
 import { shouldSuggestDietBreak, planDietBreak } from "../../lib/dietBreaks";
-import { comparePhaseToPhase, estimateCyclePhase, getCyclePhaseInfo, type CycleAwareComparison } from "../../lib/cycleAwareTrend";
+import { comparePhaseToPhase, estimateCyclePhase, getCyclePhaseInfo, computeAdaptiveCycleLength, fetchCycleLogs, type CycleAwareComparison } from "../../lib/cycleAwareTrend";
 import { estimateSessionExpenditure, type SessionExpenditure } from "../../lib/exerciseExpenditure";
 
 const MEASUREMENT_TYPES: { type: MeasurementType; color: string; bar: string }[] = [
@@ -682,14 +682,18 @@ export default function ProgressPage() {
                 setInsightDietBreak(null);
             }
 
-            // Cycle-aware trend (female-only, when cycle tracking enabled)
             if (prof.sex === "female" && g?.cycle_tracking_enabled && trendWeights.length >= 7) {
                 try {
-                    const phase = estimateCyclePhase(g.cycle_start_date ?? trendWeights[0].date, today);
+                    const logs = await fetchCycleLogs(user!.id);
+                    const periodStarts = logs.map(l => l.period_start);
+                    const cycleLen = computeAdaptiveCycleLength(periodStarts);
+                    const lastStart = periodStarts[0] ?? g.cycle_start_date ?? trendWeights[0].date;
+                    const { phase } = estimateCyclePhase(lastStart, cycleLen, today);
                     const comparison = comparePhaseToPhase({
                         currentPhase: phase,
                         currentWeightKg: bwLatest,
                         weightHistory: trendWeights.map(w => ({ date: w.date, ema_kg: w.ema_kg })),
+                        cycleLength: cycleLen,
                     });
                     setInsightCycle(comparison);
                     setInsightCyclePhaseInfo(getCyclePhaseInfo(phase));

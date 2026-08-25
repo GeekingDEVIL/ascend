@@ -74,6 +74,7 @@ export default function RankingsPage() {
   const [lbLoading, setLbLoading] = useState(false);
   const [sortBy, setSortBy] = useState<LeaderboardSort>("total_xp");
   const [showAllTiers, setShowAllTiers] = useState(false);
+  const [userSex, setUserSex] = useState<string>("male");
 
   useEffect(() => {
     async function load() {
@@ -94,6 +95,8 @@ export default function RankingsPage() {
       ]);
       setTotalXp((data ?? []).reduce((s, r: any) => s + (r.xp_earned || 0), 0));
       setRecentSessions((sessions ?? []).map((s: any) => ({ xp: s.xp_earned || 0, date: s.date, title: s.title || "Workout" })));
+      const { data: prof } = await supabase.from("profiles").select("sex").eq("id", user.id).maybeSingle();
+      setUserSex(prof?.sex ?? "male");
       const { data: existing } = await supabase.from("user_stats").select("user_id").eq("user_id", user.id).maybeSingle();
       if (!existing && (data ?? []).length > 0) {
         const { updateUserStats } = await import("../../lib/updateUserStats");
@@ -111,13 +114,14 @@ export default function RankingsPage() {
       const { data } = await supabase
         .from("user_stats")
         .select("*")
+        .eq("sex", userSex)
         .order(sortBy, { ascending: false })
         .limit(50);
       setLeaderboard(data ?? []);
       setLbLoading(false);
     }
     loadLeaderboard();
-  }, [tab, sortBy]);
+  }, [tab, sortBy, userSex]);
 
   const levelInfo = computeLevel(totalXp);
   const currentRank = getRank(levelInfo.level);

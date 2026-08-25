@@ -656,13 +656,8 @@ export default function ProfilePage() {
                                 </div>
                                 <div>
                                     <label className="text-[9px] font-mono text-white/30 mb-1 block">SEX</label>
-                                    <div className="flex gap-2">
-                                        {(["male", "female"] as const).map((s) => (
-                                            <button key={s} onClick={() => updateField("sex", s)}
-                                                className={`flex-1 text-[10px] font-mono py-2.5 rounded-lg border transition ${data.sex === s ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/10 text-white/40 hover:text-white/70"}`}>
-                                                {s.toUpperCase()}
-                                            </button>
-                                        ))}
+                                    <div className="h-11 rounded-lg bg-white/[0.04] border border-white/[0.08] flex items-center px-3">
+                                        <span className="text-base font-bold font-mono text-white/70">{data.sex ? data.sex.charAt(0).toUpperCase() + data.sex.slice(1) : "—"}</span>
                                     </div>
                                 </div>
                                 <div>
@@ -983,6 +978,78 @@ export default function ProfilePage() {
                 {/* ══════════ PREFERENCES ══════════ */}
                 {section === "preferences" && (
                     <div className="space-y-4">
+                        {/* ── PROFILE MODE ── */}
+                        <div className="relative rounded-2xl border-2 overflow-hidden transition-all duration-500"
+                            style={{
+                                borderColor: data.sex === "female" ? "rgba(236,72,153,0.3)" : "rgba(59,130,246,0.3)",
+                                boxShadow: data.sex === "female"
+                                    ? "0 0 40px -8px rgba(236,72,153,0.15), inset 0 1px 0 rgba(255,255,255,0.06)"
+                                    : "0 0 40px -8px rgba(59,130,246,0.15), inset 0 1px 0 rgba(255,255,255,0.06)",
+                            }}>
+                            <div className="absolute inset-0 transition-all duration-500"
+                                style={{
+                                    background: data.sex === "female"
+                                        ? "linear-gradient(135deg, rgba(236,72,153,0.08), rgba(168,85,247,0.05))"
+                                        : "linear-gradient(135deg, rgba(59,130,246,0.08), rgba(99,102,241,0.05))",
+                                }} />
+                            <div className="relative px-5 py-5">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div>
+                                        <p className="text-[10px] font-mono tracking-widest text-white/25 mb-1">PROFILE MODE</p>
+                                        <p className="text-lg font-bold transition-colors duration-300"
+                                            style={{ color: data.sex === "female" ? "rgb(236,72,153)" : "rgb(96,165,250)" }}>
+                                            {data.sex === "female" ? "Female" : "Male"}
+                                        </p>
+                                    </div>
+                                    <span className="text-3xl">{data.sex === "female" ? "♀" : "♂"}</span>
+                                </div>
+
+                                <p className="text-[10px] font-mono text-white/30 mb-4 leading-relaxed">
+                                    {data.sex === "female"
+                                        ? "Recovery, nutrition, volume, plans, leaderboards — all calibrated for female physiology."
+                                        : "Recovery, nutrition, volume, plans, leaderboards — all calibrated for male physiology."}
+                                </p>
+
+                                {/* Toggle switch */}
+                                <button
+                                    onClick={() => updateField("sex", data.sex === "female" ? "male" : "female")}
+                                    className="w-full relative h-14 rounded-xl border transition-all duration-300 overflow-hidden"
+                                    style={{
+                                        borderColor: data.sex === "female" ? "rgba(236,72,153,0.2)" : "rgba(59,130,246,0.2)",
+                                        background: "rgba(255,255,255,0.02)",
+                                    }}>
+                                    {/* Sliding indicator */}
+                                    <motion.div
+                                        className="absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-lg"
+                                        animate={{ x: data.sex === "female" ? "calc(100% + 4px)" : 4 }}
+                                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                                        style={{
+                                            background: data.sex === "female"
+                                                ? "linear-gradient(135deg, rgba(236,72,153,0.2), rgba(168,85,247,0.15))"
+                                                : "linear-gradient(135deg, rgba(59,130,246,0.2), rgba(99,102,241,0.15))",
+                                            borderWidth: 1,
+                                            borderStyle: "solid",
+                                            borderColor: data.sex === "female" ? "rgba(236,72,153,0.3)" : "rgba(59,130,246,0.3)",
+                                        }}
+                                    />
+                                    <div className="relative flex h-full">
+                                        <div className={`flex-1 flex items-center justify-center gap-2 transition-colors duration-300 ${data.sex !== "female" ? "text-blue-400" : "text-white/25"}`}>
+                                            <span className="text-lg">♂</span>
+                                            <span className="text-[11px] font-mono font-bold">MALE</span>
+                                        </div>
+                                        <div className={`flex-1 flex items-center justify-center gap-2 transition-colors duration-300 ${data.sex === "female" ? "text-pink-400" : "text-white/25"}`}>
+                                            <span className="text-lg">♀</span>
+                                            <span className="text-[11px] font-mono font-bold">FEMALE</span>
+                                        </div>
+                                    </div>
+                                </button>
+
+                                <p className="text-[8px] font-mono text-white/15 mt-3 text-center">
+                                    Switching mode recalibrates all engines, plans, and recommendations.
+                                </p>
+                            </div>
+                        </div>
+
                         <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4 space-y-4">
                             <p className="text-[10px] font-mono tracking-widest text-white/25">UNITS</p>
                             <div className="flex gap-2">
