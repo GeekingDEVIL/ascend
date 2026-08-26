@@ -12,6 +12,7 @@ import { useAuth } from "../lib/AuthProvider";
 import { GOAL_OPTIONS } from "../lib/goals";
 import CustomSelect from "../components/CustomSelect";
 import type { GoalType, ActivityLevel, DietPreference, Sex } from "../lib/calorieEngine";
+import CubeLoader from "../components/ui/cube-loader";
 
 const EXPERIENCE_LEVELS = ["beginner", "intermediate", "advanced"] as const;
 const GENDER_OPTIONS = ["Male", "Female", "Other", "Prefer not to say"];
@@ -201,7 +202,8 @@ export default function OnboardingPage() {
     async function logWeightIfNeeded() {
         if (weightLoggedRef.current || !weightKg || !user) return;
         weightLoggedRef.current = true;
-        await supabase.from("body_weight_logs").insert({ user_id: user.id, weight: Number(weightKg), context: "onboarding" });
+        const selectedSex: Sex = gender === "Female" ? "female" : "male";
+        await supabase.from("body_weight_logs").insert({ user_id: user.id, weight: Number(weightKg), context: "onboarding", sex: selectedSex });
     }
 
     async function handleNext() {
@@ -234,14 +236,26 @@ export default function OnboardingPage() {
             onboarding_step: TOTAL_STEPS,
             onboarding_completed_at: new Date().toISOString(),
         });
-        await supabase.from("profiles").update({
-            sex,
-            activity_level: activityLevel,
-            onboarding_completed: true,
-        }).eq("id", user.id);
+        await Promise.all([
+            supabase.from("profiles").update({
+                sex,
+                onboarding_completed: true,
+            }).eq("id", user.id),
+            supabase.from("profile_body_stats").upsert({
+                user_id: user.id,
+                sex,
+                height_cm: heightCm ? Number(heightCm) : null,
+                activity_level: activityLevel,
+                goal: goal || null,
+                experience,
+                training_frequency: frequency,
+                workout_time_pref: duration || null,
+            }, { onConflict: "user_id,sex" }),
+        ]);
 
         await supabase.from("user_goals").insert({
             user_id: user.id,
+            sex,
             goal_type: goalType,
             target_weight_kg: targetWeight ? Number(targetWeight) : null,
             rate_per_week_kg: ratePerWeek ? Number(ratePerWeek) : 0.5,
@@ -258,8 +272,9 @@ export default function OnboardingPage() {
                 weekday: wd,
                 template_id: null,
                 is_rest: !preferredDays.some((d) => DAY_TO_WEEKDAY[d] === wd),
+                sex,
             }));
-            await supabase.from("recurring_plans").upsert(rows, { onConflict: "user_id,weekday" });
+            await supabase.from("recurring_plans").upsert(rows, { onConflict: "user_id,weekday,sex" });
         }
 
         setSaving(false);
@@ -269,7 +284,7 @@ export default function OnboardingPage() {
     if (!loaded) {
         return (
             <div className="min-h-screen bg-[#050914] flex items-center justify-center">
-                <div className="w-8 h-8 border-2 border-[rgb(var(--accent-rgb)/0.4)] border-t-[rgb(var(--accent-rgb))] rounded-full animate-spin" />
+                <CubeLoader message="Setting up your journey…" />
             </div>
         );
     }

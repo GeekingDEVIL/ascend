@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Award, Lock, ChevronLeft, Sparkles } from "lucide-react";
+import { Award, Lock, ChevronLeft, Sparkles, Search, SlidersHorizontal, X } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../lib/AuthProvider";
@@ -18,6 +18,9 @@ export default function AchievementsPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "earned" | "locked">("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [rarityFilter, setRarityFilter] = useState<string>("all");
+  const [search, setSearch] = useState("");
+  const [moreOpen, setMoreOpen] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -37,11 +40,16 @@ export default function AchievementsPage() {
   }, [user]);
 
   const categories = ["all", ...Array.from(new Set(ACHIEVEMENT_DEFS.map((a) => a.category)))];
+  const rarities = ["all", ...Array.from(new Set(ACHIEVEMENT_DEFS.map((a) => a.rarity)))];
+
+  const activeAdvancedCount = (categoryFilter !== "all" ? 1 : 0) + (rarityFilter !== "all" ? 1 : 0);
 
   const filtered = ACHIEVEMENT_DEFS.filter((a) => {
     if (categoryFilter !== "all" && a.category !== categoryFilter) return false;
+    if (rarityFilter !== "all" && a.rarity !== rarityFilter) return false;
     if (filter === "earned" && !earnedKeys.has(a.key)) return false;
     if (filter === "locked" && earnedKeys.has(a.key)) return false;
+    if (search.trim() && !`${a.name} ${a.description}`.toLowerCase().includes(search.trim().toLowerCase())) return false;
     return true;
   });
 
@@ -121,30 +129,89 @@ export default function AchievementsPage() {
           </div>
         )}
 
-        <div className="flex gap-2 flex-wrap">
-          {(["all", "earned", "locked"] as const).map((f) => (
+        <div className="space-y-2">
+          <div className="flex gap-2">
+            <div className="flex-1 relative">
+              <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/20" />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search achievements…"
+                className="w-full text-[11px] font-mono bg-white/[0.03] border border-white/[0.08] rounded-lg pl-8 pr-3 py-2 text-white/70 placeholder:text-white/20 focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition"
+              />
+            </div>
             <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className={`text-[10px] font-mono px-3 py-1.5 rounded-lg border transition ${
-                filter === f ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/10 text-white/40 hover:text-white/70"
+              onClick={() => setMoreOpen((v) => !v)}
+              className={`flex items-center gap-1.5 text-[10px] font-mono px-3 py-2 rounded-lg border transition shrink-0 ${
+                moreOpen || activeAdvancedCount > 0 ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/[0.08] text-white/40 hover:text-white/70"
               }`}
             >
-              {f.toUpperCase()} {f === "earned" ? `(${totalEarned})` : f === "locked" ? `(${totalAchievements - totalEarned})` : ""}
+              <SlidersHorizontal size={12} /> Filters{activeAdvancedCount > 0 && ` (${activeAdvancedCount})`}
             </button>
-          ))}
-          <div className="w-px bg-white/10 mx-1" />
-          {categories.map((c) => (
-            <button
-              key={c}
-              onClick={() => setCategoryFilter(c)}
-              className={`text-[10px] font-mono px-2.5 py-1.5 rounded-lg border transition ${
-                categoryFilter === c ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/10 text-white/30 hover:text-white/60"
-              }`}
-            >
-              {c === "all" ? "ALL" : c.toUpperCase()}
-            </button>
-          ))}
+          </div>
+
+          <div className="flex gap-2 flex-wrap">
+            {(["all", "earned", "locked"] as const).map((f) => (
+              <button
+                key={f}
+                onClick={() => setFilter(f)}
+                className={`text-[10px] font-mono px-3 py-1.5 rounded-lg border transition ${
+                  filter === f ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/10 text-white/40 hover:text-white/70"
+                }`}
+              >
+                {f.toUpperCase()} {f === "earned" ? `(${totalEarned})` : f === "locked" ? `(${totalAchievements - totalEarned})` : ""}
+              </button>
+            ))}
+          </div>
+
+          {moreOpen && (
+            <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-3 space-y-3">
+              <div>
+                <p className="text-[8px] font-mono tracking-widest text-white/25 mb-1.5">CATEGORY</p>
+                <div className="flex gap-1.5 flex-wrap">
+                  {categories.map((c) => (
+                    <button
+                      key={c}
+                      onClick={() => setCategoryFilter(c)}
+                      className={`text-[10px] font-mono px-2.5 py-1.5 rounded-lg border transition ${
+                        categoryFilter === c ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/10 text-white/30 hover:text-white/60"
+                      }`}
+                    >
+                      {c === "all" ? "ALL" : c.toUpperCase()}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="text-[8px] font-mono tracking-widest text-white/25 mb-1.5">RARITY</p>
+                <div className="flex gap-1.5 flex-wrap">
+                  {rarities.map((r) => {
+                    const active = rarityFilter === r;
+                    const rc = r !== "all" ? RARITY_COLORS[r as keyof typeof RARITY_COLORS] : null;
+                    return (
+                      <button
+                        key={r}
+                        onClick={() => setRarityFilter(r)}
+                        className={`text-[10px] font-mono px-2.5 py-1.5 rounded-lg border transition ${
+                          active ? (rc ? `${rc.border} ${rc.bg} ${rc.text}` : "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]") : "border-white/10 text-white/30 hover:text-white/60"
+                        }`}
+                      >
+                        {r === "all" ? "ALL" : r}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              {activeAdvancedCount > 0 && (
+                <button
+                  onClick={() => { setCategoryFilter("all"); setRarityFilter("all"); }}
+                  className="flex items-center gap-1 text-[9px] font-mono text-white/30 hover:text-white/60 transition"
+                >
+                  <X size={10} /> Clear filters
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         {loading ? (

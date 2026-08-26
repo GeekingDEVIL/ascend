@@ -5,9 +5,11 @@ import Link from "next/link";
 import { Calendar, Dumbbell, Weight, Trophy, ChevronDown, ChevronRight, Lock, Flame, Trash2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { tabContent } from "../../lib/motion";
+import CubeLoader from "../../components/ui/cube-loader";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../lib/AuthProvider";
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, CartesianGrid, ReferenceLine } from "recharts";
+import { useSex } from "../../lib/useSex";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, CartesianGrid, ReferenceLine, LabelList } from "recharts";
 import { ACHIEVEMENT_DEFS, RARITY_COLORS, type AchievementDef } from "../../lib/achievements";
 import MeasurementModal, { type MeasurementType } from "../../components/MeasurementModal";
 import { type WeightEntry, type WeightContext, lbsToKg, kgToLbs, rematerializeWeightTrend } from "../../lib/weightTrend";
@@ -185,6 +187,7 @@ export default function ProgressPage() {
     const { user } = useAuth();
     const [tab, setTab] = useState<Tab>("intake");
     const [loading, setLoading] = useState(true);
+    const { sex: userSex } = useSex();
 
     // History
     const [sessions, setSessions] = useState<SessionRecord[]>([]);
@@ -257,10 +260,11 @@ export default function ProgressPage() {
             .select("id, date, title, duration_seconds, total_sets, total_volume, xp_earned")
             .eq("user_id", user.id)
             .eq("status", "completed")
+            .eq("sex", userSex)
             .order("date", { ascending: false })
             .limit(1000);
         setSessions(data ?? []);
-    }, [user]);
+    }, [user, userSex]);
 
     const loadAchievements = useCallback(async () => {
         if (!user) return;
@@ -276,14 +280,16 @@ export default function ProgressPage() {
         const { data: mine } = await supabase
             .from("exercise_leaderboard")
             .select("exercise_id, exercise_name, best_weight")
-            .eq("user_id", user.id);
+            .eq("user_id", user.id)
+            .eq("sex", userSex);
         if (!mine || mine.length === 0) { setLeaderboardCard(null); return; }
 
         const exerciseIds = mine.map((m: any) => m.exercise_id);
         const { data: all } = await supabase
             .from("exercise_leaderboard")
             .select("exercise_id, user_id, username, avatar_url, best_weight")
-            .in("exercise_id", exerciseIds);
+            .in("exercise_id", exerciseIds)
+            .eq("sex", userSex);
         if (!all) { setLeaderboardCard(null); return; }
 
         const byExercise: Record<string, LeaderboardRow[]> = {};
@@ -304,7 +310,7 @@ export default function ProgressPage() {
         const rows = (byExercise[best.exerciseId] || []).slice().sort((a, b) => b.best_weight - a.best_weight);
         const myRank = rows.findIndex((r) => r.user_id === user.id) + 1;
         setLeaderboardCard({ exerciseName: best.exerciseName, top: rows.slice(0, 3), myRank, total: rows.length, myWeight: best.myWeight });
-    }, [user]);
+    }, [user, userSex]);
 
     const loadGoals = useCallback(async () => {
         if (!user) return;
@@ -328,8 +334,9 @@ export default function ProgressPage() {
         if (!user) return;
         const { data: logs } = await supabase
             .from("exercise_set_logs")
-            .select("exercise_id, weight, reps, completed_at, exercises!inner(name, body_segment)")
+            .select("exercise_id, weight, reps, completed_at, exercises!inner(name, body_segment), workout_sessions!inner(sex)")
             .eq("user_id", user.id)
+            .eq("workout_sessions.sex", userSex)
             .gt("weight", 0)
             .order("weight", { ascending: false });
 
@@ -358,7 +365,7 @@ export default function ProgressPage() {
 
         const sorted = Object.values(bestByExercise).sort((a, b) => b.estimated_1rm - a.estimated_1rm);
         setPrs(sorted);
-    }, [user]);
+    }, [user, userSex]);
 
     const loadBodyWeight = useCallback(async () => {
         if (!user) return;
@@ -367,12 +374,14 @@ export default function ProgressPage() {
                 .from("body_weight_logs")
                 .select("weight, logged_at, context, date")
                 .eq("user_id", user.id)
+                .eq("sex", userSex)
                 .order("logged_at", { ascending: true })
                 .limit(180),
             supabase
                 .from("weight_trend")
                 .select("date, raw_kg, ema_kg")
                 .eq("user_id", user.id)
+                .eq("sex", userSex)
                 .order("date", { ascending: true }),
         ]);
 
@@ -398,7 +407,7 @@ export default function ProgressPage() {
             });
 
         setBodyWeightData(entries);
-    }, [user]);
+    }, [user, userSex]);
 
     const loadMeasurements = useCallback(async () => {
         if (!user) return;
@@ -419,6 +428,7 @@ export default function ProgressPage() {
             .select("date, total_volume, total_sets")
             .eq("user_id", user.id)
             .eq("status", "completed")
+            .eq("sex", userSex)
             .order("date", { ascending: true });
 
         if (!allSessions) { setWeeklyVolumeData([]); return; }
@@ -440,44 +450,55 @@ export default function ProgressPage() {
                 sets: data.sets,
             }));
         setWeeklyVolumeData(sorted);
-    }, [user]);
+    }, [user, userSex]);
 
     const loadIntake = useCallback(async (date: string, force = false) => {
         if (!user) return;
         if (!force && intakeLoadedDateRef.current === date) return;
         setIntakeLoading(true);
-        const [{ data: entries }, { data: dailyRows }, { data: allIntake }, { data: goalRows }, { data: prof }, { data: trendRows }, { data: savedFoods }] = await Promise.all([
+        const [{ data: entries }, { data: dailyRows }, { data: allIntake }, { data: goalRows }, { data: prof }, { data: bodyStats }, { data: trendRows }, { data: savedFoods }] = await Promise.all([
             supabase
                 .from("food_entries")
                 .select("id, date, meal_slot, label, kcal, protein_g, carbs_g, fat_g, logged_at")
                 .eq("user_id", user.id)
+                .eq("sex", userSex)
                 .eq("date", date)
                 .order("logged_at", { ascending: true }),
             supabase
                 .from("daily_intake")
                 .select("date")
                 .eq("user_id", user.id)
+                .eq("sex", userSex)
                 .gte("date", new Date(Date.now() - 30 * 86400000).toISOString().split("T")[0]),
             supabase
                 .from("daily_intake")
                 .select("date, kcal")
                 .eq("user_id", user.id)
+                .eq("sex", userSex)
                 .order("date", { ascending: true }),
             supabase
                 .from("user_goals")
                 .select("*")
                 .eq("user_id", user.id)
+                .eq("sex", userSex)
                 .eq("is_active", true)
                 .limit(1),
             supabase
                 .from("profiles")
-                .select("height_cm, date_of_birth, sex, activity_level")
+                .select("date_of_birth")
                 .eq("id", user.id)
+                .maybeSingle(),
+            supabase
+                .from("profile_body_stats")
+                .select("height_cm, activity_level")
+                .eq("user_id", user.id)
+                .eq("sex", userSex)
                 .maybeSingle(),
             supabase
                 .from("weight_trend")
                 .select("date, ema_kg")
                 .eq("user_id", user.id)
+                .eq("sex", userSex)
                 .order("date", { ascending: true }),
             supabase
                 .from("my_foods")
@@ -500,14 +521,14 @@ export default function ProgressPage() {
         const bwLatest = (trendRows && trendRows.length > 0)
             ? Number(trendRows[trendRows.length - 1].ema_kg)
             : bwLatestRaw;
-        if (prof?.height_cm && prof?.date_of_birth && prof?.sex && bwLatest) {
+        if (bodyStats?.height_cm && prof?.date_of_birth && bwLatest) {
             const isAdaptive = !!g?.adaptive_mode;
             const baseSummary = getFullCalorieSummary({
                 weightKg: bwLatest,
-                heightCm: prof.height_cm,
+                heightCm: bodyStats.height_cm,
                 ageYears: ageFromDOB(prof.date_of_birth),
-                sex: prof.sex as Sex,
-                activity: (prof.activity_level as ActivityLevel) ?? "moderate",
+                sex: userSex as Sex,
+                activity: (bodyStats.activity_level as ActivityLevel) ?? "moderate",
                 goalType: (g?.goal_type as GoalType) ?? "general_fitness",
                 ratePerWeekKg: g?.rate_per_week_kg ?? undefined,
                 diet: (g?.diet_preference as DietPreference) ?? "balanced",
@@ -533,10 +554,10 @@ export default function ProgressPage() {
             const summary = blendedTdee
                 ? getFullCalorieSummary({
                     weightKg: bwLatest,
-                    heightCm: prof.height_cm,
+                    heightCm: bodyStats.height_cm,
                     ageYears: ageFromDOB(prof.date_of_birth),
-                    sex: prof.sex as Sex,
-                    activity: (prof.activity_level as ActivityLevel) ?? "moderate",
+                    sex: userSex as Sex,
+                    activity: (bodyStats.activity_level as ActivityLevel) ?? "moderate",
                     goalType: (g?.goal_type as GoalType) ?? "general_fitness",
                     ratePerWeekKg: g?.rate_per_week_kg ?? undefined,
                     diet: (g?.diet_preference as DietPreference) ?? "balanced",
@@ -559,8 +580,8 @@ export default function ProgressPage() {
                     targetDate: g.target_date ?? null,
                     tdee: summary.tdee,
                     bmr: summary.bmr,
-                    sex: prof.sex,
-                    heightCm: prof.height_cm,
+                    sex: userSex,
+                    heightCm: bodyStats.height_cm,
                     goalType: g.goal_type,
                 }));
             }
@@ -577,10 +598,10 @@ export default function ProgressPage() {
                 hasOverride: !!g?.calorie_target_override,
                 goalType: g?.goal_type ?? "general_fitness",
                 weightKg: bwLatest,
-                heightCm: prof.height_cm,
+                heightCm: bodyStats.height_cm,
                 ageYears: ageFromDOB(prof.date_of_birth),
-                sex: prof.sex,
-                activity: prof.activity_level ?? "moderate",
+                sex: userSex,
+                activity: bodyStats.activity_level ?? "moderate",
             }));
 
             const trendWeights = (trendRows ?? []).map((r: any) => ({ date: r.date, ema_kg: Number(r.ema_kg) }));
@@ -613,14 +634,15 @@ export default function ProgressPage() {
                 } catch { setInsightAnomaly(null); }
 
                 try {
-                    setInsightAdaptation(detectAdaptation({ tdeeEstimates: [], sex: prof.sex as Sex }));
+                    setInsightAdaptation(detectAdaptation({ tdeeEstimates: [], sex: userSex as Sex }));
                 } catch { setInsightAdaptation(null); }
             }
 
             const { data: strengthRows } = await supabase
                 .from("exercise_set_logs")
-                .select("created_at, weight, reps")
+                .select("created_at, weight, reps, workout_sessions!inner(sex)")
                 .eq("user_id", user!.id)
+                .eq("workout_sessions.sex", userSex)
                 .gt("weight", 0)
                 .order("created_at", { ascending: true })
                 .limit(200);
@@ -630,9 +652,9 @@ export default function ProgressPage() {
             }));
 
             if (trendWeights.length >= 7 && strengthData.length >= 3) {
-                try { setInsightLeanMass(assessLeanMassSignal({ weightTrend: trendWeights, strengthData, sex: prof.sex as Sex })); } catch { setInsightLeanMass(null); }
+                try { setInsightLeanMass(assessLeanMassSignal({ weightTrend: trendWeights, strengthData, sex: userSex as Sex })); } catch { setInsightLeanMass(null); }
                 if (g?.goal_type === "recomp" || g?.goal_type === "maintain") {
-                    try { setInsightRecomp(assessRecomp({ weightTrend: trendWeights, strengthData, sex: prof.sex as Sex })); } catch { setInsightRecomp(null); }
+                    try { setInsightRecomp(assessRecomp({ weightTrend: trendWeights, strengthData, sex: userSex as Sex })); } catch { setInsightRecomp(null); }
                 } else { setInsightRecomp(null); }
             }
 
@@ -649,13 +671,13 @@ export default function ProgressPage() {
             } catch { setInsightBudget(null); }
 
             try {
-                setInsightRecovery(getRecoveryAdjustment({ tdee: summary.tdee, calorieTarget: summary.calorieTarget, sex: prof.sex as Sex }));
+                setInsightRecovery(getRecoveryAdjustment({ tdee: summary.tdee, calorieTarget: summary.calorieTarget, sex: userSex as Sex }));
             } catch { setInsightRecovery(null); }
 
             try {
                 setInsightPatterns(detectPatterns({
                     currentKg: bwLatest,
-                    heightCm: prof.height_cm,
+                    heightCm: bodyStats.height_cm,
                     targetKg: g?.target_weight_kg ? Number(g.target_weight_kg) : null,
                     weightTrend: trendWeights.slice(-14),
                     loggingAdherence: intakeAdherence ?? undefined,
@@ -664,7 +686,7 @@ export default function ProgressPage() {
 
             // Scenario modeling
             if (g?.target_weight_kg && bwLatest) {
-                const sp = { currentKg: bwLatest, targetKg: Number(g.target_weight_kg), tdee: summary.tdee, bmr: summary.bmr, sex: prof.sex, heightCm: prof.height_cm, goalType: g.goal_type ?? "general_fitness" };
+                const sp = { currentKg: bwLatest, targetKg: Number(g.target_weight_kg), tdee: summary.tdee, bmr: summary.bmr, sex: userSex, heightCm: bodyStats.height_cm, goalType: g.goal_type ?? "general_fitness" };
                 setScenarioParams(sp);
                 try { setInsightScenario(modelScenario(sp)); } catch { setInsightScenario(null); }
             } else {
@@ -675,14 +697,14 @@ export default function ProgressPage() {
             // Diet break suggestion
             const deficitWeeks = dailyIntakes.length > 0 ? Math.floor(dailyIntakes.length / 7) : 0;
             const tdeeDrop = insightAdaptation?.detected ? insightAdaptation.tdeeDrop : 0;
-            if (shouldSuggestDietBreak({ deficitWeeks, tdeeDrop, adherencePct: intakeAdherence ?? 100, sex: prof.sex as Sex })) {
-                const plan = planDietBreak({ tdee: summary.tdee, currentPhase: (g?.phase as any) ?? "active", deficitWeeks, sex: prof.sex as Sex });
+            if (shouldSuggestDietBreak({ deficitWeeks, tdeeDrop, adherencePct: intakeAdherence ?? 100, sex: userSex as Sex })) {
+                const plan = planDietBreak({ tdee: summary.tdee, currentPhase: (g?.phase as any) ?? "active", deficitWeeks, sex: userSex as Sex });
                 setInsightDietBreak(plan.reason);
             } else {
                 setInsightDietBreak(null);
             }
 
-            if (prof.sex === "female" && g?.cycle_tracking_enabled && trendWeights.length >= 7) {
+            if (userSex === "female" && g?.cycle_tracking_enabled && trendWeights.length >= 7) {
                 try {
                     const logs = await fetchCycleLogs(user!.id);
                     const periodStarts = logs.map(l => l.period_start);
@@ -708,6 +730,7 @@ export default function ProgressPage() {
                 .select("duration_seconds, total_sets")
                 .eq("user_id", user!.id)
                 .eq("status", "completed")
+                .eq("sex", userSex)
                 .order("date", { ascending: false })
                 .limit(1);
             if (latestSession?.[0] && bwLatest) {
@@ -724,21 +747,28 @@ export default function ProgressPage() {
         }
         intakeLoadedDateRef.current = date;
         setIntakeLoading(false);
-    }, [user, bodyWeightData]);
+    }, [user, bodyWeightData, userSex]);
+
+    // Sex is now provided by the shared useSex() hook above.
 
     useEffect(() => {
+        let cancelled = false;
         async function load() {
             setLoading(true);
             await Promise.all([loadHistory(), loadAchievements(), loadLeaderboardCard(), loadGoals(), loadPRs(), loadBodyWeight(), loadMeasurements(), loadWeeklyVolume()]);
+            if (cancelled) return;
             setLoading(false);
         }
         load();
+        return () => { cancelled = true; };
     }, [loadHistory, loadAchievements, loadLeaderboardCard, loadGoals, loadPRs, loadBodyWeight, loadMeasurements, loadWeeklyVolume]);
 
     useEffect(() => {
         if (tab === "intake") {
+            let cancelled = false;
             const force = intakeLoadedDateRef.current !== null && intakeLoadedDateRef.current !== intakeDate;
             loadIntake(intakeDate, force);
+            return () => { cancelled = true; };
         }
     }, [tab, intakeDate, loadIntake]);
 
@@ -751,9 +781,10 @@ export default function ProgressPage() {
 
         const { data } = await supabase
             .from("exercise_set_logs")
-            .select("weight, reps, completed_at")
+            .select("weight, reps, completed_at, workout_sessions!inner(sex)")
             .eq("user_id", user.id)
             .eq("exercise_id", exerciseId)
+            .eq("workout_sessions.sex", userSex)
             .gt("weight", 0)
             .order("completed_at", { ascending: true });
 
@@ -786,10 +817,11 @@ export default function ProgressPage() {
             context: weightContext,
             entered_unit: weightUnit,
             date: today,
+            sex: userSex,
         });
 
         if (weightContext === "morning") {
-            await rematerializeWeightTrend(user.id);
+            await rematerializeWeightTrend(user.id, userSex);
         }
 
         setNewWeight("");
@@ -815,7 +847,7 @@ export default function ProgressPage() {
     async function handleStartDietBreak() {
         if (!user || !ledgerCalorieSummary) return;
         const plan = planDietBreak({ tdee: ledgerCalorieSummary.tdee, currentPhase: "active", deficitWeeks: 8, sex: (scenarioParams?.sex as Sex) ?? undefined });
-        await supabase.from("user_goals").update({ phase: "diet_break" }).eq("user_id", user.id).eq("is_active", true);
+        await supabase.from("user_goals").update({ phase: "diet_break" }).eq("user_id", user.id).eq("sex", userSex).eq("is_active", true);
         setInsightDietBreak(null);
     }
 
@@ -875,24 +907,7 @@ export default function ProgressPage() {
                 </div>
 
                 {loading ? (
-                    <div className="space-y-4 animate-pulse">
-                        <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4 space-y-3">
-                            <div className="h-3 w-24 rounded bg-white/[0.06]" />
-                            <div className="grid grid-cols-3 gap-3">
-                                <div className="h-12 rounded-md bg-white/[0.04]" />
-                                <div className="h-12 rounded-md bg-white/[0.04]" />
-                                <div className="h-12 rounded-md bg-white/[0.04]" />
-                            </div>
-                        </div>
-                        <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4 space-y-3">
-                            <div className="h-3 w-32 rounded bg-white/[0.06]" />
-                            <div className="h-32 rounded-md bg-white/[0.04]" />
-                        </div>
-                        <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4 space-y-3">
-                            <div className="h-3 w-20 rounded bg-white/[0.06]" />
-                            <div className="h-16 rounded-md bg-white/[0.04]" />
-                        </div>
-                    </div>
+                    <CubeLoader message="Loading progress…" />
                 ) : (
                     <AnimatePresence mode="wait">
                         {/* ══════════ HISTORY ══════════ */}
@@ -1629,20 +1644,45 @@ export default function ProgressPage() {
 
                                             {/* Sparkline */}
                                             {sparkData.length >= 3 && (
-                                                <div className="mb-3 rounded-md bg-white/[0.02] border border-white/[0.04] p-2">
-                                                    <p className="text-[8px] font-mono text-white/25 mb-1">DAILY NET (last {sparkData.length}d)</p>
-                                                    <ResponsiveContainer width="100%" height={60}>
-                                                        <BarChart data={sparkData} margin={{ top: 2, right: 2, bottom: 0, left: 2 }}>
-                                                            <ReferenceLine y={0} stroke="rgba(255,255,255,0.08)" />
-                                                            <Bar dataKey="net" radius={[2, 2, 0, 0]} isAnimationActive={false}>
+                                                <div className="mb-3 rounded-md bg-white/[0.02] border border-white/[0.04] p-3">
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <p className="text-[8px] font-mono text-white/25">DAILY NET (last {sparkData.length}d)</p>
+                                                        <div className="flex items-center gap-2.5">
+                                                            <span className="flex items-center gap-1 text-[7px] font-mono text-white/25">
+                                                                <span className="w-1.5 h-1.5 rounded-[2px]" style={{ background: "rgb(110, 231, 183)" }} /> Under
+                                                            </span>
+                                                            <span className="flex items-center gap-1 text-[7px] font-mono text-white/25">
+                                                                <span className="w-1.5 h-1.5 rounded-[2px]" style={{ background: "rgb(252, 211, 77)" }} /> Over
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    <ResponsiveContainer width="100%" height={110}>
+                                                        <BarChart data={sparkData} margin={{ top: 16, right: 4, bottom: 0, left: 4 }} barCategoryGap="28%">
+                                                            <ReferenceLine y={0} stroke="rgba(255,255,255,0.1)" />
+                                                            <Bar dataKey="net" radius={[3, 3, 3, 3]} isAnimationActive={false} maxBarSize={22}>
                                                                 {sparkData.map((d, i) => (
-                                                                    <Cell key={i} fill={d.net <= 0 ? "rgb(110, 231, 183)" : "rgb(252, 211, 77)"} fillOpacity={0.5} />
+                                                                    <Cell key={i} fill={d.net <= 0 ? "rgb(110, 231, 183)" : "rgb(252, 211, 77)"} fillOpacity={0.7} />
                                                                 ))}
+                                                                <LabelList
+                                                                    dataKey="net"
+                                                                    content={(props: any) => {
+                                                                        const { x, y, width, height, value } = props;
+                                                                        const label = Math.abs(value) >= 1000 ? `${value > 0 ? "+" : ""}${(value / 1000).toFixed(1)}k` : `${value > 0 ? "+" : ""}${value}`;
+                                                                        const ty = value <= 0 ? y + height + 10 : y - 4;
+                                                                        return (
+                                                                            <text x={x + width / 2} y={ty} textAnchor="middle" fontSize={8} fontFamily="monospace" fill="rgba(255,255,255,0.45)">
+                                                                                {label}
+                                                                            </text>
+                                                                        );
+                                                                    }}
+                                                                />
                                                             </Bar>
-                                                            <XAxis dataKey="date" tick={{ fontSize: 7, fill: "rgba(255,255,255,0.15)" }} axisLine={false} tickLine={false} />
+                                                            <XAxis dataKey="date" tick={{ fontSize: 8, fill: "rgba(255,255,255,0.25)" }} axisLine={false} tickLine={false} interval={sparkData.length > 10 ? 1 : 0} />
                                                             <Tooltip
-                                                                contentStyle={{ background: "#0a0f1a", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 6, fontSize: 10, fontFamily: "monospace" }}
-                                                                labelStyle={{ color: "rgba(255,255,255,0.4)" }}
+                                                                cursor={{ fill: "rgba(255,255,255,0.04)" }}
+                                                                contentStyle={{ background: "#0a0f1a", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 8, fontSize: 10, fontFamily: "monospace", padding: "6px 10px" }}
+                                                                labelStyle={{ color: "rgba(255,255,255,0.4)", marginBottom: 2 }}
+                                                                itemStyle={{ padding: 0 }}
                                                                 formatter={(v: any) => [`${v > 0 ? "+" : ""}${v} kcal`, v <= 0 ? "Under target" : "Over target"]}
                                                             />
                                                         </BarChart>
@@ -1714,7 +1754,7 @@ export default function ProgressPage() {
                                                     if (!user) return;
                                                     const next = !adaptiveMode;
                                                     setAdaptiveMode(next);
-                                                    await supabase.from("user_goals").update({ adaptive_mode: next, updated_at: new Date().toISOString() }).eq("user_id", user.id).eq("is_active", true);
+                                                    await supabase.from("user_goals").update({ adaptive_mode: next, updated_at: new Date().toISOString() }).eq("user_id", user.id).eq("sex", userSex).eq("is_active", true);
                                                 }}
                                                 className={`relative w-10 h-5 rounded-full transition-colors ${adaptiveMode ? "bg-[rgb(var(--accent-rgb))]" : "bg-white/10"}`}
                                             >
@@ -1823,8 +1863,9 @@ export default function ProgressPage() {
                                                 protein_g: Number(intakeProtein) || 0,
                                                 carbs_g: Number(intakeCarbs) || 0,
                                                 fat_g: Number(intakeFat) || 0,
+                                                sex: userSex,
                                             });
-                                            await rematerializeDailyIntake(user.id, intakeDate);
+                                            await rematerializeDailyIntake(user.id, intakeDate, userSex);
                                             const trimmedLabel = intakeLabel.trim();
                                             if (trimmedLabel) {
                                                 const existing = myFoods.find((f) => f.label.toLowerCase() === trimmedLabel.toLowerCase());
@@ -1881,8 +1922,9 @@ export default function ProgressPage() {
                                                             protein_g: food.protein_g,
                                                             carbs_g: food.carbs_g,
                                                             fat_g: food.fat_g,
+                                                            sex: userSex,
                                                         });
-                                                        await rematerializeDailyIntake(user.id, intakeDate);
+                                                        await rematerializeDailyIntake(user.id, intakeDate, userSex);
                                                         await supabase.from("my_foods").update({ use_count: food.use_count + 1, last_used_at: new Date().toISOString() }).eq("id", food.id);
                                                         await loadIntake(intakeDate, true);
                                                     }}
@@ -1917,7 +1959,7 @@ export default function ProgressPage() {
                                                     onClick={async () => {
                                                         if (!user) return;
                                                         await supabase.from("food_entries").delete().eq("id", entry.id);
-                                                        await rematerializeDailyIntake(user.id, intakeDate);
+                                                        await rematerializeDailyIntake(user.id, intakeDate, userSex);
                                                         await loadIntake(intakeDate, true);
                                                     }}
                                                     className="shrink-0 p-2 text-white/20 hover:text-red-400 transition"

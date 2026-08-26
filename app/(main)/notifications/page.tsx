@@ -9,16 +9,18 @@ import { useAuth } from "../../lib/AuthProvider";
 import CubeLoader from "../../components/ui/cube-loader";
 import { staggerContainer, staggerItem } from "../../lib/motion";
 
+const TYPE_META: Record<string, { icon: (size: number) => React.ReactNode; bg: string; label: string; chipActive: string }> = {
+  new_pr: { icon: (s) => <Medal size={s} className="text-yellow-300" />, bg: "bg-yellow-400/10 border-yellow-400/20", label: "PRs", chipActive: "border-yellow-400/40 bg-yellow-400/10 text-yellow-300" },
+  workout_complete: { icon: (s) => <Trophy size={s} className="text-[rgb(var(--accent-light-rgb))]" />, bg: "bg-[rgb(var(--accent-rgb)/0.1)] border-[rgb(var(--accent-rgb)/0.2)]", label: "Workouts", chipActive: "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" },
+  level_up: { icon: (s) => <Star size={s} className="text-purple-300" />, bg: "bg-purple-400/10 border-purple-400/20", label: "Level Ups", chipActive: "border-purple-400/40 bg-purple-400/10 text-purple-300" },
+  streak_milestone: { icon: (s) => <Flame size={s} className="text-orange-300" />, bg: "bg-orange-400/10 border-orange-400/20", label: "Streaks", chipActive: "border-orange-400/40 bg-orange-400/10 text-orange-300" },
+  achievement: { icon: (s) => <Award size={s} className="text-emerald-300" />, bg: "bg-emerald-400/10 border-emerald-400/20", label: "Achievements", chipActive: "border-emerald-400/40 bg-emerald-400/10 text-emerald-300" },
+};
+const DEFAULT_TYPE_META = { icon: (s: number) => <Bell size={s} className="text-white/40" />, bg: "bg-white/[0.04] border-white/[0.08]", label: "Other", chipActive: "border-white/30 bg-white/10 text-white/70" };
+
 function NotifIcon({ type }: { type: string }) {
-  const map: Record<string, { icon: React.ReactNode; bg: string }> = {
-    new_pr: { icon: <Medal size={16} className="text-yellow-300" />, bg: "bg-yellow-400/10 border-yellow-400/20" },
-    workout_complete: { icon: <Trophy size={16} className="text-[rgb(var(--accent-light-rgb))]" />, bg: "bg-[rgb(var(--accent-rgb)/0.1)] border-[rgb(var(--accent-rgb)/0.2)]" },
-    level_up: { icon: <Star size={16} className="text-purple-300" />, bg: "bg-purple-400/10 border-purple-400/20" },
-    streak_milestone: { icon: <Flame size={16} className="text-orange-300" />, bg: "bg-orange-400/10 border-orange-400/20" },
-    achievement: { icon: <Award size={16} className="text-emerald-300" />, bg: "bg-emerald-400/10 border-emerald-400/20" },
-  };
-  const m = map[type] ?? { icon: <Bell size={16} className="text-white/40" />, bg: "bg-white/[0.04] border-white/[0.08]" };
-  return <div className={`w-9 h-9 rounded-xl border flex items-center justify-center shrink-0 ${m.bg}`}>{m.icon}</div>;
+  const m = TYPE_META[type] ?? DEFAULT_TYPE_META;
+  return <div className={`w-9 h-9 rounded-xl border flex items-center justify-center shrink-0 ${m.bg}`}>{m.icon(16)}</div>;
 }
 
 function timeAgo(dateStr: string): string {
@@ -53,6 +55,7 @@ export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "unread">("all");
+  const [typeFilter, setTypeFilter] = useState<string>("all");
 
   useEffect(() => {
     async function load() {
@@ -91,10 +94,16 @@ export default function NotificationsPage() {
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
+  const typeCounts: Record<string, number> = {};
+  notifications.forEach((n) => { typeCounts[n.type] = (typeCounts[n.type] ?? 0) + 1; });
+  const presentTypes = Object.keys(typeCounts).sort((a, b) => typeCounts[b] - typeCounts[a]);
+
+  const visible = typeFilter === "all" ? notifications : notifications.filter((n) => n.type === typeFilter);
+
   const grouped: { label: string; items: any[] }[] = [];
   const groupOrder = ["Today", "Yesterday", "This Week", "Earlier"];
   const groupMap: Record<string, any[]> = {};
-  notifications.forEach((n) => {
+  visible.forEach((n) => {
     const g = getDateGroup(n.created_at);
     if (!groupMap[g]) groupMap[g] = [];
     groupMap[g].push(n);
@@ -134,24 +143,50 @@ export default function NotificationsPage() {
           </div>
         </div>
 
-        <div className="flex gap-2">
-          <button onClick={() => setFilter("all")} className={`text-[10px] font-mono px-3 py-1.5 rounded-lg border transition ${filter === "all" ? "border-[rgb(var(--accent-rgb)/0.2)] bg-[rgb(var(--accent-rgb)/0.08)] text-[rgb(var(--accent-rgb))]" : "border-white/[0.06] text-white/30 hover:text-white/60"}`}>
-            ALL
-          </button>
-          <button onClick={() => setFilter("unread")} className={`text-[10px] font-mono px-3 py-1.5 rounded-lg border transition ${filter === "unread" ? "border-[rgb(var(--accent-rgb)/0.2)] bg-[rgb(var(--accent-rgb)/0.08)] text-[rgb(var(--accent-rgb))]" : "border-white/[0.06] text-white/30 hover:text-white/60"}`}>
-            UNREAD {unreadCount > 0 && `(${unreadCount})`}
-          </button>
+        <div className="space-y-2">
+          <div className="flex gap-2">
+            <button onClick={() => setFilter("all")} className={`text-[10px] font-mono px-3 py-1.5 rounded-lg border transition ${filter === "all" ? "border-[rgb(var(--accent-rgb)/0.2)] bg-[rgb(var(--accent-rgb)/0.08)] text-[rgb(var(--accent-rgb))]" : "border-white/[0.06] text-white/30 hover:text-white/60"}`}>
+              ALL
+            </button>
+            <button onClick={() => setFilter("unread")} className={`text-[10px] font-mono px-3 py-1.5 rounded-lg border transition ${filter === "unread" ? "border-[rgb(var(--accent-rgb)/0.2)] bg-[rgb(var(--accent-rgb)/0.08)] text-[rgb(var(--accent-rgb))]" : "border-white/[0.06] text-white/30 hover:text-white/60"}`}>
+              UNREAD {unreadCount > 0 && `(${unreadCount})`}
+            </button>
+            {typeFilter !== "all" && (
+              <button onClick={() => setTypeFilter("all")} className="text-[10px] font-mono px-3 py-1.5 rounded-lg border border-white/[0.06] text-white/25 hover:text-white/60 transition ml-auto">
+                Clear type ✕
+              </button>
+            )}
+          </div>
+          {presentTypes.length > 1 && (
+            <div className="flex gap-1.5 flex-wrap">
+              {presentTypes.map((t) => {
+                const m = TYPE_META[t] ?? DEFAULT_TYPE_META;
+                const active = typeFilter === t;
+                return (
+                  <button
+                    key={t}
+                    onClick={() => setTypeFilter(active ? "all" : t)}
+                    className={`flex items-center gap-1.5 text-[9px] font-mono px-2.5 py-1 rounded-full border transition ${active ? m.chipActive : "border-white/[0.06] text-white/30 hover:text-white/55 hover:border-white/15"}`}
+                  >
+                    {m.icon(10)} {m.label} <span className="opacity-60">{typeCounts[t]}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {loading ? (
           <CubeLoader message="Loading notifications…" />
-        ) : notifications.length === 0 ? (
+        ) : visible.length === 0 ? (
           <div className="text-center py-16">
             <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center">
               <Bell size={24} className="text-white/15" />
             </div>
             <p className="text-sm font-semibold text-white/30">All Caught Up</p>
-            <p className="text-xs text-white/20 mt-1">{filter === "unread" ? "No unread notifications." : "Complete a workout to see alerts."}</p>
+            <p className="text-xs text-white/20 mt-1">
+              {notifications.length > 0 ? "No notifications match this filter." : filter === "unread" ? "No unread notifications." : "Complete a workout to see alerts."}
+            </p>
           </div>
         ) : (
           <div className="space-y-5">

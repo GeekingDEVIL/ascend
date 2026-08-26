@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Award, Lock, Zap, Users, User, Trophy, Flame, Dumbbell, TrendingUp, ChevronLeft, ChevronRight } from "lucide-react";
+import { Award, Lock, Zap, Users, User, Trophy, Flame, Dumbbell, TrendingUp, ChevronLeft, ChevronRight, Search, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../lib/AuthProvider";
+import { useSex } from "../../lib/useSex";
 import { computeLevel, getRank, getNextRank, RANK_TIERS } from "../../lib/levelSystem";
 import CubeLoader from "../../components/ui/cube-loader";
 import { LeaderboardCard } from "../../components/ui/leaderboard-card";
@@ -73,8 +74,10 @@ export default function RankingsPage() {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [lbLoading, setLbLoading] = useState(false);
   const [sortBy, setSortBy] = useState<LeaderboardSort>("total_xp");
+  const [lbSearch, setLbSearch] = useState("");
+  const [tierFilter, setTierFilter] = useState<string>("all");
   const [showAllTiers, setShowAllTiers] = useState(false);
-  const [userSex, setUserSex] = useState<string>("male");
+  const { sex: userSex } = useSex();
 
   useEffect(() => {
     async function load() {
@@ -84,20 +87,20 @@ export default function RankingsPage() {
           .from("workout_sessions")
           .select("xp_earned")
           .eq("user_id", user.id)
-          .eq("status", "completed"),
+          .eq("status", "completed")
+          .eq("sex", userSex),
         supabase
           .from("workout_sessions")
           .select("xp_earned, date, title")
           .eq("user_id", user.id)
           .eq("status", "completed")
+          .eq("sex", userSex)
           .order("created_at", { ascending: false })
           .limit(5),
       ]);
       setTotalXp((data ?? []).reduce((s, r: any) => s + (r.xp_earned || 0), 0));
       setRecentSessions((sessions ?? []).map((s: any) => ({ xp: s.xp_earned || 0, date: s.date, title: s.title || "Workout" })));
-      const { data: prof } = await supabase.from("profiles").select("sex").eq("id", user.id).maybeSingle();
-      setUserSex(prof?.sex ?? "male");
-      const { data: existing } = await supabase.from("user_stats").select("user_id").eq("user_id", user.id).maybeSingle();
+      const { data: existing } = await supabase.from("user_stats").select("user_id").eq("user_id", user.id).eq("sex", userSex).maybeSingle();
       if (!existing && (data ?? []).length > 0) {
         const { updateUserStats } = await import("../../lib/updateUserStats");
         await updateUserStats(user.id);
@@ -105,7 +108,7 @@ export default function RankingsPage() {
       setLoading(false);
     }
     load();
-  }, [user]);
+  }, [user, userSex]);
 
   useEffect(() => {
     if (tab !== "leaderboard") return;
@@ -316,6 +319,21 @@ export default function RankingsPage() {
 
         {tab === "leaderboard" && (
           <motion.div key="leaderboard" className="space-y-4" variants={tabContent} initial="hidden" animate="visible" exit="exit">
+            <div className="relative">
+              <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/20" />
+              <input
+                value={lbSearch}
+                onChange={(e) => setLbSearch(e.target.value)}
+                placeholder="Find a player…"
+                className="w-full text-[11px] font-mono bg-white/[0.03] border border-white/[0.08] rounded-lg pl-8 pr-8 py-2 text-white/70 placeholder:text-white/20 focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition"
+              />
+              {lbSearch && (
+                <button onClick={() => setLbSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/20 hover:text-white/50">
+                  <X size={12} />
+                </button>
+              )}
+            </div>
+
             <div className="flex flex-wrap gap-1.5">
               {SORT_OPTIONS.map((opt) => (
                 <button
@@ -328,15 +346,43 @@ export default function RankingsPage() {
               ))}
             </div>
 
+            {(() => {
+              const presentTiers = Array.from(new Set(leaderboard.map((e) => getRank(e.level).name)));
+              if (presentTiers.length <= 1) return null;
+              return (
+                <div className="flex flex-wrap gap-1.5">
+                  <button
+                    onClick={() => setTierFilter("all")}
+                    className={`text-[9px] font-mono px-2.5 py-1 rounded-full border transition ${tierFilter === "all" ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/[0.06] text-white/30 hover:text-white/55"}`}
+                  >
+                    ALL TIERS
+                  </button>
+                  {presentTiers.map((t) => {
+                    const tier = RANK_TIERS.find((r) => r.name === t)!;
+                    const active = tierFilter === t;
+                    return (
+                      <button
+                        key={t}
+                        onClick={() => setTierFilter(active ? "all" : t)}
+                        className={`text-[9px] font-mono px-2.5 py-1 rounded-full border transition ${active ? `${tier.border} ${tier.bgClass} ${tier.color}` : "border-white/[0.06] text-white/30 hover:text-white/55"}`}
+                      >
+                        {t}
+                      </button>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+
             {lbLoading ? (
-              <div className="flex items-center justify-center py-12"><div className="w-6 h-6 border-2 border-[rgb(var(--accent-rgb)/0.4)] border-t-[rgb(var(--accent-rgb))] rounded-full animate-spin" /></div>
-            ) : leaderboard.length === 0 ? (
+              <CubeLoader message="Loading leaderboard…" />
+            ) : leaderboard.filter((e) => (tierFilter === "all" || getRank(e.level).name === tierFilter) && (!lbSearch.trim() || e.username?.toLowerCase().includes(lbSearch.trim().toLowerCase()))).length === 0 ? (
               <div className="text-center py-16">
                 <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center">
                   <Users size={24} className="text-white/15" />
                 </div>
-                <p className="text-sm font-semibold text-white/25">No Rankings Yet</p>
-                <p className="text-xs text-white/20 mt-1">Complete a workout to appear.</p>
+                <p className="text-sm font-semibold text-white/25">{tierFilter !== "all" || lbSearch.trim() ? "No Matches" : "No Rankings Yet"}</p>
+                <p className="text-xs text-white/20 mt-1">{tierFilter !== "all" || lbSearch.trim() ? "Try a different search or tier." : "Complete a workout to appear."}</p>
               </div>
             ) : (() => {
               const now = new Date();
@@ -353,11 +399,15 @@ export default function RankingsPage() {
                 avatarUrl: entry.avatar_url,
               }));
 
-              const allRankings: LeaderboardRankingItem[] = leaderboard.map((entry, i) => {
+              const filteredEntries = leaderboard
+                .map((entry, i) => ({ entry, realRank: i + 1 }))
+                .filter(({ entry }) => (tierFilter === "all" || getRank(entry.level).name === tierFilter) && (!lbSearch.trim() || entry.username?.toLowerCase().includes(lbSearch.trim().toLowerCase())));
+
+              const allRankings: LeaderboardRankingItem[] = filteredEntries.map(({ entry, realRank }) => {
                 const rank = getRank(entry.level);
                 return {
                   userId: entry.user_id,
-                  rank: i + 1,
+                  rank: realRank,
                   userName: entry.username,
                   byline: `LVL ${entry.level} · ${rank.name}`,
                   value: entry[sortBy] as number,

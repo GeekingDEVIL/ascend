@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { Search, X, ChevronDown, ChevronRight } from "lucide-react";
 import { supabase } from "../lib/supabase";
+import CubeLoader from "./ui/cube-loader";
 
 type Exercise = {
     id: string;
@@ -27,6 +28,8 @@ export default function ExerciseDatabaseModal({ onClose }: { onClose: () => void
     const [exercises, setExercises] = useState<Exercise[]>([]);
     const [loading, setLoading] = useState(true);
     const [query, setQuery] = useState("");
+    const [segmentFilter, setSegmentFilter] = useState<string>("all");
+    const [equipmentFilter, setEquipmentFilter] = useState<string>("all");
     const [openGroups, setOpenGroups] = useState<Set<string>>(new Set());
     const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
 
@@ -40,11 +43,20 @@ export default function ExerciseDatabaseModal({ onClose }: { onClose: () => void
         load();
     }, []);
 
+    const segments = useMemo(() => Array.from(new Set(exercises.map((ex) => ex.body_segment || "Other"))).sort(), [exercises]);
+    const equipmentTypes = useMemo(() => Array.from(new Set(exercises.map((ex) => ex.equipment).filter(Boolean))).sort(), [exercises]);
+
     const filtered = useMemo(() => {
-        if (!query.trim()) return exercises;
-        const q = query.toLowerCase();
-        return exercises.filter((ex) => ex.name.toLowerCase().includes(q) || ex.primary_muscle.toLowerCase().includes(q) || ex.equipment.toLowerCase().includes(q));
-    }, [exercises, query]);
+        const q = query.trim().toLowerCase();
+        return exercises.filter((ex) => {
+            if (segmentFilter !== "all" && (ex.body_segment || "Other") !== segmentFilter) return false;
+            if (equipmentFilter !== "all" && ex.equipment !== equipmentFilter) return false;
+            if (q && !(ex.name.toLowerCase().includes(q) || ex.primary_muscle.toLowerCase().includes(q) || ex.equipment.toLowerCase().includes(q))) return false;
+            return true;
+        });
+    }, [exercises, query, segmentFilter, equipmentFilter]);
+
+    const activeFilterCount = (segmentFilter !== "all" ? 1 : 0) + (equipmentFilter !== "all" ? 1 : 0);
 
     const grouped = useMemo(() => {
         const map: Record<string, Exercise[]> = {};
@@ -55,6 +67,13 @@ export default function ExerciseDatabaseModal({ onClose }: { onClose: () => void
         });
         return Object.entries(map).sort((a, b) => a[0].localeCompare(b[0]));
     }, [filtered]);
+
+    // Auto-expand groups while actively searching or narrowed to a single segment, so results are visible without extra taps.
+    useEffect(() => {
+        if (query.trim() || segmentFilter !== "all" || equipmentFilter !== "all") {
+            setOpenGroups(new Set(grouped.map(([name]) => name)));
+        }
+    }, [query, segmentFilter, equipmentFilter, grouped]);
 
     function toggleGroup(name: string) {
         setOpenGroups((prev) => {
@@ -95,6 +114,45 @@ export default function ExerciseDatabaseModal({ onClose }: { onClose: () => void
                                     className="w-full rounded-xl bg-white/[0.03] border border-white/[0.06] pl-9 pr-4 py-2.5 text-sm text-white/80 placeholder:text-white/20 focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.3)]"
                                 />
                             </div>
+
+                            {/* Quick filter chips */}
+                            <div className="flex gap-1.5 flex-wrap mt-2.5">
+                                <button
+                                    onClick={() => setSegmentFilter("all")}
+                                    className={`text-[9px] font-mono px-2.5 py-1 rounded-full border transition ${segmentFilter === "all" ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/[0.08] text-white/30 hover:text-white/55"}`}
+                                >
+                                    ALL
+                                </button>
+                                {segments.map((s) => (
+                                    <button
+                                        key={s}
+                                        onClick={() => setSegmentFilter(segmentFilter === s ? "all" : s)}
+                                        className={`text-[9px] font-mono px-2.5 py-1 rounded-full border transition ${segmentFilter === s ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/[0.08] text-white/30 hover:text-white/55"}`}
+                                    >
+                                        {s.toUpperCase()}
+                                    </button>
+                                ))}
+                                {equipmentTypes.length > 1 && (
+                                    <select
+                                        value={equipmentFilter}
+                                        onChange={(e) => setEquipmentFilter(e.target.value)}
+                                        className="text-[9px] font-mono px-2 py-1 rounded-full border border-white/[0.08] bg-white/[0.02] text-white/40 focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)]"
+                                    >
+                                        <option value="all">ANY EQUIPMENT</option>
+                                        {equipmentTypes.map((eq) => (
+                                            <option key={eq} value={eq}>{eq}</option>
+                                        ))}
+                                    </select>
+                                )}
+                                {activeFilterCount > 0 && (
+                                    <button
+                                        onClick={() => { setSegmentFilter("all"); setEquipmentFilter("all"); }}
+                                        className="flex items-center gap-1 text-[9px] font-mono px-2 py-1 text-white/25 hover:text-white/50 transition"
+                                    >
+                                        <X size={9} /> Clear
+                                    </button>
+                                )}
+                            </div>
                         </div>
 
                         <div className="border-t border-white/[0.04]" />
@@ -102,7 +160,13 @@ export default function ExerciseDatabaseModal({ onClose }: { onClose: () => void
                         {/* List */}
                         <div className="flex-1 overflow-y-auto custom-scroll px-4 py-3">
                             {loading ? (
-                                <div className="flex items-center justify-center py-16"><div className="w-6 h-6 border-2 border-[rgb(var(--accent-rgb)/0.4)] border-t-[rgb(var(--accent-rgb))] rounded-full animate-spin" /></div>
+                                <CubeLoader message="Loading exercises…" />
+                            ) : grouped.length === 0 ? (
+                                <div className="text-center py-16">
+                                    <Search size={24} className="mx-auto mb-3 text-white/15" />
+                                    <p className="text-sm font-semibold text-white/25">No Exercises Found</p>
+                                    <p className="text-xs text-white/20 mt-1">Try a different search or filter.</p>
+                                </div>
                             ) : (
                                 <div className="space-y-1.5">
                                     {grouped.map(([groupName, items]) => {
