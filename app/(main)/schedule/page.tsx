@@ -11,6 +11,7 @@ import { supabase } from "../../lib/supabase";
 import { analyzeAdaptiveVolume, getVolumeStatus, getVolumeGuidelines, type AdaptiveVolumeData, type MuscleTrend } from "../../lib/volumeAnalysis";
 import { analyzeRecovery, type MuscleRecoveryData } from "../../lib/muscleRecovery";
 import type { Sex } from "../../lib/calorieEngine";
+import { useSex } from "../../lib/useSex";
 import { QUICK_START_TEMPLATES, type QuickStartTemplate } from "../../lib/quickStartTemplates";
 import { useAuth } from "../../lib/AuthProvider";
 import AddExerciseModal from "../../components/AddExerciseModal";
@@ -175,7 +176,7 @@ function SortableRow({ ex, index, onUpdate, onRemove }: { ex: LocalExercise; ind
 // ─── Day Editor Modal ────────────────────────────────────────────
 function DayEditorModal({
     weekday, plan, onClose, onSaved,
-    sensors, user,
+    sensors, user, userSex,
 }: {
     weekday: number;
     plan: RecurringPlan | undefined;
@@ -183,6 +184,7 @@ function DayEditorModal({
     onSaved: () => void;
     sensors: ReturnType<typeof useSensors>;
     user: any;
+    userSex: string;
 }) {
     const [title, setTitle] = useState(plan?.template_name || "");
     const [exercises, setExercises] = useState<LocalExercise[]>([]);
@@ -249,8 +251,8 @@ function DayEditorModal({
 
         if (isRest) {
             await supabase.from("recurring_plans").upsert(
-                { user_id: user.id, weekday, template_id: null, is_rest: true },
-                { onConflict: "user_id,weekday" }
+                { user_id: user.id, weekday, template_id: null, is_rest: true, sex: userSex },
+                { onConflict: "user_id,weekday,sex" }
             );
         } else {
             const finalTitle = title.trim() || `${WEEKDAY_FULL[weekday]} Plan`;
@@ -285,8 +287,8 @@ function DayEditorModal({
             }
 
             await supabase.from("recurring_plans").upsert(
-                { user_id: user.id, weekday, template_id: tid, is_rest: false },
-                { onConflict: "user_id,weekday" }
+                { user_id: user.id, weekday, template_id: tid, is_rest: false, sex: userSex },
+                { onConflict: "user_id,weekday,sex" }
             );
         }
 
@@ -298,7 +300,7 @@ function DayEditorModal({
     async function handleClear() {
         if (!user) return;
         if (!confirm(`Clear ${WEEKDAY_FULL[weekday]}'s plan?`)) return;
-        await supabase.from("recurring_plans").delete().eq("user_id", user.id).eq("weekday", weekday);
+        await supabase.from("recurring_plans").delete().eq("user_id", user.id).eq("weekday", weekday).eq("sex", userSex);
         onSaved();
         onClose();
     }
@@ -465,7 +467,7 @@ export default function SchedulePage() {
     const [importConfirm, setImportConfirm] = useState<{ plan: WorkoutPlan; label: string } | null>(null);
     const [volumeExpanded, setVolumeExpanded] = useState(false);
     const [todayAddModal, setTodayAddModal] = useState(false);
-    const [userSex, setUserSex] = useState<Sex | null>(null);
+    const { sex: userSex } = useSex();
 
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -483,7 +485,8 @@ export default function SchedulePage() {
         const { data: plans } = await supabase
             .from("recurring_plans")
             .select("weekday, template_id, is_rest, workout_templates(name)")
-            .eq("user_id", user.id);
+            .eq("user_id", user.id)
+            .eq("sex", userSex ?? "male");
 
         const templateIds = (plans ?? []).map((p: any) => p.template_id).filter(Boolean);
         let countByTemplate: Record<string, number> = {};
@@ -535,7 +538,7 @@ export default function SchedulePage() {
         } else {
             setWeeklyVolume([]);
         }
-    }, [user]);
+    }, [user, userSex]);
 
     useEffect(() => { loadRecurring(); }, [loadRecurring]);
 
@@ -559,7 +562,7 @@ export default function SchedulePage() {
                 const rows = day.exerciseNames.map((name, i) => ({ template_id: templateId, user_id: user.id, exercise_id: idByName[name], order_index: i, target_sets: 3, target_reps: "8-12" })).filter((r) => r.exercise_id);
                 if (rows.length) await supabase.from("workout_template_exercises").insert(rows);
             }
-            await supabase.from("recurring_plans").upsert({ user_id: user.id, weekday: day.weekday, template_id: templateId, is_rest: false }, { onConflict: "user_id,weekday" });
+            await supabase.from("recurring_plans").upsert({ user_id: user.id, weekday: day.weekday, template_id: templateId, is_rest: false, sex: userSex ?? "male" }, { onConflict: "user_id,weekday,sex" });
         }
         await loadRecurring();
         setImportingTemplate(null);
@@ -630,7 +633,7 @@ export default function SchedulePage() {
                 if (!template) continue;
                 const rows = day.exercises.map((ex, i) => ({ template_id: template.id, user_id: user.id, exercise_id: idByName[ex.name], order_index: i, target_sets: ex.sets, target_reps: ex.reps, rest_seconds: parseRest(ex.rest) })).filter((r) => r.exercise_id);
                 if (rows.length) await supabase.from("workout_template_exercises").insert(rows);
-                await supabase.from("recurring_plans").upsert({ user_id: user.id, weekday: wd, template_id: template.id, is_rest: false }, { onConflict: "user_id,weekday" });
+                await supabase.from("recurring_plans").upsert({ user_id: user.id, weekday: wd, template_id: template.id, is_rest: false, sex: userSex ?? "male" }, { onConflict: "user_id,weekday,sex" });
             }
             await loadRecurring();
             setPlanBrowserOpen(false);
@@ -643,11 +646,8 @@ export default function SchedulePage() {
 
     useEffect(() => {
         if (!user) return;
-        supabase.from("profiles").select("sex").eq("id", user.id).single().then(({ data }) => {
-            setUserSex((data?.sex as Sex) ?? null);
-        });
-        analyzeAdaptiveVolume(user.id).then((data) => { setAdaptiveData(data); setAdaptiveLoaded(true); });
-    }, [user]);
+        analyzeAdaptiveVolume(user.id, userSex ?? "male").then((data) => { setAdaptiveData(data); setAdaptiveLoaded(true); });
+    }, [user, userSex]);
 
     useEffect(() => {
         setTimeout(() => {
@@ -1061,6 +1061,7 @@ export default function SchedulePage() {
                     onSaved={() => loadRecurring()}
                     sensors={sensors}
                     user={user}
+                    userSex={userSex ?? "male"}
                 />
             )}
             {todayAddModal && selectedPlan?.template_id && (
@@ -1072,7 +1073,7 @@ export default function SchedulePage() {
             )}
             {showDatabase && <ExerciseDatabaseModal onClose={() => setShowDatabase(false)} />}
             {showMusclePicker && <MusclePickerModal onClose={() => setShowMusclePicker(false)} />}
-            <PlanBrowserModal open={planBrowserOpen} onClose={() => setPlanBrowserOpen(false)} onImport={importPlanFromLibrary} importing={importingPlan} />
+            <PlanBrowserModal open={planBrowserOpen} onClose={() => setPlanBrowserOpen(false)} onImport={importPlanFromLibrary} importing={importingPlan} userSex={userSex} />
 
             {importConfirm && createPortal(
                 <div className="fixed inset-0 z-[210] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">

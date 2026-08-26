@@ -31,6 +31,7 @@ export async function calculateSessionXP(
   completedSets: { exercise_id: string; weight: number | null; reps: number | null }[],
   totalPlannedSets: number,
   newPRCount: number,
+  sex: string = "male",
 ): Promise<XPBreakdown> {
   const details: string[] = [];
 
@@ -68,8 +69,9 @@ export async function calculateSessionXP(
   if (exerciseIds.length > 0) {
     const { data: prevLogs } = await supabase
       .from("exercise_set_logs")
-      .select("exercise_id, weight, reps, workout_session_id")
+      .select("exercise_id, weight, reps, workout_session_id, workout_sessions!inner(sex)")
       .eq("user_id", userId)
+      .eq("workout_sessions.sex", sex)
       .in("exercise_id", exerciseIds)
       .neq("workout_session_id", sessionId)
       .order("completed_at", { ascending: false })
@@ -109,6 +111,7 @@ export async function calculateSessionXP(
     .select("date")
     .eq("user_id", userId)
     .eq("status", "completed")
+    .eq("sex", sex)
     .order("date", { ascending: false })
     .limit(60);
 
@@ -116,7 +119,8 @@ export async function calculateSessionXP(
     const { data: plans } = await supabase
       .from("recurring_plans")
       .select("weekday, is_rest")
-      .eq("user_id", userId);
+      .eq("user_id", userId)
+      .eq("sex", sex);
     const restWeekdays = new Set((plans ?? []).filter((p: any) => p.is_rest).map((p: any) => p.weekday));
     const completedDates = new Set(recentSessions.map((s: any) => s.date));
 

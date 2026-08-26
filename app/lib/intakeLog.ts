@@ -30,12 +30,13 @@ export type DailyIntakeSummary = {
   entry_count: number;
 };
 
-export async function rematerializeDailyIntake(userId: string, date: string): Promise<void> {
+export async function rematerializeDailyIntake(userId: string, date: string, sex: string = "male"): Promise<void> {
   const { data: entries } = await supabase
     .from("food_entries")
     .select("kcal, protein_g, carbs_g, fat_g")
     .eq("user_id", userId)
-    .eq("date", date);
+    .eq("date", date)
+    .eq("sex", sex);
 
   type DayTotals = { kcal: number; protein_g: number; carbs_g: number; fat_g: number; entry_count: number };
   const totals = (entries ?? []).reduce<DayTotals>(
@@ -50,13 +51,13 @@ export async function rematerializeDailyIntake(userId: string, date: string): Pr
   );
 
   if (totals.entry_count === 0) {
-    await supabase.from("daily_intake").delete().eq("user_id", userId).eq("date", date);
+    await supabase.from("daily_intake").delete().eq("user_id", userId).eq("date", date).eq("sex", sex);
     return;
   }
 
   await supabase.from("daily_intake").upsert(
-    { user_id: userId, date, ...totals },
-    { onConflict: "user_id,date" }
+    { user_id: userId, date, sex, ...totals },
+    { onConflict: "user_id,date,sex" }
   );
 }
 

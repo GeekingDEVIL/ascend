@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { Search, X, SlidersHorizontal, ChevronDown, Star, Clock, Flame } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../lib/AuthProvider";
+import { useSex } from "../lib/useSex";
 
 type Exercise = {
   id: string;
@@ -97,6 +98,7 @@ export default function AddExerciseModal({
   defaultSegment?: string;
 }) {
   const { user } = useAuth();
+  const { sex: userSex } = useSex();
   const [mounted, setMounted] = useState(false);
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [loading, setLoading] = useState(true);
@@ -138,9 +140,10 @@ export default function AddExerciseModal({
       twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
       const { data: logs } = await supabase
         .from("exercise_set_logs")
-        .select("exercise_id, workout_sessions!inner(user_id, status)")
+        .select("exercise_id, workout_sessions!inner(user_id, status, sex)")
         .eq("workout_sessions.user_id", user!.id)
         .eq("workout_sessions.status", "completed")
+        .eq("workout_sessions.sex", userSex)
         .gte("completed_at", twoWeeksAgo.toISOString())
         .limit(200);
       if (logs) setRecentExerciseIds(new Set(logs.map((l: any) => l.exercise_id)));

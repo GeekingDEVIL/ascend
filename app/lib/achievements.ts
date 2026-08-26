@@ -83,7 +83,7 @@ export const RARITY_COLORS: Record<AchievementRarity, { text: string; border: st
   LEGENDARY: { text: "text-orange-300", border: "border-orange-400/30",bg: "bg-orange-400/10", glow: "0 0 16px -3px rgba(251,146,60,0.5)" },
 };
 
-export async function checkAndAwardAchievements(userId: string): Promise<string[]> {
+export async function checkAndAwardAchievements(userId: string, sex: string = "male"): Promise<string[]> {
   const newlyEarned: string[] = [];
 
   // Get already earned
@@ -111,11 +111,11 @@ export async function checkAndAwardAchievements(userId: string): Promise<string[
   // ── Fetch all needed data ──
   const { count: workoutCount } = await supabase
     .from("workout_sessions").select("id", { count: "exact", head: true })
-    .eq("user_id", userId).eq("status", "completed");
+    .eq("user_id", userId).eq("status", "completed").eq("sex", sex);
 
   const { data: xpData } = await supabase
     .from("workout_sessions").select("xp_earned, total_volume, total_sets, started_at, date")
-    .eq("user_id", userId).eq("status", "completed");
+    .eq("user_id", userId).eq("status", "completed").eq("sex", sex);
 
   const totalXp = (xpData ?? []).reduce((s, r: any) => s + (r.xp_earned || 0), 0);
   const totalVolume = (xpData ?? []).reduce((s, r: any) => s + (Number(r.total_volume) || 0), 0);
@@ -126,17 +126,17 @@ export async function checkAndAwardAchievements(userId: string): Promise<string[
   const prCount = prNotifs?.length ?? 0;
 
   const { data: exercisesUsed } = await supabase
-    .from("exercise_set_logs").select("exercise_id")
-    .eq("user_id", userId);
+    .from("exercise_set_logs").select("exercise_id, workout_sessions!inner(sex)")
+    .eq("user_id", userId).eq("workout_sessions.sex", sex);
   const uniqueExercises = new Set((exercisesUsed ?? []).map((e: any) => e.exercise_id)).size;
 
   // Streak
   const { data: sessions } = await supabase
     .from("workout_sessions").select("date")
-    .eq("user_id", userId).eq("status", "completed")
+    .eq("user_id", userId).eq("status", "completed").eq("sex", sex)
     .order("date", { ascending: false }).limit(120);
   const { data: plans } = await supabase
-    .from("recurring_plans").select("weekday, is_rest").eq("user_id", userId);
+    .from("recurring_plans").select("weekday, is_rest").eq("user_id", userId).eq("sex", sex);
   const restDays = new Set((plans ?? []).filter((p: any) => p.is_rest).map((p: any) => p.weekday));
   const completedDates = new Set((sessions ?? []).map((s: any) => s.date));
   let streak = 0;

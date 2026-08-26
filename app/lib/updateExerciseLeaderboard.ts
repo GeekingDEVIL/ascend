@@ -16,10 +16,23 @@ export async function updateExerciseLeaderboard(userId: string) {
   const avatarUrl = profile?.avatar_url ?? null;
   const sex = profile?.sex ?? "male";
 
+  const { data: sexSessions } = await supabase
+    .from("workout_sessions")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("sex", sex);
+  const sessionIds = (sexSessions ?? []).map((s: any) => s.id);
+
+  if (sessionIds.length === 0) {
+    await supabase.from("exercise_leaderboard").delete().eq("user_id", userId).eq("sex", sex);
+    return;
+  }
+
   const { data: logs } = await supabase
     .from("exercise_set_logs")
     .select("exercise_id, weight, reps, completed_at, exercises(name)")
     .eq("user_id", userId)
+    .in("workout_session_id", sessionIds)
     .gt("weight", 0);
 
   if (!logs || logs.length === 0) return;
@@ -49,5 +62,5 @@ export async function updateExerciseLeaderboard(userId: string) {
     updated_at: new Date().toISOString(),
   }));
 
-  await supabase.from("exercise_leaderboard").upsert(rows, { onConflict: "user_id,exercise_id" });
+  await supabase.from("exercise_leaderboard").upsert(rows, { onConflict: "user_id,exercise_id,sex" });
 }

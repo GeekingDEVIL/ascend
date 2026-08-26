@@ -39,16 +39,17 @@ export function kgToLbs(kg: number): number {
   return Math.round(kg * 2.20462 * 100) / 100;
 }
 
-export async function rematerializeWeightTrend(userId: string): Promise<void> {
+export async function rematerializeWeightTrend(userId: string, sex: string = "male"): Promise<void> {
   const { data: morningLogs } = await supabase
     .from("body_weight_logs")
     .select("weight, logged_at, date")
     .eq("user_id", userId)
     .eq("context", "morning")
+    .eq("sex", sex)
     .order("logged_at", { ascending: true });
 
   if (!morningLogs || morningLogs.length === 0) {
-    await supabase.from("weight_trend").delete().eq("user_id", userId);
+    await supabase.from("weight_trend").delete().eq("user_id", userId).eq("sex", sex);
     return;
   }
 
@@ -73,9 +74,10 @@ export async function rematerializeWeightTrend(userId: string): Promise<void> {
     date: e.date,
     raw_kg: e.raw_kg,
     ema_kg: e.ema_kg,
+    sex,
   }));
 
-  await supabase.from("weight_trend").delete().eq("user_id", userId);
+  await supabase.from("weight_trend").delete().eq("user_id", userId).eq("sex", sex);
   if (rows.length > 0) {
     await supabase.from("weight_trend").insert(rows);
   }

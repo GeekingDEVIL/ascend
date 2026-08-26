@@ -9,6 +9,7 @@ import { supabase } from "../../lib/supabase";
 import { analyzeRecovery, type MuscleRecoveryData, type RecoveryStatus } from "../../lib/muscleRecovery";
 import { analyzeAdaptiveVolume, getVolumeStatus, getVolumeGuidelines, type AdaptiveVolumeData } from "../../lib/volumeAnalysis";
 import type { Sex } from "../../lib/calorieEngine";
+import { useSex } from "../../lib/useSex";
 import CubeLoader from "../../components/ui/cube-loader";
 import { staggerContainer, staggerItem } from "../../lib/motion";
 
@@ -91,23 +92,23 @@ export default function RecoveryPage() {
   const [adaptiveData, setAdaptiveData] = useState<Record<string, AdaptiveVolumeData>>({});
   const [loading, setLoading] = useState(true);
   const [expandedSegment, setExpandedSegment] = useState<string | null>(null);
-  const [userSex, setUserSex] = useState<Sex | null>(null);
+  const { sex: userSex } = useSex();
 
   useEffect(() => {
     if (!user) return;
+    let cancelled = false;
     (async () => {
-      const { data: prof } = await supabase.from("profiles").select("sex").eq("id", user.id).single();
-      const sex = (prof?.sex as Sex) ?? null;
-      setUserSex(sex);
       const [recovery, adaptive] = await Promise.all([
-        analyzeRecovery(user.id, sex),
-        analyzeAdaptiveVolume(user.id),
+        analyzeRecovery(user.id, userSex),
+        analyzeAdaptiveVolume(user.id, userSex),
       ]);
+      if (cancelled) return;
       setRecoveryData(recovery);
       setAdaptiveData(adaptive);
       setLoading(false);
     })();
-  }, [user]);
+    return () => { cancelled = true; };
+  }, [user, userSex]);
 
   const currentWeekStart = getWeekStart(new Date());
 

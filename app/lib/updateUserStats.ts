@@ -11,12 +11,12 @@ export async function updateUserStats(userId: string) {
   const avatarUrl = profile?.avatar_url ?? null;
   const sex = profile?.sex ?? "male";
 
-  // 2. Total XP + Level + Rank
   const { data: sessions } = await supabase
     .from("workout_sessions")
     .select("xp_earned, total_volume, date")
     .eq("user_id", userId)
-    .eq("status", "completed");
+    .eq("status", "completed")
+    .eq("sex", sex);
 
   const totalXp = (sessions ?? []).reduce((s, r: any) => s + (r.xp_earned || 0), 0);
   const totalVolume = (sessions ?? []).reduce((s, r: any) => s + (Number(r.total_volume) || 0), 0);
@@ -24,11 +24,11 @@ export async function updateUserStats(userId: string) {
   const levelInfo = computeLevel(totalXp);
   const rank = getRank(levelInfo.level);
 
-  // 3. Current streak
   const { data: plans } = await supabase
     .from("recurring_plans")
     .select("weekday, is_rest")
-    .eq("user_id", userId);
+    .eq("user_id", userId)
+    .eq("sex", sex);
   const restDays = new Set((plans ?? []).filter((p: any) => p.is_rest).map((p: any) => p.weekday));
   const completedDates = new Set((sessions ?? []).map((s: any) => s.date));
 
@@ -41,21 +41,19 @@ export async function updateUserStats(userId: string) {
     if (completedDates.has(d)) { streak++; check.setDate(check.getDate() - 1); } else break;
   }
 
-  // 4. Achievement count
   const { count: achievementCount } = await supabase
     .from("achievements")
     .select("id", { count: "exact", head: true })
     .eq("user_id", userId);
 
-  // 5. Best streak (keep the highest ever)
   const { data: existing } = await supabase
     .from("user_stats")
     .select("best_streak")
     .eq("user_id", userId)
+    .eq("sex", sex)
     .maybeSingle();
   const bestStreak = Math.max(streak, existing?.best_streak ?? 0);
 
-  // 6. Upsert
   await supabase.from("user_stats").upsert({
     user_id: userId,
     username,
@@ -70,5 +68,5 @@ export async function updateUserStats(userId: string) {
     achievement_count: achievementCount ?? 0,
     best_streak: bestStreak,
     updated_at: new Date().toISOString(),
-  }, { onConflict: "user_id" });
+  }, { onConflict: "user_id,sex" });
 }

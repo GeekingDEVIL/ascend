@@ -13,6 +13,7 @@ import { checkAndAwardAchievements } from "../../lib/achievements";
 import { updateUserStats } from "../../lib/updateUserStats";
 import { updateExerciseLeaderboard } from "../../lib/updateExerciseLeaderboard";
 import AddExerciseModal from "../../components/AddExerciseModal";
+import { useSex } from "../../lib/useSex";
 
 /* ─── TYPES ─── */
 type WorkoutExercise = {
@@ -168,6 +169,7 @@ export default function WorkoutPage() {
     const [showFreestylePrompt, setShowFreestylePrompt] = useState(false);
     const [savingFreestylePlan, setSavingFreestylePlan] = useState(false);
     const [finishing, setFinishing] = useState(false);
+    const { sex: userSex } = useSex();
 
     const today = toDateString(new Date());
     const loadInFlight = useRef(false);
@@ -179,12 +181,15 @@ export default function WorkoutPage() {
         try {
         setStatus("loading");
 
+        const sex = userSex;
+
         const weekday = new Date().getDay();
         const { data: plan } = await supabase
             .from("recurring_plans")
             .select("template_id, is_rest, workout_templates(name)")
             .eq("user_id", user.id)
             .eq("weekday", weekday)
+            .eq("sex", sex)
             .maybeSingle();
 
         if (!plan) { setStatus("no_plan"); return; }
@@ -206,7 +211,7 @@ export default function WorkoutPage() {
         // If nothing has been logged for today yet, (re)sync scheduled_exercises from the
         // current template so schedule edits made after materialization actually take effect.
         // Never touches a day with an active or completed session — that data stays put.
-        const { data: sessionCheck } = await supabase.from("workout_sessions").select("id, status").eq("user_id", user.id).eq("date", today).in("status", ["active", "completed"]).limit(1);
+        const { data: sessionCheck } = await supabase.from("workout_sessions").select("id, status").eq("user_id", user.id).eq("date", today).eq("sex", sex).in("status", ["active", "completed"]).limit(1);
         const hasSessionToday = !!sessionCheck?.length;
         if (!hasSessionToday) {
             if (dayExisted) await supabase.from("scheduled_exercises").delete().eq("scheduled_day_id", day.id);
@@ -231,7 +236,7 @@ export default function WorkoutPage() {
         if (mapped.length === 0) { setStatus("no_plan"); return; }
 
         const exerciseIds = mapped.map((m) => m.exercise_id);
-        const { data: priorLogs } = await supabase.from("exercise_set_logs").select("exercise_id, weight, reps, completed_at, workout_session_id").eq("user_id", user.id).in("exercise_id", exerciseIds).order("completed_at", { ascending: false }).limit(500);
+        const { data: priorLogs } = await supabase.from("exercise_set_logs").select("exercise_id, weight, reps, completed_at, workout_session_id, workout_sessions!inner(sex)").eq("user_id", user.id).eq("workout_sessions.sex", sex).in("exercise_id", exerciseIds).order("completed_at", { ascending: false }).limit(500);
 
         // Check for completed session first — if today's already done, block restart
 
@@ -240,11 +245,12 @@ export default function WorkoutPage() {
             .select("id, total_sets, total_volume, duration_seconds, xp_earned")
             .eq("user_id", user.id)
             .eq("date", today)
+            .eq("sex", sex)
             .eq("status", "completed")
             .order("created_at", { ascending: true });
         if (completedSessions && completedSessions.length > 0) {
             setDayTitle(planTitle);
-            const { data: statsRow } = await supabase.from("user_stats").select("total_xp").eq("user_id", user.id).maybeSingle();
+            const { data: statsRow } = await supabase.from("user_stats").select("total_xp").eq("user_id", user.id).eq("sex", sex).maybeSingle();
             const curLevel = computeLevel(statsRow?.total_xp ?? 0).level;
             const allSessions = completedSessions.map((s: any) => ({
                 id: s.id,
@@ -269,7 +275,7 @@ export default function WorkoutPage() {
             return;
         }
 
-        const { data: existingSession } = await supabase.from("workout_sessions").select("*").eq("user_id", user.id).eq("date", today).eq("status", "active").maybeSingle();
+        const { data: existingSession } = await supabase.from("workout_sessions").select("*").eq("user_id", user.id).eq("date", today).eq("sex", sex).eq("status", "active").maybeSingle();
 
         const lastMap: Record<string, { weight: number | null; reps: number | null }> = {};
         const hints: Record<string, OverloadSuggestion> = {};
@@ -318,7 +324,7 @@ export default function WorkoutPage() {
         } finally {
             loadInFlight.current = false;
         }
-    }, [user, today]);
+    }, [user, today, userSex]);
 
     useEffect(() => { load(); }, [load]);
 
@@ -340,7 +346,7 @@ export default function WorkoutPage() {
     /* ─── ACTIONS ─── */
     async function startWorkout() {
         if (!user || !scheduledDayId) return;
-        const { data } = await supabase.from("workout_sessions").insert({ user_id: user.id, scheduled_day_id: scheduledDayId, date: today, title: dayTitle, status: "active" }).select().single();
+        const { data } = await supabase.from("workout_sessions").insert({ user_id: user.id, scheduled_day_id: scheduledDayId, date: today, title: dayTitle, status: "active", sex: userSex }).select().single();
         if (!data) return;
         setSessionId(data.id);
         setStartedAt(new Date(data.started_at).getTime());
@@ -406,7 +412,7 @@ export default function WorkoutPage() {
             return { id: r.id, exercise_id: r.exercise_id, order_index: r.order_index, target_sets: r.target_sets, target_reps: r.target_reps, target_weight: r.target_weight, rest_seconds: r.rest_seconds, name: r.exercises?.name ?? "Unknown", category: r.exercises?.category ?? "", equipment: equip, body_segment: seg, isCardio: seg === "Cardio", isBodyweight: equip.toLowerCase() === "bodyweight" && seg !== "Cardio" };
         });
 
-        const { data: session } = await supabase.from("workout_sessions").insert({ user_id: user.id, scheduled_day_id: day.id, date: today, title: "Freestyle Session", status: "active" }).select().single();
+        const { data: session } = await supabase.from("workout_sessions").insert({ user_id: user.id, scheduled_day_id: day.id, date: today, title: "Freestyle Session", status: "active", sex: userSex }).select().single();
         if (!session) { setStartingFreestyle(false); return; }
 
         const initLogs: Record<string, SetEntry[]> = {};
@@ -434,7 +440,7 @@ export default function WorkoutPage() {
 
     async function checkPR(exerciseId: string, name: string, w: number, r: number) {
         if (!user || w <= 0) return;
-        const { data } = await supabase.from("exercise_set_logs").select("weight").eq("user_id", user.id).eq("exercise_id", exerciseId).gt("weight", 0).order("weight", { ascending: false }).limit(1);
+        const { data } = await supabase.from("exercise_set_logs").select("weight, workout_sessions!inner(sex)").eq("user_id", user.id).eq("exercise_id", exerciseId).eq("workout_sessions.sex", userSex).gt("weight", 0).order("weight", { ascending: false }).limit(1);
         const prev = data?.[0]?.weight ?? 0;
         if (w > prev && prev > 0) {
             setPrCount((c) => c + 1);
@@ -471,7 +477,7 @@ export default function WorkoutPage() {
     async function propagateToTemplate(orderIdx: number, newExId: string) {
         if (!user) return;
         const wd = new Date(today + "T00:00:00").getDay();
-        const { data: rp } = await supabase.from("recurring_plans").select("template_id").eq("user_id", user.id).eq("weekday", wd).maybeSingle();
+        const { data: rp } = await supabase.from("recurring_plans").select("template_id").eq("user_id", user.id).eq("weekday", wd).eq("sex", userSex).maybeSingle();
         if (!rp?.template_id) return;
         const { data: rows } = await supabase.from("workout_template_exercises").select("id, order_index").eq("template_id", rp.template_id).order("order_index");
         const match = (rows ?? []).find((r: any) => r.order_index === orderIdx);
@@ -500,7 +506,7 @@ export default function WorkoutPage() {
         setLogs((p) => ({ ...p, [ex.id]: Array.from({ length: 3 }, (_, i) => emptySet(i)) }));
         setExpandedId(ex.id);
         const wd = new Date(today + "T00:00:00").getDay();
-        const { data: rp } = await supabase.from("recurring_plans").select("template_id").eq("user_id", user.id).eq("weekday", wd).maybeSingle();
+        const { data: rp } = await supabase.from("recurring_plans").select("template_id").eq("user_id", user.id).eq("weekday", wd).eq("sex", userSex).maybeSingle();
         if (rp?.template_id) await supabase.from("workout_template_exercises").insert({ template_id: rp.template_id, user_id: user.id, exercise_id: newEx.id, order_index: nextOrder, target_sets: 3, target_reps: "8-10" });
         setShowAddModal(false);
     }
@@ -516,15 +522,15 @@ export default function WorkoutPage() {
         const dur = Math.floor((Date.now() - startedAt) / 1000);
         const totalPlanned = exercisesList.reduce((sum, e) => sum + e.target_sets, 0);
         const setsData = allSets.map((s) => { const ex = exercisesList.find((e) => logs[e.id]?.includes(s)); return { exercise_id: ex?.exercise_id ?? "", weight: Number(s.weight) || null, reps: Number(s.reps) || null }; });
-        const xp = await calculateSessionXP(user.id, sessionId, setsData, totalPlanned, prCount);
+        const xp = await calculateSessionXP(user.id, sessionId, setsData, totalPlanned, prCount, userSex);
 
         await supabase.from("workout_sessions").update({ status: "completed", completed_at: new Date().toISOString(), duration_seconds: dur, total_volume: totalVolume, total_sets: totalSets, xp_earned: xp.total }).eq("id", sessionId);
         await supabase.from("notifications").insert({ user_id: user.id, type: "workout_complete", title: "WORKOUT COMPLETE", message: `${dayTitle} — ${totalSets} sets, ${Math.round(totalVolume).toLocaleString()}kg volume, +${xp.total} XP`, metadata: { sets: totalSets, volume: totalVolume, xp: xp.total } });
 
         // Streak + Level checks
-        const { data: sessions } = await supabase.from("workout_sessions").select("date").eq("user_id", user.id).eq("status", "completed").order("date", { ascending: false }).limit(120);
+        const { data: sessions } = await supabase.from("workout_sessions").select("date").eq("user_id", user.id).eq("status", "completed").eq("sex", userSex).order("date", { ascending: false }).limit(120);
         if (sessions) {
-            const { data: plans } = await supabase.from("recurring_plans").select("weekday, is_rest").eq("user_id", user.id);
+            const { data: plans } = await supabase.from("recurring_plans").select("weekday, is_rest").eq("user_id", user.id).eq("sex", userSex);
             const restDays = new Set((plans ?? []).filter((p: any) => p.is_rest).map((p: any) => p.weekday));
             const dates = new Set(sessions.map((s: any) => s.date));
             let streak = 0; const check = new Date(today + "T00:00:00");
@@ -533,7 +539,7 @@ export default function WorkoutPage() {
         }
 
         // Level up check
-        const { data: xpRows } = await supabase.from("workout_sessions").select("xp_earned").eq("user_id", user.id).eq("status", "completed");
+        const { data: xpRows } = await supabase.from("workout_sessions").select("xp_earned").eq("user_id", user.id).eq("status", "completed").eq("sex", userSex);
         const totalXp = (xpRows ?? []).reduce((s, r: any) => s + (r.xp_earned || 0), 0);
         const lvlBefore = computeLevel(totalXp - xp.total).level;
         const lvlAfter = computeLevel(totalXp).level;
@@ -546,7 +552,7 @@ export default function WorkoutPage() {
         }
 
         // Check achievements
-        await checkAndAwardAchievements(user.id);
+        await checkAndAwardAchievements(user.id, userSex);
 
         // Update leaderboard stats
         await updateUserStats(user.id);
@@ -555,7 +561,7 @@ export default function WorkoutPage() {
         // Freestyle → offer to make it a recurring plan if today has none
         if (dayTitle === "Freestyle Session") {
             const weekday = new Date().getDay();
-            const { data: existingPlan } = await supabase.from("recurring_plans").select("id").eq("user_id", user.id).eq("weekday", weekday).limit(1);
+            const { data: existingPlan } = await supabase.from("recurring_plans").select("id").eq("user_id", user.id).eq("weekday", weekday).eq("sex", userSex).limit(1);
             if (!existingPlan?.length) setShowFreestylePrompt(true);
         }
 
@@ -693,7 +699,7 @@ export default function WorkoutPage() {
                 template_id: template.id, user_id: user.id, exercise_id: ex.exercise_id, order_index: i,
                 target_sets: ex.target_sets, target_reps: ex.target_reps, target_weight: ex.target_weight, rest_seconds: ex.rest_seconds,
             })));
-            await supabase.from("recurring_plans").insert({ user_id: user.id, weekday, template_id: template.id, is_rest: false });
+            await supabase.from("recurring_plans").insert({ user_id: user.id, weekday, template_id: template.id, is_rest: false, sex: userSex });
         }
         setSavingFreestylePlan(false);
         setShowFreestylePrompt(false);
@@ -1038,6 +1044,7 @@ export default function WorkoutPage() {
                                                 user_id: user.id,
                                                 weight: Number(preWorkoutWeight),
                                                 context: "pre_workout",
+                                                sex: userSex,
                                             });
                                             setWeightLogged(true);
                                         }}

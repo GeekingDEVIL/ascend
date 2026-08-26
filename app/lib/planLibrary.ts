@@ -17,6 +17,7 @@ export type WorkoutPlan = {
   volume: string;
   sequence: string;
   note: string;
+  sex?: "male" | "female";
   workouts: PlanDay[];
 };
 

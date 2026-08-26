@@ -12,6 +12,7 @@ import { estimateObservedTdee, blendTdee } from "../lib/energyEstimator";
 import { rematerializeDailyIntake } from "../lib/intakeLog";
 import { Plus } from "lucide-react";
 import { staggerContainer, staggerItem, fadeInUp } from "../lib/motion";
+import { useSex } from "../lib/useSex";
 
 type TodayPlan = { title: string; is_rest: boolean; count: number; sets: number; completed?: boolean };
 
@@ -57,6 +58,7 @@ export default function Dashboard() {
   const [notifLoaded, setNotifLoaded] = useState(false);
   const [calorieSummary, setCalorieSummary] = useState<CalorieSummary | null>(null);
   const [todayIntake, setTodayIntake] = useState<{ kcal: number; protein_g: number; carbs_g: number; fat_g: number } | null>(null);
+  const { sex: userSex } = useSex();
   const [showQuickLog, setShowQuickLog] = useState(false);
   const [qlLabel, setQlLabel] = useState("");
   const [qlKcal, setQlKcal] = useState("");
@@ -83,6 +85,7 @@ export default function Dashboard() {
   }, [user]);
 
   useEffect(() => {
+    let cancelled = false;
     async function loadToday() {
       if (!user) return;
       setTodayLoading(true);
@@ -94,8 +97,11 @@ export default function Dashboard() {
         .select("id, total_sets, total_volume, xp_earned")
         .eq("user_id", user.id)
         .eq("date", dateStr)
+        .eq("sex", userSex)
         .eq("status", "completed")
         .limit(1);
+
+      if (cancelled) return;
 
       if (todaySession && todaySession.length > 0) {
         setTodayPlan({
@@ -114,7 +120,10 @@ export default function Dashboard() {
         .select("template_id, is_rest, workout_templates(name)")
         .eq("user_id", user.id)
         .eq("weekday", weekday)
+        .eq("sex", userSex)
         .maybeSingle();
+
+      if (cancelled) return;
 
       if (!plan) {
         setTodayPlan(null);
@@ -133,6 +142,7 @@ export default function Dashboard() {
           .from("workout_template_exercises")
           .select("target_sets")
           .eq("template_id", plan.template_id);
+        if (cancelled) return;
         const count = te?.length ?? 0;
         const sets = (te ?? []).reduce((s, e: any) => s + (e.target_sets || 0), 0);
         setTodayPlan({ title: (plan as any).workout_templates?.name || "Untitled Workout", is_rest: false, count, sets });
@@ -142,24 +152,29 @@ export default function Dashboard() {
       setTodayLoading(false);
     }
     loadToday();
-  }, [user]);
+    return () => { cancelled = true; };
+  }, [user, userSex]);
 
   useEffect(() => {
+    let cancelled = false;
     async function loadStats() {
       if (!user) return;
-      const { data: c } = await supabase.from("user_stats").select("*").eq("user_id", user.id).maybeSingle();
+      const { data: c } = await supabase.from("user_stats").select("*").eq("user_id", user.id).eq("sex", userSex).maybeSingle();
+      if (cancelled) return;
       if (c) {
         const [{ data: wl }, { data: ls }, { data: pd }] = await Promise.all([
-          supabase.from("body_weight_logs").select("weight, logged_at").eq("user_id", user.id).order("logged_at", { ascending: false }).limit(2),
-          supabase.from("workout_sessions").select("completed_at").eq("user_id", user.id).eq("status", "completed").order("completed_at", { ascending: false }).limit(1),
-          supabase.from("profiles").select("goal").eq("id", user.id).maybeSingle(),
+          supabase.from("body_weight_logs").select("weight, logged_at").eq("user_id", user.id).eq("sex", userSex).order("logged_at", { ascending: false }).limit(2),
+          supabase.from("workout_sessions").select("completed_at").eq("user_id", user.id).eq("status", "completed").eq("sex", userSex).order("completed_at", { ascending: false }).limit(1),
+          supabase.from("profile_body_stats").select("goal").eq("user_id", user.id).eq("sex", userSex).maybeSingle(),
         ]);
         let bw: number | null = null, bwc: number | null = null, rp: number | null = null;
         if (wl?.length) { bw = Number(wl[0].weight); if (wl.length > 1) bwc = Number((wl[0].weight - wl[1].weight).toFixed(1)); }
         if (ls?.[0]?.completed_at) rp = Math.min(100, Math.round(((Date.now() - new Date(ls[0].completed_at).getTime()) / 3600000) / 48 * 100));
         const sk = c.current_streak ?? 0;
-        setStats({ streak: sk, totalWorkouts: c.total_workouts ?? 0, weeklyVolume: Math.round(Number(c.total_volume) || 0), prCount: c.achievement_count ?? 0, totalXp: c.total_xp ?? 0, strength: 50, endurance: 0, consistency: Math.min(100, Math.round((sk / 30) * 100)), discipline: 70, bodyWeight: bw, bodyWeightChange: bwc, recoveryPct: rp, fatigue: rp !== null ? Math.max(0, 100 - rp) : 0, goal: pd?.goal ?? null });
-        setStatsLoaded(true);
+        if (!cancelled) {
+          setStats({ streak: sk, totalWorkouts: c.total_workouts ?? 0, weeklyVolume: Math.round(Number(c.total_volume) || 0), prCount: c.achievement_count ?? 0, totalXp: c.total_xp ?? 0, strength: 50, endurance: 0, consistency: Math.min(100, Math.round((sk / 30) * 100)), discipline: 70, bodyWeight: bw, bodyWeightChange: bwc, recoveryPct: rp, fatigue: rp !== null ? Math.max(0, 100 - rp) : 0, goal: pd?.goal ?? null });
+          setStatsLoaded(true);
+        }
         return;
       }
       const dateStr = toDateString(new Date());
@@ -168,7 +183,8 @@ export default function Dashboard() {
         .from("workout_sessions")
         .select("id", { count: "exact", head: true })
         .eq("user_id", user.id)
-        .eq("status", "completed");
+        .eq("status", "completed")
+        .eq("sex", userSex);
 
       let streak = 0;
       if ((totalWorkouts ?? 0) > 0) {
@@ -177,6 +193,7 @@ export default function Dashboard() {
           .select("date")
           .eq("user_id", user.id)
           .eq("status", "completed")
+          .eq("sex", userSex)
           .order("date", { ascending: false })
           .limit(60);
 
@@ -185,7 +202,8 @@ export default function Dashboard() {
           const { data: plans } = await supabase
             .from("recurring_plans")
             .select("weekday, is_rest")
-            .eq("user_id", user.id);
+            .eq("user_id", user.id)
+            .eq("sex", userSex);
           const restWeekdays = new Set((plans ?? []).filter((p: any) => p.is_rest).map((p: any) => p.weekday));
 
           const checkDate = new Date(dateStr + "T00:00:00");
@@ -224,6 +242,7 @@ export default function Dashboard() {
         .select("id")
         .eq("user_id", user.id)
         .eq("status", "completed")
+        .eq("sex", userSex)
         .gte("date", mondayStr);
 
       if (weekSessions && weekSessions.length > 0) {
@@ -237,12 +256,12 @@ export default function Dashboard() {
 
       let prCount = 0;
       const { data: prData } = await supabase
-        .from("exercise_set_logs")
-        .select("exercise_id, weight")
+        .from("exercise_leaderboard")
+        .select("exercise_id")
         .eq("user_id", user.id)
-        .gt("weight", 0);
+        .eq("sex", userSex);
       if (prData && prData.length > 0) {
-        prCount = new Set(prData.map((r: any) => r.exercise_id)).size;
+        prCount = prData.length;
       }
 
       let totalXp = 0;
@@ -250,7 +269,8 @@ export default function Dashboard() {
         .from("workout_sessions")
         .select("xp_earned")
         .eq("user_id", user.id)
-        .eq("status", "completed");
+        .eq("status", "completed")
+        .eq("sex", userSex);
       totalXp = (xpData ?? []).reduce((sum, s: any) => sum + (s.xp_earned || 0), 0);
 
       let discipline = 0;
@@ -259,13 +279,15 @@ export default function Dashboard() {
         .select("total_sets")
         .eq("user_id", user.id)
         .eq("status", "completed")
+        .eq("sex", userSex)
         .order("date", { ascending: false })
         .limit(10);
       if (recentSessions && recentSessions.length > 0) {
         const { data: planData } = await supabase
           .from("recurring_plans")
           .select("template_id, is_rest")
-          .eq("user_id", user.id);
+          .eq("user_id", user.id)
+          .eq("sex", userSex);
         const templateIds = (planData ?? []).filter((p: any) => !p.is_rest && p.template_id).map((p: any) => p.template_id);
         let avgPlannedSets = 20;
         if (templateIds.length > 0) {
@@ -291,6 +313,7 @@ export default function Dashboard() {
         .select("id")
         .eq("user_id", user.id)
         .eq("status", "completed")
+        .eq("sex", userSex)
         .gte("date", lastWeekMondayStr)
         .lt("date", mondayStr);
       if (lastWeekSessions && lastWeekSessions.length > 0) {
@@ -325,6 +348,7 @@ export default function Dashboard() {
         .from("body_weight_logs")
         .select("weight, logged_at")
         .eq("user_id", user.id)
+        .eq("sex", userSex)
         .order("logged_at", { ascending: false })
         .limit(2);
       if (weightLogs && weightLogs.length > 0) {
@@ -340,6 +364,7 @@ export default function Dashboard() {
         .select("completed_at")
         .eq("user_id", user.id)
         .eq("status", "completed")
+        .eq("sex", userSex)
         .order("completed_at", { ascending: false })
         .limit(1);
       if (lastSession && lastSession.length > 0 && lastSession[0].completed_at) {
@@ -350,35 +375,43 @@ export default function Dashboard() {
       const fatigue = recoveryPct !== null ? Math.max(0, 100 - recoveryPct) : 0;
 
       const { data: profileData } = await supabase
-        .from("profiles")
+        .from("profile_body_stats")
         .select("goal")
-        .eq("id", user.id)
+        .eq("user_id", user.id)
+        .eq("sex", userSex)
         .maybeSingle();
 
-      setStats({
-        streak, totalWorkouts: totalWorkouts ?? 0, weeklyVolume: Math.round(weeklyVolume), prCount, totalXp,
-        strength, endurance, consistency, discipline,
-        bodyWeight, bodyWeightChange,
-        recoveryPct,
-        fatigue,
-        goal: profileData?.goal ?? null,
-      });
-      setStatsLoaded(true);
+      if (!cancelled) {
+        setStats({
+          streak, totalWorkouts: totalWorkouts ?? 0, weeklyVolume: Math.round(weeklyVolume), prCount, totalXp,
+          strength, endurance, consistency, discipline,
+          bodyWeight, bodyWeightChange,
+          recoveryPct,
+          fatigue,
+          goal: profileData?.goal ?? null,
+        });
+        setStatsLoaded(true);
+      }
     }
     loadStats();
-  }, [user]);
+    return () => { cancelled = true; };
+  }, [user, userSex]);
 
   useEffect(() => {
+    let cancelled = false;
     async function loadCalories() {
       if (!user) return;
-      const [{ data: prof }, { data: goalRows }, { data: trendRows }, { data: allIntake }, { data: bwLogs }] = await Promise.all([
-        supabase.from("profiles").select("height_cm, date_of_birth, sex, activity_level").eq("id", user.id).maybeSingle(),
-        supabase.from("user_goals").select("*").eq("user_id", user.id).eq("is_active", true).limit(1),
-        supabase.from("weight_trend").select("date, ema_kg").eq("user_id", user.id).order("date", { ascending: true }),
-        supabase.from("daily_intake").select("date, kcal").eq("user_id", user.id).order("date", { ascending: true }),
-        supabase.from("body_weight_logs").select("weight").eq("user_id", user.id).order("logged_at", { ascending: false }).limit(1),
+      const [{ data: prof }, { data: bodyStats }, { data: goalRows }, { data: trendRows }, { data: allIntake }, { data: bwLogs }] = await Promise.all([
+        supabase.from("profiles").select("date_of_birth").eq("id", user.id).maybeSingle(),
+        supabase.from("profile_body_stats").select("height_cm, activity_level").eq("user_id", user.id).eq("sex", userSex).maybeSingle(),
+        supabase.from("user_goals").select("*").eq("user_id", user.id).eq("sex", userSex).eq("is_active", true).limit(1),
+        supabase.from("weight_trend").select("date, ema_kg").eq("user_id", user.id).eq("sex", userSex).order("date", { ascending: true }),
+        supabase.from("daily_intake").select("date, kcal").eq("user_id", user.id).eq("sex", userSex).order("date", { ascending: true }),
+        supabase.from("body_weight_logs").select("weight").eq("user_id", user.id).eq("sex", userSex).order("logged_at", { ascending: false }).limit(1),
       ]);
-      if (!prof?.height_cm || !prof?.date_of_birth || !prof?.sex) return;
+      if (cancelled) return;
+      if (!bodyStats?.height_cm || !prof?.date_of_birth) return;
+      const activeSex = userSex;
       const g = goalRows?.[0] as any;
       const weightKg = (trendRows && trendRows.length > 0)
         ? Number(trendRows[trendRows.length - 1].ema_kg)
@@ -388,10 +421,10 @@ export default function Dashboard() {
       let blendedTdee: number | undefined;
       const baseSummary = getFullCalorieSummary({
         weightKg,
-        heightCm: prof.height_cm,
+        heightCm: bodyStats.height_cm,
         ageYears: ageFromDOB(prof.date_of_birth),
-        sex: prof.sex as Sex,
-        activity: (prof.activity_level as ActivityLevel) ?? "moderate",
+        sex: activeSex,
+        activity: (bodyStats.activity_level as ActivityLevel) ?? "moderate",
         goalType: (g?.goal_type as GoalType) ?? "general_fitness",
         ratePerWeekKg: g?.rate_per_week_kg ?? undefined,
         diet: (g?.diet_preference as DietPreference) ?? "balanced",
@@ -413,10 +446,10 @@ export default function Dashboard() {
       const summary = blendedTdee
         ? getFullCalorieSummary({
             weightKg,
-            heightCm: prof.height_cm,
+            heightCm: bodyStats.height_cm,
             ageYears: ageFromDOB(prof.date_of_birth),
-            sex: prof.sex as Sex,
-            activity: (prof.activity_level as ActivityLevel) ?? "moderate",
+            sex: activeSex,
+            activity: (bodyStats.activity_level as ActivityLevel) ?? "moderate",
             goalType: (g?.goal_type as GoalType) ?? "general_fitness",
             ratePerWeekKg: g?.rate_per_week_kg ?? undefined,
             diet: (g?.diet_preference as DietPreference) ?? "balanced",
@@ -432,13 +465,16 @@ export default function Dashboard() {
         .select("kcal, protein_g, carbs_g, fat_g")
         .eq("user_id", user.id)
         .eq("date", todayStr)
+        .eq("sex", userSex)
         .limit(1);
+      if (cancelled) return;
       if (di && di[0]) {
         setTodayIntake({ kcal: di[0].kcal, protein_g: Number(di[0].protein_g), carbs_g: Number(di[0].carbs_g), fat_g: Number(di[0].fat_g) });
       }
     }
     loadCalories();
-  }, [user]);
+    return () => { cancelled = true; };
+  }, [user, userSex]);
 
   useEffect(() => {
     async function loadNotifications() {
@@ -474,9 +510,10 @@ export default function Dashboard() {
       protein_g: Number(qlProtein) || 0,
       carbs_g: Number(qlCarbs) || 0,
       fat_g: Number(qlFat) || 0,
+      sex: userSex,
     });
-    await rematerializeDailyIntake(user.id, dateStr);
-    const { data: di } = await supabase.from("daily_intake").select("kcal, protein_g, carbs_g, fat_g").eq("user_id", user.id).eq("date", dateStr).limit(1);
+    await rematerializeDailyIntake(user.id, dateStr, userSex);
+    const { data: di } = await supabase.from("daily_intake").select("kcal, protein_g, carbs_g, fat_g").eq("user_id", user.id).eq("date", dateStr).eq("sex", userSex).limit(1);
     if (di?.[0]) setTodayIntake({ kcal: di[0].kcal, protein_g: Number(di[0].protein_g), carbs_g: Number(di[0].carbs_g), fat_g: Number(di[0].fat_g) });
     setQlLabel(""); setQlKcal(""); setQlProtein(""); setQlCarbs(""); setQlFat("");
     setShowQuickLog(false);

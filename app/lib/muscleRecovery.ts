@@ -143,9 +143,10 @@ export async function analyzeRecovery(userId: string, sex?: Sex | null): Promise
 
   const { data: logs } = await supabase
     .from("exercise_set_logs")
-    .select("exercise_id, weight, reps, completed_at, workout_sessions!inner(date, status, user_id), exercises!inner(body_segment)")
+    .select("exercise_id, weight, reps, completed_at, workout_sessions!inner(date, status, user_id, sex), exercises!inner(body_segment)")
     .eq("workout_sessions.user_id", userId)
     .eq("workout_sessions.status", "completed")
+    .eq("workout_sessions.sex", sex ?? "male")
     .gte("workout_sessions.date", cutoff);
 
   if (!logs || logs.length === 0) return result;

@@ -4,12 +4,14 @@ import { useState, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { X, ChevronRight, ChevronLeft, Clock, BarChart3, Calendar, Info, Search, SlidersHorizontal, Dumbbell, Target, Zap, Flame, Heart, Trophy } from "lucide-react";
 import { PLAN_LIBRARY, PLAN_GOALS, PLAN_ENVIRONMENTS, PLAN_LEVELS, type WorkoutPlan } from "../lib/planLibrary";
+import type { Sex } from "../lib/calorieEngine";
 
 type Props = {
   open: boolean;
   onClose: () => void;
   onImport: (plan: WorkoutPlan) => void;
   importing: boolean;
+  userSex?: Sex | null;
 };
 
 const DAY_COUNTS = [2, 3, 4, 5, 6];
@@ -63,7 +65,7 @@ function Chip({ active, children, onClick }: { active: boolean; children: React.
 
 type ViewMode = "browse" | "search";
 
-export default function PlanBrowserModal({ open, onClose, onImport, importing }: Props) {
+export default function PlanBrowserModal({ open, onClose, onImport, importing, userSex }: Props) {
   const [envFilter, setEnvFilter] = useState<string>("All");
   const [daysFilter, setDaysFilter] = useState<number | null>(null);
   const [goalFilter, setGoalFilter] = useState<string>("All");
@@ -79,8 +81,12 @@ export default function PlanBrowserModal({ open, onClose, onImport, importing }:
 
   const LEVEL_ORDER: Record<string, number> = { Beginner: 0, Intermediate: 1, Advanced: 2 };
 
+  const sexFilter = userSex ?? "male";
+
   const filtered = useMemo(() => {
     return PLAN_LIBRARY.filter((p) => {
+      if (p.sex && p.sex !== sexFilter) return false;
+      if (!p.sex && sexFilter === "female") return false;
       if (envFilter !== "All" && p.env !== envFilter) return false;
       if (daysFilter !== null && p.days !== daysFilter) return false;
       if (goalFilter !== "All" && p.goal !== goalFilter) return false;
@@ -91,7 +97,7 @@ export default function PlanBrowserModal({ open, onClose, onImport, importing }:
       }
       return true;
     }).sort((a, b) => a.days - b.days || (LEVEL_ORDER[a.level] ?? 1) - (LEVEL_ORDER[b.level] ?? 1));
-  }, [envFilter, daysFilter, goalFilter, levelFilter, searchQuery]);
+  }, [envFilter, daysFilter, goalFilter, levelFilter, searchQuery, sexFilter]);
 
   const groupedByDays = useMemo(() => {
     const groups: { days: number; plans: WorkoutPlan[] }[] = [];
