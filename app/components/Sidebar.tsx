@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Dumbbell, Calendar, TrendingUp, HeartPulse, Sparkles, Trophy, User, Award, Bell } from "lucide-react";
+import { LayoutDashboard, Dumbbell, Calendar, TrendingUp, HeartPulse, Sparkles, Trophy, User, Award, Bell, Droplets } from "lucide-react";
+import { useSex } from "../lib/useSex";
 
 const mainNav = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/" },
@@ -21,6 +22,7 @@ const profileNav = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const { sex } = useSex();
 
   function NavLink({ item }: { item: typeof mainNav[0] }) {
     const active = pathname === item.href;
@@ -54,6 +56,7 @@ export default function Sidebar() {
 
       <nav className="flex-1 space-y-1">
         {mainNav.map((item) => <NavLink key={item.label} item={item} />)}
+        {sex === "female" && <NavLink item={{ icon: Droplets, label: "Cycle", href: "/cycle" }} />}
         <div className="h-px bg-white/5 my-3" />
         {profileNav.map((item) => <NavLink key={item.label} item={item} />)}
       </nav>

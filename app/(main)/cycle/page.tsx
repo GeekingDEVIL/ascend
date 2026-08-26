@@ -6,25 +6,31 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronLeft, Droplets, Brain, Moon, Zap, Calendar,
   TrendingUp, Heart, Plus, Check, X, Flame, Wind,
+  BookOpen, AlertTriangle, ChevronDown, Baby, Shield,
 } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../lib/AuthProvider";
 import {
   estimateCyclePhase, computeAdaptiveCycleLength, getCycleInsight,
   fetchCycleLogs, fetchCycleSymptoms, logPeriod, endPeriod, logSymptoms,
-  SYMPTOM_OPTIONS, MOOD_OPTIONS, FLOW_LEVELS, CRAVING_OPTIONS,
-  type CycleLog, type CycleSymptomLog, type CycleInsight,
+  detectIrregularities, computeCycleGaps,
+  SYMPTOM_OPTIONS, MOOD_OPTIONS, FLOW_LEVELS, CRAVING_OPTIONS, CYCLE_GUIDE,
+  type CycleLog, type CycleSymptomLog, type CycleInsight, type CycleIrregularity, type FertilityLevel,
 } from "../../lib/cycleAwareTrend";
+import {
+  getPhaseIntelligence, computeCycleScore,
+  type PhaseIntelligence, type HealthFlag, type CycleScore, type SymptomPrediction,
+} from "../../lib/menstrualEngine";
 import CubeLoader from "../../components/ui/cube-loader";
 import { staggerContainer, staggerItem, tabContent } from "../../lib/motion";
 
-type Tab = "today" | "log" | "history";
+type Tab = "today" | "log" | "insights" | "learn";
 
-const PHASE_COLORS: Record<string, { bg: string; border: string; text: string; icon: any }> = {
-  menstrual: { bg: "bg-red-500/10", border: "border-red-500/30", text: "text-red-400", icon: Droplets },
-  follicular: { bg: "bg-green-500/10", border: "border-green-500/30", text: "text-green-400", icon: TrendingUp },
-  ovulation: { bg: "bg-amber-500/10", border: "border-amber-500/30", text: "text-amber-400", icon: Flame },
-  luteal: { bg: "bg-purple-500/10", border: "border-purple-500/30", text: "text-purple-400", icon: Moon },
+const PHASE_COLORS: Record<string, { bg: string; border: string; text: string; icon: any; ring: string }> = {
+  menstrual: { bg: "bg-red-500/10", border: "border-red-500/30", text: "text-red-400", icon: Droplets, ring: "stroke-red-400" },
+  follicular: { bg: "bg-green-500/10", border: "border-green-500/30", text: "text-green-400", icon: TrendingUp, ring: "stroke-green-400" },
+  ovulation: { bg: "bg-amber-500/10", border: "border-amber-500/30", text: "text-amber-400", icon: Flame, ring: "stroke-amber-400" },
+  luteal: { bg: "bg-purple-500/10", border: "border-purple-500/30", text: "text-purple-400", icon: Moon, ring: "stroke-purple-400" },
 };
 
 const PHASE_LABELS: Record<string, string> = {
@@ -34,6 +40,41 @@ const PHASE_LABELS: Record<string, string> = {
   luteal: "Luteal",
 };
 
+const FERTILITY_META: Record<FertilityLevel, { label: string; color: string; bg: string; border: string }> = {
+  none: { label: "Not fertile", color: "text-white/30", bg: "bg-white/[0.03]", border: "border-white/[0.06]" },
+  low: { label: "Low fertility", color: "text-blue-300", bg: "bg-blue-500/10", border: "border-blue-500/20" },
+  high: { label: "Fertile", color: "text-pink-300", bg: "bg-pink-500/10", border: "border-pink-500/20" },
+  peak: { label: "Peak fertility", color: "text-pink-400", bg: "bg-pink-500/15", border: "border-pink-500/30" },
+};
+
+function CycleRing({ cycleDay, cycleLength, phase }: { cycleDay: number; cycleLength: number; phase: string }) {
+  const size = 120;
+  const strokeWidth = 8;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const progress = cycleDay / cycleLength;
+  const offset = circumference * (1 - progress);
+  const pc = PHASE_COLORS[phase];
+
+  return (
+    <div className="relative" style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="-rotate-90">
+        <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={strokeWidth} />
+        <circle
+          cx={size / 2} cy={size / 2} r={radius} fill="none"
+          className={pc.ring} strokeWidth={strokeWidth}
+          strokeDasharray={circumference} strokeDashoffset={offset}
+          strokeLinecap="round" style={{ transition: "stroke-dashoffset 0.6s ease" }}
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className={`text-2xl font-bold font-mono ${pc.text}`}>{cycleDay}</span>
+        <span className="text-[8px] font-mono text-white/25 mt-0.5">of {cycleLength}</span>
+      </div>
+    </div>
+  );
+}
+
 export default function CyclePage() {
   const { user } = useAuth();
   const router = useRouter();
@@ -42,11 +83,13 @@ export default function CyclePage() {
   const [logs, setLogs] = useState<CycleLog[]>([]);
   const [symptoms, setSymptoms] = useState<CycleSymptomLog[]>([]);
   const [insight, setInsight] = useState<CycleInsight | null>(null);
+  const [irregularities, setIrregularities] = useState<CycleIrregularity[]>([]);
+  const [intelligence, setIntelligence] = useState<PhaseIntelligence | null>(null);
   const [userSex, setUserSex] = useState<string | null>(null);
 
-  const [showPeriodLog, setShowPeriodLog] = useState(false);
   const [periodDate, setPeriodDate] = useState(new Date().toISOString().split("T")[0]);
   const [flowLevel, setFlowLevel] = useState("medium");
+  const [logSaving, setLogSaving] = useState(false);
 
   const [todaySymptoms, setTodaySymptoms] = useState<string[]>([]);
   const [todayEnergy, setTodayEnergy] = useState<number | null>(null);
@@ -54,6 +97,9 @@ export default function CyclePage() {
   const [todaySleep, setTodaySleep] = useState<number | null>(null);
   const [todayCraving, setTodayCraving] = useState<string | null>(null);
   const [symptomSaved, setSymptomSaved] = useState(false);
+
+  const [openGuide, setOpenGuide] = useState<number | null>(null);
+  const [openFaq, setOpenFaq] = useState<string | null>(null);
 
   const today = new Date().toISOString().split("T")[0];
 
@@ -84,8 +130,14 @@ export default function CyclePage() {
       .limit(1);
 
     const lastStart = periodStarts[0] ?? goals?.[0]?.cycle_start_date ?? today;
-    const cycleInsight = getCycleInsight(lastStart, cycleLen, today);
+    const cycleInsight = getCycleInsight(lastStart, cycleLen, today, periodStarts);
     setInsight(cycleInsight);
+
+    const irr = detectIrregularities(periodStarts, cycleLogs);
+    setIrregularities(irr);
+
+    const intel = getPhaseIntelligence(cycleLogs, cycleSymptoms);
+    setIntelligence(intel);
 
     const todayLog = cycleSymptoms.find((s) => s.date === today);
     if (todayLog) {
@@ -104,9 +156,11 @@ export default function CyclePage() {
 
   async function handleLogPeriod() {
     if (!user) return;
+    setLogSaving(true);
     await logPeriod(user.id, periodDate, flowLevel);
-    setShowPeriodLog(false);
+    setLogSaving(false);
     await loadData();
+    setTab("today");
   }
 
   async function handleEndPeriod(log: CycleLog) {
@@ -156,7 +210,12 @@ export default function CyclePage() {
   }
 
   const phaseStyle = insight ? PHASE_COLORS[insight.currentPhase] : PHASE_COLORS.follicular;
-  const PhaseIcon = phaseStyle.icon;
+  const fertMeta = insight ? FERTILITY_META[insight.fertility] : FERTILITY_META.none;
+  const activePeriod = logs[0] && !logs[0].period_end ? logs[0] : null;
+
+  function fmtDate(d: string) {
+    return new Date(d + "T00:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  }
 
   return (
     <main className="min-h-screen bg-[#050914] text-white pb-24 md:pb-10 relative">
@@ -164,218 +223,267 @@ export default function CyclePage() {
       <div className="pointer-events-none fixed top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[rgb(var(--accent-rgb)/0.06)] rounded-full blur-[120px]" />
 
       <div className="relative z-10 max-w-xl mx-auto px-4 pt-6 space-y-4">
-        <button onClick={() => router.push("/recovery")} className="flex items-center gap-1 text-[10px] font-mono text-white/30 hover:text-white/60 transition">
-          <ChevronLeft size={14} /> Recovery
+        <button onClick={() => router.push("/")} className="flex items-center gap-1 text-[10px] font-mono text-white/30 hover:text-white/60 transition">
+          <ChevronLeft size={14} /> Home
         </button>
 
-        {/* Phase hero */}
+        {/* ── Phase Hero ── */}
         {insight && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-            className={`relative rounded-2xl border-2 ${phaseStyle.border} overflow-hidden`}
-            style={{ boxShadow: `0 0 40px -12px rgba(var(--accent-rgb), 0.15)` }}
-          >
-            <div className={`absolute inset-0 ${phaseStyle.bg} opacity-40`} />
-            <div className="relative px-5 pt-5 pb-4">
-              <div className="flex items-center gap-4">
-                <div className={`w-14 h-14 rounded-2xl border-2 ${phaseStyle.border} ${phaseStyle.bg} flex items-center justify-center`}>
-                  <PhaseIcon size={28} className={phaseStyle.text} />
-                </div>
-                <div className="flex-1">
-                  <p className={`text-xl font-bold tracking-wide ${phaseStyle.text}`}>
-                    {PHASE_LABELS[insight.currentPhase]} Phase
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="rounded-2xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
+            <div className="px-5 pt-5 pb-4">
+              <div className="flex items-center gap-5">
+                <CycleRing cycleDay={insight.cycleDay} cycleLength={insight.cycleLength} phase={insight.currentPhase} />
+                <div className="flex-1 min-w-0">
+                  <p className={`text-lg font-bold tracking-wide ${phaseStyle.text}`}>
+                    {PHASE_LABELS[insight.currentPhase]}
                   </p>
-                  <p className="text-[11px] font-mono text-white/40 mt-0.5">
-                    Day {insight.cycleDay} of {insight.cycleLength} · {insight.phaseDaysRemaining}d remaining
-                  </p>
+                  <p className="text-[10px] font-mono text-white/35 mt-1">{insight.phaseDaysRemaining}d left in phase</p>
+
+                  {/* Fertility badge */}
+                  <div className={`inline-flex items-center gap-1.5 mt-2.5 px-2.5 py-1 rounded-full border ${fertMeta.border} ${fertMeta.bg}`}>
+                    {insight.fertility === "peak" || insight.fertility === "high" ? (
+                      <Baby size={11} className={fertMeta.color} />
+                    ) : (
+                      <Shield size={11} className={fertMeta.color} />
+                    )}
+                    <span className={`text-[9px] font-mono font-semibold ${fertMeta.color}`}>{fertMeta.label.toUpperCase()}</span>
+                  </div>
                 </div>
               </div>
 
-              {/* Phase ring */}
-              <div className="mt-4 flex items-center gap-1.5">
-                {["menstrual", "follicular", "ovulation", "luteal"].map((p) => {
+              {/* Phase progress bar */}
+              <div className="mt-4 flex items-center gap-1">
+                {(["menstrual", "follicular", "ovulation", "luteal"] as const).map((p) => {
                   const isActive = p === insight.currentPhase;
                   const pc = PHASE_COLORS[p];
                   return (
-                    <div key={p} className={`flex-1 h-2 rounded-full transition-all ${isActive ? pc.bg + " border " + pc.border : "bg-white/[0.06]"}`}>
-                      {isActive && <div className={`h-full rounded-full ${pc.bg.replace("/10", "/40")}`} style={{ width: `${((insight.cycleDay / insight.cycleLength) * 100)}%` }} />}
+                    <div key={p} className="flex-1 flex flex-col items-center gap-1">
+                      <div className={`w-full h-1.5 rounded-full transition-all ${isActive ? "" : "bg-white/[0.06]"}`}>
+                        {isActive ? (
+                          <div className={`h-full rounded-full ${pc.ring.replace("stroke-", "bg-")}`} style={{ width: "100%" }} />
+                        ) : null}
+                      </div>
+                      <span className={`text-[7px] font-mono ${isActive ? pc.text : "text-white/15"}`}>{PHASE_LABELS[p].slice(0, 3).toUpperCase()}</span>
                     </div>
                   );
                 })}
               </div>
-              <div className="flex justify-between mt-1 text-[7px] font-mono text-white/20">
-                {["menstrual", "follicular", "ovulation", "luteal"].map((p) => (
-                  <span key={p} className={p === insight.currentPhase ? phaseStyle.text : ""}>{PHASE_LABELS[p]}</span>
-                ))}
-              </div>
+            </div>
 
+            {/* Prediction & fertility window */}
+            <div className="border-t border-white/[0.04] px-5 py-3 flex flex-wrap gap-x-6 gap-y-2">
               {insight.nextPeriodEstimate && (
-                <div className="mt-3 pt-3 border-t border-white/[0.06] flex items-center gap-2 text-[10px] font-mono text-white/30">
+                <div className="flex items-center gap-2 text-[10px] font-mono text-white/30">
                   <Calendar size={11} />
-                  <span>Next period estimated: <span className="text-white/60">{new Date(insight.nextPeriodEstimate + "T00:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" })}</span></span>
+                  <span>Next period: <span className="text-white/60">
+                    {insight.nextPeriodRange
+                      ? `${fmtDate(insight.nextPeriodRange[0])} – ${fmtDate(insight.nextPeriodRange[1])}`
+                      : fmtDate(insight.nextPeriodEstimate)}
+                  </span></span>
                 </div>
               )}
+              <div className="flex items-center gap-2 text-[10px] font-mono text-white/30">
+                <Flame size={11} />
+                <span>Fertile window: Day {insight.fertileWindowStart}–{insight.fertileWindowEnd}</span>
+              </div>
             </div>
+
+            {/* Active period banner */}
+            {activePeriod && (
+              <div className="border-t border-red-500/10 px-5 py-3 flex items-center justify-between bg-red-500/[0.03]">
+                <div className="flex items-center gap-2">
+                  <Droplets size={12} className="text-red-400" />
+                  <span className="text-[10px] font-mono text-red-400">Period in progress — started {fmtDate(activePeriod.period_start)}</span>
+                </div>
+                <button onClick={() => handleEndPeriod(activePeriod)} className="text-[9px] font-mono px-2.5 py-1 rounded-lg border border-red-500/20 text-red-400/70 hover:text-red-400 transition">
+                  End
+                </button>
+              </div>
+            )}
           </motion.div>
         )}
 
-        {/* Tabs */}
-        <div className="flex gap-2">
-          {(["today", "log", "history"] as Tab[]).map((t) => (
+        {/* ── Tabs ── */}
+        <div className="flex gap-1 bg-white/[0.02] rounded-xl border border-white/[0.06] p-1">
+          {([
+            { key: "today" as Tab, label: "Today", icon: Zap },
+            { key: "log" as Tab, label: "Log", icon: Plus },
+            { key: "insights" as Tab, label: "Insights", icon: TrendingUp },
+            { key: "learn" as Tab, label: "Learn", icon: BookOpen },
+          ]).map(({ key, label, icon: Icon }) => (
             <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={`flex-1 text-[10px] font-mono py-2.5 rounded-xl border transition ${tab === t ? "border-[rgb(var(--accent-rgb)/0.3)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/[0.06] text-white/30 hover:text-white/60"}`}
+              key={key}
+              onClick={() => setTab(key)}
+              className={`flex-1 flex items-center justify-center gap-1.5 text-[10px] font-mono py-2 rounded-lg transition ${
+                tab === key ? "bg-white/[0.06] text-white/80 font-semibold" : "text-white/30 hover:text-white/55"
+              }`}
             >
-              {t === "today" ? "TODAY" : t === "log" ? "LOG PERIOD" : "HISTORY"}
+              <Icon size={12} />{label}
             </button>
           ))}
         </div>
 
         <AnimatePresence mode="wait">
-          {/* TODAY TAB */}
+          {/* ═════ TODAY ═════ */}
           {tab === "today" && insight && (
-            <motion.div key="today" className="space-y-4" variants={tabContent} initial="hidden" animate="visible" exit="exit">
-              {/* Training rec */}
-              <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 space-y-3">
-                <div className="flex items-center gap-2">
-                  <Zap size={14} className={phaseStyle.text} />
-                  <p className="text-[10px] font-mono tracking-widest text-white/30">TRAINING</p>
-                </div>
-                <p className="text-[12px] text-white/70 leading-relaxed">{insight.trainingRec}</p>
+            <motion.div key="today" className="space-y-3" variants={tabContent} initial="hidden" animate="visible" exit="exit">
+              {/* Phase info */}
+              <div className={`rounded-xl border ${phaseStyle.border} ${phaseStyle.bg} p-4`}>
+                <p className={`text-[11px] font-semibold ${phaseStyle.text} mb-1.5`}>What's happening in your body</p>
+                <p className="text-[12px] text-white/60 leading-relaxed">{insight.phaseInfo}</p>
               </div>
 
-              {/* Nutrition rec */}
-              <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 space-y-3">
-                <div className="flex items-center gap-2">
-                  <Heart size={14} className={phaseStyle.text} />
-                  <p className="text-[10px] font-mono tracking-widest text-white/30">NUTRITION</p>
+              {/* Training & Nutrition — compact cards */}
+              <div className="grid grid-cols-2 gap-2">
+                <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <Zap size={11} className={phaseStyle.text} />
+                    <span className="text-[8px] font-mono tracking-widest text-white/25">TRAINING</span>
+                  </div>
+                  <p className="text-[10px] text-white/55 leading-relaxed">{insight.trainingRec}</p>
                 </div>
-                <p className="text-[12px] text-white/70 leading-relaxed">{insight.nutritionRec}</p>
+                <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <Heart size={11} className={phaseStyle.text} />
+                    <span className="text-[8px] font-mono tracking-widest text-white/25">NUTRITION</span>
+                  </div>
+                  <p className="text-[10px] text-white/55 leading-relaxed">{insight.nutritionRec}</p>
+                </div>
               </div>
 
-              {/* Body note */}
-              <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 space-y-3">
-                <div className="flex items-center gap-2">
-                  <Wind size={14} className={phaseStyle.text} />
-                  <p className="text-[10px] font-mono tracking-widest text-white/30">YOUR BODY</p>
+              {/* Symptom predictions from engine */}
+              {intelligence && intelligence.predictions.length > 0 && (
+                <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 space-y-2.5">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <Brain size={12} className={phaseStyle.text} />
+                    <span className="text-[9px] font-mono tracking-widest text-white/25">WHAT TO EXPECT TODAY</span>
+                  </div>
+                  {intelligence.predictions.map((pred) => (
+                    <div key={pred.symptom} className="flex items-start gap-2.5">
+                      <span className={`text-[8px] font-mono px-1.5 py-0.5 rounded mt-0.5 shrink-0 ${
+                        pred.likelihood === "likely" ? "bg-amber-500/15 text-amber-400 border border-amber-500/20" :
+                        pred.likelihood === "possible" ? "bg-white/[0.04] text-white/35 border border-white/[0.06]" :
+                        "bg-white/[0.02] text-white/20 border border-white/[0.04]"
+                      }`}>{pred.likelihood === "likely" ? "LIKELY" : pred.likelihood === "possible" ? "MAYBE" : "LOW"}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[11px] font-medium text-white/65">{pred.symptom}</p>
+                        <p className="text-[9px] text-white/30 mt-0.5 leading-relaxed">{pred.reason}</p>
+                        <p className="text-[9px] text-[rgb(var(--accent-light-rgb)/0.6)] mt-0.5">{pred.tip}</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <p className="text-[12px] text-white/70 leading-relaxed">{insight.phaseInfo}</p>
-              </div>
+              )}
 
-              {/* Symptom tracker */}
-              <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 space-y-4">
-                <p className="text-[10px] font-mono tracking-widest text-white/30">HOW ARE YOU FEELING TODAY?</p>
-
-                {/* Symptoms */}
-                <div>
-                  <p className="text-[9px] font-mono text-white/20 mb-2">SYMPTOMS</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {SYMPTOM_OPTIONS.map((s) => (
-                      <button key={s} onClick={() => toggleSymptom(s)}
-                        className={`text-[10px] font-mono px-2.5 py-1.5 rounded-lg border transition ${todaySymptoms.includes(s) ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/[0.06] text-white/30 hover:text-white/60"}`}>
-                        {s}
-                      </button>
+              {/* Hormone & nutrition intel */}
+              {intelligence && (
+                <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 space-y-3">
+                  <p className="text-[9px] font-mono tracking-widest text-white/25">HORMONE PROFILE</p>
+                  <p className="text-[10px] text-white/50 leading-relaxed">{intelligence.symptoms.hormoneProfile}</p>
+                  <p className="text-[9px] font-mono tracking-widest text-white/25 pt-1">KEY NUTRIENTS THIS PHASE</p>
+                  <div className="space-y-1.5">
+                    {intelligence.nutrition.keyNutrients.map((n) => (
+                      <div key={n.nutrient} className="flex items-start gap-2">
+                        <span className="text-[9px] font-mono font-semibold text-[rgb(var(--accent-light-rgb))] shrink-0 w-16">{n.nutrient}</span>
+                        <p className="text-[9px] text-white/40 leading-relaxed">{n.reason}</p>
+                      </div>
                     ))}
                   </div>
+                  <p className="text-[8px] text-white/15 italic pt-1">{intelligence.nutrition.caloricNote}</p>
+                </div>
+              )}
+
+              {/* Quick symptom check-in */}
+              <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-[10px] font-mono tracking-widest text-white/30">HOW ARE YOU FEELING?</p>
+                  {symptomSaved && <span className="text-[9px] font-mono text-green-400 flex items-center gap-1"><Check size={10} /> Saved</span>}
+                </div>
+
+                {/* Mood row */}
+                <div className="flex gap-1.5 flex-wrap">
+                  {MOOD_OPTIONS.map((m) => (
+                    <button key={m} onClick={() => { setTodayMood(m); setSymptomSaved(false); }}
+                      className={`text-[10px] font-mono px-2.5 py-1.5 rounded-lg border transition ${todayMood === m ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/[0.06] text-white/30 hover:text-white/55"}`}>
+                      {m}
+                    </button>
+                  ))}
                 </div>
 
                 {/* Energy */}
-                <div>
-                  <p className="text-[9px] font-mono text-white/20 mb-2">ENERGY LEVEL</p>
-                  <div className="flex gap-2">
-                    {[1, 2, 3, 4, 5].map((n) => (
-                      <button key={n} onClick={() => { setTodayEnergy(n); setSymptomSaved(false); }}
-                        className={`flex-1 text-[11px] font-mono py-2 rounded-lg border transition ${todayEnergy === n ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/[0.06] text-white/30"}`}>
-                        {n === 1 ? "🪫" : n === 2 ? "😴" : n === 3 ? "😐" : n === 4 ? "💪" : "🔥"}
-                      </button>
-                    ))}
+                <div className="flex gap-2">
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <button key={n} onClick={() => { setTodayEnergy(n); setSymptomSaved(false); }}
+                      className={`flex-1 text-[12px] py-2 rounded-lg border transition ${todayEnergy === n ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)]" : "border-white/[0.06]"}`}>
+                      {n === 1 ? "🪫" : n === 2 ? "😴" : n === 3 ? "😐" : n === 4 ? "💪" : "🔥"}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Symptoms */}
+                <div className="flex flex-wrap gap-1.5">
+                  {SYMPTOM_OPTIONS.map((s) => (
+                    <button key={s} onClick={() => toggleSymptom(s)}
+                      className={`text-[9px] font-mono px-2 py-1 rounded-lg border transition ${todaySymptoms.includes(s) ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/[0.06] text-white/25 hover:text-white/50"}`}>
+                      {s}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Cravings & sleep in a row */}
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <p className="text-[8px] font-mono text-white/15 mb-1.5">CRAVINGS</p>
+                    <div className="flex flex-wrap gap-1">
+                      {CRAVING_OPTIONS.map((c) => (
+                        <button key={c} onClick={() => { setTodayCraving(c); setSymptomSaved(false); }}
+                          className={`text-[9px] font-mono px-2 py-1 rounded-lg border transition ${todayCraving === c ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/[0.06] text-white/25"}`}>
+                          {c}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="shrink-0">
+                    <p className="text-[8px] font-mono text-white/15 mb-1.5">SLEEP</p>
+                    <div className="flex gap-1">
+                      {[1, 2, 3, 4, 5].map((n) => (
+                        <button key={n} onClick={() => { setTodaySleep(n); setSymptomSaved(false); }}
+                          className={`w-7 h-7 text-[10px] rounded-lg border transition ${todaySleep === n ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)]" : "border-white/[0.06]"}`}>
+                          {n === 1 ? "😵" : n === 2 ? "😣" : n === 3 ? "😐" : n === 4 ? "😊" : "😴"}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
 
-                {/* Mood */}
-                <div>
-                  <p className="text-[9px] font-mono text-white/20 mb-2">MOOD</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {MOOD_OPTIONS.map((m) => (
-                      <button key={m} onClick={() => { setTodayMood(m); setSymptomSaved(false); }}
-                        className={`text-[10px] font-mono px-2.5 py-1.5 rounded-lg border transition ${todayMood === m ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/[0.06] text-white/30 hover:text-white/60"}`}>
-                        {m}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Sleep quality */}
-                <div>
-                  <p className="text-[9px] font-mono text-white/20 mb-2">SLEEP QUALITY</p>
-                  <div className="flex gap-2">
-                    {[1, 2, 3, 4, 5].map((n) => (
-                      <button key={n} onClick={() => { setTodaySleep(n); setSymptomSaved(false); }}
-                        className={`flex-1 text-[11px] font-mono py-2 rounded-lg border transition ${todaySleep === n ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/[0.06] text-white/30"}`}>
-                        {n === 1 ? "😵" : n === 2 ? "😣" : n === 3 ? "😐" : n === 4 ? "😊" : "😴"}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Cravings */}
-                <div>
-                  <p className="text-[9px] font-mono text-white/20 mb-2">CRAVINGS</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {CRAVING_OPTIONS.map((c) => (
-                      <button key={c} onClick={() => { setTodayCraving(c); setSymptomSaved(false); }}
-                        className={`text-[10px] font-mono px-2.5 py-1.5 rounded-lg border transition ${todayCraving === c ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/[0.06] text-white/30 hover:text-white/60"}`}>
-                        {c}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <button onClick={handleSaveSymptoms}
-                  className={`w-full py-2.5 rounded-xl text-[11px] font-mono font-semibold transition ${symptomSaved ? "bg-green-500/10 border border-green-500/30 text-green-400" : "bg-[rgb(var(--accent-rgb)/0.15)] border border-[rgb(var(--accent-rgb)/0.3)] text-[rgb(var(--accent-light-rgb))] hover:bg-[rgb(var(--accent-rgb)/0.25)]"}`}>
-                  {symptomSaved ? "Saved" : "Save Today's Log"}
-                </button>
+                {!symptomSaved && (todayMood || todayEnergy || todaySymptoms.length > 0 || todayCraving || todaySleep) && (
+                  <button onClick={handleSaveSymptoms}
+                    className="w-full py-2.5 rounded-xl text-[11px] font-mono font-semibold bg-[rgb(var(--accent-rgb)/0.15)] border border-[rgb(var(--accent-rgb)/0.3)] text-[rgb(var(--accent-light-rgb))] hover:bg-[rgb(var(--accent-rgb)/0.25)] transition">
+                    Save Today's Check-in
+                  </button>
+                )}
               </div>
             </motion.div>
           )}
 
-          {/* LOG PERIOD TAB */}
+          {/* ═════ LOG ═════ */}
           {tab === "log" && (
-            <motion.div key="log" className="space-y-4" variants={tabContent} initial="hidden" animate="visible" exit="exit">
-              {/* Active period check */}
-              {logs[0] && !logs[0].period_end && (
-                <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-4 space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Droplets size={14} className="text-red-400" />
-                    <p className="text-[11px] font-mono text-red-400">Period in progress</p>
-                  </div>
-                  <p className="text-[10px] text-white/40">
-                    Started {new Date(logs[0].period_start + "T00:00:00").toLocaleDateString(undefined, { month: "long", day: "numeric" })}
-                  </p>
-                  <button onClick={() => handleEndPeriod(logs[0])}
-                    className="w-full py-2.5 rounded-xl text-[11px] font-mono bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 transition">
-                    Mark Period Ended Today
-                  </button>
-                </div>
-              )}
-
-              {/* New period */}
+            <motion.div key="log" className="space-y-3" variants={tabContent} initial="hidden" animate="visible" exit="exit">
               <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 space-y-4">
-                <p className="text-[10px] font-mono tracking-widest text-white/30">LOG NEW PERIOD</p>
+                <p className="text-[10px] font-mono tracking-widest text-white/30">LOG PERIOD START</p>
 
                 <div>
-                  <p className="text-[9px] font-mono text-white/20 mb-1.5">START DATE</p>
+                  <p className="text-[8px] font-mono text-white/15 mb-1.5">DATE</p>
                   <input type="date" value={periodDate} onChange={(e) => setPeriodDate(e.target.value)}
                     className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2.5 text-[12px] font-mono text-white/70 focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.3)]" />
                 </div>
 
                 <div>
-                  <p className="text-[9px] font-mono text-white/20 mb-2">FLOW LEVEL</p>
+                  <p className="text-[8px] font-mono text-white/15 mb-2">FLOW</p>
                   <div className="flex gap-1.5">
                     {FLOW_LEVELS.map((f) => (
                       <button key={f.value} onClick={() => setFlowLevel(f.value)}
-                        className={`flex-1 flex flex-col items-center gap-1 py-2.5 rounded-lg border transition ${flowLevel === f.value ? "border-red-500/30 bg-red-500/10 text-red-400" : "border-white/[0.06] text-white/30"}`}>
+                        className={`flex-1 flex flex-col items-center gap-1 py-2.5 rounded-lg border transition ${flowLevel === f.value ? "border-red-500/30 bg-red-500/10 text-red-400" : "border-white/[0.06] text-white/25"}`}>
                         <span className="text-[10px]">{"●".repeat(f.dots)}</span>
                         <span className="text-[8px] font-mono">{f.label}</span>
                       </button>
@@ -383,34 +491,104 @@ export default function CyclePage() {
                   </div>
                 </div>
 
-                <button onClick={handleLogPeriod}
-                  className="w-full py-2.5 rounded-xl text-[11px] font-mono font-semibold bg-[rgb(var(--accent-rgb)/0.15)] border border-[rgb(var(--accent-rgb)/0.3)] text-[rgb(var(--accent-light-rgb))] hover:bg-[rgb(var(--accent-rgb)/0.25)] transition">
-                  Log Period Start
+                <button onClick={handleLogPeriod} disabled={logSaving}
+                  className="w-full py-2.5 rounded-xl text-[11px] font-mono font-semibold bg-red-500/10 border border-red-500/25 text-red-400 hover:bg-red-500/15 transition disabled:opacity-50">
+                  {logSaving ? "Saving…" : "Log Period Start"}
                 </button>
               </div>
 
               {/* Cycle stats */}
               {insight && (
-                <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 space-y-3">
-                  <p className="text-[10px] font-mono tracking-widest text-white/30">CYCLE STATS</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="rounded-lg bg-white/[0.02] border border-white/[0.04] p-3">
-                      <p className="text-[18px] font-bold font-mono text-[rgb(var(--accent-light-rgb))]">{insight.cycleLength}</p>
-                      <p className="text-[8px] font-mono text-white/25 mt-0.5">AVG CYCLE LENGTH</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { value: insight.cycleLength, label: "AVG LENGTH" },
+                    { value: logs.length, label: "LOGGED" },
+                    { value: `${insight.fertileWindowStart}–${insight.fertileWindowEnd}`, label: "FERTILE DAYS" },
+                  ].map(({ value, label }) => (
+                    <div key={label} className="rounded-xl border border-white/[0.04] bg-white/[0.02] p-3 text-center">
+                      <p className="text-[16px] font-bold font-mono text-[rgb(var(--accent-light-rgb))]">{value}</p>
+                      <p className="text-[7px] font-mono text-white/20 mt-0.5">{label}</p>
                     </div>
-                    <div className="rounded-lg bg-white/[0.02] border border-white/[0.04] p-3">
-                      <p className="text-[18px] font-bold font-mono text-[rgb(var(--accent-light-rgb))]">{logs.length}</p>
-                      <p className="text-[8px] font-mono text-white/25 mt-0.5">PERIODS LOGGED</p>
-                    </div>
-                  </div>
+                  ))}
                 </div>
               )}
             </motion.div>
           )}
 
-          {/* HISTORY TAB */}
-          {tab === "history" && (
-            <motion.div key="history" className="space-y-4" variants={tabContent} initial="hidden" animate="visible" exit="exit">
+          {/* ═════ INSIGHTS ═════ */}
+          {tab === "insights" && (
+            <motion.div key="insights" className="space-y-4" variants={tabContent} initial="hidden" animate="visible" exit="exit">
+              {/* Cycle Health Score */}
+              {intelligence?.cycleScore && (
+                <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <p className="text-[9px] font-mono tracking-widest text-white/20">CYCLE HEALTH SCORE</p>
+                      <p className="text-[8px] text-white/15 mt-0.5">Based on FIGO & ACOG clinical ranges</p>
+                    </div>
+                    <div className="text-right">
+                      <span className={`text-2xl font-bold font-mono ${
+                        intelligence.cycleScore.score >= 85 ? "text-green-400" :
+                        intelligence.cycleScore.score >= 70 ? "text-[rgb(var(--accent-light-rgb))]" :
+                        intelligence.cycleScore.score >= 50 ? "text-amber-400" : "text-red-400"
+                      }`}>{intelligence.cycleScore.score}</span>
+                      <p className={`text-[9px] font-mono ${
+                        intelligence.cycleScore.score >= 85 ? "text-green-400/60" :
+                        intelligence.cycleScore.score >= 70 ? "text-[rgb(var(--accent-light-rgb)/0.6)]" :
+                        intelligence.cycleScore.score >= 50 ? "text-amber-400/60" : "text-red-400/60"
+                      }`}>{intelligence.cycleScore.label}</p>
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    {intelligence.cycleScore.factors.map((f) => (
+                      <div key={f.factor} className="flex items-center gap-2">
+                        <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                          f.status === "good" ? "bg-green-400" : f.status === "watch" ? "bg-amber-400" : "bg-red-400"
+                        }`} />
+                        <span className="text-[10px] text-white/45">{f.factor}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Medical health flags */}
+              {intelligence && intelligence.healthFlags.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-[9px] font-mono tracking-widest text-white/20">HEALTH ANALYSIS</p>
+                  {intelligence.healthFlags.map((flag) => (
+                    <div key={flag.id} className={`rounded-xl border p-3.5 space-y-2 ${
+                      flag.severity === "see-doctor" ? "border-red-500/20 bg-red-500/[0.04]" :
+                      flag.severity === "heads-up" ? "border-amber-500/20 bg-amber-500/[0.04]" :
+                      "border-white/[0.06] bg-white/[0.02]"
+                    }`}>
+                      <div className="flex items-start gap-2.5">
+                        {flag.severity === "see-doctor" ? (
+                          <AlertTriangle size={14} className="text-red-400 mt-0.5 shrink-0" />
+                        ) : flag.severity === "heads-up" ? (
+                          <AlertTriangle size={14} className="text-amber-400 mt-0.5 shrink-0" />
+                        ) : (
+                          <Check size={14} className="text-green-400 mt-0.5 shrink-0" />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-[11px] font-semibold ${
+                            flag.severity === "see-doctor" ? "text-red-400" :
+                            flag.severity === "heads-up" ? "text-amber-400" : "text-white/60"
+                          }`}>{flag.title}</p>
+                          <p className="text-[10px] text-white/50 leading-relaxed mt-1">{flag.description}</p>
+                          {flag.actionable && (
+                            <p className="text-[9px] text-[rgb(var(--accent-light-rgb)/0.6)] mt-1.5 leading-relaxed">{flag.actionable}</p>
+                          )}
+                          {flag.source && (
+                            <p className="text-[7px] font-mono text-white/15 mt-1.5">{flag.source}</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               {/* Period history */}
               <div>
                 <p className="text-[9px] font-mono tracking-widest text-white/20 mb-2">PERIOD HISTORY</p>
@@ -421,15 +599,17 @@ export default function CyclePage() {
                   </div>
                 ) : (
                   <div className="space-y-1.5">
-                    {logs.map((log) => {
+                    {logs.map((log, idx) => {
                       const start = new Date(log.period_start + "T00:00:00");
                       const end = log.period_end ? new Date(log.period_end + "T00:00:00") : null;
                       const duration = end ? Math.round((end.getTime() - start.getTime()) / 86400000) + 1 : null;
                       const flowInfo = FLOW_LEVELS.find((f) => f.value === log.flow_level);
+                      const prevLog = logs[idx + 1];
+                      const gap = prevLog ? Math.round((start.getTime() - new Date(prevLog.period_start + "T00:00:00").getTime()) / 86400000) : null;
                       return (
                         <div key={log.id} className="flex items-center gap-3 rounded-xl border border-white/[0.04] bg-white/[0.02] p-3">
                           <div className="w-9 h-9 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center">
-                            <Droplets size={16} className="text-red-400" />
+                            <Droplets size={14} className="text-red-400" />
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-[11px] font-mono text-white/60">
@@ -437,8 +617,9 @@ export default function CyclePage() {
                               {end && ` – ${end.toLocaleDateString(undefined, { month: "short", day: "numeric" })}`}
                             </p>
                             <div className="flex items-center gap-2 mt-0.5">
-                              {duration && <span className="text-[9px] font-mono text-white/25">{duration}d</span>}
-                              {flowInfo && <span className="text-[9px] font-mono text-red-400/60">{"●".repeat(flowInfo.dots)} {flowInfo.label}</span>}
+                              {duration && <span className="text-[9px] font-mono text-white/20">{duration}d</span>}
+                              {flowInfo && <span className="text-[9px] font-mono text-red-400/50">{"●".repeat(flowInfo.dots)}</span>}
+                              {gap && <span className="text-[9px] font-mono text-white/15">{gap}d cycle</span>}
                             </div>
                           </div>
                           {!log.period_end && (
@@ -452,37 +633,98 @@ export default function CyclePage() {
               </div>
 
               {/* Recent symptom logs */}
-              <div>
-                <p className="text-[9px] font-mono tracking-widest text-white/20 mb-2">RECENT SYMPTOM LOGS</p>
-                {symptoms.length === 0 ? (
-                  <div className="text-center py-8 rounded-xl border border-white/[0.04] bg-white/[0.02]">
-                    <Brain size={24} className="mx-auto text-white/10 mb-2" />
-                    <p className="text-[11px] text-white/25">No symptom logs yet</p>
-                  </div>
-                ) : (
+              {symptoms.length > 0 && (
+                <div>
+                  <p className="text-[9px] font-mono tracking-widest text-white/20 mb-2">RECENT CHECK-INS</p>
                   <div className="space-y-1.5">
-                    {symptoms.slice(0, 14).map((s) => (
+                    {symptoms.slice(0, 10).map((s) => (
                       <div key={s.id} className="rounded-xl border border-white/[0.04] bg-white/[0.02] p-3">
-                        <div className="flex items-center justify-between mb-1.5">
-                          <span className="text-[10px] font-mono text-white/40">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-[10px] font-mono text-white/35">
                             {new Date(s.date + "T00:00:00").toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}
                           </span>
                           <div className="flex items-center gap-2">
-                            {s.energy_level && <span className="text-[9px] font-mono text-white/25">Energy {s.energy_level}/5</span>}
-                            {s.mood && <span className="text-[9px] font-mono text-white/25">{s.mood}</span>}
+                            {s.energy_level && <span className="text-[9px] font-mono text-white/20">Energy {s.energy_level}/5</span>}
+                            {s.mood && <span className="text-[9px] font-mono text-white/30">{s.mood}</span>}
                           </div>
                         </div>
                         {s.symptoms.length > 0 && (
                           <div className="flex flex-wrap gap-1">
                             {s.symptoms.map((sym) => (
-                              <span key={sym} className="text-[8px] font-mono px-1.5 py-0.5 rounded bg-white/[0.04] text-white/30">{sym}</span>
+                              <span key={sym} className="text-[8px] font-mono px-1.5 py-0.5 rounded bg-white/[0.04] text-white/25">{sym}</span>
                             ))}
                           </div>
                         )}
                       </div>
                     ))}
                   </div>
-                )}
+                </div>
+              )}
+            </motion.div>
+          )}
+
+          {/* ═════ LEARN ═════ */}
+          {tab === "learn" && (
+            <motion.div key="learn" className="space-y-3" variants={tabContent} initial="hidden" animate="visible" exit="exit">
+              <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <BookOpen size={14} className="text-[rgb(var(--accent-light-rgb))]" />
+                  <p className="text-[11px] font-semibold text-white/70">Your Cycle Guide</p>
+                </div>
+                <p className="text-[10px] text-white/35">Evidence-based answers to common questions about your menstrual cycle, fertility, and health.</p>
+              </div>
+
+              {CYCLE_GUIDE.map((section, sIdx) => (
+                <div key={section.title} className="rounded-xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
+                  <button
+                    onClick={() => setOpenGuide(openGuide === sIdx ? null : sIdx)}
+                    className="w-full flex items-center justify-between px-4 py-3 hover:bg-white/[0.02] transition"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-lg">{section.icon}</span>
+                      <span className="text-[12px] font-semibold text-white/70">{section.title}</span>
+                    </div>
+                    <ChevronDown size={14} className={`text-white/20 transition-transform ${openGuide === sIdx ? "rotate-180" : ""}`} />
+                  </button>
+
+                  {openGuide === sIdx && (
+                    <div className="border-t border-white/[0.04]">
+                      {section.items.map((item) => {
+                        const faqKey = `${sIdx}-${item.q}`;
+                        const isOpen = openFaq === faqKey;
+                        return (
+                          <div key={item.q} className="border-b border-white/[0.03] last:border-b-0">
+                            <button
+                              onClick={() => setOpenFaq(isOpen ? null : faqKey)}
+                              className="w-full text-left px-4 py-3 flex items-center justify-between hover:bg-white/[0.02] transition"
+                            >
+                              <span className={`text-[11px] font-medium pr-3 ${isOpen ? "text-[rgb(var(--accent-light-rgb))]" : "text-white/55"}`}>{item.q}</span>
+                              <ChevronDown size={12} className={`text-white/15 shrink-0 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+                            </button>
+                            <AnimatePresence>
+                              {isOpen && (
+                                <motion.div
+                                  initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+                                  className="overflow-hidden"
+                                >
+                                  <div className="px-4 pb-4">
+                                    <p className="text-[11px] text-white/50 leading-relaxed whitespace-pre-line">{item.a}</p>
+                                  </div>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              <div className="rounded-xl border border-amber-500/10 bg-amber-500/[0.03] p-4">
+                <p className="text-[10px] text-amber-400/70 leading-relaxed">
+                  This guide is for educational purposes. It does not replace medical advice. If you have concerns about your cycle, please consult a healthcare provider.
+                </p>
               </div>
             </motion.div>
           )}
