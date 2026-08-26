@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  ChevronLeft, Droplets, Brain, Moon, Zap, Calendar,
+  ChevronLeft, ChevronRight, Droplets, Brain, Moon, Zap, Calendar,
   TrendingUp, Heart, Plus, Check, X, Flame, Wind,
   BookOpen, AlertTriangle, ChevronDown, Baby, Shield,
 } from "lucide-react";
@@ -118,6 +118,8 @@ export default function CyclePage() {
   const [wellnessSuggestions, setWellnessSuggestions] = useState<WellnessSuggestion[]>([]);
   const [openGuide, setOpenGuide] = useState<number | null>(null);
   const [openFaq, setOpenFaq] = useState<string | null>(null);
+  const [calMonth, setCalMonth] = useState(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); });
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
 
   const today = new Date().toISOString().split("T")[0];
 
@@ -568,6 +570,188 @@ export default function CyclePage() {
           {/* ═════ LOG ═════ */}
           {tab === "log" && (
             <motion.div key="log" className="space-y-3" variants={tabContent} initial="hidden" animate="visible" exit="exit">
+              {/* ── Calendar ── */}
+              {(() => {
+                const year = calMonth.getFullYear();
+                const month = calMonth.getMonth();
+                const firstDay = new Date(year, month, 1).getDay();
+                const daysInMonth = new Date(year, month + 1, 0).getDate();
+                const todayStr = new Date().toISOString().split("T")[0];
+
+                const periodDays = new Map<string, { flow: string; isStart: boolean; isEnd: boolean }>();
+                for (const log of logs) {
+                  const start = new Date(log.period_start + "T00:00:00");
+                  const end = log.period_end ? new Date(log.period_end + "T00:00:00") : new Date();
+                  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+                    const ds = d.toISOString().split("T")[0];
+                    periodDays.set(ds, {
+                      flow: log.flow_level,
+                      isStart: ds === log.period_start,
+                      isEnd: ds === log.period_end,
+                    });
+                  }
+                }
+
+                const symptomMap = new Map<string, CycleSymptomLog>();
+                for (const s of symptoms) symptomMap.set(s.date, s);
+
+                const fertileStart = insight ? insight.fertileWindowStart : null;
+                const fertileEnd = insight ? insight.fertileWindowEnd : null;
+                const lastPeriodStart = logs[0]?.period_start ?? null;
+
+                function getCycleDay(dateStr: string): number | null {
+                  if (!lastPeriodStart) return null;
+                  const diff = Math.floor((new Date(dateStr + "T00:00:00").getTime() - new Date(lastPeriodStart + "T00:00:00").getTime()) / 86400000);
+                  return diff >= 0 ? diff + 1 : null;
+                }
+
+                function isFertile(dateStr: string): boolean {
+                  if (!fertileStart || !fertileEnd) return false;
+                  const cd = getCycleDay(dateStr);
+                  return cd !== null && cd >= fertileStart && cd <= fertileEnd;
+                }
+
+                const flowOpacity: Record<string, string> = {
+                  spotting: "bg-red-400/15",
+                  light: "bg-red-400/25",
+                  medium: "bg-red-400/40",
+                  heavy: "bg-red-400/60",
+                  very_heavy: "bg-red-400/75",
+                };
+
+                const selSym = selectedDay ? symptomMap.get(selectedDay) : null;
+                const selPeriod = selectedDay ? periodDays.get(selectedDay) : null;
+
+                return (
+                  <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
+                    {/* Month nav */}
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.04]">
+                      <button onClick={() => setCalMonth(new Date(year, month - 1, 1))} className="p-1.5 rounded-lg hover:bg-white/[0.04] transition">
+                        <ChevronLeft size={16} className="text-white/40" />
+                      </button>
+                      <div className="text-center">
+                        <p className="text-[13px] font-semibold text-white/70">
+                          {calMonth.toLocaleDateString(undefined, { month: "long", year: "numeric" })}
+                        </p>
+                      </div>
+                      <button onClick={() => setCalMonth(new Date(year, month + 1, 1))} className="p-1.5 rounded-lg hover:bg-white/[0.04] transition">
+                        <ChevronRight size={16} className="text-white/40" />
+                      </button>
+                    </div>
+
+                    {/* Day headers */}
+                    <div className="grid grid-cols-7 px-2 pt-2">
+                      {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
+                        <div key={i} className="text-center text-[8px] font-mono text-white/20 py-1">{d}</div>
+                      ))}
+                    </div>
+
+                    {/* Day grid */}
+                    <div className="grid grid-cols-7 px-2 pb-3 gap-y-0.5">
+                      {Array.from({ length: firstDay }).map((_, i) => <div key={`e${i}`} />)}
+                      {Array.from({ length: daysInMonth }).map((_, i) => {
+                        const day = i + 1;
+                        const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+                        const isToday = dateStr === todayStr;
+                        const pd = periodDays.get(dateStr);
+                        const hasSym = symptomMap.has(dateStr);
+                        const fertile = isFertile(dateStr);
+                        const isSelected = selectedDay === dateStr;
+
+                        return (
+                          <button
+                            key={day}
+                            onClick={() => { setSelectedDay(isSelected ? null : dateStr); setPeriodDate(dateStr); }}
+                            className={`relative flex flex-col items-center justify-center rounded-lg h-10 transition-all ${
+                              isSelected ? "ring-1 ring-[rgb(var(--accent-rgb)/0.5)]" :
+                              isToday ? "ring-1 ring-white/20" : ""
+                            } ${pd ? flowOpacity[pd.flow] ?? "bg-red-400/30" : fertile ? "bg-pink-500/[0.06]" : "hover:bg-white/[0.03]"}`}
+                          >
+                            <span className={`text-[11px] font-mono leading-none ${
+                              isToday ? "font-bold text-white" :
+                              pd ? "text-red-300 font-semibold" :
+                              fertile ? "text-pink-300/70" :
+                              "text-white/40"
+                            }`}>{day}</span>
+                            {/* Indicators */}
+                            <div className="flex gap-0.5 mt-0.5 h-1">
+                              {pd?.isStart && <div className="w-1 h-1 rounded-full bg-red-400" />}
+                              {hasSym && <div className="w-1 h-1 rounded-full bg-[rgb(var(--accent-light-rgb))]" />}
+                              {fertile && !pd && <div className="w-1 h-1 rounded-full bg-pink-400/50" />}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Legend */}
+                    <div className="flex items-center justify-center gap-4 px-4 py-2 border-t border-white/[0.04]">
+                      <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-red-400/50" /><span className="text-[7px] font-mono text-white/25">Period</span></div>
+                      <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-pink-400/40" /><span className="text-[7px] font-mono text-white/25">Fertile</span></div>
+                      <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-[rgb(var(--accent-light-rgb))]" /><span className="text-[7px] font-mono text-white/25">Check-in</span></div>
+                      <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-sm ring-1 ring-white/20" /><span className="text-[7px] font-mono text-white/25">Today</span></div>
+                    </div>
+
+                    {/* Selected day detail */}
+                    {selectedDay && (selSym || selPeriod) && (
+                      <div className="border-t border-white/[0.04] px-4 py-3 space-y-2 bg-white/[0.01]">
+                        <div className="flex items-center justify-between">
+                          <p className="text-[10px] font-mono text-white/50">
+                            {new Date(selectedDay + "T00:00:00").toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}
+                          </p>
+                          <button onClick={() => setSelectedDay(null)} className="text-white/20 hover:text-white/50"><X size={12} /></button>
+                        </div>
+                        {selPeriod && (
+                          <div className="flex items-center gap-2">
+                            <Droplets size={12} className="text-red-400" />
+                            <span className="text-[10px] font-mono text-red-400/70">
+                              {FLOW_LEVELS.find(f => f.value === selPeriod.flow)?.label ?? selPeriod.flow} flow
+                              {selPeriod.isStart && " — period started"}
+                            </span>
+                          </div>
+                        )}
+                        {selSym && (
+                          <div className="space-y-1.5">
+                            {selSym.mood && (
+                              <div className="flex items-center gap-2">
+                                <span className="text-[8px] font-mono text-white/20 w-12">Mood</span>
+                                <span className="text-[10px] text-white/50">{selSym.mood}</span>
+                              </div>
+                            )}
+                            {selSym.energy_level && (
+                              <div className="flex items-center gap-2">
+                                <span className="text-[8px] font-mono text-white/20 w-12">Energy</span>
+                                <span className="text-[10px] text-white/50">{ENERGY_LABELS[selSym.energy_level - 1]}</span>
+                              </div>
+                            )}
+                            {selSym.sleep_quality && (
+                              <div className="flex items-center gap-2">
+                                <span className="text-[8px] font-mono text-white/20 w-12">Sleep</span>
+                                <span className="text-[10px] text-white/50">{SLEEP_LABELS[selSym.sleep_quality - 1]}</span>
+                              </div>
+                            )}
+                            {selSym.symptoms.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {selSym.symptoms.map(sym => (
+                                  <span key={sym} className="text-[8px] font-mono px-1.5 py-0.5 rounded bg-white/[0.04] text-white/30">{sym}</span>
+                                ))}
+                              </div>
+                            )}
+                            {selSym.craving && selSym.craving !== "None" && (
+                              <div className="flex items-center gap-2">
+                                <span className="text-[8px] font-mono text-white/20 w-12">Craving</span>
+                                <span className="text-[10px] text-white/50">{selSym.craving}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {/* ── Log period form ── */}
               <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 space-y-4">
                 <p className="text-[10px] font-mono tracking-widest text-white/30">LOG PERIOD START</p>
 
@@ -603,7 +787,7 @@ export default function CyclePage() {
                     { value: insight.cycleLength, label: "AVG LENGTH", unit: "days" },
                     { value: logs.length, label: "LOGGED", unit: "periods" },
                     { value: `${insight.fertileWindowStart}–${insight.fertileWindowEnd}`, label: "FERTILE", unit: "days" },
-                  ].map(({ value, label, unit }) => (
+                  ].map(({ value, label }) => (
                     <div key={label} className="rounded-xl border border-white/[0.04] bg-white/[0.02] p-3 text-center relative overflow-hidden">
                       <div className="absolute inset-0 bg-gradient-to-b from-[rgb(var(--accent-rgb)/0.03)] to-transparent" />
                       <p className="relative text-[18px] font-bold font-mono text-[rgb(var(--accent-light-rgb))]">{value}</p>

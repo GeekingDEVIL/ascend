@@ -609,117 +609,264 @@ export function getWellnessSuggestions(
 ): WellnessSuggestion[] {
   const all: WellnessSuggestion[] = [];
   const symSet = new Set(symptoms.map(s => s.toLowerCase()));
-  const hasPainSymptoms = symSet.has("cramps") || symSet.has("back pain") || symSet.has("headache") || symSet.has("joint pain");
-  const hasNegativeMood = mood === "Stressed" || mood === "Anxious" || mood === "Irritable" || mood === "Emotional" || mood === "Low";
+  const hasPain = symSet.has("cramps") || symSet.has("back pain") || symSet.has("headache") || symSet.has("joint pain");
+  const hasGI = symSet.has("bloating") || symSet.has("nausea");
+  const hasFatigue = symSet.has("fatigue") || (energy !== null && energy <= 2);
+  const hasSleepIssue = symSet.has("insomnia") || (sleep !== null && sleep <= 2);
+  const hasMoodIssue = mood === "Stressed" || mood === "Anxious" || mood === "Irritable" || mood === "Emotional" || mood === "Low";
+  const hasAnxiety = mood === "Stressed" || mood === "Anxious" || symSet.has("anxiety");
+  const isLowEnergy = energy !== null && energy <= 2;
+  const isHighEnergy = energy !== null && energy >= 4;
+  const isSleepDeprived = sleep !== null && sleep <= 2;
+  const isWellRested = sleep !== null && sleep >= 4;
 
-  // ── Cramps / pain cluster ──
-  if (symSet.has("cramps") || symSet.has("back pain")) {
+  // ═══════════════════════════════════════════════════════════════════
+  // LAYER 1: COMPOUND PATTERNS (multi-signal, highest priority)
+  // These catch specific combos that need tailored advice different
+  // from any single-symptom response.
+  // ═══════════════════════════════════════════════════════════════════
+
+  // Pain + fatigue + poor sleep = body is in distress
+  if (hasPain && hasFatigue && hasSleepIssue) {
     all.push({
-      category: "comfort", priority: 10, trigger: "cramps/pain",
-      title: "Heat therapy",
-      description: "Apply a heating pad or warm water bottle to your lower abdomen — heat is clinically as effective as ibuprofen for menstrual cramps.",
-      source: "BMC Womens Health (2018): Heat wrap therapy comparable to analgesics",
-    });
-    all.push({
-      category: "movement", priority: 8, trigger: "cramps/pain",
-      title: "Gentle movement for cramp relief",
-      description: "Light walking, yoga, or stretching releases endorphins that naturally reduce pain. Avoid high-impact if cramps are severe.",
-      source: "ACOG recommends exercise as a first-line intervention for dysmenorrhea",
-    });
-    all.push({
-      category: "nutrition", priority: 6, trigger: "cramps/pain",
-      title: "Anti-inflammatory foods",
-      description: "Omega-3 rich foods (salmon, walnuts, flaxseed) may reduce prostaglandin-driven cramping. Avoid excess caffeine and alcohol which can worsen cramps.",
-      source: "PMC8296102: Omega-3 supplementation and dysmenorrhea",
+      category: "comfort", priority: 12, trigger: "pain + fatigue + poor sleep",
+      title: "Full recovery mode",
+      description: "Your body is sending strong recovery signals — pain, fatigue, and poor sleep compound each other. Cancel non-essential plans. Apply heat to pain areas, take magnesium glycinate (200-400mg) before bed, and eat iron-rich foods with vitamin C. This combination resolves faster with deliberate rest than by pushing through.",
+      source: "ACOG: Multimodal symptom management for severe dysmenorrhea",
     });
   }
 
-  // ── Bloating ──
-  if (symSet.has("bloating")) {
+  // Pain + mood issue = pain is affecting mental state
+  if (hasPain && hasMoodIssue && !hasFatigue) {
     all.push({
-      category: "nutrition", priority: 9, trigger: "bloating",
-      title: "Reduce bloating naturally",
-      description: "Cut sodium, increase potassium-rich foods (bananas, sweet potatoes, spinach). Herbal teas like peppermint or ginger can ease GI discomfort.",
-      source: "NIH: Potassium helps regulate fluid balance",
-    });
-    all.push({
-      category: "hydration", priority: 5, trigger: "bloating",
-      title: "Drink more water, not less",
-      description: "Counterintuitively, staying well-hydrated helps your body release retained water. Aim for 2-3L throughout the day.",
+      category: "mindfulness", priority: 11, trigger: "pain + mood disturbance",
+      title: "Pain-mood cycle intervention",
+      description: "Chronic pain elevates cortisol, which worsens both mood and pain sensitivity — a feedback loop. Break it with 10 minutes of slow diaphragmatic breathing (4s in, 6s out), then apply warmth to pain areas. The breathing resets your nervous system before addressing the physical symptom.",
+      source: "NIH: Pain-cortisol-mood feedback loop in menstrual disorders",
     });
   }
 
-  // ── Headache ──
+  // GI + fatigue = nutrient absorption compromised
+  if (hasGI && hasFatigue) {
+    all.push({
+      category: "nutrition", priority: 11, trigger: "GI symptoms + fatigue",
+      title: "Nutrient absorption support",
+      description: "When nausea or bloating meets fatigue, your gut may not be absorbing nutrients efficiently. Switch to easily digestible foods: bone broth, mashed sweet potato, bananas, and plain rice. Sip ginger tea between meals. Avoid raw vegetables and high-fiber foods until GI symptoms ease — cooked and soft foods are gentler.",
+      source: "Gastroenterology (2016): Gut motility changes across menstrual phases",
+    });
+  }
+
+  // Poor sleep + anxiety = cortisol spiral
+  if (hasSleepIssue && hasAnxiety) {
+    all.push({
+      category: "sleep", priority: 11, trigger: "sleep disruption + anxiety",
+      title: "Break the anxiety-insomnia cycle",
+      description: "Anxiety prevents sleep, and sleep loss amplifies anxiety — hormonal changes make both worse. Tonight: no screens 90 minutes before bed, write 3 worries on paper (externalizing calms the amygdala), drink tart cherry juice (natural melatonin), and keep your room at 18°C. If you wake at 3-4 AM, don't check the time — practice body scanning from toes upward.",
+      source: "Sleep Medicine Reviews (2019): CBT-i principles for hormonally-disrupted sleep",
+    });
+  }
+
+  // Bloating + craving = metabolic signal
+  if (symSet.has("bloating") && craving && craving !== "None") {
+    all.push({
+      category: "nutrition", priority: 10, trigger: "bloating + " + craving.toLowerCase() + " craving",
+      title: "Smart craving satisfaction",
+      description: craving === "Salty"
+        ? "Salt craving with bloating seems contradictory but isn't — progesterone shifts aldosterone, making your body seek sodium while retaining water. Use mineral-rich salt (Himalayan/sea salt) in food rather than salty snacks. Pair with potassium: a banana with a pinch of salt satisfies the craving and counteracts bloating."
+        : craving === "Sweet" || craving === "Chocolate"
+        ? "Sweet cravings with bloating often signal your body wants magnesium and quick energy, not necessarily sugar. Try: 2 squares of dark chocolate (70%+) with a handful of almonds — magnesium from both sources, plus the chocolate satisfies the craving without spiking blood sugar that worsens bloating."
+        : craving === "Carbs"
+        ? "Carb cravings with bloating means your serotonin is low (carbs help produce it) but your gut is stressed. Choose low-FODMAP carbs: plain rice, oatmeal, or sourdough toast. These satisfy the craving without the gas and water retention that come from high-fiber or wheat-heavy options."
+        : "Eat small portions of what you're craving alongside anti-bloating foods. Peppermint tea before or after helps. Don't restrict — restriction increases cortisol, which worsens both bloating and cravings.",
+      source: "NIH: Aldosterone-progesterone axis and fluid retention",
+    });
+  }
+
+  // Fatigue + brain fog = cognitive impairment
+  if (hasFatigue && symSet.has("brain fog")) {
+    all.push({
+      category: "nutrition", priority: 10, trigger: "fatigue + brain fog",
+      title: "Fuel your brain",
+      description: "Fatigue and brain fog together often mean your brain isn't getting enough glucose or iron. Eat something now: eggs, avocado on toast, or a handful of nuts with fruit. Drink 500ml of water — even mild dehydration (1-2%) impairs cognitive function by up to 25%. A 10-minute walk outside combines movement, light exposure, and increased cerebral blood flow.",
+      source: "Journal of Nutrition (2012): Mild dehydration impairs cognitive performance in women",
+    });
+  }
+
+  // Low energy + good sleep = hormonal, not behavioral
+  if (isLowEnergy && isWellRested) {
+    all.push({
+      category: "movement", priority: 9, trigger: "low energy despite good sleep",
+      title: "Hormonal fatigue, not sleep debt",
+      description: "Well-rested but still drained? This is estrogen or progesterone doing its thing, not a lifestyle problem. Don't force a hard workout — your body won't adapt well today. Instead: a 20-30 min walk at conversational pace, or yoga. Your energy will return; fighting it delays recovery.",
+      source: "PMC: Progesterone-mediated fatigue independent of sleep quality",
+    });
+  }
+
+  // High energy + no symptoms = green light
+  if (isHighEnergy && !hasPain && !hasMoodIssue && symSet.size === 0) {
+    const phaseBoost = phase === "ovulation"
+      ? "You're near ovulation — testosterone and estrogen are peaking. This is your strongest window of the entire cycle. Attempt a PR, try a new challenging workout, or increase volume."
+      : phase === "follicular"
+      ? "Follicular phase + high energy = your best training window. Progressive overload will stick better now than any other time in your cycle. Add weight, add reps, or try something new."
+      : "Your body is primed for output. Push the intensity — interval training, heavy lifts, or a long run. You'll recover faster from today's effort than on lower-energy days.";
+    all.push({
+      category: "movement", priority: 9, trigger: "high energy + no symptoms",
+      title: "Green light day",
+      description: phaseBoost,
+      source: "PMC4236309: Hormonal optimization windows for training",
+    });
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // LAYER 2: SINGLE SYMPTOM RESPONSES (phase-modified)
+  // ═══════════════════════════════════════════════════════════════════
+
+  // ── Cramps ──
+  if (symSet.has("cramps")) {
+    if (phase === "menstrual") {
+      all.push({
+        category: "comfort", priority: 10, trigger: "menstrual cramps",
+        title: "Heat therapy + positioning",
+        description: "Apply a heating pad to your lower abdomen for 20 minutes on, 10 off. Lying in fetal position on your left side reduces uterine pressure. Heat is clinically equal to ibuprofen for menstrual cramps — if using both, heat first to see if medication is even needed.",
+        source: "BMC Womens Health (2018): Heat wrap therapy comparable to analgesics",
+      });
+    } else if (phase === "luteal") {
+      all.push({
+        category: "comfort", priority: 10, trigger: "pre-menstrual cramps",
+        title: "Pre-menstrual cramp prevention",
+        description: "Cramps before your period starts? This is prostaglandin buildup. Start magnesium (200-400mg/day) and omega-3s now — they take 24-48 hours to reduce prostaglandin production. Gentle hip-opening stretches and a warm bath tonight can prevent cramps from worsening when your period arrives.",
+        source: "ACOG: Prostaglandin-mediated dysmenorrhea pathophysiology",
+      });
+    } else {
+      all.push({
+        category: "comfort", priority: 9, trigger: "mid-cycle cramps",
+        title: "Mid-cycle cramping",
+        description: "Cramps outside your period can be ovulation pain (mittelschmerz) — a sharp, one-sided lower-abdominal ache lasting hours to 2 days. Heat and gentle movement help. If pain is severe, persistent, or accompanied by heavy bleeding, consult a healthcare provider.",
+        source: "ACOG: Ovulatory pain is normal but should be distinguished from pathology",
+      });
+    }
+  }
+
+  // ── Back pain ──
+  if (symSet.has("back pain") && !symSet.has("cramps")) {
+    all.push({
+      category: "movement", priority: 8, trigger: "back pain",
+      title: "Back pain relief",
+      description: "Cycle-related back pain is referred pain from uterine contractions. Cat-cow stretches, child's pose, and pelvic tilts target the exact muscles involved. A tennis ball against the wall on your lower back provides targeted pressure. Avoid prolonged sitting — set a timer to move every 30 minutes.",
+      source: "Physical Therapy (2017): Targeted stretching for menstrual-related back pain",
+    });
+  }
+
+  // ── Headache (phase-specific) ──
   if (symSet.has("headache")) {
+    if (phase === "menstrual" || phase === "luteal") {
+      all.push({
+        category: "hydration", priority: 9, trigger: "hormonal headache",
+        title: "Estrogen-withdrawal headache",
+        description: "This headache is triggered by falling estrogen levels. Drink 500ml of water now — dehydration amplifies it. Keep caffeine intake stable (don't add or cut). Magnesium (400mg) and riboflavin (vitamin B2, 400mg) taken daily can reduce frequency by up to 50% over time. Cold compress on the forehead, dim lights.",
+        source: "Neurology (2004): Estrogen withdrawal as migraine trigger; Cephalalgia (2016): Magnesium prophylaxis",
+      });
+    } else {
+      all.push({
+        category: "hydration", priority: 8, trigger: "headache",
+        title: "Hydration and trigger check",
+        description: "Mid-cycle headaches may relate to dehydration, skipped meals, or tension. Drink water, eat something with protein, and check your posture. If headaches consistently appear around day 14, they may be ovulation-triggered — tracking this pattern helps your provider if you seek care.",
+      });
+    }
+  }
+
+  // ── Bloating (phase-specific) ──
+  if (symSet.has("bloating") && !(craving && craving !== "None")) {
+    if (phase === "luteal") {
+      all.push({
+        category: "nutrition", priority: 9, trigger: "luteal bloating",
+        title: "Luteal phase bloating",
+        description: "Progesterone slows gut motility and promotes water retention — bloating is the #1 luteal complaint. Reduce sodium, eat potassium-rich foods (banana, sweet potato, avocado), and drink peppermint or fennel tea. Gentle movement (walking, not crunches) helps move gas. This will resolve when your period starts.",
+        source: "Gastroenterology (2016): Progesterone-mediated GI transit delay",
+      });
+    } else {
+      all.push({
+        category: "nutrition", priority: 8, trigger: "bloating",
+        title: "Reduce bloating naturally",
+        description: "Cut sodium today, increase potassium-rich foods (bananas, sweet potatoes, spinach). Peppermint or ginger tea eases GI discomfort. Avoid carbonated drinks, chewing gum, and eating too fast — these introduce air. A 15-minute walk after meals speeds gastric emptying.",
+        source: "NIH: Potassium helps regulate fluid balance",
+      });
+    }
+  }
+
+  // ── Fatigue (standalone, not already caught by compound) ──
+  if (hasFatigue && !symSet.has("brain fog") && !(hasPain && hasSleepIssue)) {
+    if (phase === "menstrual") {
+      all.push({
+        category: "nutrition", priority: 9, trigger: "menstrual fatigue",
+        title: "Replenish iron stores",
+        description: "You're losing iron through menstruation — fatigue is often the first sign. Eat iron-rich foods (red meat, spinach, lentils, fortified cereals) with vitamin C (citrus, bell peppers) for absorption. Avoid tea/coffee with meals — tannins block iron uptake. If fatigue persists every cycle, ask your provider about ferritin levels.",
+        source: "WHO 2011: Intermittent iron supplementation; Lancet (2012): Ferritin-guided iron replacement",
+      });
+    } else {
+      all.push({
+        category: "sleep", priority: 8, trigger: "fatigue",
+        title: "Strategic rest",
+        description: "Low energy mid-cycle is your body prioritizing hormonal production over available energy. A 20-minute nap (set an alarm — longer disrupts nighttime sleep) is the most efficient reset. If napping isn't possible, 10 minutes of legs-up-the-wall pose improves circulation and restores alertness.",
+      });
+    }
+  }
+
+  // ── Anxiety / Stress (expanded) ──
+  if (hasAnxiety && !(hasSleepIssue)) {
+    if (phase === "luteal") {
+      all.push({
+        category: "mindfulness", priority: 10, trigger: "luteal anxiety",
+        title: "Luteal phase anxiety management",
+        description: "Progesterone metabolizes into allopregnanolone, which normally calms you — but when levels fluctuate rapidly in the late luteal phase, it can trigger anxiety instead. 4-7-8 breathing (inhale 4s, hold 7s, exhale 8s) directly activates vagal tone. Also: reduce caffeine by half today — your sensitivity to it increases in this phase.",
+        source: "Psychoneuroendocrinology (2018): ALLO fluctuations and premenstrual anxiety",
+      });
+    } else {
+      all.push({
+        category: "mindfulness", priority: 9, trigger: "stress/anxiety",
+        title: "Breathing and grounding",
+        description: "Try box breathing: inhale 4s, hold 4s, exhale 4s, hold 4s. Repeat 4-6 cycles. This directly activates the parasympathetic nervous system and lowers cortisol within minutes. Follow with 5-4-3-2-1 grounding: name 5 things you see, 4 you hear, 3 you feel, 2 you smell, 1 you taste.",
+        source: "NIH: Slow breathing activates vagal tone, reducing cortisol",
+      });
+    }
+  }
+
+  // ── Irritable / Emotional ──
+  if ((mood === "Irritable" || mood === "Emotional") && !hasPain) {
     all.push({
-      category: "hydration", priority: 9, trigger: "headache",
-      title: "Hydration and consistency",
-      description: "Estrogen-withdrawal headaches worsen with dehydration. Keep caffeine intake consistent — both excess and withdrawal trigger headaches.",
-      source: "Neurology (2004): Estrogen withdrawal is a known migraine trigger",
-    });
-    all.push({
-      category: "comfort", priority: 7, trigger: "headache",
-      title: "Dim lights and rest",
-      description: "If headache is severe, reduce screen brightness, rest in a quiet room, and apply a cold compress to your forehead or temples.",
+      category: "nutrition", priority: 8, trigger: mood === "Irritable" ? "irritability" : "emotional sensitivity",
+      title: mood === "Irritable" ? "Calm the irritability" : "Support emotional balance",
+      description: mood === "Irritable"
+        ? "Irritability often signals low serotonin — your brain's feel-good neurotransmitter drops in the luteal phase. Eat tryptophan-rich foods (turkey, eggs, cheese, nuts) with complex carbs (oats, sweet potato) — carbs help tryptophan cross the blood-brain barrier. A brisk 20-minute walk also boosts serotonin immediately."
+        : "Emotional sensitivity is driven by rapid estrogen/progesterone shifts — your feelings are real, but their intensity is amplified. Don't make major decisions today. Express rather than suppress: journaling for 10 minutes reduces emotional intensity. Warm drinks (herbal tea, warm milk) have genuine calming effects through vagal activation.",
+      source: "NIH: Tryptophan availability and serotonin synthesis; JAMA Psychiatry: Expressive writing and emotional regulation",
     });
   }
 
-  // ── Fatigue / low energy ──
-  if (symSet.has("fatigue") || (energy !== null && energy <= 2)) {
-    all.push({
-      category: "nutrition", priority: 9, trigger: "fatigue",
-      title: "Iron and energy-supporting foods",
-      description: "Fatigue during menstruation often links to iron loss. Eat iron-rich foods (spinach, lentils, red meat) paired with vitamin C for absorption.",
-      source: "WHO 2011: Intermittent iron supplementation guidelines",
-    });
-    all.push({
-      category: "sleep", priority: 7, trigger: "fatigue",
-      title: "Prioritize rest",
-      description: "Low energy is your body asking for recovery. Allow an extra 30-60 min of sleep. A 20-minute afternoon nap can restore alertness without disrupting nighttime sleep.",
-    });
-  }
-
-  // ── Mood: stressed / anxious ──
-  if (mood === "Stressed" || mood === "Anxious" || symSet.has("anxiety")) {
-    all.push({
-      category: "mindfulness", priority: 10, trigger: "stress/anxiety",
-      title: "Breathing and grounding",
-      description: "Try 4-7-8 breathing (inhale 4s, hold 7s, exhale 8s) for 3-4 cycles. Box breathing (4-4-4-4) also activates the parasympathetic nervous system.",
-      source: "NIH: Slow breathing activates vagal tone, reducing cortisol",
-    });
-  }
-
-  // ── Mood: irritable / emotional ──
-  if (mood === "Irritable" || mood === "Emotional" || symSet.has("irritability")) {
-    all.push({
-      category: "nutrition", priority: 8, trigger: "mood",
-      title: "Serotonin-supporting nutrition",
-      description: "Tryptophan-rich foods (turkey, eggs, cheese, nuts) are precursors to serotonin. Complex carbs help tryptophan cross the blood-brain barrier.",
-      source: "NIH: Tryptophan availability and serotonin synthesis",
-    });
-  }
-
-  // ── Mood: low ──
-  if (mood === "Low") {
+  // ── Low mood ──
+  if (mood === "Low" && !(hasPain && hasMoodIssue)) {
     all.push({
       category: "mindfulness", priority: 10, trigger: "low mood",
       title: "Be gentle with yourself",
-      description: "Low mood during your cycle is hormonally driven and temporary. Do something comforting — warm bath, favorite music, journaling, or connecting with someone you trust.",
+      description: "Low mood during your cycle is hormonally driven and temporary — estrogen's drop directly reduces serotonin and dopamine. Do one comforting thing: a warm bath, favorite music, or connecting with someone you trust. Avoid isolation — even a brief text exchange helps. If low mood persists beyond your period or includes hopelessness, speak with a healthcare provider.",
     });
     all.push({
-      category: "movement", priority: 6, trigger: "low mood",
-      title: "Sunlight and fresh air",
-      description: "Even 10 minutes outdoors boosts vitamin D and serotonin. Natural light exposure is one of the most effective mood regulators.",
+      category: "movement", priority: 7, trigger: "low mood",
+      title: "Sunlight and movement",
+      description: "Even 10 minutes of walking outside combines the three most evidence-backed mood interventions: physical movement (endorphins), sunlight exposure (serotonin), and nature (cortisol reduction). You don't need to exercise hard — just move your body in daylight.",
+      source: "Lancet Psychiatry (2018): Physical activity and mental health — largest study to date",
     });
   }
 
-  // ── Insomnia / poor sleep ──
-  if (symSet.has("insomnia") || (sleep !== null && sleep <= 2)) {
+  // ── Insomnia / poor sleep (standalone) ──
+  if (hasSleepIssue && !hasAnxiety) {
     all.push({
       category: "sleep", priority: 9, trigger: "poor sleep",
-      title: "Sleep hygiene for cycle disruption",
-      description: "Progesterone metabolites affect sleep architecture. Keep your room cool (18-20°C), avoid screens 1hr before bed, and consider magnesium glycinate before sleep.",
-      source: "PMC: Progesterone metabolite allopregnanolone affects GABA receptors",
+      title: "Cycle-specific sleep optimization",
+      description: phase === "luteal"
+        ? "Progesterone raises core body temperature by 0.3-0.5°C in the luteal phase, disrupting sleep onset. Set your room to 17-18°C (cooler than usual), take a warm shower 90 minutes before bed (the subsequent cool-down triggers melatonin), and try magnesium glycinate (200-400mg). Avoid alcohol — it worsens luteal sleep quality."
+        : "Menstrual-phase sleep disruption often comes from pain or iron-related restlessness. A heating pad on your abdomen can help you fall asleep. Tart cherry juice contains natural melatonin. Avoid screens for an hour before bed and keep your room dark — even small light sources suppress melatonin production.",
+      source: "Sleep Medicine Reviews (2019): Menstrual cycle and sleep architecture; PMC: Allopregnanolone and GABA receptors",
     });
   }
 
@@ -727,58 +874,41 @@ export function getWellnessSuggestions(
   if (symSet.has("breast tenderness")) {
     all.push({
       category: "comfort", priority: 7, trigger: "breast tenderness",
-      title: "Supportive measures",
-      description: "Wear a well-fitting supportive bra, especially during exercise. Evening primrose oil and reducing caffeine may help — evidence is mixed but low-risk.",
-      source: "ACOG: Caffeine reduction may alleviate breast tenderness",
+      title: "Ease breast tenderness",
+      description: "Wear a supportive bra — especially during any physical activity. Apply a cold compress for sharp pain or warm compress for dull aching. Cut caffeine (it dilates breast tissue ducts and worsens tenderness). Evening primrose oil (1000-3000mg/day) shows modest benefit in some studies. If tenderness is always one-sided or includes lumps, mention it to your provider.",
+      source: "ACOG: Cyclic mastalgia management; BMJ (2002): Evening primrose oil for breast pain",
     });
   }
 
-  // ── Acne ──
+  // ── Acne (phase-specific) ──
   if (symSet.has("acne")) {
     all.push({
-      category: "nutrition", priority: 6, trigger: "acne",
-      title: "Anti-inflammatory skincare support",
-      description: "Luteal-phase acne is driven by relative androgen dominance as estrogen drops. Zinc-rich foods (pumpkin seeds, chickpeas) support skin health. Avoid high-glycemic foods which worsen breakouts.",
-      source: "JAAD (2010): High-glycemic diet associated with acne severity",
-    });
-  }
-
-  // ── Cravings ──
-  if (craving && craving !== "None") {
-    all.push({
-      category: "nutrition", priority: 5, trigger: "craving",
-      title: `${craving} craving? Your body may need this`,
-      description: craving === "Chocolate"
-        ? "Chocolate cravings often signal low magnesium. Dark chocolate (70%+) is a legitimate source of magnesium — a small portion is fine."
-        : craving === "Sweet"
-        ? "Sweet cravings in the luteal phase come from your body's 100-300 kcal/day higher metabolic rate. Satisfy with fruit, yogurt, or a small treat — don't fight it."
-        : craving === "Salty"
-        ? "Salt cravings may reflect electrolyte shifts from progesterone. A pinch of salt in water, or electrolyte-rich foods like pickles and olives, can help."
-        : craving === "Carbs"
-        ? "Carb cravings support serotonin production — your brain needs glucose to make it. Complex carbs (oats, sweet potato, whole grain) satisfy without a spike-crash."
-        : craving === "Spicy"
-        ? "Spicy food triggers endorphin release — your body may be seeking natural pain relief. Capsaicin also has anti-inflammatory properties."
-        : "Listen to your body — cravings often reflect genuine nutritional needs during hormonal shifts.",
-      source: "NIH: Luteal phase metabolic rate increase and macronutrient preference shifts",
-    });
-  }
-
-  // ── Brain fog ──
-  if (symSet.has("brain fog")) {
-    all.push({
-      category: "hydration", priority: 8, trigger: "brain fog",
-      title: "Hydrate and move",
-      description: "Brain fog correlates with progesterone peaks and dehydration. Drink water consistently, take short movement breaks, and avoid skipping meals — glucose dips worsen cognitive fog.",
+      category: "nutrition", priority: 6, trigger: phase === "luteal" ? "luteal acne" : "hormonal acne",
+      title: phase === "luteal" ? "Pre-period breakout management" : "Hormonal acne support",
+      description: phase === "luteal"
+        ? "Luteal-phase breakouts happen because relative androgen dominance increases sebum production as estrogen drops. Start now: zinc-rich foods (pumpkin seeds, chickpeas, oysters) support skin repair. Avoid high-glycemic foods (white bread, sweets) — they spike insulin, which amplifies androgen effects on sebaceous glands. Don't pick — inflammation peaks now and scars more easily."
+        : "Hormonal acne outside the luteal phase may signal persistent androgen sensitivity. Support skin with zinc-rich foods, low-glycemic eating, and adequate water. If acne is consistent, cystic, or along the jawline, consider discussing androgen testing with your provider.",
+      source: "JAAD (2010): High-glycemic diet and acne; ACOG: Hyperandrogenic screening",
     });
   }
 
   // ── Nausea ──
-  if (symSet.has("nausea")) {
+  if (symSet.has("nausea") && !hasGI) {
     all.push({
       category: "nutrition", priority: 8, trigger: "nausea",
       title: "Ease nausea naturally",
-      description: "Ginger tea or ginger chews are clinically supported for nausea relief. Eat small, frequent meals rather than large ones. Avoid greasy or heavily spiced food.",
-      source: "Cochrane Review: Ginger for nausea — effective and safe",
+      description: "Ginger is clinically proven for nausea: fresh ginger tea (1-2 cm grated in hot water), ginger chews, or capsules (250mg 4x/day). Eat small, frequent meals — an empty stomach worsens nausea. Cold foods (smoothies, yogurt) are often better tolerated than hot. Avoid greasy or heavily spiced food. Acupressure on the P6 point (inner wrist, 2 fingers below crease) can also help.",
+      source: "Cochrane Review: Ginger for nausea; BJOG: P6 acupressure and menstrual nausea",
+    });
+  }
+
+  // ── Brain fog (standalone) ──
+  if (symSet.has("brain fog") && !hasFatigue) {
+    all.push({
+      category: "hydration", priority: 8, trigger: "brain fog",
+      title: "Clear the fog",
+      description: "Brain fog during your cycle correlates with progesterone peaks affecting GABA receptors — the same system benzodiazepines target. Hydrate aggressively (500ml now), eat protein + complex carbs (eggs + toast, yogurt + granola). A 10-minute brisk walk increases cerebral blood flow. Avoid multitasking — your working memory is temporarily reduced, so single-task and write things down.",
+      source: "Psychoneuroendocrinology (2015): Progesterone metabolites and cognitive function",
     });
   }
 
@@ -786,8 +916,8 @@ export function getWellnessSuggestions(
   if (symSet.has("dizziness")) {
     all.push({
       category: "comfort", priority: 9, trigger: "dizziness",
-      title: "Address dizziness",
-      description: "Dizziness can stem from low iron, low blood sugar, or dehydration — all common during menstruation. Sit or lie down, sip water, and eat something with iron and sugar. If persistent, consult a healthcare provider.",
+      title: "Address dizziness safely",
+      description: "Sit or lie down immediately if feeling faint. Dizziness during menstruation commonly stems from: (1) low iron — eat iron + vitamin C together, (2) low blood sugar — eat something now, (3) dehydration — drink 500ml water with a pinch of salt. Rise slowly from sitting/lying positions. If dizziness includes heart palpitations, heavy bleeding (soaking a pad/hour), or fainting, seek medical care today.",
       source: "NIH: Iron-deficiency anemia and orthostatic symptoms",
     });
   }
@@ -797,62 +927,119 @@ export function getWellnessSuggestions(
     all.push({
       category: "comfort", priority: 7, trigger: "hot flashes",
       title: "Cool down strategies",
-      description: "Wear layered clothing, keep a cool cloth nearby, and stay in ventilated spaces. If hot flashes are frequent and you're under 40, mention it to your healthcare provider.",
+      description: "Layer your clothing for easy removal. Keep a cool damp cloth and cold water nearby. Avoid triggers: spicy food, alcohol, hot drinks, and warm rooms. Deep slow breathing (6 breaths/minute) during a hot flash can reduce its severity by 50%. If hot flashes are frequent and you're under 40, mention it to your healthcare provider — it can indicate premature ovarian changes.",
+      source: "Menopause (2012): Paced breathing for vasomotor symptoms",
     });
   }
 
-  // ── Joint pain ──
-  if (symSet.has("joint pain")) {
+  // ── Joint pain (standalone) ──
+  if (symSet.has("joint pain") && !symSet.has("cramps")) {
     all.push({
       category: "movement", priority: 7, trigger: "joint pain",
-      title: "Gentle joint mobility",
-      description: "Estrogen has anti-inflammatory effects on joints — when it drops, joint stiffness can increase. Gentle mobility work and omega-3 foods may help.",
-      source: "PMC: Estrogen and joint inflammation — systematic review",
+      title: "Hormone-related joint relief",
+      description: "Estrogen is anti-inflammatory — when it drops (late luteal, early menstrual), joint pain and stiffness increase. Gentle mobility work (circles, stretches) for 10 minutes helps more than rest. Omega-3 rich foods (salmon, walnuts, chia) reduce inflammatory markers over time. Epsom salt baths (magnesium sulfate) provide both heat and magnesium absorption through skin.",
+      source: "PMC: Estrogen, inflammation, and joint health — systematic review",
     });
   }
 
-  // ── Phase-specific defaults (only when no symptom-specific suggestions matched) ──
-  if (all.length === 0 && phase) {
-    if (phase === "menstrual") {
-      all.push({
-        category: "comfort", priority: 4, trigger: "phase",
-        title: "Take it easy today",
-        description: "Your body is doing extra work. Honor that with gentle movement, warm foods, and adequate rest. This is not a deload — it's active recovery.",
-      });
-    } else if (phase === "follicular") {
-      all.push({
-        category: "movement", priority: 4, trigger: "phase",
-        title: "Push your limits",
-        description: "Rising estrogen means better recovery, higher pain tolerance, and peak insulin sensitivity. This is your best window for progressive overload.",
-        source: "PMC4236309: Follicular phase strength training produces greater gains",
-      });
-    } else if (phase === "ovulation") {
-      all.push({
-        category: "movement", priority: 4, trigger: "phase",
-        title: "Go for a PR",
-        description: "Peak testosterone and estrogen give you your best strength, endurance, and reaction time. Attempt personal records in this 2-3 day window.",
-        source: "PMC12195628: Strength peaks around ovulation",
-      });
-    } else if (phase === "luteal") {
-      all.push({
-        category: "mindfulness", priority: 4, trigger: "phase",
-        title: "Steady and sustainable",
-        description: "RPE is higher this phase — the same weight feels harder. Maintain volume but allow longer rest. Favor steady-state over HIIT. Extra warm-up time helps.",
-        source: "PMC7916245: Core temperature rise increases perceived effort",
-      });
+  // ── Irritability symptom (without mood flag) ──
+  if (symSet.has("irritability") && mood !== "Irritable") {
+    all.push({
+      category: "mindfulness", priority: 7, trigger: "irritability",
+      title: "Reset your nervous system",
+      description: "Physical irritability (feeling agitated, skin-crawly, easily startled) without a mental mood shift often comes from progesterone's effect on your nervous system. Cold water on your wrists and face activates the dive reflex — an instant calm. Follow with 5 minutes of slow breathing. Magnesium-rich foods (dark chocolate, almonds, spinach) support GABA production.",
+    });
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // LAYER 3: CRAVINGS (always included as secondary advice)
+  // ═══════════════════════════════════════════════════════════════════
+
+  if (craving && craving !== "None" && !(symSet.has("bloating") && craving)) {
+    const desc: Record<string, string> = {
+      Chocolate: "Chocolate cravings signal low magnesium — legitimate during hormonal shifts. Dark chocolate (70%+) provides magnesium, iron, and mood-boosting theobromine. 1-2 squares is a real intervention, not a guilty pleasure. Pair with almonds for sustained energy.",
+      Sweet: "Luteal-phase sweet cravings come from your 100-300 kcal/day higher metabolic rate — your body genuinely needs more fuel. Satisfy with: dates + nut butter, Greek yogurt + honey, or a banana smoothie. These provide the sugar your brain wants plus protein/fat for sustained energy. Don't restrict — it backfires.",
+      Salty: "Salt cravings reflect progesterone-driven aldosterone changes. Satisfy with mineral-rich options: olives, pickles, miso soup, or salted nuts. A pinch of quality salt in water with lemon is a cheap electrolyte drink. Avoid ultra-processed salty snacks — they spike sodium without the minerals your body actually wants.",
+      Carbs: "Carb cravings serve a real purpose: your brain needs carbs to transport tryptophan across the blood-brain barrier for serotonin production. Choose: oatmeal, sweet potato, whole-grain toast, or rice with butter. These satisfy without a blood sugar spike-crash that triggers more cravings.",
+      Spicy: "Spicy food triggers endorphin release — your body may be seeking natural pain relief. Capsaicin also has anti-inflammatory properties. Go for it — a curry, hot sauce on eggs, or kimchi. Avoid spicy food only if you also have nausea or bloating.",
+    };
+    all.push({
+      category: "nutrition", priority: 5, trigger: craving.toLowerCase() + " craving",
+      title: `Why you're craving ${craving.toLowerCase()}`,
+      description: desc[craving] ?? "Listen to your body — cravings during hormonal shifts often reflect genuine nutritional needs. Satisfy them with whole-food versions rather than ultra-processed options.",
+      source: "NIH: Luteal phase metabolic rate increase and macronutrient preference shifts",
+    });
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // LAYER 4: PHASE DEFAULTS (when few or no symptom-specific triggers)
+  // ═══════════════════════════════════════════════════════════════════
+
+  if (all.length <= 1 && phase) {
+    const phaseDefaults: Record<CyclePhase, WellnessSuggestion[]> = {
+      menstrual: [
+        {
+          category: "comfort", priority: 4, trigger: "menstrual phase",
+          title: "Active recovery day",
+          description: "Your body is shedding the uterine lining — this is metabolically demanding work. Honor it: warm foods (soups, stews), iron-rich meals, gentle movement like walking or yin yoga. This isn't weakness — it's your body's strongest regeneration window. Avoid ice-cold drinks and intense workouts for the first 2-3 days.",
+        },
+        {
+          category: "nutrition", priority: 3, trigger: "menstrual phase",
+          title: "Iron-rich eating",
+          description: "You're losing 30-80ml of blood over these days. Prioritize iron: red meat, dark leafy greens, lentils, fortified cereals. Always pair with vitamin C (squeeze lemon on spinach, eat bell peppers with lentils). Avoid calcium-rich foods at the same meal — calcium competes with iron absorption.",
+          source: "WHO 2011: Iron supplementation during menstruation",
+        },
+      ],
+      follicular: [
+        {
+          category: "movement", priority: 4, trigger: "follicular phase",
+          title: "Your training superpower phase",
+          description: "Rising estrogen means faster recovery, higher pain tolerance, better insulin sensitivity, and greater muscle protein synthesis. This is the best 7-10 day window in your entire cycle for progressive overload. Add weight to your lifts, try new exercises, push for more reps. Your body is primed to adapt.",
+          source: "PMC4236309: Follicular phase strength training produces greater gains",
+        },
+      ],
+      ovulation: [
+        {
+          category: "movement", priority: 4, trigger: "ovulation phase",
+          title: "Peak performance window",
+          description: "Testosterone and estrogen both peak now — giving you the best strength, reaction time, and endurance of your entire cycle. This 2-3 day window is ideal for personal records, competitions, or trying something physically ambitious. One caution: ligament laxity also peaks due to relaxin, so warm up thoroughly before explosive movements.",
+          source: "PMC12195628: Strength peaks around ovulation; AJSM: ACL injury risk and ovulation",
+        },
+      ],
+      luteal: [
+        {
+          category: "mindfulness", priority: 4, trigger: "luteal phase",
+          title: "Recalibrate expectations",
+          description: "The same weight feels 10-15% harder this phase because core temperature rises 0.3-0.5°C, increasing perceived exertion. This is not regression — it's physiology. Maintain training volume but allow longer rest periods. Favor steady-state cardio over HIIT. Extra warm-up time compensates for reduced flexibility.",
+          source: "PMC7916245: Core temperature rise increases perceived effort in luteal phase",
+        },
+        {
+          category: "nutrition", priority: 3, trigger: "luteal phase",
+          title: "Extra fuel, not extra guilt",
+          description: "Your metabolism is 100-300 kcal/day higher this phase. If you're hungry, eat — this is a real metabolic increase, not a willpower failure. Focus on protein + complex carbs (chicken + sweet potato, eggs + oatmeal). Supplementing with magnesium and B6 may reduce PMS symptoms by 30-40%.",
+          source: "AJCN (2011): Luteal metabolic rate increase; BMJ (1999): B6 and PMS",
+        },
+      ],
+    };
+
+    for (const s of phaseDefaults[phase] ?? []) {
+      all.push(s);
     }
   }
 
-  // ── Good mood reinforcement (only if no pain/negative symptoms) ──
-  if ((mood === "Great" || mood === "Good") && !hasPainSymptoms && !hasNegativeMood && symSet.size === 0) {
+  // ── Good feeling reinforcement (only when truly asymptomatic) ──
+  if ((mood === "Great" || mood === "Good") && !hasPain && !hasMoodIssue && symSet.size === 0 && all.length === 0) {
     all.push({
-      category: "movement", priority: 4, trigger: "good mood",
-      title: "Ride the wave",
-      description: "You're feeling good — capitalize on it. This is a great day for a challenging workout, a new recipe, or tackling something you've been putting off.",
+      category: "movement", priority: 4, trigger: "feeling good",
+      title: "Capitalize on today",
+      description: "No symptoms, good mood — this is a green light day. Challenge yourself physically: a hard workout, a long hike, trying a new sport. Your body has bandwidth right now that it won't always have. Even non-exercise goals (a big project, a difficult conversation, meal prepping for the week) are easier to tackle today.",
     });
   }
 
-  // ── Sort by priority (highest first), deduplicate by category (keep top per category, max 2 per category), cap at 5 ──
+  // ═══════════════════════════════════════════════════════════════════
+  // POST-PROCESSING: Sort, deduplicate, cap
+  // ═══════════════════════════════════════════════════════════════════
+
   all.sort((a, b) => b.priority - a.priority);
   const catCount: Record<string, number> = {};
   const seen = new Set<string>();
@@ -865,7 +1052,7 @@ export function getWellnessSuggestions(
     if (cc >= 2) continue;
     catCount[s.category] = cc + 1;
     result.push(s);
-    if (result.length >= 5) break;
+    if (result.length >= 6) break;
   }
   return result;
 }
