@@ -548,7 +548,10 @@ export default function CyclePage() {
                               <p className="text-[11px] font-medium text-white/65">{s.title}</p>
                             </div>
                             <p className="text-[9px] text-white/35 leading-relaxed">{s.description}</p>
-                            {s.source && <p className="text-[7px] font-mono text-white/15 mt-1.5">{s.source}</p>}
+                            <div className="flex items-center gap-2 mt-1.5">
+                              {s.trigger && <span className="text-[7px] font-mono text-white/20 px-1.5 py-0.5 rounded bg-white/[0.03]">because: {s.trigger}</span>}
+                              {s.source && <p className="text-[7px] font-mono text-white/15">{s.source}</p>}
+                            </div>
                           </div>
                         </div>
                       );

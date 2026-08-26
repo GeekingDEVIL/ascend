@@ -590,6 +590,8 @@ export type WellnessSuggestion = {
   title: string;
   description: string;
   source?: string;
+  priority: number;
+  trigger: string;
 };
 
 const ENERGY_LABELS = ["Drained", "Low", "Neutral", "Strong", "Peak"] as const;
@@ -605,25 +607,27 @@ export function getWellnessSuggestions(
   craving: string | null,
   phase: CyclePhase | null,
 ): WellnessSuggestion[] {
-  const suggestions: WellnessSuggestion[] = [];
+  const all: WellnessSuggestion[] = [];
   const symSet = new Set(symptoms.map(s => s.toLowerCase()));
+  const hasPainSymptoms = symSet.has("cramps") || symSet.has("back pain") || symSet.has("headache") || symSet.has("joint pain");
+  const hasNegativeMood = mood === "Stressed" || mood === "Anxious" || mood === "Irritable" || mood === "Emotional" || mood === "Low";
 
   // ── Cramps / pain cluster ──
   if (symSet.has("cramps") || symSet.has("back pain")) {
-    suggestions.push({
-      category: "movement",
-      title: "Gentle movement for cramp relief",
-      description: "Light walking, yoga, or stretching releases endorphins that naturally reduce pain. Avoid high-impact if cramps are severe.",
-      source: "ACOG recommends exercise as a first-line intervention for dysmenorrhea",
-    });
-    suggestions.push({
-      category: "comfort",
+    all.push({
+      category: "comfort", priority: 10, trigger: "cramps/pain",
       title: "Heat therapy",
       description: "Apply a heating pad or warm water bottle to your lower abdomen — heat is clinically as effective as ibuprofen for menstrual cramps.",
       source: "BMC Womens Health (2018): Heat wrap therapy comparable to analgesics",
     });
-    suggestions.push({
-      category: "nutrition",
+    all.push({
+      category: "movement", priority: 8, trigger: "cramps/pain",
+      title: "Gentle movement for cramp relief",
+      description: "Light walking, yoga, or stretching releases endorphins that naturally reduce pain. Avoid high-impact if cramps are severe.",
+      source: "ACOG recommends exercise as a first-line intervention for dysmenorrhea",
+    });
+    all.push({
+      category: "nutrition", priority: 6, trigger: "cramps/pain",
       title: "Anti-inflammatory foods",
       description: "Omega-3 rich foods (salmon, walnuts, flaxseed) may reduce prostaglandin-driven cramping. Avoid excess caffeine and alcohol which can worsen cramps.",
       source: "PMC8296102: Omega-3 supplementation and dysmenorrhea",
@@ -632,14 +636,14 @@ export function getWellnessSuggestions(
 
   // ── Bloating ──
   if (symSet.has("bloating")) {
-    suggestions.push({
-      category: "nutrition",
+    all.push({
+      category: "nutrition", priority: 9, trigger: "bloating",
       title: "Reduce bloating naturally",
       description: "Cut sodium, increase potassium-rich foods (bananas, sweet potatoes, spinach). Herbal teas like peppermint or ginger can ease GI discomfort.",
       source: "NIH: Potassium helps regulate fluid balance",
     });
-    suggestions.push({
-      category: "hydration",
+    all.push({
+      category: "hydration", priority: 5, trigger: "bloating",
       title: "Drink more water, not less",
       description: "Counterintuitively, staying well-hydrated helps your body release retained water. Aim for 2-3L throughout the day.",
     });
@@ -647,71 +651,63 @@ export function getWellnessSuggestions(
 
   // ── Headache ──
   if (symSet.has("headache")) {
-    suggestions.push({
-      category: "hydration",
+    all.push({
+      category: "hydration", priority: 9, trigger: "headache",
       title: "Hydration and consistency",
       description: "Estrogen-withdrawal headaches worsen with dehydration. Keep caffeine intake consistent — both excess and withdrawal trigger headaches.",
       source: "Neurology (2004): Estrogen withdrawal is a known migraine trigger",
     });
-    suggestions.push({
-      category: "comfort",
+    all.push({
+      category: "comfort", priority: 7, trigger: "headache",
       title: "Dim lights and rest",
       description: "If headache is severe, reduce screen brightness, rest in a quiet room, and apply a cold compress to your forehead or temples.",
     });
   }
 
-  // ── Fatigue ──
+  // ── Fatigue / low energy ──
   if (symSet.has("fatigue") || (energy !== null && energy <= 2)) {
-    suggestions.push({
-      category: "nutrition",
+    all.push({
+      category: "nutrition", priority: 9, trigger: "fatigue",
       title: "Iron and energy-supporting foods",
       description: "Fatigue during menstruation often links to iron loss. Eat iron-rich foods (spinach, lentils, red meat) paired with vitamin C for absorption.",
       source: "WHO 2011: Intermittent iron supplementation guidelines",
     });
-    suggestions.push({
-      category: "sleep",
+    all.push({
+      category: "sleep", priority: 7, trigger: "fatigue",
       title: "Prioritize rest",
       description: "Low energy is your body asking for recovery. Allow an extra 30-60 min of sleep. A 20-minute afternoon nap can restore alertness without disrupting nighttime sleep.",
     });
-    suggestions.push({
-      category: "movement",
-      title: "Light movement over rest",
-      description: "Even when fatigued, a 10-15 minute walk outdoors improves energy more than staying sedentary. Sunlight exposure also helps regulate your circadian rhythm.",
-    });
   }
 
-  // ── Mood: stressed / anxious / irritable / emotional ──
-  if (mood === "Stressed" || mood === "Anxious" || symSet.has("anxiety") || symSet.has("irritability")) {
-    suggestions.push({
-      category: "mindfulness",
+  // ── Mood: stressed / anxious ──
+  if (mood === "Stressed" || mood === "Anxious" || symSet.has("anxiety")) {
+    all.push({
+      category: "mindfulness", priority: 10, trigger: "stress/anxiety",
       title: "Breathing and grounding",
       description: "Try 4-7-8 breathing (inhale 4s, hold 7s, exhale 8s) for 3-4 cycles. Box breathing (4-4-4-4) also activates the parasympathetic nervous system.",
       source: "NIH: Slow breathing activates vagal tone, reducing cortisol",
     });
-    suggestions.push({
-      category: "movement",
-      title: "Low-intensity exercise",
-      description: "Walking, swimming, or yoga for 20-30 minutes reduces cortisol and increases serotonin. Avoid high-intensity training when stressed — it adds cortisol load.",
-    });
   }
 
-  if (mood === "Irritable" || mood === "Emotional") {
-    suggestions.push({
-      category: "nutrition",
+  // ── Mood: irritable / emotional ──
+  if (mood === "Irritable" || mood === "Emotional" || symSet.has("irritability")) {
+    all.push({
+      category: "nutrition", priority: 8, trigger: "mood",
       title: "Serotonin-supporting nutrition",
       description: "Tryptophan-rich foods (turkey, eggs, cheese, nuts) are precursors to serotonin. Complex carbs help tryptophan cross the blood-brain barrier.",
       source: "NIH: Tryptophan availability and serotonin synthesis",
     });
   }
 
+  // ── Mood: low ──
   if (mood === "Low") {
-    suggestions.push({
-      category: "mindfulness",
+    all.push({
+      category: "mindfulness", priority: 10, trigger: "low mood",
       title: "Be gentle with yourself",
       description: "Low mood during your cycle is hormonally driven and temporary. Do something comforting — warm bath, favorite music, journaling, or connecting with someone you trust.",
     });
-    suggestions.push({
-      category: "movement",
+    all.push({
+      category: "movement", priority: 6, trigger: "low mood",
       title: "Sunlight and fresh air",
       description: "Even 10 minutes outdoors boosts vitamin D and serotonin. Natural light exposure is one of the most effective mood regulators.",
     });
@@ -719,8 +715,8 @@ export function getWellnessSuggestions(
 
   // ── Insomnia / poor sleep ──
   if (symSet.has("insomnia") || (sleep !== null && sleep <= 2)) {
-    suggestions.push({
-      category: "sleep",
+    all.push({
+      category: "sleep", priority: 9, trigger: "poor sleep",
       title: "Sleep hygiene for cycle disruption",
       description: "Progesterone metabolites affect sleep architecture. Keep your room cool (18-20°C), avoid screens 1hr before bed, and consider magnesium glycinate before sleep.",
       source: "PMC: Progesterone metabolite allopregnanolone affects GABA receptors",
@@ -729,8 +725,8 @@ export function getWellnessSuggestions(
 
   // ── Breast tenderness ──
   if (symSet.has("breast tenderness")) {
-    suggestions.push({
-      category: "comfort",
+    all.push({
+      category: "comfort", priority: 7, trigger: "breast tenderness",
       title: "Supportive measures",
       description: "Wear a well-fitting supportive bra, especially during exercise. Evening primrose oil and reducing caffeine may help — evidence is mixed but low-risk.",
       source: "ACOG: Caffeine reduction may alleviate breast tenderness",
@@ -739,8 +735,8 @@ export function getWellnessSuggestions(
 
   // ── Acne ──
   if (symSet.has("acne")) {
-    suggestions.push({
-      category: "nutrition",
+    all.push({
+      category: "nutrition", priority: 6, trigger: "acne",
       title: "Anti-inflammatory skincare support",
       description: "Luteal-phase acne is driven by relative androgen dominance as estrogen drops. Zinc-rich foods (pumpkin seeds, chickpeas) support skin health. Avoid high-glycemic foods which worsen breakouts.",
       source: "JAAD (2010): High-glycemic diet associated with acne severity",
@@ -749,8 +745,8 @@ export function getWellnessSuggestions(
 
   // ── Cravings ──
   if (craving && craving !== "None") {
-    suggestions.push({
-      category: "nutrition",
+    all.push({
+      category: "nutrition", priority: 5, trigger: "craving",
       title: `${craving} craving? Your body may need this`,
       description: craving === "Chocolate"
         ? "Chocolate cravings often signal low magnesium. Dark chocolate (70%+) is a legitimate source of magnesium — a small portion is fine."
@@ -769,8 +765,8 @@ export function getWellnessSuggestions(
 
   // ── Brain fog ──
   if (symSet.has("brain fog")) {
-    suggestions.push({
-      category: "hydration",
+    all.push({
+      category: "hydration", priority: 8, trigger: "brain fog",
       title: "Hydrate and move",
       description: "Brain fog correlates with progesterone peaks and dehydration. Drink water consistently, take short movement breaks, and avoid skipping meals — glucose dips worsen cognitive fog.",
     });
@@ -778,8 +774,8 @@ export function getWellnessSuggestions(
 
   // ── Nausea ──
   if (symSet.has("nausea")) {
-    suggestions.push({
-      category: "nutrition",
+    all.push({
+      category: "nutrition", priority: 8, trigger: "nausea",
       title: "Ease nausea naturally",
       description: "Ginger tea or ginger chews are clinically supported for nausea relief. Eat small, frequent meals rather than large ones. Avoid greasy or heavily spiced food.",
       source: "Cochrane Review: Ginger for nausea — effective and safe",
@@ -788,8 +784,8 @@ export function getWellnessSuggestions(
 
   // ── Dizziness ──
   if (symSet.has("dizziness")) {
-    suggestions.push({
-      category: "comfort",
+    all.push({
+      category: "comfort", priority: 9, trigger: "dizziness",
       title: "Address dizziness",
       description: "Dizziness can stem from low iron, low blood sugar, or dehydration — all common during menstruation. Sit or lie down, sip water, and eat something with iron and sugar. If persistent, consult a healthcare provider.",
       source: "NIH: Iron-deficiency anemia and orthostatic symptoms",
@@ -798,8 +794,8 @@ export function getWellnessSuggestions(
 
   // ── Hot flashes ──
   if (symSet.has("hot flashes")) {
-    suggestions.push({
-      category: "comfort",
+    all.push({
+      category: "comfort", priority: 7, trigger: "hot flashes",
       title: "Cool down strategies",
       description: "Wear layered clothing, keep a cool cloth nearby, and stay in ventilated spaces. If hot flashes are frequent and you're under 40, mention it to your healthcare provider.",
     });
@@ -807,39 +803,39 @@ export function getWellnessSuggestions(
 
   // ── Joint pain ──
   if (symSet.has("joint pain")) {
-    suggestions.push({
-      category: "movement",
+    all.push({
+      category: "movement", priority: 7, trigger: "joint pain",
       title: "Gentle joint mobility",
       description: "Estrogen has anti-inflammatory effects on joints — when it drops, joint stiffness can increase. Gentle mobility work and omega-3 foods may help.",
       source: "PMC: Estrogen and joint inflammation — systematic review",
     });
   }
 
-  // ── Phase-specific general suggestions if nothing specific matched ──
-  if (suggestions.length === 0 && phase) {
+  // ── Phase-specific defaults (only when no symptom-specific suggestions matched) ──
+  if (all.length === 0 && phase) {
     if (phase === "menstrual") {
-      suggestions.push({
-        category: "comfort",
+      all.push({
+        category: "comfort", priority: 4, trigger: "phase",
         title: "Take it easy today",
         description: "Your body is doing extra work. Honor that with gentle movement, warm foods, and adequate rest. This is not a deload — it's active recovery.",
       });
     } else if (phase === "follicular") {
-      suggestions.push({
-        category: "movement",
+      all.push({
+        category: "movement", priority: 4, trigger: "phase",
         title: "Push your limits",
         description: "Rising estrogen means better recovery, higher pain tolerance, and peak insulin sensitivity. This is your best window for progressive overload.",
         source: "PMC4236309: Follicular phase strength training produces greater gains",
       });
     } else if (phase === "ovulation") {
-      suggestions.push({
-        category: "movement",
+      all.push({
+        category: "movement", priority: 4, trigger: "phase",
         title: "Go for a PR",
         description: "Peak testosterone and estrogen give you your best strength, endurance, and reaction time. Attempt personal records in this 2-3 day window.",
         source: "PMC12195628: Strength peaks around ovulation",
       });
     } else if (phase === "luteal") {
-      suggestions.push({
-        category: "mindfulness",
+      all.push({
+        category: "mindfulness", priority: 4, trigger: "phase",
         title: "Steady and sustainable",
         description: "RPE is higher this phase — the same weight feels harder. Maintain volume but allow longer rest. Favor steady-state over HIIT. Extra warm-up time helps.",
         source: "PMC7916245: Core temperature rise increases perceived effort",
@@ -847,16 +843,31 @@ export function getWellnessSuggestions(
     }
   }
 
-  // ── Good mood reinforcement ──
-  if (mood === "Great" || mood === "Good") {
-    suggestions.push({
-      category: "movement",
+  // ── Good mood reinforcement (only if no pain/negative symptoms) ──
+  if ((mood === "Great" || mood === "Good") && !hasPainSymptoms && !hasNegativeMood && symSet.size === 0) {
+    all.push({
+      category: "movement", priority: 4, trigger: "good mood",
       title: "Ride the wave",
       description: "You're feeling good — capitalize on it. This is a great day for a challenging workout, a new recipe, or tackling something you've been putting off.",
     });
   }
 
-  return suggestions;
+  // ── Sort by priority (highest first), deduplicate by category (keep top per category, max 2 per category), cap at 5 ──
+  all.sort((a, b) => b.priority - a.priority);
+  const catCount: Record<string, number> = {};
+  const seen = new Set<string>();
+  const result: WellnessSuggestion[] = [];
+  for (const s of all) {
+    const key = `${s.category}:${s.title}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const cc = catCount[s.category] ?? 0;
+    if (cc >= 2) continue;
+    catCount[s.category] = cc + 1;
+    result.push(s);
+    if (result.length >= 5) break;
+  }
+  return result;
 }
 
 export const MEDICAL_DISCLAIMER = "For informational purposes only. Not medical advice. Consult a healthcare provider before starting any supplement or making significant changes to your diet or exercise routine." as const;
