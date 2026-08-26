@@ -240,7 +240,7 @@ export default function LoginPage() {
   }
 
   const inputCls =
-    "w-full rounded-xl bg-white/[0.05] border border-white/[0.08] px-4 py-3 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.3)] focus:shadow-[0_0_20px_rgb(var(--accent-rgb)/0.08)] transition-all duration-200";
+    "w-full rounded-xl bg-white/[0.03] border border-white/[0.06] px-4 py-3 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.25)] focus:shadow-[0_0_20px_rgb(var(--accent-rgb)/0.06)] transition-all duration-200";
 
   if (submitted) {
     return (
@@ -251,11 +251,11 @@ export default function LoginPage() {
           <div
             className="relative w-full max-w-md rounded-3xl p-8 text-center overflow-hidden"
             style={{
-              background: "rgba(255,255,255,0.03)",
-              backdropFilter: "blur(40px) saturate(1.4) brightness(1.1)",
-              WebkitBackdropFilter: "blur(40px) saturate(1.4) brightness(1.1)",
-              border: "1px solid rgba(255,255,255,0.12)",
-              boxShadow: `inset 0 0.5px 0 rgba(255,255,255,0.15), inset 0 -0.5px 0 rgba(255,255,255,0.05), 0 8px 32px rgba(0,0,0,0.3), 0 0 0 0.5px rgba(255,255,255,0.08)`,
+              background: "rgba(255,255,255,0.015)",
+              backdropFilter: "blur(50px) saturate(1.5) brightness(1.15)",
+              WebkitBackdropFilter: "blur(50px) saturate(1.5) brightness(1.15)",
+              border: "1px solid rgba(255,255,255,0.1)",
+              boxShadow: `inset 0 0.5px 0 rgba(255,255,255,0.12), inset 0 -0.5px 0 rgba(255,255,255,0.04), 0 8px 32px rgba(0,0,0,0.25), 0 0 0 0.5px rgba(255,255,255,0.06)`,
               animation: "fadeSlideUp 0.5s ease-out",
             }}
           >
@@ -345,11 +345,11 @@ export default function LoginPage() {
               ref={cardRef}
               className="relative rounded-3xl p-6 md:p-8 overflow-hidden"
               style={{
-                background: "rgba(255,255,255,0.03)",
-                backdropFilter: "blur(40px) saturate(1.4) brightness(1.1)",
-                WebkitBackdropFilter: "blur(40px) saturate(1.4) brightness(1.1)",
-                border: "1px solid rgba(255,255,255,0.12)",
-                boxShadow: `inset 0 0.5px 0 rgba(255,255,255,0.15), inset 0 -0.5px 0 rgba(255,255,255,0.05), 0 8px 32px rgba(0,0,0,0.3), 0 0 0 0.5px rgba(255,255,255,0.08)`,
+                background: "rgba(255,255,255,0.015)",
+                backdropFilter: "blur(50px) saturate(1.5) brightness(1.15)",
+                WebkitBackdropFilter: "blur(50px) saturate(1.5) brightness(1.15)",
+                border: "1px solid rgba(255,255,255,0.1)",
+                boxShadow: `inset 0 0.5px 0 rgba(255,255,255,0.12), inset 0 -0.5px 0 rgba(255,255,255,0.04), 0 8px 32px rgba(0,0,0,0.25), 0 0 0 0.5px rgba(255,255,255,0.06)`,
                 animation: authSuccess
                   ? "card-exit 0.8s ease-in forwards"
                   : mounted
