@@ -16,8 +16,6 @@ const TAGLINES = [
   "BUILT DIFFERENT",
 ];
 
-const NOISE_BG = `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E")`;
-
 const SCRAMBLE_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#%&";
 
 function useScrambleText(text: string, duration = 600) {
@@ -251,14 +249,17 @@ export default function LoginPage() {
         <div className="fixed inset-0 bg-gradient-to-t from-black/60 via-black/25 to-black/30 z-[1]" />
         <div className="relative z-10 min-h-screen flex items-center justify-center p-6">
           <div
-            className="relative w-full max-w-md rounded-2xl border border-white/[0.1] bg-white/[0.05] backdrop-blur-xl p-8 text-center overflow-hidden"
-            style={{ animation: "fadeSlideUp 0.5s ease-out" }}
+            className="relative w-full max-w-md rounded-3xl p-8 text-center overflow-hidden"
+            style={{
+              background: "rgba(255,255,255,0.03)",
+              backdropFilter: "blur(40px) saturate(1.4) brightness(1.1)",
+              WebkitBackdropFilter: "blur(40px) saturate(1.4) brightness(1.1)",
+              border: "1px solid rgba(255,255,255,0.12)",
+              boxShadow: `inset 0 0.5px 0 rgba(255,255,255,0.15), inset 0 -0.5px 0 rgba(255,255,255,0.05), 0 8px 32px rgba(0,0,0,0.3), 0 0 0 0.5px rgba(255,255,255,0.08)`,
+              animation: "fadeSlideUp 0.5s ease-out",
+            }}
           >
-            <div
-              className="absolute inset-0 rounded-2xl opacity-[0.03] mix-blend-overlay pointer-events-none"
-              style={{ backgroundImage: NOISE_BG, backgroundSize: "128px" }}
-            />
-            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />
+            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/[0.18] to-transparent rounded-t-3xl" />
             <div className="relative">
               <div className="w-12 h-12 mx-auto mb-4 rounded-lg border border-[rgb(var(--accent-rgb)/0.3)] flex items-center justify-center text-[rgb(var(--accent-rgb))] font-bold">
                 A
@@ -340,21 +341,15 @@ export default function LoginPage() {
         {/* Form card area */}
         <div className="flex-1 flex items-end md:items-center justify-center px-5 pb-8 md:pb-12">
           <div className="relative z-0 w-full max-w-[400px]">
-            {/* Accent glow behind card */}
-            <div
-              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full -z-10"
-              style={{
-                background: "rgb(var(--accent-rgb))",
-                opacity: 0.04,
-                filter: "blur(100px)",
-              }}
-            />
-
             <div
               ref={cardRef}
-              className="relative rounded-2xl border border-white/[0.06] bg-white/[0.03] backdrop-blur-2xl p-6 md:p-8 overflow-hidden"
+              className="relative rounded-3xl p-6 md:p-8 overflow-hidden"
               style={{
-                boxShadow: `inset 0 1px 0 rgba(255,255,255,0.06), inset 0 -1px 0 rgba(255,255,255,0.02), 0 0 60px rgb(var(--accent-rgb) / 0.02)`,
+                background: "rgba(255,255,255,0.03)",
+                backdropFilter: "blur(40px) saturate(1.4) brightness(1.1)",
+                WebkitBackdropFilter: "blur(40px) saturate(1.4) brightness(1.1)",
+                border: "1px solid rgba(255,255,255,0.12)",
+                boxShadow: `inset 0 0.5px 0 rgba(255,255,255,0.15), inset 0 -0.5px 0 rgba(255,255,255,0.05), 0 8px 32px rgba(0,0,0,0.3), 0 0 0 0.5px rgba(255,255,255,0.08)`,
                 animation: authSuccess
                   ? "card-exit 0.8s ease-in forwards"
                   : mounted
@@ -362,17 +357,10 @@ export default function LoginPage() {
                     : "none",
               }}
             >
-                {/* Noise texture */}
-                <div
-                  className="absolute inset-0 rounded-2xl opacity-[0.025] mix-blend-overlay pointer-events-none"
-                  style={{
-                    backgroundImage: NOISE_BG,
-                    backgroundSize: "128px",
-                  }}
-                />
-
-                {/* Glass top highlight */}
-                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+                {/* Glass edge highlight — top */}
+                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/[0.18] to-transparent rounded-t-3xl" />
+                {/* Glass edge highlight — bottom (fainter) */}
+                <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-white/[0.06] to-transparent rounded-b-3xl" />
 
                 {/* Content */}
                 <div className="relative">
