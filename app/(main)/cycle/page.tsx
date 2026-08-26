@@ -18,8 +18,8 @@ import {
   type CycleLog, type CycleSymptomLog, type CycleInsight, type CycleIrregularity, type FertilityLevel,
 } from "../../lib/cycleAwareTrend";
 import {
-  getPhaseIntelligence, computeCycleScore,
-  type PhaseIntelligence, type HealthFlag, type CycleScore, type SymptomPrediction,
+  getPhaseIntelligence, computeCycleScore, getWellnessSuggestions, ENERGY_LABELS, SLEEP_LABELS, MEDICAL_DISCLAIMER,
+  type PhaseIntelligence, type HealthFlag, type CycleScore, type SymptomPrediction, type WellnessSuggestion,
 } from "../../lib/menstrualEngine";
 import CubeLoader from "../../components/ui/cube-loader";
 import { staggerContainer, staggerItem, tabContent } from "../../lib/motion";
@@ -98,6 +98,7 @@ export default function CyclePage() {
   const [todayCraving, setTodayCraving] = useState<string | null>(null);
   const [symptomSaved, setSymptomSaved] = useState(false);
 
+  const [wellnessSuggestions, setWellnessSuggestions] = useState<WellnessSuggestion[]>([]);
   const [openGuide, setOpenGuide] = useState<number | null>(null);
   const [openFaq, setOpenFaq] = useState<string | null>(null);
 
@@ -147,6 +148,8 @@ export default function CyclePage() {
       setTodaySleep(todayLog.sleep_quality);
       setTodayCraving(todayLog.craving);
       setSymptomSaved(true);
+      const phase = cycleInsight?.currentPhase ?? null;
+      setWellnessSuggestions(getWellnessSuggestions(todayLog.symptoms ?? [], todayLog.mood, todayLog.energy_level, todayLog.sleep_quality, todayLog.craving, phase));
     }
 
     setLoading(false);
@@ -179,6 +182,8 @@ export default function CyclePage() {
       craving: todayCraving ?? undefined,
     });
     setSymptomSaved(true);
+    const phase = insight?.currentPhase ?? null;
+    setWellnessSuggestions(getWellnessSuggestions(todaySymptoms, todayMood, todayEnergy, todaySleep, todayCraving, phase));
   }
 
   function toggleSymptom(s: string) {
@@ -350,6 +355,7 @@ export default function CyclePage() {
                   <p className="text-[10px] text-white/55 leading-relaxed">{insight.nutritionRec}</p>
                 </div>
               </div>
+              <p className="text-[7px] font-mono text-white/12 leading-relaxed -mt-1 px-1">{MEDICAL_DISCLAIMER}</p>
 
               {/* Symptom predictions from engine */}
               {intelligence && intelligence.predictions.length > 0 && (
@@ -372,6 +378,7 @@ export default function CyclePage() {
                       </div>
                     </div>
                   ))}
+                  <p className="text-[7px] font-mono text-white/12 mt-2 leading-relaxed">{MEDICAL_DISCLAIMER}</p>
                 </div>
               )}
 
@@ -390,6 +397,9 @@ export default function CyclePage() {
                     ))}
                   </div>
                   <p className="text-[8px] text-white/15 italic pt-1">{intelligence.nutrition.caloricNote}</p>
+                  <div className="border-t border-white/[0.04] pt-2 mt-2">
+                    <p className="text-[7px] font-mono text-white/12 leading-relaxed">{MEDICAL_DISCLAIMER}</p>
+                  </div>
                 </div>
               )}
 
@@ -411,13 +421,17 @@ export default function CyclePage() {
                 </div>
 
                 {/* Energy */}
-                <div className="flex gap-2">
-                  {[1, 2, 3, 4, 5].map((n) => (
-                    <button key={n} onClick={() => { setTodayEnergy(n); setSymptomSaved(false); }}
-                      className={`flex-1 text-[12px] py-2 rounded-lg border transition ${todayEnergy === n ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)]" : "border-white/[0.06]"}`}>
-                      {n === 1 ? "🪫" : n === 2 ? "😴" : n === 3 ? "😐" : n === 4 ? "💪" : "🔥"}
-                    </button>
-                  ))}
+                <div>
+                  <p className="text-[8px] font-mono text-white/15 mb-1.5">ENERGY</p>
+                  <div className="flex gap-2">
+                    {[1, 2, 3, 4, 5].map((n) => (
+                      <button key={n} onClick={() => { setTodayEnergy(n); setSymptomSaved(false); }}
+                        className={`flex-1 flex flex-col items-center gap-0.5 py-2 rounded-lg border transition ${todayEnergy === n ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)]" : "border-white/[0.06]"}`}>
+                        <span className="text-[12px]">{n === 1 ? "🪫" : n === 2 ? "😴" : n === 3 ? "😐" : n === 4 ? "💪" : "🔥"}</span>
+                        <span className={`text-[7px] font-mono ${todayEnergy === n ? "text-[rgb(var(--accent-light-rgb)/0.7)]" : "text-white/15"}`}>{ENERGY_LABELS[n - 1]}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 {/* Symptoms */}
@@ -448,8 +462,9 @@ export default function CyclePage() {
                     <div className="flex gap-1">
                       {[1, 2, 3, 4, 5].map((n) => (
                         <button key={n} onClick={() => { setTodaySleep(n); setSymptomSaved(false); }}
-                          className={`w-7 h-7 text-[10px] rounded-lg border transition ${todaySleep === n ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)]" : "border-white/[0.06]"}`}>
-                          {n === 1 ? "😵" : n === 2 ? "😣" : n === 3 ? "😐" : n === 4 ? "😊" : "😴"}
+                          className={`flex flex-col items-center gap-0.5 w-10 py-1.5 text-[10px] rounded-lg border transition ${todaySleep === n ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)]" : "border-white/[0.06]"}`}>
+                          <span>{n === 1 ? "😵" : n === 2 ? "😣" : n === 3 ? "😐" : n === 4 ? "😊" : "😴"}</span>
+                          <span className={`text-[6px] font-mono ${todaySleep === n ? "text-[rgb(var(--accent-light-rgb)/0.7)]" : "text-white/15"}`}>{SLEEP_LABELS[n - 1]}</span>
                         </button>
                       ))}
                     </div>
@@ -463,6 +478,38 @@ export default function CyclePage() {
                   </button>
                 )}
               </div>
+
+              {/* Wellness Suggestions */}
+              {symptomSaved && wellnessSuggestions.length > 0 && (
+                <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 space-y-3">
+                  <div className="flex items-center gap-1.5">
+                    <Heart size={12} className={phaseStyle.text} />
+                    <span className="text-[9px] font-mono tracking-widest text-white/25">SUGGESTIONS FOR YOU</span>
+                  </div>
+                  <div className="space-y-2.5">
+                    {wellnessSuggestions.map((s, i) => (
+                      <div key={i} className="flex items-start gap-2.5">
+                        <span className={`text-[8px] font-mono px-1.5 py-0.5 rounded mt-0.5 shrink-0 border ${
+                          s.category === "movement" ? "bg-green-500/10 text-green-400 border-green-500/20" :
+                          s.category === "nutrition" ? "bg-amber-500/10 text-amber-400 border-amber-500/20" :
+                          s.category === "mindfulness" ? "bg-purple-500/10 text-purple-400 border-purple-500/20" :
+                          s.category === "sleep" ? "bg-blue-500/10 text-blue-400 border-blue-500/20" :
+                          s.category === "hydration" ? "bg-cyan-500/10 text-cyan-400 border-cyan-500/20" :
+                          "bg-pink-500/10 text-pink-400 border-pink-500/20"
+                        }`}>{s.category.toUpperCase()}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[11px] font-medium text-white/65">{s.title}</p>
+                          <p className="text-[9px] text-white/35 mt-0.5 leading-relaxed">{s.description}</p>
+                          {s.source && <p className="text-[7px] font-mono text-white/15 mt-1">{s.source}</p>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="border-t border-white/[0.04] pt-2.5 mt-3">
+                    <p className="text-[7px] font-mono text-white/15 leading-relaxed">{MEDICAL_DISCLAIMER}</p>
+                  </div>
+                </div>
+              )}
             </motion.div>
           )}
 
@@ -722,9 +769,7 @@ export default function CyclePage() {
               ))}
 
               <div className="rounded-xl border border-amber-500/10 bg-amber-500/[0.03] p-4">
-                <p className="text-[10px] text-amber-400/70 leading-relaxed">
-                  This guide is for educational purposes. It does not replace medical advice. If you have concerns about your cycle, please consult a healthcare provider.
-                </p>
+                <p className="text-[10px] text-amber-400/70 leading-relaxed">{MEDICAL_DISCLAIMER}</p>
               </div>
             </motion.div>
           )}
