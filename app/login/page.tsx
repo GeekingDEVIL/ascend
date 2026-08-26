@@ -142,7 +142,6 @@ export default function LoginPage() {
   const [mounted, setMounted] = useState(false);
   const [isReturning, setIsReturning] = useState(false);
   const [authSuccess, setAuthSuccess] = useState(false);
-  const [tilt, setTilt] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
     setMounted(true);
@@ -164,14 +163,6 @@ export default function LoginPage() {
 
   const scrambledHeading = useScrambleText(heading);
   const strength = getStrength(password);
-
-  function handleCardMouse(e: React.MouseEvent) {
-    const rect = cardRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    const x = (e.clientX - rect.left) / rect.width - 0.5;
-    const y = (e.clientY - rect.top) / rect.height - 0.5;
-    setTilt({ x: y * -5, y: x * 5 });
-  }
 
   async function handleSignIn(e: React.FormEvent) {
     e.preventDefault();
@@ -300,7 +291,7 @@ export default function LoginPage() {
     <main className="relative min-h-screen text-white overflow-hidden">
       <AsciiCanvas src="/ascii-bg.jpeg" />
 
-      <div className="fixed inset-0 bg-gradient-to-t from-black/50 via-black/20 to-black/30 z-[1]" />
+      <div className="fixed inset-0 bg-gradient-to-t from-black/40 via-black/10 to-black/20 z-[1]" />
 
       {authSuccess && (
         <div
@@ -314,7 +305,7 @@ export default function LoginPage() {
 
       <style>{`
         @keyframes fadeSlideUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes breathe { 0%, 100% { opacity: 0.2; transform: scale(1); } 50% { opacity: 0.4; transform: scale(1.15); } }
+        @keyframes breathe { 0%, 100% { opacity: 0.08; } 50% { opacity: 0.15; } }
         @keyframes pulse-glow { 0%, 100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); } 50% { box-shadow: 0 0 25px 0 rgba(255,255,255,0.12); } }
         @keyframes flash { 0% { opacity: 0.25; } 100% { opacity: 0; } }
         @keyframes card-exit { 0% { opacity: 1; transform: scale(1) translateY(0); } 100% { opacity: 0; transform: scale(0.96) translateY(-20px); } }
@@ -331,10 +322,10 @@ export default function LoginPage() {
         >
           <div className="relative mb-3">
             <div
-              className="absolute inset-[-4px] rounded-lg bg-[rgb(var(--accent-rgb))] blur-lg"
-              style={{ animation: "breathe 3s ease-in-out infinite" }}
+              className="absolute inset-[-6px] rounded-lg bg-[rgb(var(--accent-rgb))]"
+              style={{ animation: "breathe 4s ease-in-out infinite", filter: "blur(12px)" }}
             />
-            <div className="relative w-11 h-11 rounded-lg border border-white/[0.15] bg-black/80 flex items-center justify-center text-white font-bold text-lg">
+            <div className="relative w-11 h-11 rounded-lg border border-white/[0.12] bg-black/90 flex items-center justify-center text-white font-bold text-lg">
               A
             </div>
           </div>
@@ -354,39 +345,26 @@ export default function LoginPage() {
               className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full -z-10"
               style={{
                 background: "rgb(var(--accent-rgb))",
-                opacity: 0.07,
+                opacity: 0.04,
                 filter: "blur(100px)",
               }}
             />
 
-            {/* 3D tilt wrapper */}
             <div
               ref={cardRef}
+              className="relative rounded-2xl border border-white/[0.06] bg-white/[0.03] backdrop-blur-2xl p-6 md:p-8 overflow-hidden"
               style={{
-                transform: authSuccess
-                  ? undefined
-                  : `perspective(800px) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`,
-                transition: "transform 0.15s ease-out",
+                boxShadow: `inset 0 1px 0 rgba(255,255,255,0.06), inset 0 -1px 0 rgba(255,255,255,0.02), 0 0 60px rgb(var(--accent-rgb) / 0.02)`,
                 animation: authSuccess
                   ? "card-exit 0.8s ease-in forwards"
-                  : undefined,
-              }}
-              onMouseMove={handleCardMouse}
-              onMouseLeave={() => setTilt({ x: 0, y: 0 })}
-            >
-              {/* Frosted glass card */}
-              <div
-                className="relative rounded-2xl border border-white/[0.1] bg-white/[0.05] backdrop-blur-xl p-6 md:p-8 overflow-hidden"
-                style={{
-                  boxShadow: `inset 0 1px 0 rgba(255,255,255,0.08), 0 0 80px rgb(var(--accent-rgb) / 0.03)`,
-                  animation: mounted
+                  : mounted
                     ? "fadeSlideUp 0.7s ease-out 0.1s both"
                     : "none",
-                }}
-              >
+              }}
+            >
                 {/* Noise texture */}
                 <div
-                  className="absolute inset-0 rounded-2xl opacity-[0.035] mix-blend-overlay pointer-events-none"
+                  className="absolute inset-0 rounded-2xl opacity-[0.025] mix-blend-overlay pointer-events-none"
                   style={{
                     backgroundImage: NOISE_BG,
                     backgroundSize: "128px",
@@ -394,7 +372,7 @@ export default function LoginPage() {
                 />
 
                 {/* Glass top highlight */}
-                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
                 {/* Content */}
                 <div className="relative">
@@ -583,7 +561,6 @@ export default function LoginPage() {
                     </button>
                   </p>
                 </div>
-              </div>
             </div>
           </div>
         </div>
