@@ -611,43 +611,45 @@ export default function CyclePage() {
                   return cd !== null && cd >= fertileStart && cd <= fertileEnd;
                 }
 
-                const flowOpacity: Record<string, string> = {
-                  spotting: "bg-red-400/15",
-                  light: "bg-red-400/25",
-                  medium: "bg-red-400/40",
-                  heavy: "bg-red-400/60",
-                  very_heavy: "bg-red-400/75",
+                const flowBg: Record<string, string> = {
+                  spotting: "rgba(248,113,113,0.15)",
+                  light: "rgba(248,113,113,0.25)",
+                  medium: "rgba(248,113,113,0.40)",
+                  heavy: "rgba(248,113,113,0.60)",
+                  very_heavy: "rgba(248,113,113,0.75)",
                 };
 
                 const selSym = selectedDay ? symptomMap.get(selectedDay) : null;
                 const selPeriod = selectedDay ? periodDays.get(selectedDay) : null;
+                const selDate = selectedDay ? new Date(selectedDay + "T00:00:00") : null;
 
                 return (
-                  <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
+                  <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] overflow-hidden relative">
+                    {/* Ambient glow */}
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-24 rounded-full blur-[60px] opacity-[0.04] bg-red-400 pointer-events-none" />
+
                     {/* Month nav */}
-                    <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.04]">
-                      <button onClick={() => setCalMonth(new Date(year, month - 1, 1))} className="p-1.5 rounded-lg hover:bg-white/[0.04] transition">
-                        <ChevronLeft size={16} className="text-white/40" />
+                    <div className="relative flex items-center justify-between px-4 py-2.5">
+                      <button onClick={() => setCalMonth(new Date(year, month - 1, 1))} className="p-1.5 rounded-lg hover:bg-white/[0.06] active:bg-white/[0.08] transition">
+                        <ChevronLeft size={14} className="text-white/40" />
                       </button>
-                      <div className="text-center">
-                        <p className="text-[13px] font-semibold text-white/70">
-                          {calMonth.toLocaleDateString(undefined, { month: "long", year: "numeric" })}
-                        </p>
-                      </div>
-                      <button onClick={() => setCalMonth(new Date(year, month + 1, 1))} className="p-1.5 rounded-lg hover:bg-white/[0.04] transition">
-                        <ChevronRight size={16} className="text-white/40" />
+                      <p className="text-[12px] font-semibold text-white/70 tracking-wide">
+                        {calMonth.toLocaleDateString(undefined, { month: "long", year: "numeric" })}
+                      </p>
+                      <button onClick={() => setCalMonth(new Date(year, month + 1, 1))} className="p-1.5 rounded-lg hover:bg-white/[0.06] active:bg-white/[0.08] transition">
+                        <ChevronRight size={14} className="text-white/40" />
                       </button>
                     </div>
 
                     {/* Day headers */}
-                    <div className="grid grid-cols-7 px-2 pt-2">
+                    <div className="grid grid-cols-7 px-1.5">
                       {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
-                        <div key={i} className="text-center text-[8px] font-mono text-white/20 py-1">{d}</div>
+                        <div key={i} className="text-center text-[7px] font-mono text-white/25 py-1 tracking-wider">{d}</div>
                       ))}
                     </div>
 
                     {/* Day grid */}
-                    <div className="grid grid-cols-7 px-2 pb-3 gap-y-0.5">
+                    <div className="grid grid-cols-7 px-1.5 pb-1.5 gap-[2px]">
                       {Array.from({ length: firstDay }).map((_, i) => <div key={`e${i}`} />)}
                       {Array.from({ length: daysInMonth }).map((_, i) => {
                         const day = i + 1;
@@ -657,27 +659,29 @@ export default function CyclePage() {
                         const hasSym = symptomMap.has(dateStr);
                         const fertile = isFertile(dateStr);
                         const isSelected = selectedDay === dateStr;
+                        const isFuture = dateStr > todayStr;
 
                         return (
                           <button
                             key={day}
                             onClick={() => { setSelectedDay(isSelected ? null : dateStr); setPeriodDate(dateStr); }}
-                            className={`relative flex flex-col items-center justify-center rounded-lg h-10 transition-all ${
-                              isSelected ? "ring-1 ring-[rgb(var(--accent-rgb)/0.5)]" :
-                              isToday ? "ring-1 ring-white/20" : ""
-                            } ${pd ? flowOpacity[pd.flow] ?? "bg-red-400/30" : fertile ? "bg-pink-500/[0.06]" : "hover:bg-white/[0.03]"}`}
+                            className={`relative flex flex-col items-center justify-center rounded-md h-[38px] transition-all ${
+                              isSelected ? "ring-1.5 ring-[rgb(var(--accent-rgb)/0.6)] bg-white/[0.04]" :
+                              isToday ? "ring-1 ring-white/25" : ""
+                            } ${!pd && !fertile ? "hover:bg-white/[0.03]" : ""}`}
+                            style={pd ? { background: flowBg[pd.flow] ?? "rgba(248,113,113,0.3)" } : fertile ? { background: "rgba(236,72,153,0.06)" } : undefined}
                           >
                             <span className={`text-[11px] font-mono leading-none ${
                               isToday ? "font-bold text-white" :
                               pd ? "text-red-300 font-semibold" :
-                              fertile ? "text-pink-300/70" :
+                              fertile ? "text-pink-300/60" :
+                              isFuture ? "text-white/20" :
                               "text-white/40"
                             }`}>{day}</span>
-                            {/* Indicators */}
-                            <div className="flex gap-0.5 mt-0.5 h-1">
-                              {pd?.isStart && <div className="w-1 h-1 rounded-full bg-red-400" />}
-                              {hasSym && <div className="w-1 h-1 rounded-full bg-[rgb(var(--accent-light-rgb))]" />}
-                              {fertile && !pd && <div className="w-1 h-1 rounded-full bg-pink-400/50" />}
+                            <div className="flex gap-[3px] mt-[3px] h-[4px]">
+                              {pd?.isStart && <div className="w-[4px] h-[4px] rounded-full bg-red-400 shadow-[0_0_3px_rgba(248,113,113,0.5)]" />}
+                              {hasSym && <div className="w-[4px] h-[4px] rounded-full bg-[rgb(var(--accent-light-rgb))]" />}
+                              {fertile && !pd && <div className="w-[4px] h-[4px] rounded-full bg-pink-400/40" />}
                             </div>
                           </button>
                         );
@@ -685,64 +689,70 @@ export default function CyclePage() {
                     </div>
 
                     {/* Legend */}
-                    <div className="flex items-center justify-center gap-4 px-4 py-2 border-t border-white/[0.04]">
-                      <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-red-400/50" /><span className="text-[7px] font-mono text-white/25">Period</span></div>
-                      <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-pink-400/40" /><span className="text-[7px] font-mono text-white/25">Fertile</span></div>
-                      <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-[rgb(var(--accent-light-rgb))]" /><span className="text-[7px] font-mono text-white/25">Check-in</span></div>
-                      <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-sm ring-1 ring-white/20" /><span className="text-[7px] font-mono text-white/25">Today</span></div>
+                    <div className="flex items-center justify-center gap-3 px-3 py-1.5 border-t border-white/[0.04]">
+                      {[
+                        { color: "bg-red-400/50", label: "Period" },
+                        { color: "bg-pink-400/40", label: "Fertile" },
+                        { color: "bg-[rgb(var(--accent-light-rgb))]", label: "Logged" },
+                      ].map(({ color, label }) => (
+                        <div key={label} className="flex items-center gap-1">
+                          <div className={`w-1.5 h-1.5 rounded-full ${color}`} />
+                          <span className="text-[7px] font-mono text-white/20">{label}</span>
+                        </div>
+                      ))}
                     </div>
 
                     {/* Selected day detail */}
                     {selectedDay && (selSym || selPeriod) && (
-                      <div className="border-t border-white/[0.04] px-4 py-3 space-y-2 bg-white/[0.01]">
+                      <div className="border-t border-white/[0.06] px-4 py-3 space-y-2" style={{ background: "rgba(255,255,255,0.015)" }}>
                         <div className="flex items-center justify-between">
-                          <p className="text-[10px] font-mono text-white/50">
-                            {new Date(selectedDay + "T00:00:00").toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}
+                          <p className="text-[11px] font-medium text-white/60">
+                            {selDate?.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}
                           </p>
-                          <button onClick={() => setSelectedDay(null)} className="text-white/20 hover:text-white/50"><X size={12} /></button>
+                          <button onClick={() => setSelectedDay(null)} className="p-0.5 rounded hover:bg-white/[0.06] text-white/20 hover:text-white/50 transition"><X size={12} /></button>
                         </div>
-                        {selPeriod && (
-                          <div className="flex items-center gap-2">
-                            <Droplets size={12} className="text-red-400" />
-                            <span className="text-[10px] font-mono text-red-400/70">
-                              {FLOW_LEVELS.find(f => f.value === selPeriod.flow)?.label ?? selPeriod.flow} flow
-                              {selPeriod.isStart && " — period started"}
-                            </span>
-                          </div>
-                        )}
-                        {selSym && (
-                          <div className="space-y-1.5">
-                            {selSym.mood && (
-                              <div className="flex items-center gap-2">
-                                <span className="text-[8px] font-mono text-white/20 w-12">Mood</span>
-                                <span className="text-[10px] text-white/50">{selSym.mood}</span>
-                              </div>
-                            )}
-                            {selSym.energy_level && (
-                              <div className="flex items-center gap-2">
-                                <span className="text-[8px] font-mono text-white/20 w-12">Energy</span>
-                                <span className="text-[10px] text-white/50">{ENERGY_LABELS[selSym.energy_level - 1]}</span>
-                              </div>
-                            )}
-                            {selSym.sleep_quality && (
-                              <div className="flex items-center gap-2">
-                                <span className="text-[8px] font-mono text-white/20 w-12">Sleep</span>
-                                <span className="text-[10px] text-white/50">{SLEEP_LABELS[selSym.sleep_quality - 1]}</span>
-                              </div>
-                            )}
-                            {selSym.symptoms.length > 0 && (
-                              <div className="flex flex-wrap gap-1 mt-1">
-                                {selSym.symptoms.map(sym => (
-                                  <span key={sym} className="text-[8px] font-mono px-1.5 py-0.5 rounded bg-white/[0.04] text-white/30">{sym}</span>
-                                ))}
-                              </div>
-                            )}
-                            {selSym.craving && selSym.craving !== "None" && (
-                              <div className="flex items-center gap-2">
-                                <span className="text-[8px] font-mono text-white/20 w-12">Craving</span>
-                                <span className="text-[10px] text-white/50">{selSym.craving}</span>
-                              </div>
-                            )}
+
+                        <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+                          {selPeriod && (
+                            <div className="flex items-center gap-1.5">
+                              <Droplets size={11} className="text-red-400" />
+                              <span className="text-[10px] font-mono text-red-400/80">
+                                {FLOW_LEVELS.find(f => f.value === selPeriod.flow)?.label ?? selPeriod.flow}
+                                {selPeriod.isStart ? " — started" : ""}
+                              </span>
+                            </div>
+                          )}
+                          {selSym?.mood && (
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[8px] font-mono text-white/25">Mood</span>
+                              <span className="text-[10px] text-white/50">{selSym.mood}</span>
+                            </div>
+                          )}
+                          {selSym?.energy_level && (
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[8px] font-mono text-white/25">Energy</span>
+                              <span className="text-[10px] text-white/50">{ENERGY_LABELS[selSym.energy_level - 1]}</span>
+                            </div>
+                          )}
+                          {selSym?.sleep_quality && (
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[8px] font-mono text-white/25">Sleep</span>
+                              <span className="text-[10px] text-white/50">{SLEEP_LABELS[selSym.sleep_quality - 1]}</span>
+                            </div>
+                          )}
+                          {selSym?.craving && selSym.craving !== "None" && (
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[8px] font-mono text-white/25">Craving</span>
+                              <span className="text-[10px] text-white/50">{selSym.craving}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {selSym && selSym.symptoms.length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {selSym.symptoms.map(sym => (
+                              <span key={sym} className="text-[8px] font-mono px-1.5 py-0.5 rounded-md bg-white/[0.04] border border-white/[0.06] text-white/35">{sym}</span>
+                            ))}
                           </div>
                         )}
                       </div>
@@ -751,47 +761,43 @@ export default function CyclePage() {
                 );
               })()}
 
-              {/* ── Log period form ── */}
-              <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 space-y-4">
-                <p className="text-[10px] font-mono tracking-widest text-white/30">LOG PERIOD START</p>
-
-                <div>
-                  <p className="text-[8px] font-mono text-white/15 mb-1.5">DATE</p>
-                  <input type="date" value={periodDate} onChange={(e) => setPeriodDate(e.target.value)}
-                    className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2.5 text-[12px] font-mono text-white/70 focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.3)]" />
+              {/* ── Log period ── */}
+              <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
+                <div className="px-4 py-2.5 border-b border-white/[0.04] flex items-center justify-between">
+                  <p className="text-[9px] font-mono tracking-widest text-white/30">LOG PERIOD</p>
+                  <p className="text-[10px] font-mono text-white/40">{new Date(periodDate + "T00:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" })}</p>
                 </div>
 
-                <div>
-                  <p className="text-[8px] font-mono text-white/15 mb-2">FLOW</p>
-                  <div className="flex gap-1.5">
+                <div className="p-3 space-y-3">
+                  <div className="grid grid-cols-5 gap-1">
                     {FLOW_LEVELS.map((f) => (
                       <button key={f.value} onClick={() => setFlowLevel(f.value)}
-                        className={`flex-1 flex flex-col items-center gap-1 py-2.5 rounded-lg border transition ${flowLevel === f.value ? "border-red-500/30 bg-red-500/10 text-red-400" : "border-white/[0.06] text-white/25"}`}>
-                        <span className="text-[10px]">{"●".repeat(f.dots)}</span>
-                        <span className="text-[8px] font-mono">{f.label}</span>
+                        className={`flex flex-col items-center gap-1 py-2 rounded-lg border transition-all ${flowLevel === f.value ? "border-red-500/40 bg-red-500/10 text-red-400 shadow-[0_0_8px_rgba(248,113,113,0.1)]" : "border-white/[0.06] text-white/25 hover:border-white/[0.1]"}`}>
+                        <span className="text-[10px] leading-none">{"●".repeat(f.dots)}</span>
+                        <span className="text-[7px] font-mono">{f.label}</span>
                       </button>
                     ))}
                   </div>
-                </div>
 
-                <button onClick={handleLogPeriod} disabled={logSaving}
-                  className="w-full py-2.5 rounded-xl text-[11px] font-mono font-semibold bg-red-500/10 border border-red-500/25 text-red-400 hover:bg-red-500/15 transition disabled:opacity-50">
-                  {logSaving ? "Saving…" : "Log Period Start"}
-                </button>
+                  <button onClick={handleLogPeriod} disabled={logSaving}
+                    className="w-full py-2 rounded-xl text-[10px] font-mono font-semibold bg-red-500/10 border border-red-500/25 text-red-400 hover:bg-red-500/15 active:bg-red-500/20 transition disabled:opacity-50">
+                    {logSaving ? "Saving…" : "Log Period Start"}
+                  </button>
+                </div>
               </div>
 
-              {/* Cycle stats */}
+              {/* ── Cycle stats ── */}
               {insight && (
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-3 gap-1.5">
                   {[
-                    { value: insight.cycleLength, label: "AVG LENGTH", unit: "days" },
-                    { value: logs.length, label: "LOGGED", unit: "periods" },
-                    { value: `${insight.fertileWindowStart}–${insight.fertileWindowEnd}`, label: "FERTILE", unit: "days" },
-                  ].map(({ value, label }) => (
-                    <div key={label} className="rounded-xl border border-white/[0.04] bg-white/[0.02] p-3 text-center relative overflow-hidden">
+                    { value: insight.cycleLength, label: "AVG LENGTH", sub: "days" },
+                    { value: logs.length, label: "LOGGED", sub: "periods" },
+                    { value: `${insight.fertileWindowStart}–${insight.fertileWindowEnd}`, label: "FERTILE", sub: "window" },
+                  ].map(({ value, label, sub }) => (
+                    <div key={label} className="rounded-xl border border-white/[0.04] bg-white/[0.02] p-2.5 text-center relative overflow-hidden">
                       <div className="absolute inset-0 bg-gradient-to-b from-[rgb(var(--accent-rgb)/0.03)] to-transparent" />
-                      <p className="relative text-[18px] font-bold font-mono text-[rgb(var(--accent-light-rgb))]">{value}</p>
-                      <p className="relative text-[7px] font-mono text-white/20 mt-0.5">{label}</p>
+                      <p className="relative text-[16px] font-bold font-mono text-[rgb(var(--accent-light-rgb))]">{value}</p>
+                      <p className="relative text-[6px] font-mono text-white/20 mt-0.5 tracking-wider">{label}</p>
                     </div>
                   ))}
                 </div>
