@@ -995,8 +995,18 @@ export default function CyclePage() {
                                   initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
                                   className="overflow-hidden"
                                 >
-                                  <div className="px-4 pb-4">
+                                  <div className="px-4 pb-4 space-y-3">
                                     <p className="text-[11px] text-white/50 leading-relaxed whitespace-pre-line">{item.a}</p>
+                                    {item.sources && item.sources.length > 0 && (
+                                      <div className="pt-2 border-t border-white/[0.04]">
+                                        <p className="text-[7px] font-mono tracking-widest text-white/20 mb-1.5">SOURCES</p>
+                                        <div className="space-y-1">
+                                          {item.sources.map((src, si) => (
+                                            <p key={si} className="text-[9px] text-white/25 leading-relaxed pl-2 border-l border-white/[0.06]">{src}</p>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
                                   </div>
                                 </motion.div>
                               )}
