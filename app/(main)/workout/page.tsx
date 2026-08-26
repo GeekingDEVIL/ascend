@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Check, Plus, Play, X, RefreshCw, Pause, SkipForward, ChevronDown, Moon, Flame, Dumbbell, Timer, TrendingUp, Award, Share2 } from "lucide-react";
+import { Check, Plus, Play, X, RefreshCw, Pause, SkipForward, ChevronDown, Moon, Flame, Dumbbell, Timer, TrendingUp, Award, Share2, Trash2, Ban } from "lucide-react";
 import { useSwipeable } from "react-swipeable";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../lib/AuthProvider";
@@ -169,6 +169,9 @@ export default function WorkoutPage() {
     const [showFreestylePrompt, setShowFreestylePrompt] = useState(false);
     const [savingFreestylePlan, setSavingFreestylePlan] = useState(false);
     const [finishing, setFinishing] = useState(false);
+    const [showDeletePlanConfirm, setShowDeletePlanConfirm] = useState(false);
+    const [deletingPlan, setDeletingPlan] = useState(false);
+    const [skippedExercises, setSkippedExercises] = useState<Set<string>>(new Set());
     const { sex: userSex } = useSex();
 
     const today = toDateString(new Date());
@@ -346,6 +349,7 @@ export default function WorkoutPage() {
     /* ─── ACTIONS ─── */
     async function startWorkout() {
         if (!user || !scheduledDayId) return;
+        if (todaySessions.length >= MAX_SESSIONS_PER_DAY) return;
         const { data } = await supabase.from("workout_sessions").insert({ user_id: user.id, scheduled_day_id: scheduledDayId, date: today, title: dayTitle, status: "active", sex: userSex }).select().single();
         if (!data) return;
         setSessionId(data.id);
@@ -383,6 +387,7 @@ export default function WorkoutPage() {
 
     async function beginFreestyleSession() {
         if (!user || freestyleExercises.length === 0) return;
+        if (todaySessions.length >= MAX_SESSIONS_PER_DAY) return;
         setStartingFreestyle(true);
 
         let { data: day } = await supabase.from("scheduled_days").select("id").eq("user_id", user.id).eq("date", today).maybeSingle();
@@ -491,7 +496,6 @@ export default function WorkoutPage() {
         await supabase.from("scheduled_exercises").update({ exercise_id: newEx.id }).eq("id", oldEx.id);
         setExercisesList((p) => p.map((e) => (e.id === oldEx.id ? { ...e, exercise_id: newEx.id, name: newEx.name, body_segment: seg, equipment: equip, isCardio: seg === "Cardio", isBodyweight: equip.toLowerCase() === "bodyweight" && seg !== "Cardio" } : e)));
         setLogs((p) => ({ ...p, [oldEx.id]: Array.from({ length: oldEx.target_sets }, (_, i) => emptySet(i)) }));
-        await propagateToTemplate(oldEx.order_index, newEx.id);
         setSwapTargetId(null);
     }
 
@@ -505,13 +509,55 @@ export default function WorkoutPage() {
         setExercisesList((p) => [...p, ex]);
         setLogs((p) => ({ ...p, [ex.id]: Array.from({ length: 3 }, (_, i) => emptySet(i)) }));
         setExpandedId(ex.id);
-        const wd = new Date(today + "T00:00:00").getDay();
-        const { data: rp } = await supabase.from("recurring_plans").select("template_id").eq("user_id", user.id).eq("weekday", wd).eq("sex", userSex).maybeSingle();
-        if (rp?.template_id) await supabase.from("workout_template_exercises").insert({ template_id: rp.template_id, user_id: user.id, exercise_id: newEx.id, order_index: nextOrder, target_sets: 3, target_reps: "8-10" });
         setShowAddModal(false);
     }
 
     function addSet(exId: string) { setLogs((p) => ({ ...p, [exId]: [...p[exId], emptySet(p[exId].length)] })); }
+
+    const MAX_SESSIONS_PER_DAY = 3;
+
+    async function deletePlan() {
+        if (!user) return;
+        setDeletingPlan(true);
+        const sex = userSex;
+        const { data: plans } = await supabase.from("recurring_plans").select("id, template_id").eq("user_id", user.id).eq("sex", sex);
+        if (plans?.length) {
+            const templateIds = plans.map((p: any) => p.template_id).filter(Boolean);
+            if (templateIds.length) {
+                await supabase.from("workout_template_exercises").delete().in("template_id", templateIds);
+                await supabase.from("workout_templates").delete().in("id", templateIds);
+            }
+            await supabase.from("recurring_plans").delete().eq("user_id", user.id).eq("sex", sex);
+        }
+        if (scheduledDayId) {
+            await supabase.from("scheduled_exercises").delete().eq("scheduled_day_id", scheduledDayId);
+            await supabase.from("scheduled_days").delete().eq("id", scheduledDayId);
+        }
+        setDeletingPlan(false);
+        setShowDeletePlanConfirm(false);
+        setScheduledDayId(null);
+        setExercisesList([]);
+        setStatus("no_plan");
+    }
+
+    async function removeExercise(exId: string) {
+        await supabase.from("scheduled_exercises").delete().eq("id", exId);
+        setExercisesList((p) => p.filter((e) => e.id !== exId));
+        setLogs((p) => { const next = { ...p }; delete next[exId]; return next; });
+        if (expandedId === exId) setExpandedId(null);
+    }
+
+    function skipExercise(exId: string) {
+        setSkippedExercises((prev) => new Set([...prev, exId]));
+        const currentIdx = exercisesList.findIndex((e) => e.id === exId);
+        const nextUnskipped = exercisesList.slice(currentIdx + 1).find((e) => !skippedExercises.has(e.id));
+        if (nextUnskipped) setExpandedId(nextUnskipped.id);
+        else setExpandedId(null);
+    }
+
+    function unskipExercise(exId: string) {
+        setSkippedExercises((prev) => { const next = new Set(prev); next.delete(exId); return next; });
+    }
 
     async function finishWorkout() {
         if (!user || !sessionId || !startedAt || finishing) return;
@@ -873,12 +919,18 @@ export default function WorkoutPage() {
                             {sharing ? <div className="w-4 h-4 border-2 border-white/20 border-t-[rgb(var(--accent-rgb))] rounded-full animate-spin" /> : <Share2 size={14} />}
                         </button>
                     </div>
-                    <button
-                        onClick={() => { setSummary(null); setSessionId(null); setStatus("not_started"); }}
-                        className="w-full mt-2 text-[10px] font-mono py-2.5 rounded-xl border border-white/[0.06] text-white/30 hover:text-white/60 hover:border-white/15 transition"
-                    >
-                        Start another workout
-                    </button>
+                    {todaySessions.length >= MAX_SESSIONS_PER_DAY ? (
+                        <p className="w-full mt-2 text-[10px] font-mono py-2.5 text-center text-white/20">
+                            Daily session limit reached ({MAX_SESSIONS_PER_DAY}/{MAX_SESSIONS_PER_DAY})
+                        </p>
+                    ) : (
+                        <button
+                            onClick={() => { setSummary(null); setSessionId(null); setStatus("not_started"); }}
+                            className="w-full mt-2 text-[10px] font-mono py-2.5 rounded-xl border border-white/[0.06] text-white/30 hover:text-white/60 hover:border-white/15 transition"
+                        >
+                            Start another workout ({todaySessions.length}/{MAX_SESSIONS_PER_DAY})
+                        </button>
+                    )}
                 </CardPanel>
             </div>
 
@@ -961,12 +1013,18 @@ export default function WorkoutPage() {
                                 View Progress
                             </button>
                         </div>
-                        <button
-                            onClick={() => { setSummary(null); setSessionId(null); setStatus("not_started"); }}
-                            className="w-full mt-2 text-[10px] font-mono py-2.5 rounded-xl border border-white/[0.06] text-white/30 hover:text-white/60 hover:border-white/15 transition"
-                        >
-                            Start another workout
-                        </button>
+                        {todaySessions.length >= MAX_SESSIONS_PER_DAY ? (
+                            <p className="w-full mt-2 text-[10px] font-mono py-2.5 text-center text-white/20">
+                                Daily session limit reached ({MAX_SESSIONS_PER_DAY}/{MAX_SESSIONS_PER_DAY})
+                            </p>
+                        ) : (
+                            <button
+                                onClick={() => { setSummary(null); setSessionId(null); setStatus("not_started"); }}
+                                className="w-full mt-2 text-[10px] font-mono py-2.5 rounded-xl border border-white/[0.06] text-white/30 hover:text-white/60 hover:border-white/15 transition"
+                            >
+                                Start another workout ({todaySessions.length}/{MAX_SESSIONS_PER_DAY})
+                            </button>
+                        )}
                     </CardPanel>
                 </div>
             </main>
@@ -996,12 +1054,20 @@ export default function WorkoutPage() {
                         </div>
                     )}
                     {status === "not_started" && (
-                        <button
-                            onClick={() => router.push("/schedule")}
-                            className="shrink-0 flex items-center gap-1.5 text-[10px] font-mono px-3 py-2 rounded-xl border border-white/[0.06] text-white/30 hover:text-white/60 hover:bg-white/[0.03] transition"
-                        >
-                            <RefreshCw size={11} /> Edit Schedule
-                        </button>
+                        <div className="flex items-center gap-2 shrink-0">
+                            <button
+                                onClick={() => setShowDeletePlanConfirm(true)}
+                                className="flex items-center gap-1.5 text-[10px] font-mono px-3 py-2 rounded-xl border border-red-500/10 text-red-400/40 hover:text-red-400/80 hover:bg-red-500/5 transition"
+                            >
+                                <Trash2 size={11} />
+                            </button>
+                            <button
+                                onClick={() => router.push("/schedule")}
+                                className="flex items-center gap-1.5 text-[10px] font-mono px-3 py-2 rounded-xl border border-white/[0.06] text-white/30 hover:text-white/60 hover:bg-white/[0.03] transition"
+                            >
+                                <RefreshCw size={11} /> Edit Schedule
+                            </button>
+                        </div>
                     )}
                 </div>
 
@@ -1115,26 +1181,30 @@ export default function WorkoutPage() {
                             const last = lastPerformance[ex.exercise_id];
                             const hint = overloadHints[ex.exercise_id];
                             const allDone = done === sets.length && sets.length > 0;
+                            const isSkipped = skippedExercises.has(ex.id);
 
                             return (
-                                <div key={ex.id} className={`rounded-xl border overflow-hidden transition-all ${allDone ? "border-[rgb(var(--accent-rgb)/0.2)] bg-[rgb(var(--accent-rgb)/0.03)]" : "border-white/[0.06] bg-white/[0.03]"}`}>
+                                <div key={ex.id} className={`rounded-xl border overflow-hidden transition-all ${isSkipped ? "border-white/[0.04] bg-white/[0.01] opacity-50" : allDone ? "border-[rgb(var(--accent-rgb)/0.2)] bg-[rgb(var(--accent-rgb)/0.03)]" : "border-white/[0.06] bg-white/[0.03]"}`}>
                                     {/* Exercise header */}
-                                    <button onClick={() => setExpandedId(isOpen ? null : ex.id)} className="w-full flex items-center gap-3 px-4 py-3 text-left">
-                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-[10px] font-mono font-bold ${allDone ? "bg-[rgb(var(--accent-rgb)/0.15)] text-[rgb(var(--accent-rgb))] border border-[rgb(var(--accent-rgb)/0.2)]" : "bg-white/[0.04] text-white/20 border border-white/[0.06]"}`}>
-                                            {allDone ? <Check size={14} /> : String(i + 1).padStart(2, "0")}
+                                    <button onClick={() => isSkipped ? unskipExercise(ex.id) : setExpandedId(isOpen ? null : ex.id)} className="w-full flex items-center gap-3 px-4 py-3 text-left">
+                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-[10px] font-mono font-bold ${isSkipped ? "bg-white/[0.03] text-white/15 border border-white/[0.04]" : allDone ? "bg-[rgb(var(--accent-rgb)/0.15)] text-[rgb(var(--accent-rgb))] border border-[rgb(var(--accent-rgb)/0.2)]" : "bg-white/[0.04] text-white/20 border border-white/[0.06]"}`}>
+                                            {isSkipped ? <Ban size={12} /> : allDone ? <Check size={14} /> : String(i + 1).padStart(2, "0")}
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-[13px] font-medium text-white/80 truncate">{ex.name}</p>
+                                            <p className={`text-[13px] font-medium truncate ${isSkipped ? "text-white/30 line-through" : "text-white/80"}`}>{ex.name}</p>
                                             <p className="text-[9px] font-mono text-white/25">
-                                                {done}/{sets.length} sets
-                                                {last ? ` · Last: ${last.weight ?? "—"}${ex.isCardio ? "" : ex.isBodyweight ? " BW" : "kg"} × ${last.reps ?? "—"}` : ""}
+                                                {isSkipped ? "Skipped" : `${done}/${sets.length} sets${last ? ` · Last: ${last.weight ?? "—"}${ex.isCardio ? "" : ex.isBodyweight ? " BW" : "kg"} × ${last.reps ?? "—"}` : ""}`}
                                             </p>
                                         </div>
-                                        <ChevronDown size={14} className={`text-white/15 shrink-0 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+                                        {isSkipped ? (
+                                            <span className="text-[9px] font-mono text-white/20 shrink-0">tap to undo</span>
+                                        ) : (
+                                            <ChevronDown size={14} className={`text-white/15 shrink-0 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+                                        )}
                                     </button>
 
                                     {/* Expanded content */}
-                                    {isOpen && (
+                                    {isOpen && !isSkipped && (
                                         <div className="border-t border-white/[0.04]">
                                             {/* Overload hint */}
                                             {hint && hint.type !== "first_time" && (
@@ -1144,11 +1214,19 @@ export default function WorkoutPage() {
                                                 </div>
                                             )}
 
-                                            {/* Swap button */}
-                                            <div className="px-4 pt-2.5 pb-1">
+                                            {/* Swap / Skip / Remove */}
+                                            <div className="px-4 pt-2.5 pb-1 flex items-center gap-4">
                                                 <button onClick={() => setSwapTargetId(ex.id)} className="flex items-center gap-1.5 text-white/15 text-[10px] font-mono hover:text-white/40 transition">
-                                                    <RefreshCw size={10} /> Swap exercise
+                                                    <RefreshCw size={10} /> Swap
                                                 </button>
+                                                <button onClick={() => skipExercise(ex.id)} className="flex items-center gap-1.5 text-white/15 text-[10px] font-mono hover:text-amber-400/60 transition">
+                                                    <SkipForward size={10} /> Skip
+                                                </button>
+                                                {done === 0 && (
+                                                    <button onClick={() => removeExercise(ex.id)} className="flex items-center gap-1.5 text-white/15 text-[10px] font-mono hover:text-red-400/60 transition">
+                                                        <X size={10} /> Remove
+                                                    </button>
+                                                )}
                                             </div>
 
                                             {ex.isCardio ? (
@@ -1366,6 +1444,28 @@ export default function WorkoutPage() {
                             </button>
                             <button onClick={() => { setShowEndConfirm(false); finishWorkout(); }} className="flex-1 text-sm font-semibold py-2.5 rounded-xl bg-[rgb(var(--accent-rgb))] text-black hover:brightness-110 transition">
                                 Finish
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showDeletePlanConfirm && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+                    <div className="w-full max-w-sm rounded-2xl border border-red-500/15 bg-[#080d18] p-5">
+                        <div className="w-10 h-10 mx-auto mb-3 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center">
+                            <Trash2 size={18} className="text-red-400" />
+                        </div>
+                        <p className="text-sm font-semibold text-white/85 text-center mb-2">Delete entire workout plan?</p>
+                        <p className="text-[11px] text-white/35 text-center mb-4">
+                            This will permanently delete your weekly schedule for the current mode. All templates and scheduled exercises will be removed. This cannot be undone.
+                        </p>
+                        <div className="flex gap-2">
+                            <button onClick={() => setShowDeletePlanConfirm(false)} className="flex-1 text-sm font-medium py-2.5 rounded-xl border border-white/[0.08] text-white/50 hover:text-white/80 transition">
+                                Cancel
+                            </button>
+                            <button onClick={deletePlan} disabled={deletingPlan} className="flex-1 text-sm font-semibold py-2.5 rounded-xl bg-red-500 text-white hover:bg-red-600 disabled:opacity-50 transition">
+                                {deletingPlan ? "Deleting..." : "Delete Plan"}
                             </button>
                         </div>
                     </div>
