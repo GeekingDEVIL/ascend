@@ -8,6 +8,8 @@ import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../lib/AuthProvider";
 import CubeLoader from "../../components/ui/cube-loader";
 import { calculateSessionXP, type XPBreakdown } from "../../lib/xpEngine";
+import { generateWarmupSets } from "../../lib/warmupSets";
+import StretchingStickman from "../../components/ui/stretching-stickman";
 import { computeLevel, getRank } from "../../lib/levelSystem";
 import { checkAndAwardAchievements } from "../../lib/achievements";
 import { updateUserStats } from "../../lib/updateUserStats";
@@ -44,6 +46,8 @@ type SetEntry = {
     note: string;
     completed: boolean;
     logId: string | null;
+    is_warmup?: boolean;
+    warmup_label?: string;
 };
 
 type SessionStatus = "loading" | "not_started" | "active" | "completed" | "completed_today" | "rest_day" | "no_plan" | "freestyle";
@@ -175,6 +179,7 @@ export default function WorkoutPage() {
     const [showDeletePlanConfirm, setShowDeletePlanConfirm] = useState(false);
     const [deletingPlan, setDeletingPlan] = useState(false);
     const [skippedExercises, setSkippedExercises] = useState<Set<string>>(new Set());
+    const [warmupExercises, setWarmupExercises] = useState<Set<string>>(new Set());
     const [cycleProfile, setCycleProfile] = useState<PhaseTrainingProfile | null>(null);
     const [energyForecast, setEnergyForecast] = useState<EnergyForecast[]>([]);
     const [exerciseRisks, setExerciseRisks] = useState<Record<string, ExerciseRisk>>({});
@@ -332,11 +337,17 @@ export default function WorkoutPage() {
                 const arr: SetEntry[] = [];
                 for (let i = 0; i < count; i++) {
                     const saved = rows.find((r: any) => r.set_index === i);
-                    arr.push(saved ? { index: i, weight: saved.weight != null ? String(saved.weight) : "", reps: saved.reps != null ? String(saved.reps) : "", duration: saved.duration_seconds != null ? String(saved.duration_seconds) : "", distance: saved.distance != null ? String(saved.distance) : "", note: "", completed: true, logId: saved.id } : emptySet(i));
+                    arr.push(saved ? { index: i, weight: saved.weight != null ? String(saved.weight) : "", reps: saved.reps != null ? String(saved.reps) : "", duration: saved.duration_seconds != null ? String(saved.duration_seconds) : "", distance: saved.distance != null ? String(saved.distance) : "", note: "", completed: true, logId: saved.id, is_warmup: saved.is_warmup ?? false } : emptySet(i));
                 }
                 logMap[ex.id] = arr;
             });
             setLogs(logMap);
+            // Restore warmup state for exercises that had warmup sets
+            const restoredWarmups = new Set<string>();
+            for (const ex of mapped) {
+                if (logMap[ex.id]?.some((s) => s.is_warmup)) restoredWarmups.add(ex.id);
+            }
+            if (restoredWarmups.size > 0) setWarmupExercises(restoredWarmups);
             localStorage.setItem("ascend_active_session", "true");
             setStatus("active");
             setExpandedId(mapped[0]?.id ?? null);
@@ -492,13 +503,13 @@ export default function WorkoutPage() {
         } else {
             if (!set.reps) return;
         }
-        const payload: any = { workout_session_id: sessionId, user_id: user.id, exercise_id: ex.exercise_id, scheduled_exercise_id: ex.id, set_index: idx };
+        const payload: any = { workout_session_id: sessionId, user_id: user.id, exercise_id: ex.exercise_id, scheduled_exercise_id: ex.id, set_index: idx, is_warmup: set.is_warmup ?? false };
         if (ex.isCardio) { payload.duration_seconds = set.duration ? Number(set.duration) : null; payload.distance = set.distance ? Number(set.distance) : null; }
         else { payload.weight = ex.isBodyweight ? 0 : (set.weight ? Number(set.weight) : null); payload.reps = set.reps ? Number(set.reps) : null; }
 
         setLogs((p) => ({ ...p, [ex.id]: p[ex.id].map((s) => (s.index === idx ? { ...s, completed: true } : s)) }));
         if (navigator.vibrate) navigator.vibrate(50);
-        if (!ex.isCardio && !ex.isBodyweight && set.weight && set.reps) checkPR(ex.exercise_id, ex.name, Number(set.weight), Number(set.reps));
+        if (!ex.isCardio && !ex.isBodyweight && set.weight && set.reps && !set.is_warmup) checkPR(ex.exercise_id, ex.name, Number(set.weight), Number(set.reps));
 
         let logId = set.logId;
         if (logId) { await supabase.from("exercise_set_logs").update(payload).eq("id", logId); }
@@ -587,15 +598,47 @@ export default function WorkoutPage() {
         setSkippedExercises((prev) => { const next = new Set(prev); next.delete(exId); return next; });
     }
 
+    function toggleWarmup(ex: WorkoutExercise) {
+        const hasWarmup = warmupExercises.has(ex.id);
+        if (hasWarmup) {
+            // Remove warmup sets
+            setWarmupExercises((prev) => { const next = new Set(prev); next.delete(ex.id); return next; });
+            setLogs((p) => ({ ...p, [ex.id]: (p[ex.id] ?? []).filter((s) => !s.is_warmup).map((s, i) => ({ ...s, index: i })) }));
+        } else {
+            // Determine working weight in display unit, convert to kg for generation
+            const currentSets = logs[ex.id] ?? [];
+            const firstWorkingWeight = currentSets.find((s) => !s.is_warmup && s.weight)?.weight;
+            const workingWeightDisplay = firstWorkingWeight ? Number(firstWorkingWeight) : (ex.target_weight ? kgToUnit(ex.target_weight, weightUnit) : 0);
+            const workingWeightKg = weightInputToKg(workingWeightDisplay, weightUnit);
+            if (workingWeightKg <= 20) return; // Too light for warmup
+            const isBarbell = ex.equipment.toLowerCase().includes("barbell");
+            const warmups = generateWarmupSets(workingWeightKg, isBarbell);
+            if (warmups.length === 0) return;
+            const warmupEntries: SetEntry[] = warmups.map((w, i) => ({
+                index: i,
+                weight: String(kgToUnit(w.weight, weightUnit)),
+                reps: String(w.reps),
+                duration: "", distance: "", note: "",
+                completed: false, logId: null,
+                is_warmup: true,
+                warmup_label: w.label,
+            }));
+            const reindexed = [...warmupEntries, ...currentSets.map((s, i) => ({ ...s, index: warmupEntries.length + i }))];
+            setLogs((p) => ({ ...p, [ex.id]: reindexed }));
+            setWarmupExercises((prev) => new Set([...prev, ex.id]));
+        }
+    }
+
     async function finishWorkout() {
         if (!user || !sessionId || !startedAt || finishing) return;
         setFinishing(true);
         const allSets = Object.values(logs).flat().filter((s) => s.completed);
-        const totalSets = allSets.length;
-        const totalVolume = allSets.reduce((sum, s) => sum + (Number(s.weight) || 0) * (Number(s.reps) || 0), 0);
+        const workingSets = allSets.filter((s) => !s.is_warmup);
+        const totalSets = workingSets.length;
+        const totalVolume = workingSets.reduce((sum, s) => sum + (Number(s.weight) || 0) * (Number(s.reps) || 0), 0);
         const dur = Math.floor((Date.now() - startedAt) / 1000);
         const totalPlanned = exercisesList.reduce((sum, e) => sum + e.target_sets, 0);
-        const setsData = allSets.map((s) => { const ex = exercisesList.find((e) => logs[e.id]?.includes(s)); return { exercise_id: ex?.exercise_id ?? "", weight: Number(s.weight) || null, reps: Number(s.reps) || null }; });
+        const setsData = workingSets.map((s) => { const ex = exercisesList.find((e) => logs[e.id]?.includes(s)); return { exercise_id: ex?.exercise_id ?? "", weight: Number(s.weight) || null, reps: Number(s.reps) || null }; });
         const xp = await calculateSessionXP(user.id, sessionId, setsData, totalPlanned, prCount, userSex);
 
         await supabase.from("workout_sessions").update({ status: "completed", completed_at: new Date().toISOString(), duration_seconds: dur, total_volume: totalVolume, total_sets: totalSets, xp_earned: xp.total, ...(cycleProfile ? { cycle_phase: cycleProfile.phase, cycle_day: cycleProfile.cycleDay } : {}) }).eq("id", sessionId);
@@ -780,7 +823,7 @@ export default function WorkoutPage() {
     }
 
     const totalPlanned = exercisesList.reduce((sum, e) => sum + e.target_sets, 0);
-    const completedCount = Object.values(logs).flat().filter((s) => s.completed).length;
+    const completedCount = Object.values(logs).flat().filter((s) => s.completed && !s.is_warmup).length;
 
     /* ═══════════════════════════════════════════════════════════════
        RENDER
@@ -1310,11 +1353,14 @@ export default function WorkoutPage() {
                     <div className="space-y-3">
                         {exercisesList.map((ex, i) => {
                             const sets = logs[ex.id] ?? [];
-                            const done = sets.filter((s) => s.completed).length;
+                            const workingSetsOnly = sets.filter((s) => !s.is_warmup);
+                            const warmupSetsOnly = sets.filter((s) => s.is_warmup);
+                            const done = workingSetsOnly.filter((s) => s.completed).length;
+                            const warmupDone = warmupSetsOnly.filter((s) => s.completed).length;
                             const isOpen = expandedId === ex.id;
                             const last = lastPerformance[ex.exercise_id];
                             const hint = overloadHints[ex.exercise_id];
-                            const allDone = done === sets.length && sets.length > 0;
+                            const allDone = done === workingSetsOnly.length && workingSetsOnly.length > 0 && warmupDone === warmupSetsOnly.length;
                             const isSkipped = skippedExercises.has(ex.id);
 
                             return (
@@ -1327,7 +1373,7 @@ export default function WorkoutPage() {
                                         <div className="flex-1 min-w-0">
                                             <p className={`text-[13px] font-medium truncate ${isSkipped ? "text-white/30 line-through" : "text-white/80"}`}>{ex.name}</p>
                                             <p className="text-[9px] font-mono text-white/25">
-                                                {isSkipped ? "Skipped" : `${done}/${sets.length} sets${last ? ` · Last: ${last.weight != null ? kgToUnit(last.weight, weightUnit) : "—"}${ex.isCardio ? "" : ex.isBodyweight ? " BW" : weightUnit} × ${last.reps ?? "—"}` : ""}`}
+                                                {isSkipped ? "Skipped" : `${done}/${workingSetsOnly.length} sets${warmupSetsOnly.length > 0 ? ` + ${warmupDone}/${warmupSetsOnly.length} warm-up` : ""}${last ? ` · Last: ${last.weight != null ? kgToUnit(last.weight, weightUnit) : "—"}${ex.isCardio ? "" : ex.isBodyweight ? " BW" : weightUnit} × ${last.reps ?? "—"}` : ""}`}
                                             </p>
                                         </div>
                                         {isSkipped ? (
@@ -1373,7 +1419,7 @@ export default function WorkoutPage() {
                                                 ) : null;
                                             })()}
 
-                                            {/* Swap / Skip / Remove */}
+                                            {/* Swap / Skip / Remove / Warm-up */}
                                             <div className="px-4 pt-2.5 pb-1 flex items-center gap-4">
                                                 <button onClick={() => setSwapTargetId(ex.id)} className="flex items-center gap-1.5 text-white/15 text-[10px] font-mono hover:text-white/40 transition">
                                                     <RefreshCw size={10} /> Swap
@@ -1384,6 +1430,12 @@ export default function WorkoutPage() {
                                                 {done === 0 && (
                                                     <button onClick={() => removeExercise(ex.id)} className="flex items-center gap-1.5 text-white/15 text-[10px] font-mono hover:text-red-400/60 transition">
                                                         <X size={10} /> Remove
+                                                    </button>
+                                                )}
+                                                {!ex.isCardio && !ex.isBodyweight && (
+                                                    <button onClick={() => toggleWarmup(ex)} className={`flex items-center gap-1.5 text-[10px] font-mono transition ml-auto ${warmupExercises.has(ex.id) ? "text-amber-400/70 hover:text-amber-400" : "text-white/15 hover:text-amber-400/60"}`}>
+                                                        {warmupExercises.has(ex.id) ? <StretchingStickman size={18} color="#fbbf24" /> : <Flame size={10} />}
+                                                        {warmupExercises.has(ex.id) ? "Remove warm-up" : "Warm-up"}
                                                     </button>
                                                 )}
                                             </div>
@@ -1473,45 +1525,55 @@ export default function WorkoutPage() {
                                                         <span className="w-9 sm:w-11" />
                                                     </div>
 
-                                                    {sets.map((s) => (
-                                                        <div key={s.index}>
+                                                    {sets.map((s, si) => {
+                                                        const isWarmup = !!s.is_warmup;
+                                                        const warmupCount = sets.filter((x) => x.is_warmup).length;
+                                                        const displayNum = isWarmup ? `W${si + 1}` : String(s.index - warmupCount + 1);
+                                                        return (
+                                                        <div key={s.index} className={isWarmup ? "rounded-lg bg-amber-400/[0.04] border border-amber-400/[0.08] px-1 py-0.5" : ""}>
                                                             <SwipeSet completed={s.completed} onComplete={() => completeSet(ex, s.index)}>
-                                                                <div className="flex items-center gap-1.5 sm:gap-2 bg-[#0a1120]">
-                                                                    <span className={`text-[10px] font-mono w-5 sm:w-7 text-center shrink-0 ${s.completed ? "text-[rgb(var(--accent-light-rgb)/0.5)]" : "text-white/25"}`}>{s.index + 1}</span>
+                                                                <div className={`flex items-center gap-1.5 sm:gap-2 ${isWarmup ? "bg-transparent" : "bg-[#0a1120]"}`}>
+                                                                    <span className={`text-[10px] font-mono w-5 sm:w-7 text-center shrink-0 ${isWarmup ? "text-amber-400/50" : s.completed ? "text-[rgb(var(--accent-light-rgb)/0.5)]" : "text-white/25"}`}>
+                                                                        {displayNum}
+                                                                    </span>
+                                                                    {isWarmup && s.warmup_label && (
+                                                                        <span className="text-[8px] font-mono text-amber-400/50 w-8 shrink-0">{s.warmup_label}</span>
+                                                                    )}
                                                                     {ex.isBodyweight ? (
                                                                         <input type="number" min="0" inputMode="numeric" onWheel={(e) => (e.target as HTMLElement).blur()} placeholder="—" value={s.reps} onChange={(e) => updateSet(ex.id, s.index, "reps", e.target.value)} disabled={s.completed}
-                                                                            className="flex-1 min-w-0 h-10 sm:h-11 rounded-lg bg-white/[0.04] border border-white/[0.08] text-center text-sm sm:text-base font-bold font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] focus:bg-[rgb(var(--accent-rgb))]/[0.03] disabled:opacity-40 transition" />
+                                                                            className={`flex-1 min-w-0 h-10 sm:h-11 rounded-lg border text-center text-sm sm:text-base font-bold font-mono focus:outline-none disabled:opacity-40 transition ${isWarmup ? "bg-amber-400/[0.03] border-amber-400/[0.1] focus:border-amber-400/30" : "bg-white/[0.04] border-white/[0.08] focus:border-[rgb(var(--accent-rgb)/0.4)] focus:bg-[rgb(var(--accent-rgb))]/[0.03]"}`} />
                                                                     ) : (
                                                                         <>
                                                                             <input type="number" min="0" inputMode="decimal" onWheel={(e) => (e.target as HTMLElement).blur()} placeholder="—" value={s.weight} onChange={(e) => updateSet(ex.id, s.index, "weight", e.target.value)} disabled={s.completed}
-                                                                                className="flex-1 min-w-0 h-10 sm:h-11 rounded-lg bg-white/[0.04] border border-white/[0.08] text-center text-sm sm:text-base font-bold font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] focus:bg-[rgb(var(--accent-rgb))]/[0.03] disabled:opacity-40 transition" />
+                                                                                className={`flex-1 min-w-0 h-10 sm:h-11 rounded-lg border text-center text-sm sm:text-base font-bold font-mono focus:outline-none disabled:opacity-40 transition ${isWarmup ? "bg-amber-400/[0.03] border-amber-400/[0.1] focus:border-amber-400/30" : "bg-white/[0.04] border-white/[0.08] focus:border-[rgb(var(--accent-rgb)/0.4)] focus:bg-[rgb(var(--accent-rgb))]/[0.03]"}`} />
                                                                             <input type="number" min="0" inputMode="numeric" onWheel={(e) => (e.target as HTMLElement).blur()} placeholder="—" value={s.reps} onChange={(e) => updateSet(ex.id, s.index, "reps", e.target.value)} disabled={s.completed}
-                                                                                className="flex-1 min-w-0 h-10 sm:h-11 rounded-lg bg-white/[0.04] border border-white/[0.08] text-center text-sm sm:text-base font-bold font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] focus:bg-[rgb(var(--accent-rgb))]/[0.03] disabled:opacity-40 transition" />
+                                                                                className={`flex-1 min-w-0 h-10 sm:h-11 rounded-lg border text-center text-sm sm:text-base font-bold font-mono focus:outline-none disabled:opacity-40 transition ${isWarmup ? "bg-amber-400/[0.03] border-amber-400/[0.1] focus:border-amber-400/30" : "bg-white/[0.04] border-white/[0.08] focus:border-[rgb(var(--accent-rgb)/0.4)] focus:bg-[rgb(var(--accent-rgb))]/[0.03]"}`} />
                                                                         </>
                                                                     )}
                                                                     <button
                                                                         onClick={() => !s.completed && completeSet(ex, s.index)}
                                                                         className={`w-9 h-9 sm:w-11 sm:h-11 shrink-0 rounded-lg border flex items-center justify-center transition ${s.completed
-                                                                            ? "border-[rgb(var(--accent-rgb)/0.5)] bg-[rgb(var(--accent-rgb)/0.2)] text-[rgb(var(--accent-light-rgb))]"
-                                                                            : "border-white/10 text-white/20 hover:border-[rgb(var(--accent-rgb)/0.4)] hover:text-[rgb(var(--accent-light-rgb))] hover:bg-[rgb(var(--accent-rgb))]/[0.05] active:scale-95"
+                                                                            ? isWarmup ? "border-amber-400/40 bg-amber-400/15 text-amber-400" : "border-[rgb(var(--accent-rgb)/0.5)] bg-[rgb(var(--accent-rgb)/0.2)] text-[rgb(var(--accent-light-rgb))]"
+                                                                            : isWarmup ? "border-amber-400/15 text-amber-400/30 hover:border-amber-400/40 hover:text-amber-400/70 active:scale-95" : "border-white/10 text-white/20 hover:border-[rgb(var(--accent-rgb)/0.4)] hover:text-[rgb(var(--accent-light-rgb))] hover:bg-[rgb(var(--accent-rgb))]/[0.05] active:scale-95"
                                                                             }`}
                                                                     >
                                                                         <Check size={16} />
                                                                     </button>
                                                                 </div>
                                                             </SwipeSet>
-                                                            {!s.completed && (
+                                                            {!s.completed && !isWarmup && (
                                                                 <input type="text" value={s.note} onChange={(e) => updateSet(ex.id, s.index, "note", e.target.value)} placeholder="Note (optional)"
                                                                     className="mt-1 ml-5 sm:ml-7 text-[10px] font-mono rounded-md bg-transparent border border-white/[0.04] px-2 py-1 text-white/30 placeholder:text-white/15 focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.2)] focus:text-white/50 transition" style={{ width: "calc(100% - 24px)" }} />
                                                             )}
                                                         </div>
-                                                    ))}
+                                                        );
+                                                    })}
 
                                                     <button onClick={() => addSet(ex.id)} className="flex items-center gap-1.5 text-[rgb(var(--accent-light-rgb)/0.6)] text-[10px] font-mono hover:text-[rgb(var(--accent-light-rgb))] transition pt-1 ml-5 sm:ml-7">
                                                         <Plus size={12} /> Add set
                                                     </button>
 
-                                                    {done === sets.length && sets.length > 0 && !confirmedExercises.has(ex.id) && (
+                                                    {allDone && !confirmedExercises.has(ex.id) && (
                                                         <button
                                                             onClick={() => {
                                                                 setConfirmedExercises((prev) => new Set([...prev, ex.id]));

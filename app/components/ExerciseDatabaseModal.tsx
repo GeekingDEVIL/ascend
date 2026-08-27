@@ -21,6 +21,7 @@ type Exercise = {
     instructions: string | null;
     tracking_method: string | null;
     image_url: string | null;
+    created_by?: string | null;
 };
 
 export default function ExerciseDatabaseModal({ onClose }: { onClose: () => void }) {
@@ -197,7 +198,10 @@ export default function ExerciseDatabaseModal({ onClose }: { onClose: () => void
                                                                     <div className="w-10 h-10 rounded-lg shrink-0 bg-white/[0.03] border border-white/[0.06]" />
                                                                 )}
                                                                 <div className="min-w-0 flex-1">
-                                                                    <p className="text-[13px] font-medium text-white/80 truncate">{ex.name}</p>
+                                                                    <div className="flex items-center gap-1.5">
+                                                                        <p className="text-[13px] font-medium text-white/80 truncate">{ex.name}</p>
+                                                                        {ex.created_by && <span className="text-[10px] font-mono px-2 py-0.5 rounded border bg-emerald-400/10 text-emerald-300 border-emerald-400/20 shrink-0">CUSTOM</span>}
+                                                                    </div>
                                                                     <p className="text-[9px] font-mono text-white/30 mt-0.5">
                                                                         {ex.primary_muscle} · {ex.equipment}
                                                                     </p>

@@ -2,10 +2,11 @@
 
 import { useEffect, useMemo, useState, useRef } from "react";
 import { createPortal } from "react-dom";
-import { Search, X, SlidersHorizontal, ChevronDown, Star, Clock, Flame } from "lucide-react";
+import { Search, X, SlidersHorizontal, ChevronDown, Star, Clock, Flame, Plus } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../lib/AuthProvider";
 import { useSex } from "../lib/useSex";
+import { useEquipment } from "../lib/useEquipment";
 
 type Exercise = {
   id: string;
@@ -20,6 +21,7 @@ type Exercise = {
   difficulty: string;
   is_unilateral: boolean;
   image_url: string | null;
+  created_by?: string | null;
 };
 
 const BODY_SEGMENTS = ["All", "Chest", "Back", "Shoulders", "Traps", "Biceps", "Triceps", "Forearms", "Core", "Legs", "Glutes", "Full Body", "Cardio"];
@@ -99,6 +101,8 @@ export default function AddExerciseModal({
 }) {
   const { user } = useAuth();
   const { sex: userSex } = useSex();
+  const { equipmentAccess } = useEquipment();
+  const [myEquipmentOn, setMyEquipmentOn] = useState(true);
   const [mounted, setMounted] = useState(false);
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [loading, setLoading] = useState(true);
@@ -113,6 +117,15 @@ export default function AddExerciseModal({
   const [recentExerciseIds, setRecentExerciseIds] = useState<Set<string>>(new Set());
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
   const [sortBy, setSortBy] = useState<"name" | "recent" | "popular">("name");
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newSegment, setNewSegment] = useState("Chest");
+  const [newMuscle, setNewMuscle] = useState("");
+  const [newEquipment, setNewEquipment] = useState("Barbell");
+  const [newCategory, setNewCategory] = useState("Compound");
+  const [newDifficulty, setNewDifficulty] = useState("Intermediate");
+  const [createError, setCreateError] = useState("");
   const searchRef = useRef<HTMLInputElement>(null);
 
   const availableMuscles = bodySegment !== "All" && PRIMARY_MUSCLES[bodySegment]
@@ -160,6 +173,9 @@ export default function AddExerciseModal({
   // Reset primary muscle when body segment changes
   useEffect(() => { setPrimaryMuscle("All"); }, [bodySegment]);
 
+  // Whether the "my equipment" filter is applicable (user has equipment set)
+  const hasEquipmentProfile = equipmentAccess.length > 0;
+
   const filtered = useMemo(() => {
     let base = exercises.filter((ex) => {
       if (bodySegment !== "All" && ex.body_segment !== bodySegment) return false;
@@ -167,6 +183,8 @@ export default function AddExerciseModal({
       if (equipment !== "All" && ex.equipment !== equipment) return false;
       if (category !== "All" && ex.category !== category) return false;
       if (difficulty !== "All" && ex.difficulty !== difficulty) return false;
+      // Equipment-access filter: always show Bodyweight; hide exercises whose equipment isn't in user's list
+      if (myEquipmentOn && hasEquipmentProfile && ex.equipment !== "Bodyweight" && !equipmentAccess.includes(ex.equipment)) return false;
       return true;
     });
 
@@ -198,7 +216,46 @@ export default function AddExerciseModal({
     }
 
     return base;
-  }, [exercises, query, bodySegment, primaryMuscle, equipment, category, difficulty, sortBy, recentExerciseIds, favoriteIds]);
+  }, [exercises, query, bodySegment, primaryMuscle, equipment, category, difficulty, sortBy, recentExerciseIds, favoriteIds, myEquipmentOn, hasEquipmentProfile, equipmentAccess]);
+
+  // Keep newMuscle in sync with newSegment
+  useEffect(() => {
+    const muscles = PRIMARY_MUSCLES[newSegment];
+    if (muscles?.length) setNewMuscle(muscles[0]);
+    else setNewMuscle("");
+  }, [newSegment]);
+
+  async function handleCreate() {
+    if (!newName.trim()) { setCreateError("Name is required"); return; }
+    if (!newMuscle) { setCreateError("Select a primary muscle"); return; }
+    if (!user) return;
+    setCreating(true);
+    setCreateError("");
+    const { data, error } = await supabase.from("exercises").insert({
+      name: newName.trim(),
+      body_segment: newSegment,
+      primary_muscle: newMuscle,
+      equipment: newEquipment,
+      category: newCategory,
+      difficulty: newDifficulty,
+      secondary_muscles: [],
+      is_unilateral: false,
+      created_by: user.id,
+    }).select("*").single();
+    if (error || !data) {
+      setCreateError(error?.message || "Failed to create exercise");
+      setCreating(false);
+      return;
+    }
+    const newEx = data as Exercise;
+    setExercises(prev => [...prev, newEx].sort((a, b) => a.name.localeCompare(b.name)));
+    onAdd(newEx);
+    setShowCreateForm(false);
+    setNewName("");
+    setCreating(false);
+    setJustAdded(newEx.id);
+    setTimeout(() => setJustAdded(null), 1200);
+  }
 
   function handleAdd(ex: Exercise) {
     onAdd(ex);
@@ -278,6 +335,11 @@ export default function AddExerciseModal({
 
           {/* Quick segment bar (always visible) */}
           <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1 -mx-1 px-1">
+            {hasEquipmentProfile && (
+              <Chip active={myEquipmentOn} onClick={() => setMyEquipmentOn(v => !v)} size="xs">
+                {myEquipmentOn ? "✓ " : ""}MY EQUIPMENT
+              </Chip>
+            )}
             {BODY_SEGMENTS.map(s => (
               <Chip key={s} active={bodySegment === s} onClick={() => setBodySegment(s)} size="xs">{s}</Chip>
             ))}
@@ -351,8 +413,109 @@ export default function AddExerciseModal({
 
         {/* Exercise list */}
         <div className="flex-1 overflow-y-auto custom-scroll px-5 py-4 pb-24 space-y-2">
+          {/* Create Custom Exercise form */}
+          {showCreateForm && (
+            <div className="rounded-md border border-[rgb(var(--accent-rgb)/0.3)] bg-white/[0.03] p-4 mb-3">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs font-bold text-white/80">Create Custom Exercise</p>
+                <button onClick={() => { setShowCreateForm(false); setCreateError(""); }} className="text-white/30 hover:text-white/60 transition">
+                  <X size={14} />
+                </button>
+              </div>
+              <div className="space-y-2.5">
+                <div>
+                  <p className="text-[9px] font-mono tracking-widest text-[rgb(var(--accent-light-rgb)/0.6)] mb-1">NAME</p>
+                  <input
+                    type="text"
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
+                    placeholder="e.g. Landmine Press"
+                    className="w-full rounded-md bg-white/[0.04] border border-white/10 px-3 py-2 text-sm focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.5)] transition"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div>
+                    <p className="text-[9px] font-mono tracking-widest text-[rgb(var(--accent-light-rgb)/0.6)] mb-1">BODY SEGMENT</p>
+                    <select
+                      value={newSegment}
+                      onChange={(e) => setNewSegment(e.target.value)}
+                      className="w-full rounded-md bg-white/[0.04] border border-white/10 px-3 py-2 text-sm focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.5)] transition"
+                    >
+                      {BODY_SEGMENTS.filter(s => s !== "All").map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-mono tracking-widest text-[rgb(var(--accent-light-rgb)/0.6)] mb-1">PRIMARY MUSCLE</p>
+                    <select
+                      value={newMuscle}
+                      onChange={(e) => setNewMuscle(e.target.value)}
+                      className="w-full rounded-md bg-white/[0.04] border border-white/10 px-3 py-2 text-sm focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.5)] transition"
+                    >
+                      {(PRIMARY_MUSCLES[newSegment] || []).map(m => <option key={m} value={m}>{m}</option>)}
+                      {!PRIMARY_MUSCLES[newSegment] && <option value={newSegment}>{newSegment}</option>}
+                    </select>
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-mono tracking-widest text-[rgb(var(--accent-light-rgb)/0.6)] mb-1">EQUIPMENT</p>
+                    <select
+                      value={newEquipment}
+                      onChange={(e) => setNewEquipment(e.target.value)}
+                      className="w-full rounded-md bg-white/[0.04] border border-white/10 px-3 py-2 text-sm focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.5)] transition"
+                    >
+                      {EQUIPMENT.filter(e => e !== "All").map(eq => <option key={eq} value={eq}>{eq}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-mono tracking-widest text-[rgb(var(--accent-light-rgb)/0.6)] mb-1">CATEGORY</p>
+                    <select
+                      value={newCategory}
+                      onChange={(e) => setNewCategory(e.target.value)}
+                      className="w-full rounded-md bg-white/[0.04] border border-white/10 px-3 py-2 text-sm focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.5)] transition"
+                    >
+                      <option value="Compound">Compound</option>
+                      <option value="Isolation">Isolation</option>
+                      <option value="Isometric">Isometric</option>
+                    </select>
+                  </div>
+                  <div className="col-span-2">
+                    <p className="text-[9px] font-mono tracking-widest text-[rgb(var(--accent-light-rgb)/0.6)] mb-1">DIFFICULTY</p>
+                    <select
+                      value={newDifficulty}
+                      onChange={(e) => setNewDifficulty(e.target.value)}
+                      className="w-full rounded-md bg-white/[0.04] border border-white/10 px-3 py-2 text-sm focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.5)] transition"
+                    >
+                      <option value="Beginner">Beginner</option>
+                      <option value="Intermediate">Intermediate</option>
+                      <option value="Advanced">Advanced</option>
+                    </select>
+                  </div>
+                </div>
+                {createError && <p className="text-red-400 text-xs font-mono">{createError}</p>}
+                <button
+                  onClick={handleCreate}
+                  disabled={creating}
+                  className="w-full rounded-md bg-[rgb(var(--accent-rgb))] text-black text-sm font-bold py-2.5 hover:bg-[rgb(var(--accent-light-rgb))] transition disabled:opacity-50"
+                  style={{ boxShadow: "0 0 16px -3px rgb(var(--accent-rgb) / 0.6)" }}
+                >
+                  {creating ? "Creating..." : "Create & Add"}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Create CTA button */}
+          {!showCreateForm && !loading && (
+            <button
+              onClick={() => setShowCreateForm(true)}
+              className="w-full flex items-center justify-center gap-2 rounded-md border border-dashed border-[rgb(var(--accent-rgb)/0.25)] bg-white/[0.02] px-4 py-3 text-xs font-mono text-[rgb(var(--accent-light-rgb)/0.6)] hover:border-[rgb(var(--accent-rgb)/0.5)] hover:text-[rgb(var(--accent-light-rgb))] hover:bg-white/[0.04] transition mb-3"
+            >
+              <Plus size={14} />
+              {filtered.length === 0 && query.trim() ? `Can't find it? Create "${query.trim()}"` : "Can't find it? Create your own"}
+            </button>
+          )}
+
           {loading && <p className="text-center text-white/40 text-sm py-10">Loading...</p>}
-          {!loading && filtered.length === 0 && (
+          {!loading && filtered.length === 0 && !showCreateForm && (
             <div className="text-center py-10">
               <p className="text-white/40 text-sm mb-2">No exercises match your filters.</p>
               {activeFilterCount > 0 && (
@@ -380,6 +543,7 @@ export default function AddExerciseModal({
                     <div className="flex items-center gap-1.5 mb-1">
                       <p className="font-bold text-sm text-white/90 truncate">{ex.name}</p>
                       {isFav && <Star size={11} className="text-yellow-300 shrink-0" fill="currentColor" />}
+                      {ex.created_by && <Tag variant="accent">CUSTOM</Tag>}
                     </div>
                     <div className="flex flex-wrap gap-1.5">
                       <Tag>{ex.primary_muscle}</Tag>

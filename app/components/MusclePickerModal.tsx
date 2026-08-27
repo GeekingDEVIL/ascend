@@ -6,6 +6,7 @@ import { useSwipeable } from "react-swipeable";
 import { X, Star, ChevronLeft, RotateCcw } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../lib/AuthProvider";
+import { useEquipment } from "../lib/useEquipment";
 
 type Exercise = {
     id: string;
@@ -77,6 +78,8 @@ function MuscleRegion({
 
 export default function MusclePickerModal({ onClose }: { onClose: () => void }) {
     const { user } = useAuth();
+    const { equipmentAccess } = useEquipment();
+    const [myEquipmentOn, setMyEquipmentOn] = useState(true);
     const [mounted, setMounted] = useState(false);
     const [view, setView] = useState<"front" | "back">("front");
     const [hoveredMuscle, setHoveredMuscle] = useState<string | null>(null);
@@ -132,6 +135,13 @@ export default function MusclePickerModal({ onClose }: { onClose: () => void }) 
         trackMouse: false,
         preventScrollOnSwipe: true,
     });
+
+    const hasEquipmentProfile = equipmentAccess.length > 0;
+
+    const filteredExercises = useMemo(() => {
+        if (!myEquipmentOn || !hasEquipmentProfile) return exercises;
+        return exercises.filter((ex) => ex.equipment === "Bodyweight" || equipmentAccess.includes(ex.equipment));
+    }, [exercises, myEquipmentOn, hasEquipmentProfile, equipmentAccess]);
 
     const regions = view === "front" ? FRONT_REGIONS : BACK_REGIONS;
 
@@ -200,10 +210,25 @@ export default function MusclePickerModal({ onClose }: { onClose: () => void }) 
                 {/* RESULTS VIEW */}
                 {selectedMuscle && (
                     <div className="flex-1 overflow-y-auto custom-scroll p-4 pb-24">
+                        {hasEquipmentProfile && !loadingResults && exercises.length > 0 && (
+                            <div className="flex items-center gap-2 mb-3">
+                                <button
+                                    onClick={() => setMyEquipmentOn(v => !v)}
+                                    className={`shrink-0 rounded-md border px-2 py-1 text-[10px] font-mono transition ${
+                                        myEquipmentOn
+                                            ? "border-[rgb(var(--accent-rgb)/0.6)] bg-[rgb(var(--accent-rgb)/0.15)] text-[rgb(var(--accent-light-rgb))]"
+                                            : "border-white/10 bg-white/[0.03] text-white/50 hover:text-white/80"
+                                    }`}
+                                >
+                                    {myEquipmentOn ? "✓ " : ""}MY EQUIPMENT
+                                </button>
+                                <span className="text-[9px] font-mono text-white/25">{filteredExercises.length} exercises</span>
+                            </div>
+                        )}
                         {loadingResults && <p className="text-center text-white/40 text-sm py-10">Loading...</p>}
-                        {!loadingResults && exercises.length === 0 && <p className="text-center text-white/40 text-sm py-10">No exercises found for this muscle yet.</p>}
+                        {!loadingResults && filteredExercises.length === 0 && <p className="text-center text-white/40 text-sm py-10">No exercises found for this muscle yet.</p>}
                         <div className="grid grid-cols-2 gap-3">
-                            {exercises.map((ex) => {
+                            {filteredExercises.map((ex) => {
                                 const isFav = favorites.has(ex.id);
                                 const isExpanded = expandedId === ex.id;
                                 return (

@@ -16,6 +16,7 @@ import { ACCENT_PRESETS, DEFAULT_ACCENT, getAccentPreset, applyAccent, type Acce
 import { getFullCalorieSummary, ageFromDOB, type GoalType, type Sex, type ActivityLevel, type DietPreference, type CalorieSummary } from "../../lib/calorieEngine";
 import { useSex, broadcastSexChange } from "../../lib/useSex";
 import { broadcastUnitChange } from "../../lib/useUnits";
+import { broadcastEquipmentChange } from "../../lib/useEquipment";
 import { kgToUnit, weightInputToKg } from "../../lib/units";
 import { rematerializeWeightTrend } from "../../lib/weightTrend";
 
@@ -102,6 +103,13 @@ const DIET_OPTIONS: { value: DietPreference; label: string }[] = [
 
 const DAYS_OF_WEEK = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
+const EQUIPMENT_LIST = [
+    "Barbell", "Dumbbell", "Kettlebell", "Cable", "Machine",
+    "Resistance Band", "Pull-up Bar", "Bench", "Squat Rack",
+    "Smith Machine", "Dip Station", "EZ Curl Bar", "Leg Press",
+    "Lat Pulldown", "Cable Crossover",
+];
+
 export default function ProfilePage() {
     const { profile, user, refreshProfile } = useAuth();
     const router = useRouter();
@@ -135,6 +143,7 @@ export default function ProfilePage() {
     const [calorieSummary, setCalorieSummary] = useState<CalorieSummary | null>(null);
     const [weightInput, setWeightInput] = useState("");
     const [weightSaving, setWeightSaving] = useState(false);
+    const [equipmentAccess, setEquipmentAccess] = useState<string[]>([]);
 
     useEffect(() => {
         const stored = localStorage.getItem("ascend_theme");
@@ -166,7 +175,7 @@ export default function ProfilePage() {
         const [{ data: p }, { data: bs }] = await Promise.all([
             supabase
                 .from("profiles")
-                .select("unit_preference, injury_notes, social_instagram, social_twitter, profile_visibility, avatar_color")
+                .select("unit_preference, injury_notes, social_instagram, social_twitter, profile_visibility, avatar_color, equipment_access")
                 .eq("id", user.id)
                 .maybeSingle(),
             supabase
@@ -194,6 +203,7 @@ export default function ProfilePage() {
                 sex: currentSex,
                 activity_level: (bs?.activity_level as ActivityLevel) ?? "moderate",
             });
+            setEquipmentAccess(p.equipment_access ?? []);
         }
         const { data: g } = await supabase
             .from("user_goals")
@@ -596,6 +606,16 @@ export default function ProfilePage() {
 
     function updateGoal(field: keyof UserGoals, value: any) {
         setGoals((prev) => ({ ...prev, [field]: value }));
+    }
+
+    async function toggleEquipment(item: string) {
+        if (!user) return;
+        const next = equipmentAccess.includes(item)
+            ? equipmentAccess.filter((e) => e !== item)
+            : [...equipmentAccess, item];
+        setEquipmentAccess(next);
+        broadcastEquipmentChange(next, null);
+        await supabase.from("profiles").update({ equipment_access: next }).eq("id", user.id);
     }
 
     const isMetric = data.unit_preference === "metric";
@@ -1049,6 +1069,28 @@ export default function ProfilePage() {
                                     ))}
                                 </div>
                             </div>
+                        </div>
+
+                        {/* Equipment Access */}
+                        <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4 space-y-3">
+                            <p className="text-[10px] font-mono tracking-widest text-white/25">EQUIPMENT ACCESS</p>
+                            <p className="text-[9px] font-mono text-white/25">Select the equipment you have available. Exercise suggestions will be filtered accordingly.</p>
+                            <div className="flex flex-wrap gap-2">
+                                {EQUIPMENT_LIST.map((item) => {
+                                    const selected = equipmentAccess.includes(item);
+                                    return (
+                                        <button key={item} onClick={() => toggleEquipment(item)}
+                                            className={`text-[10px] font-mono px-3 py-2 rounded-lg border transition ${
+                                                selected
+                                                    ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]"
+                                                    : "border-white/10 text-white/30 hover:text-white/60"
+                                            }`}>
+                                            {selected ? "✓ " : ""}{item}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                            <p className="text-[8px] font-mono text-white/20">{equipmentAccess.length} items selected</p>
                         </div>
                     </div>
                 )}
