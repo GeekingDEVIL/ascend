@@ -15,6 +15,8 @@ import { updateUserStats } from "../../lib/updateUserStats";
 import { ACCENT_PRESETS, DEFAULT_ACCENT, getAccentPreset, applyAccent, type AccentKey } from "../../lib/theme";
 import { getFullCalorieSummary, ageFromDOB, type GoalType, type Sex, type ActivityLevel, type DietPreference, type CalorieSummary } from "../../lib/calorieEngine";
 import { useSex, broadcastSexChange } from "../../lib/useSex";
+import { broadcastUnitChange } from "../../lib/useUnits";
+import { kgToUnit, weightInputToKg } from "../../lib/units";
 import { rematerializeWeightTrend } from "../../lib/weightTrend";
 
 type ProfileData = {
@@ -233,9 +235,11 @@ export default function ProfilePage() {
         setExercises(exList ?? []);
 
         // Latest body weight — show the raw last entry so it matches what was just logged
+        const unitPref = p?.unit_preference ?? "metric";
+        const loadUnit: "kg" | "lbs" = unitPref === "imperial" ? "lbs" : "kg";
         const { data: bw } = await supabase.from("body_weight_logs").select("weight").eq("user_id", user.id).eq("sex", currentSex).order("logged_at", { ascending: false }).limit(1);
         setLatestWeight(bw?.[0]?.weight ?? null);
-        if (bw?.[0]?.weight != null) setWeightInput(String(bw[0].weight));
+        if (bw?.[0]?.weight != null) setWeightInput(String(kgToUnit(bw[0].weight, loadUnit)));
 
         // Summary stats
         const { data: sessions } = await supabase.from("workout_sessions").select("total_volume").eq("user_id", user.id).eq("status", "completed").eq("sex", currentSex);
@@ -302,7 +306,7 @@ export default function ProfilePage() {
                 setGoals(DEFAULT_GOALS);
             }
             setLatestWeight(bw?.[0]?.weight ?? null);
-            if (bw?.[0]?.weight != null) setWeightInput(String(bw[0].weight)); else setWeightInput("");
+            if (bw?.[0]?.weight != null) setWeightInput(String(kgToUnit(bw[0].weight, wUnit))); else setWeightInput("");
         });
     }, [user, hookSex]);
 
@@ -311,6 +315,9 @@ export default function ProfilePage() {
         if (field === "sex" && (value === "male" || value === "female")) {
             broadcastSexChange(value as Sex);
             if (user) supabase.from("profiles").update({ sex: value }).eq("id", user.id);
+        }
+        if (field === "unit_preference" && (value === "metric" || value === "imperial")) {
+            broadcastUnitChange(value);
         }
     }
 
@@ -381,13 +388,15 @@ export default function ProfilePage() {
 
     async function logWeight() {
         if (!user || !weightInput) return;
-        const w = Number(weightInput);
-        if (w <= 0 || w === latestWeight) return;
+        const raw = Number(weightInput);
+        if (raw <= 0) return;
+        const wKg = weightInputToKg(raw, wUnit);
+        if (wKg === latestWeight) return;
         const currentSex = hookSex;
         setWeightSaving(true);
-        await supabase.from("body_weight_logs").insert({ user_id: user.id, weight: w, context: "morning", date: new Date().toISOString().split("T")[0], sex: currentSex });
+        await supabase.from("body_weight_logs").insert({ user_id: user.id, weight: wKg, context: "morning", date: new Date().toISOString().split("T")[0], sex: currentSex });
         await rematerializeWeightTrend(user.id, currentSex);
-        setLatestWeight(w);
+        setLatestWeight(wKg);
         setWeightSaving(false);
     }
 
@@ -592,9 +601,12 @@ export default function ProfilePage() {
     const isMetric = data.unit_preference === "metric";
     const weightUnit = isMetric ? "KG" : "LBS";
     const heightUnit = isMetric ? "CM" : "FT/IN";
+    const wUnit: "kg" | "lbs" = isMetric ? "kg" : "lbs";
     const age = data.date_of_birth ? Math.floor((Date.now() - new Date(data.date_of_birth).getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : null;
     const bmi = data.height_cm && latestWeight ? Number((latestWeight / ((data.height_cm / 100) ** 2)).toFixed(1)) : null;
-    const weightToGoal = goals.target_weight_kg && latestWeight ? Number((latestWeight - goals.target_weight_kg).toFixed(1)) : null;
+    const displayWeight = latestWeight !== null ? Number(kgToUnit(latestWeight, wUnit).toFixed(1)) : null;
+    const displayTargetWeight = goals.target_weight_kg ? Number(kgToUnit(goals.target_weight_kg, wUnit).toFixed(1)) : null;
+    const weightToGoal = displayTargetWeight && displayWeight ? Number((displayWeight - displayTargetWeight).toFixed(1)) : null;
 
     useEffect(() => {
         if (!latestWeight || !data.height_cm || !data.date_of_birth || !data.sex) {
@@ -676,11 +688,11 @@ export default function ProfilePage() {
                     </div>
                     <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-2.5 text-center">
                         <p className="text-[8px] font-mono text-white/30">VOLUME</p>
-                        <p className="text-base font-bold font-mono text-white/80">{totalVolume >= 1000 ? `${(totalVolume / 1000).toFixed(0)}K` : Math.round(totalVolume)}</p>
+                        <p className="text-base font-bold font-mono text-white/80">{(() => { const v = Math.round(kgToUnit(totalVolume, wUnit)); return v >= 1000 ? `${(v / 1000).toFixed(0)}K` : v; })()}</p>
                     </div>
                     <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-2.5 text-center">
                         <p className="text-[8px] font-mono text-white/30">WEIGHT</p>
-                        <p className="text-base font-bold font-mono text-white/80">{latestWeight ?? "—"}</p>
+                        <p className="text-base font-bold font-mono text-white/80">{displayWeight ?? "—"}</p>
                     </div>
                     <div onClick={() => { if (!bmi && latestWeight) setSection("stats"); }} className={`rounded-lg border border-white/[0.06] bg-white/[0.02] p-2.5 text-center ${!bmi && latestWeight ? "cursor-pointer" : ""}`}>
                         <p className="text-[8px] font-mono text-white/30">BMI</p>
@@ -768,7 +780,7 @@ export default function ProfilePage() {
                                         {weightSaving ? "..." : "LOG"}
                                     </button>
                                 </div>
-                                {latestWeight && <p className="text-[8px] font-mono text-white/20 mt-1">Last logged: {latestWeight} {weightUnit.toLowerCase()}</p>}
+                                {displayWeight && <p className="text-[8px] font-mono text-white/20 mt-1">Last logged: {displayWeight} {weightUnit.toLowerCase()}</p>}
                             </div>
 
                             {bmi !== null && (
@@ -840,7 +852,7 @@ export default function ProfilePage() {
                                             {weightToGoal > 0 ? `-${weightToGoal}` : weightToGoal < 0 ? `+${Math.abs(weightToGoal)}` : "AT GOAL"} {weightUnit}
                                         </p>
                                         <p className="text-[9px] font-mono text-white/25 mt-1">
-                                            Current: {latestWeight} → Target: {goals.target_weight_kg}
+                                            Current: {displayWeight} → Target: {displayTargetWeight}
                                         </p>
                                     </div>
                                 )}
@@ -918,7 +930,7 @@ export default function ProfilePage() {
                                         <p className="text-sm font-bold font-mono text-cyan-300">{calorieSummary.macros.carbs}g</p>
                                     </div>
                                 </div>
-                                <p className="text-[8px] font-mono text-white/20 text-center">Based on Mifflin-St Jeor equation · {data.sex === "male" ? "Male" : "Female"} · {age}y · {latestWeight}kg · {data.height_cm}cm</p>
+                                <p className="text-[8px] font-mono text-white/20 text-center">Based on Mifflin-St Jeor equation · {data.sex === "male" ? "Male" : "Female"} · {age}y · {displayWeight}{wUnit} · {data.height_cm}cm</p>
                             </div>
                         )}
                         {!calorieSummary && (
@@ -968,7 +980,7 @@ export default function ProfilePage() {
                                         <div key={lift.id} className={`flex items-center gap-3 rounded-lg border px-3 py-2.5 ${lift.achieved ? "border-emerald-400/30 bg-emerald-400/[0.05]" : "border-white/[0.06] bg-white/[0.02]"}`}>
                                             <div className="flex-1 min-w-0">
                                                 <p className={`text-sm font-bold ${lift.achieved ? "text-emerald-300" : "text-white/80"}`}>{lift.exercise_name}</p>
-                                                <p className="text-[10px] font-mono text-white/30">Target: {lift.target_weight} {weightUnit}</p>
+                                                <p className="text-[10px] font-mono text-white/30">Target: {Math.round(kgToUnit(lift.target_weight, wUnit))} {weightUnit}</p>
                                             </div>
                                             {lift.achieved ? (
                                                 <span className="text-[9px] font-mono text-emerald-300 px-2 py-1 rounded bg-emerald-400/10 border border-emerald-400/20">ACHIEVED</span>

@@ -14,6 +14,8 @@ import { updateUserStats } from "../../lib/updateUserStats";
 import { updateExerciseLeaderboard } from "../../lib/updateExerciseLeaderboard";
 import AddExerciseModal from "../../components/AddExerciseModal";
 import { useSex } from "../../lib/useSex";
+import { useUnits } from "../../lib/useUnits";
+import { kgToUnit, weightInputToKg } from "../../lib/units";
 import { fetchCycleTrainingData, assessExerciseRisk, getCycleAdjustedWeight, type PhaseTrainingProfile, type EnergyForecast, type ExerciseRisk } from "../../lib/cycleTrainingEngine";
 
 /* ─── TYPES ─── */
@@ -65,14 +67,14 @@ function emptySet(i: number): SetEntry {
     return { index: i, weight: "", reps: "", duration: "", distance: "", note: "", completed: false, logId: null };
 }
 
-function computeOverload(lastW: number | null, lastR: number | null, targetReps: string): OverloadSuggestion {
+function computeOverload(lastW: number | null, lastR: number | null, targetReps: string, unit: "kg" | "lbs" = "kg"): OverloadSuggestion {
     if (lastW === null || lastR === null) return { type: "first_time", text: "First session — establish your baseline", suggestedWeight: null };
     const maxTarget = Number(targetReps.split("-").pop()) || 10;
     if (lastR >= maxTarget) {
         const next = lastW < 20 ? lastW + 1 : lastW < 50 ? lastW + 2.5 : lastW + 5;
-        return { type: "weight_up", text: `Hit ${lastR} reps → increase to ${next}kg`, suggestedWeight: next };
+        return { type: "weight_up", text: `Hit ${lastR} reps → increase to ${kgToUnit(next, unit)}${unit}`, suggestedWeight: next };
     }
-    return { type: "reps_up", text: `Got ${lastR} reps @ ${lastW}kg → aim for ${lastR + 1}+`, suggestedWeight: lastW };
+    return { type: "reps_up", text: `Got ${lastR} reps @ ${kgToUnit(lastW, unit)}${unit} → aim for ${lastR + 1}+`, suggestedWeight: lastW };
 }
 
 /* ─── CARD WRAPPER ─── */
@@ -177,6 +179,7 @@ export default function WorkoutPage() {
     const [energyForecast, setEnergyForecast] = useState<EnergyForecast[]>([]);
     const [exerciseRisks, setExerciseRisks] = useState<Record<string, ExerciseRisk>>({});
     const { sex: userSex } = useSex();
+    const weightUnit = useUnits();
 
     const today = toDateString(new Date());
     const loadInFlight = useRef(false);
@@ -313,7 +316,7 @@ export default function WorkoutPage() {
         });
         mapped.forEach((ex) => {
             const last = lastMap[ex.exercise_id];
-            hints[ex.exercise_id] = computeOverload(last?.weight ?? null, last?.reps ?? null, ex.target_reps);
+            hints[ex.exercise_id] = computeOverload(last?.weight ?? null, last?.reps ?? null, ex.target_reps, weightUnit);
         });
         setLastPerformance(lastMap);
         setOverloadHints(hints);
@@ -352,7 +355,7 @@ export default function WorkoutPage() {
         } finally {
             loadInFlight.current = false;
         }
-    }, [user, today, userSex]);
+    }, [user, today, userSex, weightUnit]);
 
     useEffect(() => { load(); }, [load]);
 
@@ -474,7 +477,7 @@ export default function WorkoutPage() {
         const prev = data?.[0]?.weight ?? 0;
         if (w > prev && prev > 0) {
             setPrCount((c) => c + 1);
-            await supabase.from("notifications").insert({ user_id: user.id, type: "new_pr", title: "NEW PERSONAL RECORD", message: `${name}: ${w}kg × ${r} — previous best was ${prev}kg`, metadata: { exercise_name: name, weight: w, reps: r, previous_best: prev } });
+            await supabase.from("notifications").insert({ user_id: user.id, type: "new_pr", title: "NEW PERSONAL RECORD", message: `${name}: ${kgToUnit(w, weightUnit)}${weightUnit} × ${r} — previous best was ${kgToUnit(prev, weightUnit)}${weightUnit}`, metadata: { exercise_name: name, weight: w, reps: r, previous_best: prev } });
         }
     }
 
@@ -596,7 +599,7 @@ export default function WorkoutPage() {
         const xp = await calculateSessionXP(user.id, sessionId, setsData, totalPlanned, prCount, userSex);
 
         await supabase.from("workout_sessions").update({ status: "completed", completed_at: new Date().toISOString(), duration_seconds: dur, total_volume: totalVolume, total_sets: totalSets, xp_earned: xp.total, ...(cycleProfile ? { cycle_phase: cycleProfile.phase, cycle_day: cycleProfile.cycleDay } : {}) }).eq("id", sessionId);
-        await supabase.from("notifications").insert({ user_id: user.id, type: "workout_complete", title: "WORKOUT COMPLETE", message: `${dayTitle} — ${totalSets} sets, ${Math.round(totalVolume).toLocaleString()}kg volume, +${xp.total} XP`, metadata: { sets: totalSets, volume: totalVolume, xp: xp.total } });
+        await supabase.from("notifications").insert({ user_id: user.id, type: "workout_complete", title: "WORKOUT COMPLETE", message: `${dayTitle} — ${totalSets} sets, ${Math.round(kgToUnit(totalVolume, weightUnit)).toLocaleString()}${weightUnit} volume, +${xp.total} XP`, metadata: { sets: totalSets, volume: totalVolume, xp: xp.total } });
 
         // Streak + Level checks
         const { data: sessions } = await supabase.from("workout_sessions").select("date").eq("user_id", user.id).eq("status", "completed").eq("sex", userSex).order("date", { ascending: false }).limit(120);
@@ -705,7 +708,7 @@ export default function WorkoutPage() {
         const stats: [string, string][] = [
             ["DURATION", formatClock(summary.duration)],
             ["SETS", String(summary.sets)],
-            ["VOLUME", `${Math.round(summary.volume).toLocaleString()} KG`],
+            ["VOLUME", `${Math.round(kgToUnit(summary.volume, weightUnit)).toLocaleString()} ${weightUnit.toUpperCase()}`],
             ["XP EARNED", `+${summary.xpBreakdown.total}`],
         ];
         const cellW = 460, cellH = 220, gap = 40;
@@ -940,7 +943,7 @@ export default function WorkoutPage() {
                     <div className="grid grid-cols-2 gap-2 mb-4">
                         <StatCell label="DURATION" value={formatClock(summary.duration)} />
                         <StatCell label="SETS" value={String(summary.sets)} />
-                        <StatCell label="VOLUME" value={`${Math.round(summary.volume).toLocaleString()} kg`} />
+                        <StatCell label="VOLUME" value={`${Math.round(kgToUnit(summary.volume, weightUnit)).toLocaleString()} ${weightUnit}`} />
                         <StatCell label="XP EARNED" value={`+${summary.xpBreakdown.total}`} accent />
                     </div>
 
@@ -1041,7 +1044,7 @@ export default function WorkoutPage() {
                             <div className="grid grid-cols-2 gap-2 mb-4">
                                 <StatCell label="DURATION" value={formatClock(summary.duration)} />
                                 <StatCell label="SETS" value={String(summary.sets)} />
-                                <StatCell label="VOLUME" value={`${Math.round(summary.volume).toLocaleString()} kg`} />
+                                <StatCell label="VOLUME" value={`${Math.round(kgToUnit(summary.volume, weightUnit)).toLocaleString()} ${weightUnit}`} />
                                 <StatCell label="XP EARNED" value={`+${summary.xpBreakdown.total}`} accent />
                             </div>
                         ) : null}
@@ -1227,14 +1230,14 @@ export default function WorkoutPage() {
                                     placeholder="—"
                                     className="flex-1 min-w-0 h-11 rounded-xl bg-white/[0.04] border border-white/[0.06] text-center text-lg font-bold font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.3)] transition"
                                 />
-                                <span className="text-sm font-mono text-white/25 shrink-0">kg</span>
+                                <span className="text-sm font-mono text-white/25 shrink-0">{weightUnit}</span>
                                 {preWorkoutWeight && !weightLogged && (
                                     <button
                                         onClick={async () => {
                                             if (!user || !preWorkoutWeight) return;
                                             await supabase.from("body_weight_logs").insert({
                                                 user_id: user.id,
-                                                weight: Number(preWorkoutWeight),
+                                                weight: weightInputToKg(Number(preWorkoutWeight), weightUnit),
                                                 context: "pre_workout",
                                                 sex: userSex,
                                             });
@@ -1279,8 +1282,8 @@ export default function WorkoutPage() {
                                                 </div>
                                                 {ex.target_weight && (
                                                     <div className="text-center">
-                                                        <p className="text-[7px] font-mono text-white/25">KG</p>
-                                                        <p className="text-xs font-bold text-white/70">{ex.target_weight}</p>
+                                                        <p className="text-[7px] font-mono text-white/25">{weightUnit.toUpperCase()}</p>
+                                                        <p className="text-xs font-bold text-white/70">{Math.round(kgToUnit(ex.target_weight, weightUnit))}</p>
                                                     </div>
                                                 )}
                                             </div>
@@ -1324,7 +1327,7 @@ export default function WorkoutPage() {
                                         <div className="flex-1 min-w-0">
                                             <p className={`text-[13px] font-medium truncate ${isSkipped ? "text-white/30 line-through" : "text-white/80"}`}>{ex.name}</p>
                                             <p className="text-[9px] font-mono text-white/25">
-                                                {isSkipped ? "Skipped" : `${done}/${sets.length} sets${last ? ` · Last: ${last.weight ?? "—"}${ex.isCardio ? "" : ex.isBodyweight ? " BW" : "kg"} × ${last.reps ?? "—"}` : ""}`}
+                                                {isSkipped ? "Skipped" : `${done}/${sets.length} sets${last ? ` · Last: ${last.weight != null ? kgToUnit(last.weight, weightUnit) : "—"}${ex.isCardio ? "" : ex.isBodyweight ? " BW" : weightUnit} × ${last.reps ?? "—"}` : ""}`}
                                             </p>
                                         </div>
                                         {isSkipped ? (
@@ -1465,7 +1468,7 @@ export default function WorkoutPage() {
                                                         {ex.isBodyweight ? (
                                                             <span className="flex-1 text-center">REPS</span>
                                                         ) : (
-                                                            <><span className="flex-1 text-center">KG</span><span className="flex-1 text-center">REPS</span></>
+                                                            <><span className="flex-1 text-center">{weightUnit.toUpperCase()}</span><span className="flex-1 text-center">REPS</span></>
                                                         )}
                                                         <span className="w-9 sm:w-11" />
                                                     </div>

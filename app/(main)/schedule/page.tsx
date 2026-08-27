@@ -12,6 +12,8 @@ import { analyzeAdaptiveVolume, getVolumeStatus, getVolumeGuidelines, type Adapt
 import { analyzeRecovery, type MuscleRecoveryData } from "../../lib/muscleRecovery";
 import type { Sex } from "../../lib/calorieEngine";
 import { useSex } from "../../lib/useSex";
+import { useUnits } from "../../lib/useUnits";
+import { kgToUnit } from "../../lib/units";
 import { QUICK_START_TEMPLATES, type QuickStartTemplate } from "../../lib/quickStartTemplates";
 import { useAuth } from "../../lib/AuthProvider";
 import AddExerciseModal from "../../components/AddExerciseModal";
@@ -107,6 +109,7 @@ function EmptyState({ title, subtitle }: { title: string; subtitle: string }) {
 }
 
 function ReadOnlyRow({ ex, index }: { ex: LocalExercise; index: number }) {
+    const wu = useUnits();
     return (
         <div className="flex items-center gap-2 rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2.5">
             <span className="text-[10px] font-mono text-white/25 w-5 shrink-0">{String(index + 1).padStart(2, "0")}</span>
@@ -121,7 +124,7 @@ function ReadOnlyRow({ ex, index }: { ex: LocalExercise; index: number }) {
                 <div className="flex items-center gap-3 shrink-0">
                     <div className="text-center"><p className="text-[8px] font-mono text-white/30 leading-none">SETS</p><p className="text-sm font-bold text-white/80">{ex.target_sets}</p></div>
                     <div className="text-center"><p className="text-[8px] font-mono text-white/30 leading-none">REPS</p><p className="text-sm font-bold text-white/80">{ex.target_reps}</p></div>
-                    {ex.target_weight != null && <div className="text-center"><p className="text-[8px] font-mono text-white/30 leading-none">KG</p><p className="text-sm font-bold text-white/80">{ex.target_weight}</p></div>}
+                    {ex.target_weight != null && <div className="text-center"><p className="text-[8px] font-mono text-white/30 leading-none">{wu.toUpperCase()}</p><p className="text-sm font-bold text-white/80">{Math.round(kgToUnit(ex.target_weight, wu))}</p></div>}
                 </div>
             )}
         </div>
@@ -132,6 +135,7 @@ function SortableRow({ ex, index, onUpdate, onRemove }: { ex: LocalExercise; ind
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: ex.id });
     const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 };
     const [expanded, setExpanded] = useState(false);
+    const swu = useUnits();
     return (
         <div ref={setNodeRef} style={style} className="rounded-lg border border-white/[0.06] bg-white/[0.02]">
             <div className="flex items-center gap-2 px-3 py-2.5">
@@ -156,7 +160,7 @@ function SortableRow({ ex, index, onUpdate, onRemove }: { ex: LocalExercise; ind
             {expanded && (
                 <div className="px-3 pb-3 pt-1 border-t border-white/5 grid grid-cols-2 gap-2">
                     <div>
-                        <label className="text-[9px] font-mono text-white/30">WEIGHT (KG)</label>
+                        <label className="text-[9px] font-mono text-white/30">WEIGHT ({swu.toUpperCase()})</label>
                         <input type="number" min="0" onWheel={(e) => (e.target as HTMLElement).blur()} inputMode="decimal" value={ex.target_weight ?? ""} onChange={(e) => onUpdate(ex.id, { target_weight: e.target.value ? Number(e.target.value) : null })} placeholder="—" className="w-full mt-1 rounded-md bg-white/[0.03] border border-white/10 text-center text-sm py-1.5 focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.5)]" />
                     </div>
                     <div>

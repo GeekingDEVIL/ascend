@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useUnits } from "../lib/useUnits";
+import { kgToUnit } from "../lib/units";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, BarChart, Bar, Cell, ReferenceLine } from "recharts";
 import { type PredictionAccuracy } from "../lib/predictionReality";
 import { type AnomalyExplanation } from "../lib/anomalyExplainer";
@@ -40,14 +42,16 @@ function Card({ title, subtitle, children, accent }: { title: string; subtitle?:
 }
 
 export function PredictionVsRealityCard({ data }: { data: PredictionAccuracy }) {
+  const wu = useUnits();
   if (data.points.length < 7) return null;
   const chartData = data.points.filter((_, i) => i % Math.max(1, Math.floor(data.points.length / 30)) === 0).map((p) => ({
     date: p.date.slice(5),
-    predicted: p.predicted,
-    actual: p.actual,
+    predicted: Number(kgToUnit(p.predicted, wu).toFixed(1)),
+    actual: p.actual != null ? Number(kgToUnit(p.actual, wu).toFixed(1)) : null,
   }));
 
   const dirColor = data.direction === "accurate" ? "text-emerald-300" : data.direction === "overshoot" ? "text-cyan-300" : "text-amber-300";
+  const displayError = Number(kgToUnit(data.avgErrorKg, wu).toFixed(1));
 
   return (
     <Card title="EXPECTED VS ACTUAL" subtitle="How your real weight compares to what the math predicted">
@@ -61,7 +65,7 @@ export function PredictionVsRealityCard({ data }: { data: PredictionAccuracy }) 
         </LineChart>
       </ResponsiveContainer>
       <p className={`text-[9px] font-mono mt-2 ${dirColor}`}>{data.message}</p>
-      <p className="text-[7px] font-mono text-white/15 mt-1">Average difference: {data.avgErrorKg > 0 ? "+" : ""}{data.avgErrorKg} kg</p>
+      <p className="text-[7px] font-mono text-white/15 mt-1">Average difference: {displayError > 0 ? "+" : ""}{displayError} {wu}</p>
     </Card>
   );
 }
@@ -205,6 +209,7 @@ export function RecompCard({ data }: { data: RecompAssessment }) {
 }
 
 export function CycleCard({ data, phaseInfo }: { data: CycleAwareComparison; phaseInfo: string }) {
+  const wu = useUnits();
   const phaseColors: Record<CyclePhase, string> = {
     follicular: "text-emerald-300",
     ovulation: "text-cyan-300",
@@ -228,7 +233,7 @@ export function CycleCard({ data, phaseInfo }: { data: CycleAwareComparison; pha
         <div className="rounded-md bg-white/[0.03] border border-white/[0.04] p-2 mt-2">
           <p className="text-[8px] font-mono text-white/30">VS SAME POINT LAST CYCLE</p>
           <p className={`text-sm font-bold font-mono ${data.deltaKg !== null && data.deltaKg < 0 ? "text-emerald-300" : "text-white/50"}`}>
-            {data.deltaKg !== null ? `${data.deltaKg > 0 ? "+" : ""}${data.deltaKg} kg` : "—"}
+            {data.deltaKg !== null ? `${data.deltaKg > 0 ? "+" : ""}${Number(kgToUnit(data.deltaKg, wu).toFixed(1))} ${wu}` : "—"}
           </p>
           <p className="text-[7px] font-mono text-white/20">{data.adjustedTrend}</p>
         </div>

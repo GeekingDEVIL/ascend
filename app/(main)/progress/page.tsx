@@ -9,10 +9,12 @@ import CubeLoader from "../../components/ui/cube-loader";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../lib/AuthProvider";
 import { useSex } from "../../lib/useSex";
+import { useUnits } from "../../lib/useUnits";
+import { kgToUnit, weightInputToKg } from "../../lib/units";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, CartesianGrid, ReferenceLine, LabelList } from "recharts";
 import { ACHIEVEMENT_DEFS, RARITY_COLORS, type AchievementDef } from "../../lib/achievements";
 import MeasurementModal, { type MeasurementType } from "../../components/MeasurementModal";
-import { type WeightEntry, type WeightContext, lbsToKg, kgToLbs, rematerializeWeightTrend } from "../../lib/weightTrend";
+import { type WeightEntry, type WeightContext, rematerializeWeightTrend } from "../../lib/weightTrend";
 import { type FoodEntry, type MealSlot, MEAL_SLOTS, rematerializeDailyIntake, calcAdherence } from "../../lib/intakeLog";
 import { buildLedger, avgDailyNet, projectWeightChange, projectWeightAtDate, daysUntil, type DailyBalance } from "../../lib/energyLedger";
 import { getFullCalorieSummary, ageFromDOB, type CalorieSummary, type GoalType, type ActivityLevel, type DietPreference, type Sex } from "../../lib/calorieEngine";
@@ -209,7 +211,7 @@ export default function ProgressPage() {
     // Body
     const [bodyWeightData, setBodyWeightData] = useState<BodyWeightEntry[]>([]);
     const [newWeight, setNewWeight] = useState("");
-    const [weightUnit, setWeightUnit] = useState<"kg" | "lbs">("kg");
+    const weightUnit = useUnits();
     const [weightContext, setWeightContext] = useState<WeightContext>("morning");
     const [measurements, setMeasurements] = useState<Record<string, number | null>>({});
     const [activeMeasurement, setActiveMeasurement] = useState<MeasurementType | null>(null);
@@ -808,7 +810,7 @@ export default function ProgressPage() {
         if (!user || !newWeight) return;
         const rawValue = Number(newWeight);
         if (rawValue <= 0) return;
-        const storedKg = weightUnit === "lbs" ? lbsToKg(rawValue) : rawValue;
+        const storedKg = weightInputToKg(rawValue, weightUnit);
         const today = new Date().toISOString().split("T")[0];
 
         await supabase.from("body_weight_logs").insert({
@@ -873,6 +875,26 @@ export default function ProgressPage() {
         .sort((a, b) => new Date(earnedDates[b.key]).getTime() - new Date(earnedDates[a.key]).getTime());
     const lockedInOrder = ACHIEVEMENT_DEFS.filter((a) => !earnedKeys.has(a.key));
     const achievementStrip: AchievementDef[] = [...earnedSorted, ...lockedInOrder].slice(0, 10);
+
+    // Convert body weight chart data from kg to user's preferred unit
+    const displayBodyWeightData = React.useMemo(() =>
+        bodyWeightData.map((d) => ({
+            ...d,
+            weight: Math.round(kgToUnit(d.weight, weightUnit) * 10) / 10,
+            ema: d.ema != null ? Math.round(kgToUnit(d.ema, weightUnit) * 10) / 10 : undefined,
+        })),
+        [bodyWeightData, weightUnit],
+    );
+
+    // Convert strength chart data from kg to user's preferred unit
+    const displayStrengthHistory = React.useMemo(() =>
+        strengthHistory.map((d) => ({
+            ...d,
+            weight: Math.round(kgToUnit(d.weight, weightUnit) * 10) / 10,
+            e1rm: Math.round(kgToUnit(d.e1rm, weightUnit) * 10) / 10,
+        })),
+        [strengthHistory, weightUnit],
+    );
 
     const TABS: { key: Tab; label: string; icon: any }[] = [
         { key: "intake", label: "INTAKE", icon: Flame },
@@ -954,8 +976,8 @@ export default function ProgressPage() {
                                                         <p className="text-[9px] font-mono text-white/30 mt-1.5">Hours</p>
                                                     </div>
                                                     <div>
-                                                        <p className="text-3xl font-bold font-mono text-[rgb(var(--accent-light-rgb))] leading-none">{rangeVolume >= 1000 ? `${(rangeVolume / 1000).toFixed(1)}k` : Math.round(rangeVolume)}</p>
-                                                        <p className="text-[9px] font-mono text-white/30 mt-1.5">Volume (kg)</p>
+                                                        <p className="text-3xl font-bold font-mono text-[rgb(var(--accent-light-rgb))] leading-none">{(() => { const v = kgToUnit(rangeVolume, weightUnit); return v >= 1000 ? `${(v / 1000).toFixed(1)}k` : Math.round(v); })()}</p>
+                                                        <p className="text-[9px] font-mono text-white/30 mt-1.5">Volume ({weightUnit})</p>
                                                     </div>
                                                 </div>
                                             </div>
@@ -1007,7 +1029,7 @@ export default function ProgressPage() {
                                                 return (
                                                     <div className="flex items-center gap-4 mt-3 pt-3 border-t border-white/[0.04] text-[10px] font-mono text-white/30">
                                                         <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded bg-[rgb(var(--accent-rgb)/0.3)] border border-[rgb(var(--accent-rgb)/0.4)]" /> {monthSessions.length} sessions</span>
-                                                        <span>{monthSessions.length > 0 ? `${Math.round(monthSessions.reduce((s, r) => s + (Number(r.total_volume) || 0), 0)).toLocaleString()} kg total` : "No workouts"}</span>
+                                                        <span>{monthSessions.length > 0 ? `${Math.round(kgToUnit(monthSessions.reduce((s, r) => s + (Number(r.total_volume) || 0), 0), weightUnit)).toLocaleString()} ${weightUnit} total` : "No workouts"}</span>
                                                     </div>
                                                 );
                                             })()}
@@ -1024,7 +1046,7 @@ export default function ProgressPage() {
                                                     <div className="flex items-center justify-between mb-4">
                                                         <p className="text-[9px] font-mono tracking-[0.2em] text-white/20">WEEKLY VOLUME</p>
                                                         <div className="flex items-center gap-2">
-                                                            <span className="text-sm font-bold font-mono text-[rgb(var(--accent-light-rgb))]">{latest.volume.toLocaleString()}<span className="text-[9px] text-white/25 ml-0.5">kg</span></span>
+                                                            <span className="text-sm font-bold font-mono text-[rgb(var(--accent-light-rgb))]">{Math.round(kgToUnit(latest.volume, weightUnit)).toLocaleString()}<span className="text-[9px] text-white/25 ml-0.5">{weightUnit}</span></span>
                                                             {volChange !== 0 && (
                                                                 <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded-md ${volChange > 0 ? "text-emerald-300 bg-emerald-400/10" : "text-orange-300 bg-orange-400/10"}`}>
                                                                     {volChange > 0 ? "+" : ""}{volChange}%
@@ -1103,7 +1125,7 @@ export default function ProgressPage() {
                                                                             <div className="flex items-center gap-2.5 shrink-0">
                                                                                 <div className="text-right">
                                                                                     <p className="text-[11px] font-mono text-white/60">{s.total_sets} sets</p>
-                                                                                    <p className="text-[10px] font-mono text-white/25">{Math.round(Number(s.total_volume) || 0).toLocaleString()} kg</p>
+                                                                                    <p className="text-[10px] font-mono text-white/25">{Math.round(kgToUnit(Number(s.total_volume) || 0, weightUnit)).toLocaleString()} {weightUnit}</p>
                                                                                 </div>
                                                                                 <div className="px-2 py-1 rounded-lg bg-[rgb(var(--accent-rgb)/0.1)] border border-[rgb(var(--accent-rgb)/0.15)]">
                                                                                     <p className="text-[10px] font-mono font-bold text-[rgb(var(--accent-light-rgb))]">+{s.xp_earned}</p>
@@ -1152,8 +1174,8 @@ export default function ProgressPage() {
                                                             </div>
                                                             <div className="flex items-center gap-3 shrink-0">
                                                                 <div className="text-right">
-                                                                    <p className="text-sm font-bold font-mono text-white/90">{pr.best_weight}<span className="text-[10px] text-white/40">kg</span> × {pr.best_reps_at_weight}</p>
-                                                                    <p className="text-[9px] font-mono text-[rgb(var(--accent-light-rgb)/0.6)]">e1RM: {pr.estimated_1rm}kg</p>
+                                                                    <p className="text-sm font-bold font-mono text-white/90">{Math.round(kgToUnit(pr.best_weight, weightUnit) * 10) / 10}<span className="text-[10px] text-white/40">{weightUnit}</span> × {pr.best_reps_at_weight}</p>
+                                                                    <p className="text-[9px] font-mono text-[rgb(var(--accent-light-rgb)/0.6)]">e1RM: {Math.round(kgToUnit(pr.estimated_1rm, weightUnit) * 10) / 10}{weightUnit}</p>
                                                                 </div>
                                                                 {isSelected ? <ChevronDown size={14} className="text-[rgb(var(--accent-light-rgb))]" /> : <ChevronRight size={14} className="text-white/25" />}
                                                             </div>
@@ -1177,13 +1199,13 @@ export default function ProgressPage() {
                                                                         ) : (
                                                                             <button onClick={() => { setEditingGoal(true); setGoalInput(goals[pr.exercise_id] ? String(goals[pr.exercise_id]) : ""); }} className="flex items-center gap-1.5">
                                                                                 <Trophy size={12} className="text-white/25" />
-                                                                                <span className="text-sm font-bold font-mono text-white/80">{goals[pr.exercise_id] ? `${goals[pr.exercise_id]}kg` : "— —"}</span>
+                                                                                <span className="text-sm font-bold font-mono text-white/80">{goals[pr.exercise_id] ? `${Math.round(kgToUnit(goals[pr.exercise_id], weightUnit) * 10) / 10}${weightUnit}` : "— —"}</span>
                                                                             </button>
                                                                         )}
                                                                     </div>
                                                                     <div className="text-right">
                                                                         <p className="text-[8px] font-mono text-white/30 mb-0.5">CURRENT MAX</p>
-                                                                        <p className="text-lg font-bold font-mono text-[rgb(var(--accent-light-rgb))]">{pr.best_weight}<span className="text-xs text-white/40">kg</span></p>
+                                                                        <p className="text-lg font-bold font-mono text-[rgb(var(--accent-light-rgb))]">{Math.round(kgToUnit(pr.best_weight, weightUnit) * 10) / 10}<span className="text-xs text-white/40">{weightUnit}</span></p>
                                                                     </div>
                                                                 </div>
                                                                 {strengthLoading ? (
@@ -1193,16 +1215,16 @@ export default function ProgressPage() {
                                                                 ) : (
                                                                     <div className="h-48">
                                                                         <ResponsiveContainer width="100%" height="100%">
-                                                                            <LineChart data={strengthHistory}>
+                                                                            <LineChart data={displayStrengthHistory}>
                                                                                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
                                                                                 <XAxis dataKey="date" tick={{ fontSize: 9, fill: "rgba(255,255,255,0.3)" }} />
                                                                                 <YAxis tick={{ fontSize: 9, fill: "rgba(255,255,255,0.3)" }} domain={["auto", "auto"]} />
                                                                                 <Tooltip content={<CustomTooltip />} />
                                                                                 <Line
-                                                                                    type="monotone" dataKey="weight" stroke="rgb(var(--accent-rgb))" strokeWidth={2} name="Weight (kg)"
+                                                                                    type="monotone" dataKey="weight" stroke="rgb(var(--accent-rgb))" strokeWidth={2} name={`Weight (${weightUnit})`}
                                                                                     dot={(dotProps: any) => {
                                                                                         const { cx, cy, payload, index } = dotProps;
-                                                                                        const maxWeight = Math.max(...strengthHistory.map((p) => p.weight));
+                                                                                        const maxWeight = Math.max(...displayStrengthHistory.map((p) => p.weight));
                                                                                         const isPR = payload.weight === maxWeight;
                                                                                         return (
                                                                                             <g key={`dot-${index}`}>
@@ -1291,13 +1313,7 @@ export default function ProgressPage() {
                                             placeholder="—"
                                             className="flex-1 min-w-0 h-12 rounded-lg bg-white/[0.04] border border-white/[0.08] text-center text-xl font-bold font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition"
                                         />
-                                        {/* Unit toggle */}
-                                        <button
-                                            onClick={() => setWeightUnit((u) => u === "kg" ? "lbs" : "kg")}
-                                            className="shrink-0 text-[10px] font-mono px-3 py-3 rounded-lg border border-white/[0.08] text-white/40 hover:text-white/70 hover:border-white/20 transition"
-                                        >
-                                            {weightUnit.toUpperCase()}
-                                        </button>
+                                        <span className="shrink-0 text-[10px] font-mono px-3 py-3 text-white/40">{weightUnit.toUpperCase()}</span>
                                         <button
                                             onClick={logBodyWeight}
                                             disabled={!newWeight}
@@ -1335,14 +1351,14 @@ export default function ProgressPage() {
                                     ) : (
                                         <div className="h-56">
                                             <ResponsiveContainer width="100%" height="100%">
-                                                <LineChart data={bodyWeightData}>
+                                                <LineChart data={displayBodyWeightData}>
                                                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
                                                     <XAxis dataKey="date" tick={{ fontSize: 9, fill: "rgba(255,255,255,0.3)" }} />
                                                     <YAxis tick={{ fontSize: 9, fill: "rgba(255,255,255,0.3)" }} domain={["auto", "auto"]} />
                                                     <Tooltip content={<CustomTooltip />} />
-                                                    <Line type="monotone" dataKey="weight" stroke="rgba(255,255,255,0.2)" strokeWidth={1} dot={{ r: 2.5, fill: "rgba(255,255,255,0.15)", strokeWidth: 0 }} name="Raw (kg)" activeDot={{ r: 4, fill: "rgba(255,255,255,0.4)" }} />
+                                                    <Line type="monotone" dataKey="weight" stroke="rgba(255,255,255,0.2)" strokeWidth={1} dot={{ r: 2.5, fill: "rgba(255,255,255,0.15)", strokeWidth: 0 }} name={`Raw (${weightUnit})`} activeDot={{ r: 4, fill: "rgba(255,255,255,0.4)" }} />
                                                     {bodyWeightData.some((d) => d.ema) && (
-                                                        <Line type="monotone" dataKey="ema" stroke="#22d3ee" strokeWidth={2.5} dot={false} name="Trend (kg)" connectNulls />
+                                                        <Line type="monotone" dataKey="ema" stroke="#22d3ee" strokeWidth={2.5} dot={false} name={`Trend (${weightUnit})`} connectNulls />
                                                     )}
                                                 </LineChart>
                                             </ResponsiveContainer>
@@ -1361,37 +1377,38 @@ export default function ProgressPage() {
                                 )}
 
                                 {/* Latest stats */}
-                                {bodyWeightData.length > 0 && (() => {
-                                    const latest = bodyWeightData[bodyWeightData.length - 1];
-                                    const trendEntries = bodyWeightData.filter((d) => d.ema !== undefined);
+                                {displayBodyWeightData.length > 0 && (() => {
+                                    const latest = displayBodyWeightData[displayBodyWeightData.length - 1];
+                                    const trendEntries = displayBodyWeightData.filter((d) => d.ema !== undefined);
                                     const trendStart = trendEntries.length >= 2 ? trendEntries[0].ema! : null;
                                     const trendEnd = trendEntries.length >= 2 ? trendEntries[trendEntries.length - 1].ema! : null;
                                     const trendChange = trendStart !== null && trendEnd !== null ? Math.round((trendEnd - trendStart) * 10) / 10 : null;
                                     const weeklyRate = trendEntries.length >= 7 && trendStart !== null && trendEnd !== null
                                         ? Math.round(((trendEnd - trendStart) / (trendEntries.length / 7)) * 10) / 10
                                         : null;
+                                    const unitLabel = weightUnit.toUpperCase();
 
                                     return (
                                         <div className="grid grid-cols-3 gap-2">
                                             <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-3 text-center">
                                                 <p className="text-[8px] font-mono text-white/30">CURRENT</p>
-                                                <p className="text-lg font-bold font-mono text-white/90">{latest.weight} <span className="text-xs text-white/30">KG</span></p>
+                                                <p className="text-lg font-bold font-mono text-white/90">{latest.weight} <span className="text-xs text-white/30">{unitLabel}</span></p>
                                             </div>
                                             <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-3 text-center">
                                                 <p className="text-[8px] font-mono text-white/30">{trendEnd !== null ? "TREND" : "LOWEST"}</p>
                                                 {trendEnd !== null ? (
-                                                    <p className="text-lg font-bold font-mono text-cyan-300">{trendEnd} <span className="text-xs text-white/30">KG</span></p>
+                                                    <p className="text-lg font-bold font-mono text-cyan-300">{trendEnd} <span className="text-xs text-white/30">{unitLabel}</span></p>
                                                 ) : (
-                                                    <p className="text-lg font-bold font-mono text-emerald-300">{Math.min(...bodyWeightData.map((d) => d.weight))} <span className="text-xs text-white/30">KG</span></p>
+                                                    <p className="text-lg font-bold font-mono text-emerald-300">{Math.min(...displayBodyWeightData.map((d) => d.weight))} <span className="text-xs text-white/30">{unitLabel}</span></p>
                                                 )}
                                             </div>
                                             <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-3 text-center">
                                                 <p className="text-[8px] font-mono text-white/30">{weeklyRate !== null ? "/WEEK" : "CHANGE"}</p>
                                                 {weeklyRate !== null ? (
-                                                    <p className={`text-lg font-bold font-mono ${weeklyRate > 0 ? "text-orange-300" : weeklyRate < 0 ? "text-emerald-300" : "text-white/50"}`}>{weeklyRate > 0 ? "+" : ""}{weeklyRate} <span className="text-xs text-white/30">KG</span></p>
-                                                ) : bodyWeightData.length >= 2 ? (() => {
-                                                    const change = Math.round((latest.weight - bodyWeightData[0].weight) * 10) / 10;
-                                                    return <p className={`text-lg font-bold font-mono ${change > 0 ? "text-orange-300" : change < 0 ? "text-emerald-300" : "text-white/50"}`}>{change > 0 ? "+" : ""}{change} <span className="text-xs text-white/30">KG</span></p>;
+                                                    <p className={`text-lg font-bold font-mono ${weeklyRate > 0 ? "text-orange-300" : weeklyRate < 0 ? "text-emerald-300" : "text-white/50"}`}>{weeklyRate > 0 ? "+" : ""}{weeklyRate} <span className="text-xs text-white/30">{unitLabel}</span></p>
+                                                ) : displayBodyWeightData.length >= 2 ? (() => {
+                                                    const change = Math.round((latest.weight - displayBodyWeightData[0].weight) * 10) / 10;
+                                                    return <p className={`text-lg font-bold font-mono ${change > 0 ? "text-orange-300" : change < 0 ? "text-emerald-300" : "text-white/50"}`}>{change > 0 ? "+" : ""}{change} <span className="text-xs text-white/30">{unitLabel}</span></p>;
                                                 })() : <p className="text-lg font-bold font-mono text-white/30">—</p>}
                                             </div>
                                         </div>
@@ -1603,7 +1620,7 @@ export default function ProgressPage() {
                                     const contextParts: string[] = [];
                                     contextParts.push(`Avg ${absAvg} kcal ${avg < 0 ? "under" : "over"} target across ${ledger.length} day${ledger.length !== 1 ? "s" : ""}`);
                                     if (absWeightDelta >= 0.1) {
-                                        contextParts.push(`on pace to ${weightDelta < 0 ? "lose" : "gain"} ~${avgPerWeek} kg/week`);
+                                        contextParts.push(`on pace to ${weightDelta < 0 ? "lose" : "gain"} ~${avgPerWeek} ${weightUnit}/week`);
                                     }
 
                                     return (
@@ -1621,7 +1638,7 @@ export default function ProgressPage() {
                                                 <div className="rounded-md bg-white/[0.03] border border-white/[0.04] p-2.5 text-center">
                                                     <p className="text-[8px] font-mono text-white/30 mb-1">WEEKLY PACE</p>
                                                     <p className={`text-sm font-bold font-mono ${weightGood ? "text-emerald-300" : "text-amber-300"}`}>
-                                                        ~{avgPerWeek} kg/{weightDelta < 0 ? "lost" : "gained"}
+                                                        ~{avgPerWeek} {weightUnit}/{weightDelta < 0 ? "lost" : "gained"}
                                                     </p>
                                                     <p className="text-[7px] font-mono text-white/20">per week</p>
                                                 </div>
@@ -1700,8 +1717,8 @@ export default function ProgressPage() {
                                                             </p>
                                                         </div>
                                                         <div className="text-right">
-                                                            <p className="text-lg font-bold font-mono text-[rgb(var(--accent-light-rgb))]">{projectedKg} <span className="text-xs text-white/30">kg</span></p>
-                                                            <p className="text-[8px] font-mono text-white/20">target: {Number(ledgerGoal!.targetWeightKg!)} kg</p>
+                                                            <p className="text-lg font-bold font-mono text-[rgb(var(--accent-light-rgb))]">{Math.round(kgToUnit(projectedKg, weightUnit) * 10) / 10} <span className="text-xs text-white/30">{weightUnit}</span></p>
+                                                            <p className="text-[8px] font-mono text-white/20">target: {Math.round(kgToUnit(Number(ledgerGoal!.targetWeightKg!), weightUnit) * 10) / 10} {weightUnit}</p>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1725,11 +1742,11 @@ export default function ProgressPage() {
                                                 <p className="text-sm font-bold font-mono text-[rgb(var(--accent-light-rgb))]">
                                                     {new Date(feasibility.suggestedDate + "T12:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
                                                 </p>
-                                                <p className="text-[8px] font-mono text-white/20 mt-0.5">at {feasibility.safeRateKgWeek} kg/week safe rate</p>
+                                                <p className="text-[8px] font-mono text-white/20 mt-0.5">at {Math.round(kgToUnit(feasibility.safeRateKgWeek, weightUnit) * 100) / 100} {weightUnit}/week safe rate</p>
                                             </div>
                                         )}
                                         {feasibility.feasible && feasibility.requiredRateKgWeek > 0 && (
-                                            <p className="text-[8px] font-mono text-white/20">Required rate: {feasibility.requiredRateKgWeek} kg/week · Safe max: {feasibility.safeRateKgWeek} kg/week</p>
+                                            <p className="text-[8px] font-mono text-white/20">Required rate: {Math.round(kgToUnit(feasibility.requiredRateKgWeek, weightUnit) * 100) / 100} {weightUnit}/week · Safe max: {Math.round(kgToUnit(feasibility.safeRateKgWeek, weightUnit) * 100) / 100} {weightUnit}/week</p>
                                         )}
                                         {feasibility.violations.length > 0 && (
                                             <div className="mt-2 space-y-1">

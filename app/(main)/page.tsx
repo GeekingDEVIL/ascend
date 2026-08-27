@@ -13,6 +13,8 @@ import { rematerializeDailyIntake } from "../lib/intakeLog";
 import { Plus } from "lucide-react";
 import { staggerContainer, staggerItem, fadeInUp } from "../lib/motion";
 import { useSex } from "../lib/useSex";
+import { useUnits } from "../lib/useUnits";
+import { formatWeight, kgToUnit } from "../lib/units";
 
 type TodayPlan = { title: string; is_rest: boolean; count: number; sets: number; completed?: boolean };
 
@@ -59,6 +61,7 @@ export default function Dashboard() {
   const [calorieSummary, setCalorieSummary] = useState<CalorieSummary | null>(null);
   const [todayIntake, setTodayIntake] = useState<{ kcal: number; protein_g: number; carbs_g: number; fat_g: number } | null>(null);
   const { sex: userSex } = useSex();
+  const weightUnit = useUnits();
   const [showQuickLog, setShowQuickLog] = useState(false);
   const [qlLabel, setQlLabel] = useState("");
   const [qlKcal, setQlKcal] = useState("");
@@ -691,7 +694,7 @@ export default function Dashboard() {
           {[
             { icon: <Flame size={16} />, label: "STREAK", value: statsLoaded ? `${stats.streak}` : "—", sub: "days", color: "text-orange-400", bg: "bg-orange-400/10", border: "border-orange-400/20" },
             { icon: <Activity size={16} />, label: "WORKOUTS", value: statsLoaded ? `${stats.totalWorkouts}` : "—", sub: "completed", color: "text-blue-400", bg: "bg-blue-400/10", border: "border-blue-400/20" },
-            { icon: <TrendingUp size={16} />, label: "WEEKLY VOL", value: statsLoaded ? `${stats.weeklyVolume.toLocaleString()}` : "—", sub: "kg", color: "text-[rgb(var(--accent-rgb))]", bg: "bg-[rgb(var(--accent-rgb)/0.1)]", border: "border-[rgb(var(--accent-rgb)/0.2)]" },
+            { icon: <TrendingUp size={16} />, label: "WEEKLY VOL", value: statsLoaded ? `${Math.round(kgToUnit(stats.weeklyVolume, weightUnit)).toLocaleString()}` : "—", sub: weightUnit, color: "text-[rgb(var(--accent-rgb))]", bg: "bg-[rgb(var(--accent-rgb)/0.1)]", border: "border-[rgb(var(--accent-rgb)/0.2)]" },
             { icon: <Trophy size={16} />, label: "PRs", value: statsLoaded ? `${stats.prCount}` : "—", sub: "exercises", color: "text-yellow-400", bg: "bg-yellow-400/10", border: "border-yellow-400/20" },
           ].map((stat) => (
             <div key={stat.label} className="rounded-xl border border-[rgb(var(--accent-rgb)/0.12)] bg-white/[0.03] p-3" style={{ boxShadow: "0 0 15px -5px rgb(var(--accent-rgb) / 0.08)" }}>
@@ -749,11 +752,11 @@ export default function Dashboard() {
               <p className="text-[8px] font-mono tracking-wider text-white/25">BODY WEIGHT</p>
             </div>
             <p className="text-2xl font-bold font-mono text-white/90">
-              {stats.bodyWeight !== null ? stats.bodyWeight : "—"}<span className="text-xs text-white/25"> kg</span>
+              {stats.bodyWeight !== null ? formatWeight(stats.bodyWeight, weightUnit, 1) : "—"}<span className="text-xs text-white/25"> {weightUnit}</span>
             </p>
             {stats.bodyWeightChange !== null ? (
               <p className={`text-[9px] font-mono mt-0.5 ${stats.bodyWeightChange > 0 ? "text-orange-300/60" : stats.bodyWeightChange < 0 ? "text-emerald-300/60" : "text-white/20"}`}>
-                {stats.bodyWeightChange > 0 ? "+" : ""}{stats.bodyWeightChange} kg from previous
+                {stats.bodyWeightChange > 0 ? "+" : stats.bodyWeightChange < 0 ? "−" : ""}{formatWeight(Math.abs(stats.bodyWeightChange), weightUnit, 1)} {weightUnit} from previous
               </p>
             ) : (
               <p className="text-[9px] font-mono text-white/20 mt-0.5">No trend data</p>
