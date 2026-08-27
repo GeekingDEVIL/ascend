@@ -14,6 +14,7 @@ import { updateUserStats } from "../../lib/updateUserStats";
 import { updateExerciseLeaderboard } from "../../lib/updateExerciseLeaderboard";
 import AddExerciseModal from "../../components/AddExerciseModal";
 import { useSex } from "../../lib/useSex";
+import { fetchCycleTrainingData, assessExerciseRisk, getCycleAdjustedWeight, type PhaseTrainingProfile, type EnergyForecast, type ExerciseRisk } from "../../lib/cycleTrainingEngine";
 
 /* ─── TYPES ─── */
 type WorkoutExercise = {
@@ -172,6 +173,9 @@ export default function WorkoutPage() {
     const [showDeletePlanConfirm, setShowDeletePlanConfirm] = useState(false);
     const [deletingPlan, setDeletingPlan] = useState(false);
     const [skippedExercises, setSkippedExercises] = useState<Set<string>>(new Set());
+    const [cycleProfile, setCycleProfile] = useState<PhaseTrainingProfile | null>(null);
+    const [energyForecast, setEnergyForecast] = useState<EnergyForecast[]>([]);
+    const [exerciseRisks, setExerciseRisks] = useState<Record<string, ExerciseRisk>>({});
     const { sex: userSex } = useSex();
 
     const today = toDateString(new Date());
@@ -237,6 +241,27 @@ export default function WorkoutPage() {
         });
         setExercisesList(mapped);
         if (mapped.length === 0) { setStatus("no_plan"); return; }
+
+        // Cycle-aware training (female mode only)
+        if (sex === "female") {
+            try {
+                const cycleData = await fetchCycleTrainingData(user.id);
+                if (cycleData) {
+                    setCycleProfile(cycleData.profile);
+                    setEnergyForecast(cycleData.forecast);
+                    const risks: Record<string, ExerciseRisk> = {};
+                    mapped.forEach(ex => {
+                        const risk = assessExerciseRisk(ex.name, ex.exercise_id, cycleData.profile.phase, cycleData.profile.subPhase, ex.body_segment);
+                        if (risk.riskLevel !== "none") risks[ex.id] = risk;
+                    });
+                    setExerciseRisks(risks);
+                }
+            } catch { /* cycle data is optional — don't block workout load */ }
+        } else {
+            setCycleProfile(null);
+            setEnergyForecast([]);
+            setExerciseRisks({});
+        }
 
         const exerciseIds = mapped.map((m) => m.exercise_id);
         const { data: priorLogs } = await supabase.from("exercise_set_logs").select("exercise_id, weight, reps, completed_at, workout_session_id, workout_sessions!inner(sex)").eq("user_id", user.id).eq("workout_sessions.sex", sex).in("exercise_id", exerciseIds).order("completed_at", { ascending: false }).limit(500);
@@ -570,7 +595,7 @@ export default function WorkoutPage() {
         const setsData = allSets.map((s) => { const ex = exercisesList.find((e) => logs[e.id]?.includes(s)); return { exercise_id: ex?.exercise_id ?? "", weight: Number(s.weight) || null, reps: Number(s.reps) || null }; });
         const xp = await calculateSessionXP(user.id, sessionId, setsData, totalPlanned, prCount, userSex);
 
-        await supabase.from("workout_sessions").update({ status: "completed", completed_at: new Date().toISOString(), duration_seconds: dur, total_volume: totalVolume, total_sets: totalSets, xp_earned: xp.total }).eq("id", sessionId);
+        await supabase.from("workout_sessions").update({ status: "completed", completed_at: new Date().toISOString(), duration_seconds: dur, total_volume: totalVolume, total_sets: totalSets, xp_earned: xp.total, ...(cycleProfile ? { cycle_phase: cycleProfile.phase, cycle_day: cycleProfile.cycleDay } : {}) }).eq("id", sessionId);
         await supabase.from("notifications").insert({ user_id: user.id, type: "workout_complete", title: "WORKOUT COMPLETE", message: `${dayTitle} — ${totalSets} sets, ${Math.round(totalVolume).toLocaleString()}kg volume, +${xp.total} XP`, metadata: { sets: totalSets, volume: totalVolume, xp: xp.total } });
 
         // Streak + Level checks
@@ -894,6 +919,24 @@ export default function WorkoutPage() {
                         <p className="text-lg font-bold text-white/90">{dayTitle}</p>
                     </div>
 
+                    {cycleProfile && (
+                        <div className={`rounded-lg px-3 py-2 mb-3 border ${
+                            cycleProfile.banner.color === "rose" ? "border-rose-500/15 bg-rose-500/[0.04]" :
+                            cycleProfile.banner.color === "emerald" ? "border-emerald-500/15 bg-emerald-500/[0.04]" :
+                            cycleProfile.banner.color === "amber" ? "border-amber-500/15 bg-amber-500/[0.04]" :
+                            "border-violet-500/15 bg-violet-500/[0.04]"
+                        }`}>
+                            <p className={`text-[9px] font-mono text-center ${
+                                cycleProfile.banner.color === "rose" ? "text-rose-400/60" :
+                                cycleProfile.banner.color === "emerald" ? "text-emerald-400/60" :
+                                cycleProfile.banner.color === "amber" ? "text-amber-400/60" :
+                                "text-violet-400/60"
+                            }`}>
+                                Trained in {cycleProfile.phase} phase · Day {cycleProfile.cycleDay} · {cycleProfile.styleName}
+                            </p>
+                        </div>
+                    )}
+
                     <div className="grid grid-cols-2 gap-2 mb-4">
                         <StatCell label="DURATION" value={formatClock(summary.duration)} />
                         <StatCell label="SETS" value={String(summary.sets)} />
@@ -1081,6 +1124,89 @@ export default function WorkoutPage() {
                     </div>
                 )}
 
+                {/* ── CYCLE TRAINING BANNER (female mode) ── */}
+                {cycleProfile && (status === "not_started" || status === "active") && (
+                    <div className={`rounded-2xl border p-4 ${
+                        cycleProfile.banner.color === "rose" ? "border-rose-500/15 bg-rose-500/[0.04]" :
+                        cycleProfile.banner.color === "emerald" ? "border-emerald-500/15 bg-emerald-500/[0.04]" :
+                        cycleProfile.banner.color === "amber" ? "border-amber-500/15 bg-amber-500/[0.04]" :
+                        "border-violet-500/15 bg-violet-500/[0.04]"
+                    }`}>
+                        <div className="flex items-start justify-between gap-3 mb-2">
+                            <div>
+                                <div className="flex items-center gap-2 mb-1">
+                                    <span className={`text-[8px] font-mono tracking-widest uppercase ${
+                                        cycleProfile.banner.color === "rose" ? "text-rose-400/60" :
+                                        cycleProfile.banner.color === "emerald" ? "text-emerald-400/60" :
+                                        cycleProfile.banner.color === "amber" ? "text-amber-400/60" :
+                                        "text-violet-400/60"
+                                    }`}>
+                                        {cycleProfile.phase} · Day {cycleProfile.cycleDay}
+                                    </span>
+                                    <span className={`text-[8px] font-mono px-1.5 py-0.5 rounded-full ${
+                                        cycleProfile.banner.color === "rose" ? "bg-rose-500/10 text-rose-400/50" :
+                                        cycleProfile.banner.color === "emerald" ? "bg-emerald-500/10 text-emerald-400/50" :
+                                        cycleProfile.banner.color === "amber" ? "bg-amber-500/10 text-amber-400/50" :
+                                        "bg-violet-500/10 text-violet-400/50"
+                                    }`}>
+                                        {cycleProfile.styleName}
+                                    </span>
+                                </div>
+                                <p className={`text-sm font-semibold ${
+                                    cycleProfile.banner.color === "rose" ? "text-rose-300" :
+                                    cycleProfile.banner.color === "emerald" ? "text-emerald-300" :
+                                    cycleProfile.banner.color === "amber" ? "text-amber-300" :
+                                    "text-violet-300"
+                                }`}>{cycleProfile.banner.headline}</p>
+                            </div>
+                            <div className="text-right shrink-0">
+                                <p className="text-[8px] font-mono text-white/20">INTENSITY</p>
+                                <p className={`text-lg font-bold font-mono ${
+                                    cycleProfile.intensityModifier >= 1.0 ? "text-emerald-400" :
+                                    cycleProfile.intensityModifier >= 0.85 ? "text-amber-400" :
+                                    "text-rose-400"
+                                }`}>{Math.round(cycleProfile.intensityModifier * 100)}%</p>
+                            </div>
+                        </div>
+                        <p className="text-[10px] text-white/35 leading-relaxed">{cycleProfile.banner.detail}</p>
+
+                        {/* Energy Forecast */}
+                        {status === "not_started" && energyForecast.length > 0 && (
+                            <div className="mt-3 pt-3 border-t border-white/[0.04]">
+                                <p className="text-[8px] font-mono tracking-widest text-white/20 mb-2">7-DAY ENERGY FORECAST</p>
+                                <div className="flex items-end gap-1">
+                                    {energyForecast.map((f, i) => {
+                                        const dayLabel = i === 0 ? "Today" : new Date(f.date).toLocaleDateString(undefined, { weekday: "short" }).slice(0, 2);
+                                        const height = f.energyLevel * 20;
+                                        const phaseColor = f.phase === "menstrual" ? "bg-rose-400" : f.phase === "follicular" ? "bg-emerald-400" : f.phase === "ovulation" ? "bg-amber-400" : "bg-violet-400";
+                                        return (
+                                            <div key={f.date} className="flex-1 flex flex-col items-center gap-1">
+                                                <span className="text-[7px] font-mono text-white/20">{f.label.slice(0, 3)}</span>
+                                                <div className={`w-full rounded-sm ${phaseColor} transition-all`} style={{ height: `${height}%`, minHeight: 4, opacity: i === 0 ? 1 : 0.5 + (f.energyLevel / 10) }} />
+                                                <span className={`text-[8px] font-mono ${i === 0 ? "text-white/50 font-bold" : "text-white/20"}`}>{dayLabel}</span>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Warm-up & Nutrition tips */}
+                        {status === "not_started" && (
+                            <div className="mt-3 pt-3 border-t border-white/[0.04] grid grid-cols-2 gap-2">
+                                <div className="rounded-lg border border-white/[0.04] bg-white/[0.02] p-2.5">
+                                    <p className="text-[7px] font-mono tracking-widest text-white/20 mb-1">WARM-UP · {cycleProfile.warmUpGuidance.minutes} MIN</p>
+                                    <p className="text-[9px] text-white/35 leading-relaxed">{cycleProfile.warmUpGuidance.focus}</p>
+                                </div>
+                                <div className="rounded-lg border border-white/[0.04] bg-white/[0.02] p-2.5">
+                                    <p className="text-[7px] font-mono tracking-widest text-white/20 mb-1">NUTRITION TIP</p>
+                                    <p className="text-[9px] text-white/35 leading-relaxed">{cycleProfile.nutritionTip}</p>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
+
                 {/* ── PRE-SESSION PREVIEW ── */}
                 {status === "not_started" && (
                     <CardPanel className="p-4">
@@ -1164,6 +1290,11 @@ export default function WorkoutPage() {
                                                 <TrendingUp size={10} className="inline mr-1 -mt-0.5" />{hint.text}
                                             </p>
                                         )}
+                                        {exerciseRisks[ex.id] && (
+                                            <p className="text-[9px] font-mono text-amber-400/50 mt-1 ml-8">
+                                                ⚠ {exerciseRisks[ex.id].reason}
+                                            </p>
+                                        )}
                                     </div>
                                 );
                             })}
@@ -1213,6 +1344,31 @@ export default function WorkoutPage() {
                                                     <p className="text-[10px] font-mono text-[rgb(var(--accent-rgb)/0.6)]">{hint.text}</p>
                                                 </div>
                                             )}
+
+                                            {/* Injury risk indicator */}
+                                            {exerciseRisks[ex.id] && (
+                                                <div className="mx-4 mt-3 flex items-start gap-2 rounded-lg bg-amber-500/[0.06] border border-amber-500/15 px-3 py-2">
+                                                    <span className="text-amber-400 mt-0.5 shrink-0">⚠</span>
+                                                    <div>
+                                                        <p className="text-[10px] font-mono text-amber-400/70">{exerciseRisks[ex.id].reason}</p>
+                                                        <p className="text-[9px] font-mono text-amber-400/40 mt-0.5">Alternative: {exerciseRisks[ex.id].alternative}</p>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Cycle-adjusted weight suggestion */}
+                                            {cycleProfile && !ex.isCardio && !ex.isBodyweight && lastPerformance[ex.exercise_id]?.weight && (() => {
+                                                const adj = getCycleAdjustedWeight(lastPerformance[ex.exercise_id].weight, cycleProfile.intensityModifier);
+                                                return adj.label ? (
+                                                    <div className={`mx-4 mt-2 flex items-center gap-2 rounded-lg px-3 py-1.5 ${
+                                                        cycleProfile.intensityModifier >= 1.0 ? "bg-emerald-500/[0.05] border border-emerald-500/10" : "bg-violet-500/[0.05] border border-violet-500/10"
+                                                    }`}>
+                                                        <p className={`text-[9px] font-mono ${cycleProfile.intensityModifier >= 1.0 ? "text-emerald-400/60" : "text-violet-400/60"}`}>
+                                                            {adj.label}
+                                                        </p>
+                                                    </div>
+                                                ) : null;
+                                            })()}
 
                                             {/* Swap / Skip / Remove */}
                                             <div className="px-4 pt-2.5 pb-1 flex items-center gap-4">
@@ -1406,7 +1562,7 @@ export default function WorkoutPage() {
                 <div className="fixed bottom-16 md:bottom-6 left-0 right-0 md:left-1/2 md:-translate-x-1/2 md:max-w-sm md:rounded-xl z-20">
                     <div className="border-t md:border border-white/[0.06] bg-[#080d18]/95 backdrop-blur-xl px-5 py-3 md:rounded-xl flex items-center gap-2">
                         <button
-                            onClick={() => { setRestRemaining(90); setRestPaused(false); }}
+                            onClick={() => { setRestRemaining(Math.round(90 * (cycleProfile?.restMultiplier ?? 1))); setRestPaused(false); }}
                             className="flex-1 text-[10px] font-mono font-medium py-3 rounded-xl border border-white/[0.08] text-white/40 hover:text-white/70 transition"
                         >
                             Rest Timer
