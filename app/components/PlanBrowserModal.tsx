@@ -73,7 +73,7 @@ export default function PlanBrowserModal({ open, onClose, onImport, importing, u
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPlan, setSelectedPlan] = useState<WorkoutPlan | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [expandedDays, setExpandedDays] = useState<number | null>(null);
+  const [expandedGoal, setExpandedGoal] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("browse");
 
   const hasActiveFilters = envFilter !== "All" || daysFilter !== null || goalFilter !== "All" || levelFilter !== "All";
@@ -99,13 +99,13 @@ export default function PlanBrowserModal({ open, onClose, onImport, importing, u
     }).sort((a, b) => a.days - b.days || (LEVEL_ORDER[a.level] ?? 1) - (LEVEL_ORDER[b.level] ?? 1));
   }, [envFilter, daysFilter, goalFilter, levelFilter, searchQuery, sexFilter]);
 
-  const groupedByDays = useMemo(() => {
-    const groups: { days: number; plans: WorkoutPlan[] }[] = [];
-    for (const dayCount of DAY_COUNTS) {
+  const groupedByGoal = useMemo(() => {
+    const groups: { goal: string; plans: WorkoutPlan[] }[] = [];
+    for (const goal of PLAN_GOALS) {
       const plans = filtered
-        .filter((p) => p.days === dayCount)
-        .sort((a, b) => (LEVEL_ORDER[a.level] ?? 1) - (LEVEL_ORDER[b.level] ?? 1) || a.goal.localeCompare(b.goal));
-      if (plans.length > 0) groups.push({ days: dayCount, plans });
+        .filter((p) => p.goal === goal)
+        .sort((a, b) => a.days - b.days || (LEVEL_ORDER[a.level] ?? 1) - (LEVEL_ORDER[b.level] ?? 1));
+      if (plans.length > 0) groups.push({ goal, plans });
     }
     return groups;
   }, [filtered]);
@@ -217,44 +217,37 @@ export default function PlanBrowserModal({ open, onClose, onImport, importing, u
                   ))}
                 </div>
               ) : (
-                /* Grouped by days/week when browsing */
+                /* Grouped by goal when browsing */
                 <div className="space-y-2">
-                  {groupedByDays.map(({ days, plans }) => {
-                    const isExpanded = expandedDays === days;
+                  {groupedByGoal.map(({ goal, plans }) => {
+                    const meta = GOAL_META[goal] || GOAL_META["Overall fitness"];
+                    const GoalIcon = meta.icon;
+                    const isExpanded = expandedGoal === goal;
                     const displayPlans = isExpanded ? plans : plans.slice(0, 3);
-                    const descriptions: Record<number, string> = {
-                      2: "Light commitment, full coverage",
-                      3: "Most popular — great balance",
-                      4: "Serious training split",
-                      5: "High frequency, dedicated lifters",
-                      6: "Advanced high-volume programs",
-                    };
 
                     return (
-                      <div key={days} className="rounded-2xl border border-white/[0.05] bg-white/[0.01] overflow-hidden">
-                        {/* Days Header */}
+                      <div key={goal} className={`rounded-2xl border overflow-hidden ${isExpanded ? meta.accent : "border-white/[0.05] bg-white/[0.01]"}`}>
                         <button
-                          onClick={() => setExpandedDays(isExpanded ? null : days)}
+                          onClick={() => setExpandedGoal(isExpanded ? null : goal)}
                           className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-white/[0.02] transition text-left"
                         >
-                          <div className="w-9 h-9 rounded-xl border border-[rgb(var(--accent-rgb)/0.2)] bg-[rgb(var(--accent-rgb)/0.06)] flex items-center justify-center shrink-0">
-                            <span className="text-sm font-bold font-mono text-[rgb(var(--accent-light-rgb))]">{days}</span>
+                          <div className={`w-9 h-9 rounded-xl border flex items-center justify-center shrink-0 ${meta.accent}`}>
+                            <GoalIcon size={16} className={meta.color} />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-[13px] font-bold text-white/85">{days} Days / Week</p>
-                            <p className="text-[10px] font-mono text-white/30">{plans.length} plans · {descriptions[days] || ""}</p>
+                            <p className="text-[13px] font-bold text-white/85">{goal}</p>
+                            <p className="text-[10px] font-mono text-white/30">{plans.length} plans · {meta.description}</p>
                           </div>
                           <ChevronRight size={14} className={`text-white/20 transition-transform ${isExpanded ? "rotate-90" : ""}`} />
                         </button>
 
-                        {/* Plan Cards */}
                         <div className="px-3 pb-3 space-y-1.5">
                           {displayPlans.map((plan) => (
-                            <PlanCard key={plan.id} plan={plan} compact showGoal onClick={() => setSelectedPlan(plan)} />
+                            <PlanCard key={plan.id} plan={plan} compact onClick={() => setSelectedPlan(plan)} />
                           ))}
                           {!isExpanded && plans.length > 3 && (
                             <button
-                              onClick={(e) => { e.stopPropagation(); setExpandedDays(days); }}
+                              onClick={(e) => { e.stopPropagation(); setExpandedGoal(goal); }}
                               className="w-full py-2 text-[10px] font-mono text-[rgb(var(--accent-light-rgb)/0.5)] hover:text-[rgb(var(--accent-light-rgb))] transition rounded-lg hover:bg-white/[0.02]"
                             >
                               Show {plans.length - 3} more plans

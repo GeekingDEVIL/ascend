@@ -118,6 +118,7 @@ export default function CyclePage() {
   const [wellnessSuggestions, setWellnessSuggestions] = useState<WellnessSuggestion[]>([]);
   const [openGuide, setOpenGuide] = useState<number | null>(null);
   const [openFaq, setOpenFaq] = useState<string | null>(null);
+  const [hormonalBc, setHormonalBc] = useState(false);
   const [calMonth, setCalMonth] = useState(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); });
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
 
@@ -128,10 +129,11 @@ export default function CyclePage() {
     const [cycleLogs, cycleSymptoms, { data: prof }] = await Promise.all([
       fetchCycleLogs(user.id),
       fetchCycleSymptoms(user.id, 60),
-      supabase.from("profiles").select("sex").eq("id", user.id).maybeSingle(),
+      supabase.from("profiles").select("sex, hormonal_bc").eq("id", user.id).maybeSingle(),
     ]);
 
     setUserSex(prof?.sex ?? null);
+    setHormonalBc(prof?.hormonal_bc ?? false);
     setLogs(cycleLogs);
     setSymptoms(cycleSymptoms);
 
@@ -203,6 +205,13 @@ export default function CyclePage() {
     setSymptomSaved(true);
     const phase = insight?.currentPhase ?? null;
     setWellnessSuggestions(getWellnessSuggestions(todaySymptoms, todayMood, todayEnergy, todaySleep, todayCraving, phase));
+  }
+
+  async function toggleHormonalBc() {
+    if (!user) return;
+    const next = !hormonalBc;
+    setHormonalBc(next);
+    await supabase.from("profiles").update({ hormonal_bc: next }).eq("id", user.id);
   }
 
   function toggleSymptom(s: string) {
@@ -564,6 +573,33 @@ export default function CyclePage() {
                   </div>
                 </div>
               )}
+
+              {/* ── Hormonal Contraception Toggle ── */}
+              <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <Shield size={14} className="text-violet-400/70" />
+                    <div>
+                      <p className="text-[11px] font-medium text-white/70">Hormonal contraception</p>
+                      <p className="text-[9px] font-mono text-white/30 mt-0.5">Flattens phase-based training adjustments</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={toggleHormonalBc}
+                    className={`relative w-10 h-[22px] rounded-full border transition-all ${
+                      hormonalBc
+                        ? "bg-violet-500/30 border-violet-400/40"
+                        : "bg-white/[0.04] border-white/[0.08]"
+                    }`}
+                  >
+                    <div className={`absolute top-[3px] w-4 h-4 rounded-full transition-all ${
+                      hormonalBc
+                        ? "left-[21px] bg-violet-400"
+                        : "left-[3px] bg-white/30"
+                    }`} />
+                  </button>
+                </div>
+              </div>
             </motion.div>
           )}
 
