@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../lib/AuthProvider";
+import { useSex } from "../../lib/useSex";
 import {
   estimateCyclePhase, computeAdaptiveCycleLength, getCycleInsight,
   fetchCycleLogs, fetchCycleSymptoms, logPeriod, endPeriod, logSymptoms,
@@ -95,6 +96,7 @@ function CycleRing({ cycleDay, cycleLength, phase }: { cycleDay: number; cycleLe
 export default function CyclePage() {
   const { user } = useAuth();
   const router = useRouter();
+  const { sex: userSex } = useSex();
   const [tab, setTab] = useState<Tab>("today");
   const [loading, setLoading] = useState(true);
   const [logs, setLogs] = useState<CycleLog[]>([]);
@@ -102,7 +104,6 @@ export default function CyclePage() {
   const [insight, setInsight] = useState<CycleInsight | null>(null);
   const [irregularities, setIrregularities] = useState<CycleIrregularity[]>([]);
   const [intelligence, setIntelligence] = useState<PhaseIntelligence | null>(null);
-  const [userSex, setUserSex] = useState<string | null>(null);
 
   const [periodDate, setPeriodDate] = useState(new Date().toISOString().split("T")[0]);
   const [flowLevel, setFlowLevel] = useState("medium");
@@ -129,15 +130,14 @@ export default function CyclePage() {
     const [cycleLogs, cycleSymptoms, { data: prof }] = await Promise.all([
       fetchCycleLogs(user.id),
       fetchCycleSymptoms(user.id, 60),
-      supabase.from("profiles").select("sex, hormonal_bc").eq("id", user.id).maybeSingle(),
+      supabase.from("profiles").select("hormonal_bc").eq("id", user.id).maybeSingle(),
     ]);
 
-    setUserSex(prof?.sex ?? null);
     setHormonalBc(prof?.hormonal_bc ?? false);
     setLogs(cycleLogs);
     setSymptoms(cycleSymptoms);
 
-    if (prof?.sex !== "female") {
+    if (userSex !== "female") {
       setLoading(false);
       return;
     }
@@ -174,7 +174,7 @@ export default function CyclePage() {
     }
 
     setLoading(false);
-  }, [user, today]);
+  }, [user, today, userSex]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
