@@ -149,6 +149,7 @@ export default function CyclePage() {
       .from("user_goals")
       .select("cycle_start_date")
       .eq("user_id", user.id)
+      .eq("sex", userSex)
       .limit(1);
 
     const lastStart = periodStarts[0] ?? goals?.[0]?.cycle_start_date ?? today;

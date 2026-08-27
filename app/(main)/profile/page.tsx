@@ -14,7 +14,7 @@ import { GOAL_OPTIONS } from "../../lib/goals";
 import { updateUserStats } from "../../lib/updateUserStats";
 import { ACCENT_PRESETS, DEFAULT_ACCENT, getAccentPreset, applyAccent, type AccentKey } from "../../lib/theme";
 import { getFullCalorieSummary, ageFromDOB, type GoalType, type Sex, type ActivityLevel, type DietPreference, type CalorieSummary } from "../../lib/calorieEngine";
-import { broadcastSexChange } from "../../lib/useSex";
+import { useSex, broadcastSexChange } from "../../lib/useSex";
 import { rematerializeWeightTrend } from "../../lib/weightTrend";
 
 type ProfileData = {
@@ -103,6 +103,7 @@ const DAYS_OF_WEEK = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 export default function ProfilePage() {
     const { profile, user, refreshProfile } = useAuth();
     const router = useRouter();
+    const { sex: hookSex } = useSex();
     const [avatarUploading, setAvatarUploading] = useState(false);
     const [avatarError, setAvatarError] = useState<string | null>(null);
 
@@ -159,17 +160,18 @@ export default function ProfilePage() {
         if (!user) return;
         setLoading(true);
 
+        const currentSex = hookSex;
         const [{ data: p }, { data: bs }] = await Promise.all([
             supabase
                 .from("profiles")
-                .select("date_of_birth, unit_preference, injury_notes, social_instagram, social_twitter, profile_visibility, avatar_color, sex")
+                .select("unit_preference, injury_notes, social_instagram, social_twitter, profile_visibility, avatar_color")
                 .eq("id", user.id)
                 .maybeSingle(),
             supabase
                 .from("profile_body_stats")
-                .select("height_cm, activity_level, goal, experience, training_frequency, workout_time_pref")
+                .select("height_cm, activity_level, goal, experience, training_frequency, workout_time_pref, date_of_birth")
                 .eq("user_id", user.id)
-                .eq("sex", (localStorage.getItem("ascend_sex") as Sex) ?? "male")
+                .eq("sex", currentSex)
                 .maybeSingle(),
         ]);
 
@@ -179,7 +181,7 @@ export default function ProfilePage() {
                 height_cm: bs?.height_cm ?? null,
                 experience: bs?.experience ?? "beginner",
                 training_frequency: bs?.training_frequency ?? 5,
-                date_of_birth: p.date_of_birth,
+                date_of_birth: bs?.date_of_birth ?? null,
                 unit_preference: p.unit_preference ?? "metric",
                 workout_time_pref: bs?.workout_time_pref ?? null,
                 injury_notes: p.injury_notes,
@@ -187,12 +189,10 @@ export default function ProfilePage() {
                 social_twitter: p.social_twitter,
                 profile_visibility: p.profile_visibility ?? "public",
                 avatar_color: p.avatar_color ?? "rgb(var(--accent-rgb))",
-                sex: p.sex as Sex | null,
+                sex: currentSex,
                 activity_level: (bs?.activity_level as ActivityLevel) ?? "moderate",
             });
         }
-
-        const currentSex = (p?.sex as Sex) ?? "male";
         const { data: g } = await supabase
             .from("user_goals")
             .select("id, goal_type, target_weight_kg, target_date, rate_per_week_kg, workouts_per_week, preferred_days, diet_preference, calorie_target_override, protein_target_g")
@@ -243,16 +243,18 @@ export default function ProfilePage() {
         setTotalVolume((sessions ?? []).reduce((s, r: any) => s + (Number(r.total_volume) || 0), 0));
 
         setLoading(false);
-    }, [user]);
+    }, [user, hookSex]);
 
     useEffect(() => { loadProfile(); }, [loadProfile]);
 
     useEffect(() => {
-        if (!user || !data.sex) return;
-        const currentSex = data.sex;
+        if (!user) return;
+        if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+        initialLoadRef.current = true;
+        const currentSex = hookSex;
         Promise.all([
             supabase.from("workout_sessions").select("total_volume").eq("user_id", user.id).eq("status", "completed").eq("sex", currentSex),
-            supabase.from("profile_body_stats").select("height_cm, activity_level, goal, experience, training_frequency, workout_time_pref").eq("user_id", user.id).eq("sex", currentSex).maybeSingle(),
+            supabase.from("profile_body_stats").select("height_cm, activity_level, goal, experience, training_frequency, workout_time_pref, date_of_birth").eq("user_id", user.id).eq("sex", currentSex).maybeSingle(),
             supabase.from("user_goals").select("id, goal_type, target_weight_kg, target_date, rate_per_week_kg, workouts_per_week, preferred_days, diet_preference, calorie_target_override, protein_target_g").eq("user_id", user.id).eq("sex", currentSex).eq("is_active", true).limit(1),
             supabase.from("body_weight_logs").select("weight").eq("user_id", user.id).eq("sex", currentSex).order("logged_at", { ascending: false }).limit(1),
         ]).then(([{ data: sessions }, { data: bs }, { data: goalRows }, { data: bw }]) => {
@@ -267,6 +269,8 @@ export default function ProfilePage() {
                     training_frequency: bs.training_frequency ?? 5,
                     workout_time_pref: bs.workout_time_pref ?? null,
                     activity_level: (bs.activity_level as ActivityLevel) ?? "moderate",
+                    date_of_birth: bs.date_of_birth ?? null,
+                    sex: currentSex,
                 }));
             } else {
                 setData((prev) => ({
@@ -277,6 +281,8 @@ export default function ProfilePage() {
                     training_frequency: 5,
                     workout_time_pref: null,
                     activity_level: "moderate" as ActivityLevel,
+                    date_of_birth: null,
+                    sex: currentSex,
                 }));
             }
             if (goalRows?.[0]) {
@@ -298,7 +304,7 @@ export default function ProfilePage() {
             setLatestWeight(bw?.[0]?.weight ?? null);
             if (bw?.[0]?.weight != null) setWeightInput(String(bw[0].weight)); else setWeightInput("");
         });
-    }, [user, data.sex]);
+    }, [user, hookSex]);
 
     function updateField(field: keyof ProfileData, value: any) {
         setData((prev) => ({ ...prev, [field]: value }));
@@ -311,18 +317,16 @@ export default function ProfilePage() {
     const debouncedSave = useCallback(async () => {
         if (!user) return;
         setSaving(true);
-        const currentSex = data.sex ?? "male";
+        const currentSex = hookSex;
 
         await Promise.all([
             supabase.from("profiles").update({
-                date_of_birth: data.date_of_birth || null,
                 unit_preference: data.unit_preference,
                 injury_notes: data.injury_notes || null,
                 social_instagram: data.social_instagram || null,
                 social_twitter: data.social_twitter || null,
                 profile_visibility: data.profile_visibility,
                 avatar_color: data.avatar_color,
-                sex: data.sex,
             }).eq("id", user.id),
             supabase.from("profile_body_stats").upsert({
                 user_id: user.id,
@@ -333,6 +337,7 @@ export default function ProfilePage() {
                 experience: data.experience,
                 training_frequency: data.training_frequency,
                 workout_time_pref: data.workout_time_pref || null,
+                date_of_birth: data.date_of_birth || null,
                 updated_at: new Date().toISOString(),
             }, { onConflict: "user_id,sex" }),
         ]);
@@ -362,7 +367,7 @@ export default function ProfilePage() {
         setSaving(false);
         setSaved(true);
         setTimeout(() => setSaved(false), 1500);
-    }, [user, data, goals]);
+    }, [user, data, goals, hookSex]);
 
     useEffect(() => {
         if (initialLoadRef.current) {
@@ -378,7 +383,7 @@ export default function ProfilePage() {
         if (!user || !weightInput) return;
         const w = Number(weightInput);
         if (w <= 0 || w === latestWeight) return;
-        const currentSex = data.sex ?? "male";
+        const currentSex = hookSex;
         setWeightSaving(true);
         await supabase.from("body_weight_logs").insert({ user_id: user.id, weight: w, context: "morning", date: new Date().toISOString().split("T")[0], sex: currentSex });
         await rematerializeWeightTrend(user.id, currentSex);
@@ -416,7 +421,7 @@ export default function ProfilePage() {
             .select("id, date, title, duration_seconds, total_sets, total_volume, xp_earned, started_at, completed_at")
             .eq("user_id", user.id)
             .eq("status", "completed")
-            .eq("sex", data.sex ?? "male")
+            .eq("sex", hookSex)
             .order("date");
 
         if (!sessions?.length) { alert("No data to export."); return; }
@@ -432,6 +437,7 @@ export default function ProfilePage() {
             .from("body_weight_logs")
             .select("weight, logged_at, context")
             .eq("user_id", user.id)
+            .eq("sex", hookSex)
             .order("logged_at");
 
         const sessionsSection = [

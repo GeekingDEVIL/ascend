@@ -250,6 +250,7 @@ export default function OnboardingPage() {
                 experience,
                 training_frequency: frequency,
                 workout_time_pref: duration || null,
+                date_of_birth: dob || null,
             }, { onConflict: "user_id,sex" }),
         ]);
 
