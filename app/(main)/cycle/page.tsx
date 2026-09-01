@@ -24,6 +24,7 @@ import {
 } from "../../lib/menstrualEngine";
 import CubeLoader from "../../components/ui/cube-loader";
 import { staggerContainer, staggerItem, tabContent } from "../../lib/motion";
+import AnimatedTabs from "../../components/ui/animated-tabs";
 
 type Tab = "today" | "log" | "insights" | "learn";
 
@@ -340,24 +341,17 @@ export default function CyclePage() {
         )}
 
         {/* ── Tabs ── */}
-        <div className="flex gap-1 bg-white/[0.02] rounded-xl border border-white/[0.06] p-1">
-          {([
-            { key: "today" as Tab, label: "Today", icon: Zap },
-            { key: "log" as Tab, label: "Log", icon: Plus },
-            { key: "insights" as Tab, label: "Insights", icon: TrendingUp },
-            { key: "learn" as Tab, label: "Learn", icon: BookOpen },
-          ]).map(({ key, label, icon: Icon }) => (
-            <button
-              key={key}
-              onClick={() => setTab(key)}
-              className={`flex-1 flex items-center justify-center gap-1.5 text-[10px] font-mono py-2.5 rounded-lg transition-all ${
-                tab === key ? "bg-white/[0.08] text-white/90 font-semibold shadow-sm shadow-white/[0.02]" : "text-white/30 hover:text-white/55 hover:bg-white/[0.02]"
-              }`}
-            >
-              <Icon size={12} />{label}
-            </button>
-          ))}
-        </div>
+        <AnimatedTabs
+          tabs={[
+            { key: "today", label: "TODAY", icon: Zap },
+            { key: "log", label: "LOG", icon: Plus },
+            { key: "insights", label: "INSIGHTS", icon: TrendingUp },
+            { key: "learn", label: "LEARN", icon: BookOpen },
+          ]}
+          activeTab={tab}
+          onTabChange={(k) => setTab(k as Tab)}
+          accentRgb="236 72 153"
+        />
 
         <AnimatePresence mode="wait">
           {/* ═════ TODAY ═════ */}

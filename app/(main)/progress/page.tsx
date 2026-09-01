@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Calendar, Dumbbell, Weight, Trophy, ChevronDown, ChevronRight, Lock, Flame, Trash2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { tabContent } from "../../lib/motion";
+import AnimatedTabs from "../../components/ui/animated-tabs";
 import CubeLoader from "../../components/ui/cube-loader";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../lib/AuthProvider";
@@ -910,23 +911,16 @@ export default function ProgressPage() {
 
             <div className="relative z-10 max-w-xl mx-auto px-4 pt-6 space-y-5">
                 <div>
-                    <h1 className="text-xl font-bold text-[rgb(var(--accent-light-rgb))]">Progress</h1>
+                    <h1 className="text-xl font-bold font-display text-[rgb(var(--accent-light-rgb))]">Progress</h1>
                     <p className="text-[11px] text-white/30 mt-0.5">Track your training journey</p>
                 </div>
 
                 {/* Tabs */}
-                <div className="grid grid-cols-4 gap-1.5">
-                    {TABS.map((t) => (
-                        <button
-                            key={t.key}
-                            onClick={() => setTab(t.key)}
-                            className={`flex items-center justify-center gap-1.5 text-[10px] font-mono px-2 py-2 rounded-xl border transition ${tab === t.key ? "border-[rgb(var(--accent-rgb)/0.2)] bg-[rgb(var(--accent-rgb)/0.08)] text-[rgb(var(--accent-rgb))]" : "border-white/[0.06] text-white/30 hover:text-white/60"
-                                }`}
-                        >
-                            <t.icon size={12} /> {t.label}
-                        </button>
-                    ))}
-                </div>
+                <AnimatedTabs
+                    tabs={TABS}
+                    activeTab={tab}
+                    onTabChange={(k) => setTab(k as Tab)}
+                />
 
                 {loading ? (
                     <CubeLoader message="Loading progress…" />

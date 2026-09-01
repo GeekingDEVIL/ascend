@@ -1,14 +1,47 @@
 @import "tailwindcss";
-html, body { overflow-x: hidden; max-width: 100vw; } 
+
+html, body { overflow-x: hidden; max-width: 100vw; }
 
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
   /* Accent color (default: cyan-400). Space-separated RGB so Tailwind arbitrary
      values can apply alpha via rgb(var(--accent-rgb)/<alpha>). Overridden at
      runtime by the Profile > Settings accent picker. */
   --accent-rgb: 34 211 238;
   --accent-light-rgb: 165 243 252;
+
+  /* ═══ Domain Colors (RGB triplets for alpha compositing) ═══ */
+  --domain-hub-rgb: 34 211 238;
+  --domain-gym-rgb: 139 92 246;
+  --domain-running-rgb: 249 115 22;
+  --domain-martial-rgb: 239 68 68;
+  --domain-tracking-rgb: 16 185 129;
+  --domain-nutrition-rgb: 245 158 11;
+  --domain-cycle-rgb: 236 72 153;
+  --domain-social-rgb: 59 130 246;
+  --domain-ai-rgb: 20 184 166;
+
+  /* ═══ Glass Forge Surfaces ═══ */
+  --glass-bg: rgba(255 255 255 / 0.04);
+  --glass-bg-hover: rgba(255 255 255 / 0.07);
+  --glass-bg-active: rgba(255 255 255 / 0.10);
+  --glass-border: rgba(255 255 255 / 0.06);
+  --glass-border-hover: rgba(255 255 255 / 0.12);
+  --glass-glow-spread: 0 0 40px -8px;
+
+  /* ═══ Typography ═══ */
+  --font-display: "Space Grotesk", system-ui, sans-serif;
+  --font-body: "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  /* ═══ Spacing Scale (matches Tailwind defaults) ═══ */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -21,8 +54,15 @@ html, body { overflow-x: hidden; max-width: 100vw; }
 body {
   background: var(--bg-primary, #050914);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
+
+/* ═══ Typography Utilities ═══ */
+.font-display { font-family: var(--font-display); }
+.font-body    { font-family: var(--font-body); }
+.font-data    { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
 
 button, [role="button"] {
   transition: transform 0.1s ease;

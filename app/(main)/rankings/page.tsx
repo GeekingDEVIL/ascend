@@ -13,6 +13,7 @@ import { LeaderboardCard } from "../../components/ui/leaderboard-card";
 import type { LeaderboardRanking as PodiumRanking } from "../../components/ui/leaderboard-podium";
 import type { LeaderboardRankingItem } from "../../components/ui/leaderboard-rankings";
 import { staggerContainer, staggerItem, tabContent } from "../../lib/motion";
+import AnimatedTabs from "../../components/ui/animated-tabs";
 
 type LeaderboardEntry = {
   user_id: string;
@@ -159,14 +160,15 @@ export default function RankingsPage() {
         </button>
 
         {/* Tab switcher */}
-        <div className="flex gap-2">
-          <button onClick={() => setTab("personal")} className={`flex-1 flex items-center justify-center gap-1.5 text-[10px] font-mono px-4 py-2.5 rounded-xl border transition ${tab === "personal" ? "border-[rgb(var(--accent-rgb)/0.3)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/[0.06] text-white/30 hover:text-white/60"}`}>
-            <User size={12} /> MY RANK
-          </button>
-          <button onClick={() => setTab("leaderboard")} className={`flex-1 flex items-center justify-center gap-1.5 text-[10px] font-mono px-4 py-2.5 rounded-xl border transition ${tab === "leaderboard" ? "border-[rgb(var(--accent-rgb)/0.3)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/[0.06] text-white/30 hover:text-white/60"}`}>
-            <Users size={12} /> LEADERBOARD
-          </button>
-        </div>
+        <AnimatedTabs
+          tabs={[
+            { key: "personal", label: "MY RANK", icon: User },
+            { key: "leaderboard", label: "LEADERBOARD", icon: Users },
+          ]}
+          activeTab={tab}
+          onTabChange={(k) => setTab(k as "personal" | "leaderboard")}
+          columns={2}
+        />
 
         <AnimatePresence mode="wait">
         {tab === "personal" && (

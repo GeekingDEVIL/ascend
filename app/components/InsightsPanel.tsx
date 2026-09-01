@@ -15,6 +15,9 @@ import { type ScenarioResult } from "../lib/scenarioModeling";
 import { type CycleAwareComparison, type CyclePhase, getCyclePhaseInfo } from "../lib/cycleAwareTrend";
 import { type SessionExpenditure } from "../lib/exerciseExpenditure";
 import { type PatternWarning } from "../lib/energyGuardrails";
+import { type MonthlyComparison } from "../lib/monthlyInsights";
+import { type StrengthBenchmarkResult } from "../lib/strengthBenchmark";
+import { type PhasePerformanceResult } from "../lib/phasePerformance";
 
 function InfoTip({ term, text }: { term: string; text: string }) {
   const [open, setOpen] = useState(false);
@@ -344,6 +347,159 @@ export function DietBreakCard({ onStart, suggestion }: { onStart: () => void; su
       >
         Start a diet break (7-14 days at normal eating)
       </button>
+    </Card>
+  );
+}
+
+export function MonthlyInsightsCard({ data, weightUnit }: { data: MonthlyComparison; weightUnit: string }) {
+  const kgToUnit = (v: number, u: string) => u === "lbs" ? v * 2.20462 : v;
+  const fmtVol = (v: number) => { const c = kgToUnit(v, weightUnit); return c >= 1000 ? `${(c / 1000).toFixed(1)}k` : String(Math.round(c)); };
+  const fmtDur = (s: number) => { const m = Math.floor(s / 60); return m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m}m`; };
+  const maxVol = Math.max(...data.months.map((m) => m.totalVolume), 1);
+
+  return (
+    <Card title="MONTHLY PERFORMANCE" subtitle="How this month compares to your recent training">
+      <div className="grid grid-cols-3 gap-2 mb-3">
+        <div className="rounded-md bg-white/[0.03] border border-white/[0.04] p-2 text-center">
+          <p className="text-lg font-bold font-mono text-white/90">{data.current.workouts}</p>
+          <p className="text-[7px] font-mono text-white/25">workouts</p>
+          {data.frequencyChange != null && (
+            <p className={`text-[8px] font-mono mt-0.5 ${data.frequencyChange > 0 ? "text-emerald-300" : data.frequencyChange < 0 ? "text-orange-300" : "text-white/30"}`}>
+              {data.frequencyChange > 0 ? "+" : ""}{data.frequencyChange}%
+            </p>
+          )}
+        </div>
+        <div className="rounded-md bg-white/[0.03] border border-white/[0.04] p-2 text-center">
+          <p className="text-lg font-bold font-mono text-[rgb(var(--accent-light-rgb))]">{fmtVol(data.current.totalVolume)}</p>
+          <p className="text-[7px] font-mono text-white/25">volume ({weightUnit})</p>
+          {data.volumeChange != null && (
+            <p className={`text-[8px] font-mono mt-0.5 ${data.volumeChange > 0 ? "text-emerald-300" : data.volumeChange < 0 ? "text-orange-300" : "text-white/30"}`}>
+              {data.volumeChange > 0 ? "+" : ""}{data.volumeChange}%
+            </p>
+          )}
+        </div>
+        <div className="rounded-md bg-white/[0.03] border border-white/[0.04] p-2 text-center">
+          <p className="text-lg font-bold font-mono text-white/90">{fmtDur(data.current.avgDuration)}</p>
+          <p className="text-[7px] font-mono text-white/25">avg session</p>
+          {data.durationChange != null && (
+            <p className={`text-[8px] font-mono mt-0.5 ${Math.abs(data.durationChange) <= 10 ? "text-white/30" : data.durationChange > 0 ? "text-cyan-300" : "text-orange-300"}`}>
+              {data.durationChange > 0 ? "+" : ""}{data.durationChange}%
+            </p>
+          )}
+        </div>
+      </div>
+      <div className="flex items-end gap-[3px] h-16 mb-2">
+        {data.months.map((m, i) => {
+          const pct = Math.max(8, (m.totalVolume / maxVol) * 100);
+          const isCurrent = i === data.months.length - 1;
+          return (
+            <div key={m.month} className="flex-1 flex flex-col items-center">
+              <div
+                className={`w-full rounded-md transition-all ${isCurrent ? "bg-gradient-to-t from-[rgb(var(--accent-rgb))] to-[rgb(var(--accent-light-rgb))]" : "bg-white/[0.06]"}`}
+                style={{ height: `${pct}%`, ...(isCurrent ? { boxShadow: "0 0 12px -3px rgb(var(--accent-rgb) / 0.5)" } : {}) }}
+              />
+              <p className={`text-[7px] font-mono mt-1 ${isCurrent ? "text-[rgb(var(--accent-light-rgb)/0.6)]" : "text-white/15"}`}>
+                {m.label.split(" ")[0]}
+              </p>
+            </div>
+          );
+        })}
+      </div>
+      <div className="flex items-center gap-3 text-[8px] font-mono text-white/25">
+        {data.streak > 1 && <span className="text-emerald-300/60">{data.streak}-month streak</span>}
+        {data.bestMonth && <span>Best: {data.bestMonth.label} ({fmtVol(data.bestMonth.totalVolume)} {weightUnit})</span>}
+      </div>
+    </Card>
+  );
+}
+
+export function StrengthBenchmarkCard({ data, weightUnit }: { data: StrengthBenchmarkResult; weightUnit: string }) {
+  const kgToUnit = (v: number, u: string) => u === "lbs" ? v * 2.20462 : v;
+  const top = data.exercises.slice(0, 8);
+
+  return (
+    <Card title="STRENGTH BENCHMARK" subtitle={data.period}>
+      <div className="flex items-center gap-3 mb-3">
+        <div className="flex items-center gap-1">
+          <div className="w-2 h-2 rounded-full bg-emerald-400" />
+          <span className="text-[8px] font-mono text-white/30">{data.totalUp} up</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-2 h-2 rounded-full bg-white/20" />
+          <span className="text-[8px] font-mono text-white/30">{data.totalStable} stable</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-2 h-2 rounded-full bg-orange-400" />
+          <span className="text-[8px] font-mono text-white/30">{data.totalDown} down</span>
+        </div>
+      </div>
+      <div className="space-y-1.5">
+        {top.map((ex) => (
+          <div key={ex.exerciseId} className="flex items-center gap-2">
+            <div className="flex-1 min-w-0">
+              <p className="text-[9px] font-mono text-white/60 truncate">{ex.exerciseName}</p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="text-[8px] font-mono text-white/25">
+                {Math.round(kgToUnit(ex.previousE1rm, weightUnit))} → {Math.round(kgToUnit(ex.currentE1rm, weightUnit))}
+              </span>
+              <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-md ${
+                ex.trend === "up" ? "text-emerald-300 bg-emerald-400/10" :
+                ex.trend === "down" ? "text-orange-300 bg-orange-400/10" :
+                "text-white/30 bg-white/[0.04]"
+              }`}>
+                {ex.changePercent > 0 ? "+" : ""}{ex.changePercent}%
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+      {data.strongestGain && (
+        <p className="text-[8px] font-mono text-emerald-300/50 mt-2">
+          Biggest gain: {data.strongestGain.exerciseName} (+{data.strongestGain.changePercent}%)
+        </p>
+      )}
+      {data.biggestDrop && (
+        <p className="text-[8px] font-mono text-orange-300/50 mt-1">
+          Needs attention: {data.biggestDrop.exerciseName} ({data.biggestDrop.changePercent}%)
+        </p>
+      )}
+    </Card>
+  );
+}
+
+export function PhasePerformanceCard({ data, weightUnit }: { data: PhasePerformanceResult; weightUnit: string }) {
+  const kgToUnit = (v: number, u: string) => u === "lbs" ? v * 2.20462 : v;
+  const maxAvg = Math.max(...data.phases.map((p) => p.avgVolume), 1);
+  const fmtDur = (s: number) => { const m = Math.floor(s / 60); return `${m}m`; };
+
+  return (
+    <Card title="CYCLE PHASE PERFORMANCE" subtitle="Your training output by menstrual cycle phase">
+      <div className="grid grid-cols-4 gap-1.5 mb-3">
+        {data.phases.map((p) => {
+          const pct = Math.max(10, (p.avgVolume / maxAvg) * 100);
+          const isBest = data.bestPhase?.phase === p.phase;
+          return (
+            <div key={p.phase} className="text-center">
+              <div className="h-16 flex items-end justify-center mb-1">
+                <div
+                  className="w-full rounded-md"
+                  style={{
+                    height: `${pct}%`,
+                    backgroundColor: p.color,
+                    opacity: isBest ? 1 : 0.4,
+                    boxShadow: isBest ? `0 0 12px -3px ${p.color}` : "none",
+                  }}
+                />
+              </div>
+              <p className="text-[8px] font-mono text-white/50">{p.label.slice(0, 4)}</p>
+              <p className="text-[7px] font-mono text-white/25">{p.workouts}w</p>
+              <p className="text-[7px] font-mono text-white/20">{Math.round(kgToUnit(p.avgVolume, weightUnit))}{weightUnit}</p>
+            </div>
+          );
+        })}
+      </div>
+      <p className="text-[8px] font-mono text-white/35 leading-relaxed">{data.recommendation}</p>
     </Card>
   );
 }
