@@ -7,6 +7,8 @@ import { motion } from "framer-motion";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../lib/AuthProvider";
 import CubeLoader from "../../components/ui/cube-loader";
+import SubNavPills from "../../components/ui/sub-nav-pills";
+import { youPills } from "../../lib/navPills";
 import { staggerContainer, staggerItem } from "../../lib/motion";
 
 const TYPE_META: Record<string, { icon: (size: number) => React.ReactNode; bg: string; label: string; chipActive: string }> = {
@@ -116,9 +118,7 @@ export default function NotificationsPage() {
     <main className="min-h-screen bg-[#050914] text-white pb-24 md:pb-10 relative">
 
       <div className="relative z-10 max-w-xl mx-auto px-4 pt-6 space-y-4">
-        <button onClick={() => router.push("/profile")} className="flex items-center gap-1 text-[10px] font-mono text-white/30 hover:text-white/60 transition">
-          <ChevronLeft size={14} /> Profile
-        </button>
+        <SubNavPills pills={youPills} activeKey="/notifications" onSelect={(k) => router.push(k)} />
 
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div>

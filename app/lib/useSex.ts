@@ -19,6 +19,11 @@ export function useSex() {
 
   useEffect(() => {
     if (!user) return;
+    const cached = localStorage.getItem(SEX_KEY) as Sex | null;
+    if (cached) {
+      setSexState(cached);
+      return;
+    }
     supabase.from("profiles").select("sex").eq("id", user.id).maybeSingle().then(({ data }) => {
       const s = (data?.sex as Sex) || "male";
       setSexState(s);

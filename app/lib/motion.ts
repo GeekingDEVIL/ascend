@@ -63,3 +63,38 @@ export const cardTap = {
   scale: 0.98,
   transition: { duration: 0.1 },
 };
+
+export const pageDrillDown: Variants = {
+  hidden: { opacity: 0, x: 24 },
+  visible: { opacity: 1, x: 0, transition: { duration: 0.3, ease: [0.16, 1, 0.3, 1] } },
+  exit: { opacity: 0, x: -16, transition: { duration: 0.2 } },
+};
+
+export const pageBack: Variants = {
+  hidden: { opacity: 0, x: -24 },
+  visible: { opacity: 1, x: 0, transition: { duration: 0.3, ease: [0.16, 1, 0.3, 1] } },
+  exit: { opacity: 0, x: 16, transition: { duration: 0.2 } },
+};
+
+export const celebrationBurst: Variants = {
+  hidden: { opacity: 0, scale: 0.6 },
+  visible: {
+    opacity: [0, 1, 1, 0],
+    scale: [0.6, 1.15, 1.05, 1.1],
+    transition: { duration: 0.8, times: [0, 0.3, 0.6, 1], ease: "easeOut" },
+  },
+};
+
+export const levelUpGlow: Variants = {
+  hidden: { opacity: 0, scale: 0.9 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    boxShadow: [
+      "0 0 0px 0px rgba(var(--accent-rgb), 0)",
+      "0 0 40px 8px rgba(var(--accent-rgb), 0.4)",
+      "0 0 20px 4px rgba(var(--accent-rgb), 0.15)",
+    ],
+    transition: { duration: 1.2, ease: "easeOut" },
+  },
+};

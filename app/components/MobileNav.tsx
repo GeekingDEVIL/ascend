@@ -2,17 +2,16 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Dumbbell, TrendingUp, User, Droplets } from "lucide-react";
+import { LayoutDashboard, Dumbbell, TrendingUp, Users, User } from "lucide-react";
 import { useSex } from "../lib/useSex";
 
-const baseTabs = [
-  { icon: LayoutDashboard, label: "Home", href: "/", match: ["/"] },
+const tabs = [
+  { icon: LayoutDashboard, label: "Hub", href: "/", match: ["/"] },
   { icon: Dumbbell, label: "Train", href: "/workout", match: ["/workout", "/schedule"] },
-  { icon: TrendingUp, label: "Progress", href: "/progress", match: ["/progress"] },
-  { icon: User, label: "Profile", href: "/profile", match: ["/profile", "/rankings", "/achievements", "/notifications", "/recovery", "/coach"] },
+  { icon: TrendingUp, label: "Track", href: "/progress", match: ["/progress", "/recovery", "/cycle"] },
+  { icon: Users, label: "Social", href: "/rankings", match: ["/rankings", "/achievements"] },
+  { icon: User, label: "You", href: "/profile", match: ["/profile", "/notifications", "/coach"] },
 ];
-
-const cycleTab = { icon: Droplets, label: "Cycle", href: "/cycle", match: ["/cycle"] };
 
 export default function MobileNav() {
   const pathname = usePathname();
@@ -23,18 +22,14 @@ export default function MobileNav() {
   const modeGlow = isFemale ? "rgba(236,72,153,0.15)" : "rgba(96,165,250,0.15)";
   const modeSymbol = isFemale ? "♀" : "♂";
 
-  const mainTabs = isFemale
-    ? [baseTabs[0], baseTabs[1], cycleTab, baseTabs[2], baseTabs[3]]
-    : baseTabs;
-
   return (
     <nav className="md:hidden fixed bottom-0 inset-x-0 z-50 bg-black/90 backdrop-blur-xl" style={{ borderTop: `1.5px solid ${modeColor}40` }}>
       <div className="absolute inset-x-0 top-0 h-8 pointer-events-none" style={{ background: `linear-gradient(to bottom, ${modeGlow}, transparent)` }} />
       <div className="flex items-center justify-around py-2 relative">
-        {mainTabs.map((item) => {
+        {tabs.map((item) => {
           const active = item.match.includes(pathname);
           return (
-            <Link key={item.label} href={item.href} className={`flex flex-col items-center gap-1 px-3 py-1.5 ${active ? (item.label === "Cycle" ? "text-pink-400" : "text-[rgb(var(--accent-rgb))]") : "text-white/40"}`}>
+            <Link key={item.label} href={item.href} className={`flex flex-col items-center gap-1 px-3 py-1.5 ${active ? "text-[rgb(var(--accent-rgb))]" : "text-white/40"}`}>
               <item.icon size={20} />
               <span className="text-[9px] font-mono tracking-wide">{item.label}</span>
             </Link>

@@ -19,6 +19,8 @@ import { broadcastUnitChange } from "../../lib/useUnits";
 import { broadcastEquipmentChange } from "../../lib/useEquipment";
 import { kgToUnit, weightInputToKg } from "../../lib/units";
 import { rematerializeWeightTrend } from "../../lib/weightTrend";
+import SubNavPills from "../../components/ui/sub-nav-pills";
+import { youPills } from "../../lib/navPills";
 
 type ProfileData = {
     goal: string;
@@ -697,6 +699,8 @@ export default function ProfilePage() {
                         </span>
                     )}
                 </motion.button>
+
+                <SubNavPills pills={youPills} activeKey="/profile" onSelect={(k) => router.push(k)} />
 
                 {/* Quick Stats */}
                 <motion.div variants={staggerItem} className="grid grid-cols-4 gap-2">

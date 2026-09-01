@@ -14,6 +14,8 @@ import type { LeaderboardRanking as PodiumRanking } from "../../components/ui/le
 import type { LeaderboardRankingItem } from "../../components/ui/leaderboard-rankings";
 import { staggerContainer, staggerItem, tabContent } from "../../lib/motion";
 import AnimatedTabs from "../../components/ui/animated-tabs";
+import SubNavPills from "../../components/ui/sub-nav-pills";
+import { socialPills } from "../../lib/navPills";
 
 type LeaderboardEntry = {
   user_id: string;
@@ -153,9 +155,7 @@ export default function RankingsPage() {
     <main className="min-h-screen bg-[#050914] text-white pb-24 md:pb-10 relative">
 
       <div className="relative z-10 max-w-xl mx-auto px-4 pt-6 space-y-4">
-        <button onClick={() => router.push("/profile")} className="flex items-center gap-1 text-[10px] font-mono text-white/30 hover:text-white/60 transition">
-          <ChevronLeft size={14} /> Profile
-        </button>
+        <SubNavPills pills={socialPills} activeKey="/rankings" onSelect={(k) => router.push(k)} accentRgb="59 130 246" />
 
         {/* Tab switcher */}
         <AnimatedTabs

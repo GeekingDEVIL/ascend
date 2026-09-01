@@ -2,10 +2,13 @@
 
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Calendar, Dumbbell, Weight, Trophy, ChevronDown, ChevronRight, Lock, Flame, Trash2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { tabContent } from "../../lib/motion";
 import AnimatedTabs from "../../components/ui/animated-tabs";
+import SubNavPills from "../../components/ui/sub-nav-pills";
+import { getTrackPills } from "../../lib/navPills";
 import CubeLoader from "../../components/ui/cube-loader";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../lib/AuthProvider";
@@ -188,9 +191,11 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 export default function ProgressPage() {
     const { user } = useAuth();
+    const router = useRouter();
     const [tab, setTab] = useState<Tab>("intake");
     const [loading, setLoading] = useState(true);
     const { sex: userSex } = useSex();
+    const isFemale = userSex === "female";
 
     // History
     const [sessions, setSessions] = useState<SessionRecord[]>([]);
@@ -908,6 +913,8 @@ export default function ProgressPage() {
         <main className="min-h-screen bg-[#050914] text-white pb-24 md:pb-10 relative">
 
             <div className="relative z-10 max-w-xl mx-auto px-4 pt-6 space-y-5">
+                <SubNavPills pills={getTrackPills(isFemale)} activeKey="/progress" onSelect={(k) => router.push(k)} />
+
                 <div>
                     <h1 className="text-xl font-bold font-display text-[rgb(var(--accent-light-rgb))]">Progress</h1>
                     <p className="text-[11px] text-white/30 mt-0.5">Track your training journey</p>

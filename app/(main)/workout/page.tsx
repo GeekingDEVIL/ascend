@@ -17,6 +17,8 @@ import { updateExerciseLeaderboard } from "../../lib/updateExerciseLeaderboard";
 import AddExerciseModal from "../../components/AddExerciseModal";
 import { useSex } from "../../lib/useSex";
 import { useUnits } from "../../lib/useUnits";
+import SubNavPills from "../../components/ui/sub-nav-pills";
+import { trainPills } from "../../lib/navPills";
 import { kgToUnit, weightInputToKg } from "../../lib/units";
 import { fetchCycleTrainingData, assessExerciseRisk, getCycleAdjustedWeight, type PhaseTrainingProfile, type EnergyForecast, type ExerciseRisk } from "../../lib/cycleTrainingEngine";
 
@@ -1114,6 +1116,8 @@ export default function WorkoutPage() {
 
             <div className="relative z-10 max-w-xl mx-auto px-4 pt-6 space-y-4">
 
+                <SubNavPills pills={trainPills} activeKey="/workout" onSelect={(k) => router.push(k)} />
+
                 {/* ── TOP BAR ── */}
                 <div className="flex items-center justify-between">
                     <div>
@@ -1136,6 +1140,7 @@ export default function WorkoutPage() {
                             >
                                 <Trash2 size={11} />
                             </button>
+
                             <button
                                 onClick={() => router.push("/schedule")}
                                 className="flex items-center gap-1.5 text-[10px] font-mono px-3 py-2 rounded-xl border border-white/[0.06] text-white/30 hover:text-white/60 hover:bg-white/[0.03] transition"

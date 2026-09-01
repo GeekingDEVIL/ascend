@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { Plus, Trash2, GripVertical, Pencil, Database, Settings2, Play, Moon, Flame, PersonStanding, ChevronDown, ChevronUp, X, Dumbbell, BarChart3, BookOpen } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
+import SubNavPills from "../../components/ui/sub-nav-pills";
+import { trainPills } from "../../lib/navPills";
 import { DndContext, closestCenter, PointerSensor, MouseSensor, TouchSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -745,6 +747,8 @@ export default function SchedulePage() {
                         <button onClick={() => setPlanBrowserOpen(true)} className="w-8 h-8 flex items-center justify-center rounded-lg border border-white/[0.08] text-white/35 hover:text-white/70 hover:border-[rgb(var(--accent-rgb)/0.3)] transition" title="Plan Library"><BookOpen size={16} /></button>
                     </div>
                 </div>
+
+                <SubNavPills pills={trainPills} activeKey="/schedule" onSelect={(k) => router.push(k)} />
 
                 {/* ─── Tabs ─── */}
                 <div className="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-white/[0.03] border border-white/[0.06]">
