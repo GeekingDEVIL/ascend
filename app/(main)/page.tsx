@@ -538,8 +538,6 @@ export default function Dashboard() {
 
   return (
     <main className="min-h-screen bg-[#050914] text-white pb-24 md:pb-10 relative">
-      <div className="pointer-events-none fixed inset-0 opacity-[0.03]" style={{ backgroundImage: "repeating-linear-gradient(0deg, #fff 0px, #fff 1px, transparent 1px, transparent 3px)" }} />
-      <div className="pointer-events-none fixed top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[rgb(var(--accent-rgb)/0.06)] rounded-full blur-[120px]" />
       <motion.div
         className="relative z-10 max-w-xl mx-auto px-4 pt-6 space-y-4"
         variants={staggerContainer}
@@ -550,7 +548,7 @@ export default function Dashboard() {
         {/* ─── Header ─── */}
         <motion.div variants={staggerItem} className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-[rgb(var(--accent-light-rgb))]">
+            <h1 className="text-xl font-bold font-display text-[rgb(var(--accent-light-rgb))]">
               {profile?.username ? `Hi, ${profile.username}` : "Dashboard"}
             </h1>
             <p className="text-[11px] font-mono text-white/30 mt-0.5">{today ?? "..."} {time ? `· ${time}` : ""}</p>

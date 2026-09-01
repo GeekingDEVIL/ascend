@@ -387,11 +387,11 @@ function DayEditorModal({
                                     />
                                     {exercises.length > 0 && (
                                         <div className="grid grid-cols-2 gap-3 mb-4">
-                                            <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-2.5 text-center">
+                                            <div className="glass-card p-2.5 text-center">
                                                 <p className="text-[9px] font-mono text-white/30">EXERCISES</p>
                                                 <p className="text-lg font-bold">{exercises.length}</p>
                                             </div>
-                                            <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-2.5 text-center">
+                                            <div className="glass-card p-2.5 text-center">
                                                 <p className="text-[9px] font-mono text-white/30">TOTAL SETS</p>
                                                 <p className="text-lg font-bold">{totalSets}</p>
                                             </div>
@@ -729,13 +729,12 @@ export default function SchedulePage() {
             <div className="pointer-events-none fixed top-[-10%] left-1/2 -translate-x-1/2 w-[700px] h-[700px] bg-blue-600/15 rounded-full blur-[150px]" />
             <div className="pointer-events-none fixed bottom-[-15%] right-[5%] w-[500px] h-[500px] bg-[rgb(var(--accent-rgb)/0.1)] rounded-full blur-[130px]" />
             <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(ellipse_at_center,transparent_20%,rgba(0,0,0,0.7)_100%)]" />
-            <div className="pointer-events-none fixed inset-0 opacity-[0.03]" style={{ backgroundImage: "repeating-linear-gradient(0deg, #fff 0px, #fff 1px, transparent 1px, transparent 3px)" }} />
 
             <div className="relative z-10 w-full max-w-xl mx-auto space-y-5">
                 {/* ─── Header ─── */}
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-xl md:text-2xl font-bold tracking-wide text-[rgb(var(--accent-light-rgb))]">Schedule</h1>
+                        <h1 className="text-xl md:text-2xl font-bold font-display tracking-wide text-[rgb(var(--accent-light-rgb))]">Schedule</h1>
                         <p className="text-white/35 text-xs mt-0.5 font-mono">
                             {hasPlan ? `${trainingDays} training · ${restDays} rest · ${7 - trainingDays - restDays} unset` : "Set your week once. It repeats."}
                         </p>
@@ -863,7 +862,7 @@ export default function SchedulePage() {
 
                         {/* ─── Weekly Volume (collapsible) ─── */}
                         {weeklyVolume.length > 0 && (
-                            <div className="rounded-xl border border-white/[0.06] bg-white/[0.02]">
+                            <div className="glass-card">
                                 <button
                                     onClick={() => setVolumeExpanded((v) => !v)}
                                     className="w-full flex items-center justify-between px-4 py-3 transition"
@@ -932,7 +931,7 @@ export default function SchedulePage() {
                     /* ─── TODAY TAB ─── */
                     <>
                         {/* Calendar Strip */}
-                        <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
+                        <div className="glass-card p-3">
                             <div className="flex items-center justify-between mb-2.5 gap-2">
                                 <button onClick={() => setWeekOffset((w) => w - 1)} className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg border border-white/[0.06] text-white/35 hover:text-[rgb(var(--accent-light-rgb))] transition">←</button>
                                 <div className="text-center min-w-0">
@@ -1003,15 +1002,15 @@ export default function SchedulePage() {
                             ) : (
                                 <>
                                     <div className="grid grid-cols-3 gap-2 mb-4">
-                                        <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-2.5 text-center">
+                                        <div className="glass-card p-2.5 text-center">
                                             <p className="text-[8px] font-mono text-white/30">EXERCISES</p>
                                             <p className="text-base font-bold">{viewExercises.length}</p>
                                         </div>
-                                        <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-2.5 text-center">
+                                        <div className="glass-card p-2.5 text-center">
                                             <p className="text-[8px] font-mono text-white/30">SETS</p>
                                             <p className="text-base font-bold">{viewTotalSets}</p>
                                         </div>
-                                        <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-2.5 text-center">
+                                        <div className="glass-card p-2.5 text-center">
                                             <p className="text-[8px] font-mono text-white/30">EST. TIME</p>
                                             <p className="text-base font-bold">{viewTotalSets * 3}m</p>
                                         </div>

@@ -254,8 +254,6 @@ export default function CyclePage() {
 
   return (
     <main className="min-h-screen bg-[#050914] text-white pb-24 md:pb-10 relative">
-      <div className="pointer-events-none fixed inset-0 opacity-[0.03]" style={{ backgroundImage: "repeating-linear-gradient(0deg, #fff 0px, #fff 1px, transparent 1px, transparent 3px)" }} />
-      <div className="pointer-events-none fixed top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[rgb(var(--accent-rgb)/0.06)] rounded-full blur-[120px]" />
 
       <div className="relative z-10 max-w-xl mx-auto px-4 pt-6 space-y-4">
         <button onClick={() => router.push("/")} className="flex items-center gap-1 text-[10px] font-mono text-white/30 hover:text-white/60 transition">
@@ -366,7 +364,7 @@ export default function CyclePage() {
 
               {/* Training & Nutrition — compact cards */}
               <div className="grid grid-cols-2 gap-2">
-                <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 relative overflow-hidden group hover:bg-white/[0.03] transition">
+                <div className="glass-card p-3 relative overflow-hidden">
                   <div className="absolute top-0 left-0 w-0.5 h-full bg-green-400/40 rounded-r" />
                   <div className="flex items-center gap-1.5 mb-2 pl-1.5">
                     <Zap size={11} className={phaseStyle.text} />
@@ -374,7 +372,7 @@ export default function CyclePage() {
                   </div>
                   <p className="text-[10px] text-white/55 leading-relaxed pl-1.5">{insight.trainingRec}</p>
                 </div>
-                <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 relative overflow-hidden group hover:bg-white/[0.03] transition">
+                <div className="glass-card p-3 relative overflow-hidden">
                   <div className="absolute top-0 left-0 w-0.5 h-full bg-amber-400/40 rounded-r" />
                   <div className="flex items-center gap-1.5 mb-2 pl-1.5">
                     <Heart size={11} className={phaseStyle.text} />
@@ -387,7 +385,7 @@ export default function CyclePage() {
 
               {/* Symptom predictions from engine */}
               {intelligence && intelligence.predictions.length > 0 && (
-                <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 space-y-2">
+                <div className="glass-card p-4 space-y-2">
                   <div className="flex items-center gap-1.5 mb-2">
                     <Brain size={12} className={phaseStyle.text} />
                     <span className="text-[9px] font-mono tracking-widest text-white/25">WHAT TO EXPECT TODAY</span>
@@ -416,7 +414,7 @@ export default function CyclePage() {
 
               {/* Hormone & nutrition intel */}
               {intelligence && (
-                <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 space-y-3">
+                <div className="glass-card p-4 space-y-3">
                   <div className="flex items-center gap-1.5">
                     <Wind size={12} className={phaseStyle.text} />
                     <p className="text-[9px] font-mono tracking-widest text-white/25">HORMONE PROFILE</p>
@@ -441,7 +439,7 @@ export default function CyclePage() {
               )}
 
               {/* Quick symptom check-in */}
-              <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 space-y-4">
+              <div className="glass-card p-4 space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
                     <Heart size={12} className={phaseStyle.text} />
@@ -533,7 +531,7 @@ export default function CyclePage() {
 
               {/* Wellness Suggestions */}
               {symptomSaved && wellnessSuggestions.length > 0 && (
-                <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 space-y-3">
+                <div className="glass-card p-4 space-y-3">
                   <div className="flex items-center gap-1.5">
                     <Heart size={12} className={phaseStyle.text} />
                     <span className="text-[9px] font-mono tracking-widest text-white/25">SUGGESTIONS FOR YOU</span>
@@ -570,7 +568,7 @@ export default function CyclePage() {
               )}
 
               {/* ── Hormonal Contraception Toggle ── */}
-              <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
+              <div className="glass-card p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
                     <Shield size={14} className="text-violet-400/70" />
@@ -845,7 +843,7 @@ export default function CyclePage() {
                   intelligence.cycleScore.score >= 70 ? "rgb(var(--accent-light-rgb))" :
                   intelligence.cycleScore.score >= 50 ? "#fbbf24" : "#f87171";
                 return (
-                  <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 relative overflow-hidden">
+                  <div className="glass-card p-4 relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-32 h-32 rounded-full blur-[60px] opacity-10" style={{ background: scoreColor }} />
                     <div className="relative flex items-center justify-between mb-4">
                       <div>
@@ -985,7 +983,7 @@ export default function CyclePage() {
           {/* ═════ LEARN ═════ */}
           {tab === "learn" && (
             <motion.div key="learn" className="space-y-3" variants={tabContent} initial="hidden" animate="visible" exit="exit">
-              <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
+              <div className="glass-card p-4">
                 <div className="flex items-center gap-2 mb-1">
                   <BookOpen size={14} className="text-[rgb(var(--accent-light-rgb))]" />
                   <p className="text-[11px] font-semibold text-white/70">Your Cycle Guide</p>
@@ -994,7 +992,7 @@ export default function CyclePage() {
               </div>
 
               {CYCLE_GUIDE.map((section, sIdx) => (
-                <div key={section.title} className="rounded-xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
+                <div key={section.title} className="glass-card overflow-hidden">
                   <button
                     onClick={() => setOpenGuide(openGuide === sIdx ? null : sIdx)}
                     className="w-full flex items-center justify-between px-4 py-3 hover:bg-white/[0.02] transition"

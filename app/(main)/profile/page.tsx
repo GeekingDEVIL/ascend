@@ -666,8 +666,6 @@ export default function ProfilePage() {
 
     return (
         <main className="min-h-screen bg-[#050914] text-white pb-24 md:pb-10 relative">
-            <div className="pointer-events-none fixed inset-0 opacity-[0.03]" style={{ backgroundImage: "repeating-linear-gradient(0deg, #fff 0px, #fff 1px, transparent 1px, transparent 3px)" }} />
-            <div className="pointer-events-none fixed top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[rgb(var(--accent-rgb)/0.06)] rounded-full blur-[120px]" />
 
             <motion.div className="relative z-10 max-w-xl mx-auto px-4 pt-6 space-y-5" variants={staggerContainer} initial="hidden" animate="visible">
                 {/* Header — tap to edit profile */}
@@ -702,19 +700,19 @@ export default function ProfilePage() {
 
                 {/* Quick Stats */}
                 <motion.div variants={staggerItem} className="grid grid-cols-4 gap-2">
-                    <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-2.5 text-center">
+                    <div className="glass-card p-2.5 text-center">
                         <p className="text-[8px] font-mono text-white/30">SESSIONS</p>
                         <p className="text-base font-bold font-mono text-white/80">{totalSessions}</p>
                     </div>
-                    <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-2.5 text-center">
+                    <div className="glass-card p-2.5 text-center">
                         <p className="text-[8px] font-mono text-white/30">VOLUME</p>
                         <p className="text-base font-bold font-mono text-white/80">{(() => { const v = Math.round(kgToUnit(totalVolume, wUnit)); return v >= 1000 ? `${(v / 1000).toFixed(0)}K` : v; })()}</p>
                     </div>
-                    <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-2.5 text-center">
+                    <div className="glass-card p-2.5 text-center">
                         <p className="text-[8px] font-mono text-white/30">WEIGHT</p>
                         <p className="text-base font-bold font-mono text-white/80">{displayWeight ?? "—"}</p>
                     </div>
-                    <div onClick={() => { if (!bmi && latestWeight) setSection("stats"); }} className={`rounded-lg border border-white/[0.06] bg-white/[0.02] p-2.5 text-center ${!bmi && latestWeight ? "cursor-pointer" : ""}`}>
+                    <div onClick={() => { if (!bmi && latestWeight) setSection("stats"); }} className={`glass-card p-2.5 text-center ${!bmi && latestWeight ? "cursor-pointer" : ""}`}>
                         <p className="text-[8px] font-mono text-white/30">BMI</p>
                         {bmi ? (
                             <p className="text-base font-bold font-mono text-white/80">{bmi}</p>
@@ -762,7 +760,7 @@ export default function ProfilePage() {
                 {/* ══════════ STATS ══════════ */}
                 {section === "stats" && (
                     <div className="space-y-4">
-                        <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4 space-y-4">
+                        <div className="glass-card p-4 space-y-4">
                             <p className="text-[10px] font-mono tracking-widest text-white/25">BODY STATS</p>
 
                             <div className="grid grid-cols-2 gap-3">
@@ -814,7 +812,7 @@ export default function ProfilePage() {
                             )}
                         </div>
 
-                        <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4">
+                        <div className="glass-card p-4">
                             <p className="text-[10px] font-mono tracking-widest text-white/25 mb-3">INJURY / LIMITATION NOTES</p>
                             <textarea
                                 value={data.injury_notes ?? ""}
@@ -832,7 +830,7 @@ export default function ProfilePage() {
                 {section === "goals" && (
                     <div className="space-y-4">
                         {/* Goal Type */}
-                        <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4 space-y-4">
+                        <div className="glass-card p-4 space-y-4">
                             <p className="text-[10px] font-mono tracking-widest text-white/25">PRIMARY GOAL</p>
                             <div className="grid grid-cols-2 gap-2">
                                 {GOAL_TYPE_OPTIONS.map((opt) => (
@@ -846,7 +844,7 @@ export default function ProfilePage() {
 
                         {/* Weight Goal + Rate */}
                         {(goals.goal_type === "lose_weight" || goals.goal_type === "gain_muscle") && (
-                            <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4 space-y-4">
+                            <div className="glass-card p-4 space-y-4">
                                 <p className="text-[10px] font-mono tracking-widest text-white/25">WEIGHT TARGET</p>
                                 <div className="grid grid-cols-2 gap-3">
                                     <div>
@@ -880,7 +878,7 @@ export default function ProfilePage() {
                         )}
 
                         {/* Activity Level */}
-                        <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4 space-y-3">
+                        <div className="glass-card p-4 space-y-3">
                             <p className="text-[10px] font-mono tracking-widest text-white/25">ACTIVITY LEVEL</p>
                             <div className="space-y-1.5">
                                 {ACTIVITY_OPTIONS.map((opt) => (
@@ -894,7 +892,7 @@ export default function ProfilePage() {
                         </div>
 
                         {/* Diet + Nutrition */}
-                        <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4 space-y-4">
+                        <div className="glass-card p-4 space-y-4">
                             <p className="text-[10px] font-mono tracking-widest text-white/25">NUTRITION</p>
                             <div>
                                 <label className="text-[9px] font-mono text-white/30 mb-1.5 block">DIET PREFERENCE</label>
@@ -954,14 +952,14 @@ export default function ProfilePage() {
                             </div>
                         )}
                         {!calorieSummary && (
-                            <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4 text-center">
+                            <div className="glass-card p-4 text-center">
                                 <Flame size={18} className="mx-auto text-white/15 mb-2" />
                                 <p className="text-[10px] font-mono text-white/25">Add your height, DOB, and sex in Stats to unlock calorie intelligence</p>
                             </div>
                         )}
 
                         {/* Preferred Days */}
-                        <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4 space-y-3">
+                        <div className="glass-card p-4 space-y-3">
                             <p className="text-[10px] font-mono tracking-widest text-white/25">PREFERRED TRAINING DAYS</p>
                             <div className="flex gap-1.5">
                                 {DAYS_OF_WEEK.map((day) => {
@@ -978,7 +976,7 @@ export default function ProfilePage() {
                         </div>
 
                         {/* Training Goal (legacy field) */}
-                        <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4">
+                        <div className="glass-card p-4">
                             <p className="text-[10px] font-mono tracking-widest text-white/25 mb-3">TRAINING STYLE</p>
                             <CustomSelect
                                 options={GOAL_OPTIONS}
@@ -990,7 +988,7 @@ export default function ProfilePage() {
                         </div>
 
                         {/* Target Lifts */}
-                        <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4">
+                        <div className="glass-card p-4">
                             <p className="text-[10px] font-mono tracking-widest text-white/25 mb-3">TARGET LIFTS</p>
                             <p className="text-[9px] font-mono text-white/25 mb-3">Set weight goals for specific exercises. You'll get notified when you hit them.</p>
 
@@ -1035,7 +1033,7 @@ export default function ProfilePage() {
                 {/* ══════════ TRAINING ══════════ */}
                 {section === "training" && (
                     <div className="space-y-4">
-                        <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4 space-y-4">
+                        <div className="glass-card p-4 space-y-4">
                             <p className="text-[10px] font-mono tracking-widest text-white/25">TRAINING PROFILE</p>
 
                             <div>
@@ -1072,7 +1070,7 @@ export default function ProfilePage() {
                         </div>
 
                         {/* Equipment Access */}
-                        <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4 space-y-3">
+                        <div className="glass-card p-4 space-y-3">
                             <p className="text-[10px] font-mono tracking-widest text-white/25">EQUIPMENT ACCESS</p>
                             <p className="text-[9px] font-mono text-white/25">Select the equipment you have available. Exercise suggestions will be filtered accordingly.</p>
                             <div className="flex flex-wrap gap-2">
@@ -1097,7 +1095,7 @@ export default function ProfilePage() {
 
                 {/* ══════════ SOCIAL ══════════ */}
                 {section === "social" && (
-                    <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4 space-y-4">
+                    <div className="glass-card p-4 space-y-4">
                         <p className="text-[10px] font-mono tracking-widest text-white/25">SOCIAL LINKS</p>
 
                         <div>
@@ -1189,7 +1187,7 @@ export default function ProfilePage() {
                             </div>
                         </div>
 
-                        <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4 space-y-4">
+                        <div className="glass-card p-4 space-y-4">
                             <p className="text-[10px] font-mono tracking-widest text-white/25">UNITS</p>
                             <div className="flex gap-2">
                                 <button onClick={() => updateField("unit_preference", "metric")}
@@ -1205,7 +1203,7 @@ export default function ProfilePage() {
                             </div>
                         </div>
 
-                        <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4 space-y-4">
+                        <div className="glass-card p-4 space-y-4">
                             <p className="text-[10px] font-mono tracking-widest text-white/25">THEME</p>
                             <div className="flex gap-2">
                                 <button onClick={() => applyTheme("navy")}
@@ -1221,7 +1219,7 @@ export default function ProfilePage() {
                             </div>
                         </div>
 
-                        <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4 space-y-4">
+                        <div className="glass-card p-4 space-y-4">
                             <p className="text-[10px] font-mono tracking-widest text-white/25">ACCENT COLOR</p>
                             <div className="grid grid-cols-4 gap-2">
                                 {ACCENT_PRESETS.map((preset) => (
@@ -1240,7 +1238,7 @@ export default function ProfilePage() {
                             </div>
                         </div>
 
-                        <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4 space-y-4">
+                        <div className="glass-card p-4 space-y-4">
                             <p className="text-[10px] font-mono tracking-widest text-white/25">PROFILE VISIBILITY</p>
                             <div className="flex gap-2">
                                 {[
@@ -1263,7 +1261,7 @@ export default function ProfilePage() {
                 {/* ══════════ DATA ══════════ */}
                 {section === "data" && (
                     <div className="space-y-4">
-                        <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4">
+                        <div className="glass-card p-4">
                             <p className="text-[10px] font-mono tracking-widest text-white/25 mb-3">EXPORT DATA</p>
                             <p className="text-[10px] font-mono text-white/30 mb-3">Download your complete workout history as a CSV file.</p>
                             <button onClick={exportData} className="flex items-center gap-2 text-sm font-mono px-4 py-2.5 rounded-lg border border-[rgb(var(--accent-rgb)/0.3)] text-[rgb(var(--accent-light-rgb))] hover:bg-[rgb(var(--accent-rgb)/0.1)] transition">

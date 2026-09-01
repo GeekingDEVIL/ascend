@@ -906,8 +906,6 @@ export default function ProgressPage() {
 
     return (
         <main className="min-h-screen bg-[#050914] text-white pb-24 md:pb-10 relative">
-            <div className="pointer-events-none fixed inset-0 opacity-[0.03]" style={{ backgroundImage: "repeating-linear-gradient(0deg, #fff 0px, #fff 1px, transparent 1px, transparent 3px)" }} />
-            <div className="pointer-events-none fixed top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[rgb(var(--accent-rgb)/0.06)] rounded-full blur-[120px]" />
 
             <div className="relative z-10 max-w-xl mx-auto px-4 pt-6 space-y-5">
                 <div>
@@ -978,7 +976,7 @@ export default function ProgressPage() {
                                         </div>
 
                                         {/* Calendar */}
-                                        <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4">
+                                        <div className="glass-card rounded-2xl p-4">
                                             <div className="flex items-center justify-between mb-4">
                                                 <button onClick={() => setCalendarMonthOffset((o) => o - 1)} className="w-7 h-7 rounded-lg border border-white/[0.06] flex items-center justify-center text-white/40 hover:text-white/70 hover:border-white/[0.12] transition">
                                                     <ChevronRight size={14} className="rotate-180" />
@@ -1036,7 +1034,7 @@ export default function ProgressPage() {
                                             const prev = weeklyVolumeData.length >= 2 ? weeklyVolumeData[weeklyVolumeData.length - 2] : null;
                                             const volChange = prev && prev.volume > 0 ? Math.round(((latest.volume - prev.volume) / prev.volume) * 100) : 0;
                                             return (
-                                                <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4">
+                                                <div className="glass-card rounded-2xl p-4">
                                                     <div className="flex items-center justify-between mb-4">
                                                         <p className="text-[9px] font-mono tracking-[0.2em] text-white/20">WEEKLY VOLUME</p>
                                                         <div className="flex items-center gap-2">
@@ -1248,7 +1246,7 @@ export default function ProgressPage() {
                         {tab === "body" && (
                             <motion.div key="body" className="space-y-4" variants={tabContent} initial="hidden" animate="visible" exit="exit">
                                 {/* Measurements */}
-                                <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-4">
+                                <div className="glass-card p-4">
                                     <p className="text-[10px] font-mono tracking-widest text-white/25 mb-4">MEASUREMENTS</p>
                                     <div className="flex items-end justify-between gap-2 h-28 mb-3">
                                         {MEASUREMENT_TYPES.map((m) => {
@@ -1384,11 +1382,11 @@ export default function ProgressPage() {
 
                                     return (
                                         <div className="grid grid-cols-3 gap-2">
-                                            <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-3 text-center">
+                                            <div className="glass-card p-3 text-center">
                                                 <p className="text-[8px] font-mono text-white/30">CURRENT</p>
                                                 <p className="text-lg font-bold font-mono text-white/90">{latest.weight} <span className="text-xs text-white/30">{unitLabel}</span></p>
                                             </div>
-                                            <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-3 text-center">
+                                            <div className="glass-card p-3 text-center">
                                                 <p className="text-[8px] font-mono text-white/30">{trendEnd !== null ? "TREND" : "LOWEST"}</p>
                                                 {trendEnd !== null ? (
                                                     <p className="text-lg font-bold font-mono text-cyan-300">{trendEnd} <span className="text-xs text-white/30">{unitLabel}</span></p>
@@ -1396,7 +1394,7 @@ export default function ProgressPage() {
                                                     <p className="text-lg font-bold font-mono text-emerald-300">{Math.min(...displayBodyWeightData.map((d) => d.weight))} <span className="text-xs text-white/30">{unitLabel}</span></p>
                                                 )}
                                             </div>
-                                            <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-3 text-center">
+                                            <div className="glass-card p-3 text-center">
                                                 <p className="text-[8px] font-mono text-white/30">{weeklyRate !== null ? "/WEEK" : "CHANGE"}</p>
                                                 {weeklyRate !== null ? (
                                                     <p className={`text-lg font-bold font-mono ${weeklyRate > 0 ? "text-orange-300" : weeklyRate < 0 ? "text-emerald-300" : "text-white/50"}`}>{weeklyRate > 0 ? "+" : ""}{weeklyRate} <span className="text-xs text-white/30">{unitLabel}</span></p>
@@ -1437,7 +1435,7 @@ export default function ProgressPage() {
 
                                 {intakeLoading && (
                                     <div className="space-y-4 animate-pulse">
-                                        <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4 space-y-3">
+                                        <div className="glass-card p-4 space-y-3">
                                             <div className="h-3 w-28 rounded bg-white/[0.06]" />
                                             <div className="h-8 w-24 mx-auto rounded bg-white/[0.06]" />
                                             <div className="h-3 rounded-full bg-white/[0.04]" />
@@ -1447,7 +1445,7 @@ export default function ProgressPage() {
                                                 <div className="h-10 rounded-md bg-white/[0.04]" />
                                             </div>
                                         </div>
-                                        <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4 space-y-3">
+                                        <div className="glass-card p-4 space-y-3">
                                             <div className="h-3 w-20 rounded bg-white/[0.06]" />
                                             <div className="h-24 rounded-md bg-white/[0.04]" />
                                         </div>
@@ -1757,7 +1755,7 @@ export default function ProgressPage() {
 
                                 {/* Adaptive TDEE */}
                                 {ledgerCalorieSummary && (
-                                    <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-4">
+                                    <div className="glass-card p-4">
                                         <div className="flex items-center justify-between mb-3">
                                             <p className="text-[10px] font-mono tracking-widest text-white/25">ADAPTIVE MODE</p>
                                             <button
@@ -1817,7 +1815,7 @@ export default function ProgressPage() {
                                 )}
 
                                 {/* Add entry form */}
-                                <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-4 space-y-3">
+                                <div className="glass-card p-4 space-y-3">
                                     <p className="text-[10px] font-mono tracking-widest text-white/25">LOG FOOD</p>
 
                                     {/* Meal slot */}
@@ -1916,7 +1914,7 @@ export default function ProgressPage() {
 
                                 {/* My Foods — quick relog */}
                                 {myFoods.length > 0 && (
-                                    <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-4">
+                                    <div className="glass-card p-4">
                                         <p className="text-[10px] font-mono tracking-widest text-white/25 mb-2">MY FOODS</p>
                                         <div className="flex flex-wrap gap-1.5">
                                             {myFoods.map((food) => (
@@ -1950,7 +1948,7 @@ export default function ProgressPage() {
 
                                 {/* Entries list */}
                                 {intakeEntries.length > 0 && (
-                                    <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-4 space-y-2">
+                                    <div className="glass-card p-4 space-y-2">
                                         <p className="text-[10px] font-mono tracking-widest text-white/25 mb-2">ENTRIES</p>
                                         {intakeEntries.map((entry) => (
                                             <div key={entry.id} className="flex items-center justify-between py-2 border-b border-white/[0.04] last:border-0">

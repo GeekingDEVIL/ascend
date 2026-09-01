@@ -81,8 +81,6 @@ export default function AchievementsPage() {
 
   return (
     <main className="min-h-screen bg-[#050914] text-white pb-24 md:pb-10 relative">
-      <div className="pointer-events-none fixed inset-0 opacity-[0.03]" style={{ backgroundImage: "repeating-linear-gradient(0deg, #fff 0px, #fff 1px, transparent 1px, transparent 3px)" }} />
-      <div className="pointer-events-none fixed top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[rgb(var(--accent-rgb)/0.06)] rounded-full blur-[120px]" />
 
       <div className="relative z-10 max-w-xl mx-auto px-4 pt-6 space-y-5">
         <button onClick={() => router.push("/profile")} className="flex items-center gap-1 text-[10px] font-mono text-white/30 hover:text-white/60 transition">
@@ -91,7 +89,7 @@ export default function AchievementsPage() {
 
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-[rgb(var(--accent-light-rgb))]">Achievements</h1>
+            <h1 className="text-xl font-bold font-display text-[rgb(var(--accent-light-rgb))]">Achievements</h1>
             <p className="text-[11px] text-white/30 mt-0.5">Your training milestones and records</p>
           </div>
           <div className="text-right">
@@ -137,7 +135,7 @@ export default function AchievementsPage() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search achievements…"
-                className="w-full text-[11px] font-mono bg-white/[0.03] border border-white/[0.08] rounded-lg pl-8 pr-3 py-2 text-white/70 placeholder:text-white/20 focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition"
+                className="w-full text-[11px] font-mono glass-input pl-8 pr-3 py-2"
               />
             </div>
             <button
@@ -165,7 +163,7 @@ export default function AchievementsPage() {
           </div>
 
           {moreOpen && (
-            <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-3 space-y-3">
+            <div className="glass-card p-3 space-y-3">
               <div>
                 <p className="text-[8px] font-mono tracking-widest text-white/25 mb-1.5">CATEGORY</p>
                 <div className="flex gap-1.5 flex-wrap">

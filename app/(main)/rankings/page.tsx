@@ -151,8 +151,6 @@ export default function RankingsPage() {
 
   return (
     <main className="min-h-screen bg-[#050914] text-white pb-24 md:pb-10 relative">
-      <div className="pointer-events-none fixed inset-0 opacity-[0.03]" style={{ backgroundImage: "repeating-linear-gradient(0deg, #fff 0px, #fff 1px, transparent 1px, transparent 3px)" }} />
-      <div className="pointer-events-none fixed top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[rgb(var(--accent-rgb)/0.06)] rounded-full blur-[120px]" />
 
       <div className="relative z-10 max-w-xl mx-auto px-4 pt-6 space-y-4">
         <button onClick={() => router.push("/profile")} className="flex items-center gap-1 text-[10px] font-mono text-white/30 hover:text-white/60 transition">
@@ -234,7 +232,7 @@ export default function RankingsPage() {
                 <p className="text-[9px] font-mono tracking-widest text-white/20 mb-2">RECENT XP</p>
                 <div className="space-y-1">
                   {recentSessions.map((s, i) => (
-                    <div key={i} className="flex items-center justify-between rounded-lg border border-white/[0.04] bg-white/[0.02] px-3 py-2">
+                    <div key={i} className="flex items-center justify-between glass-card px-3 py-2">
                       <div className="flex items-center gap-2 min-w-0">
                         <Zap size={11} className="text-[rgb(var(--accent-light-rgb))] shrink-0" />
                         <span className="text-[11px] font-mono text-white/50 truncate">{s.title}</span>
@@ -297,7 +295,7 @@ export default function RankingsPage() {
             </div>
 
             {/* XP breakdown */}
-            <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
+            <div className="glass-card p-4">
               <p className="text-[9px] font-mono tracking-widest text-white/20 mb-3">HOW XP IS EARNED</p>
               <div className="grid grid-cols-2 gap-1.5 text-[10px] font-mono">
                 {[
@@ -327,7 +325,7 @@ export default function RankingsPage() {
                 value={lbSearch}
                 onChange={(e) => setLbSearch(e.target.value)}
                 placeholder="Find a player…"
-                className="w-full text-[11px] font-mono bg-white/[0.03] border border-white/[0.08] rounded-lg pl-8 pr-8 py-2 text-white/70 placeholder:text-white/20 focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition"
+                className="w-full text-[11px] font-mono glass-input pl-8 pr-8 py-2"
               />
               {lbSearch && (
                 <button onClick={() => setLbSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/20 hover:text-white/50">
@@ -380,7 +378,7 @@ export default function RankingsPage() {
               <CubeLoader message="Loading leaderboard…" />
             ) : leaderboard.filter((e) => (tierFilter === "all" || getRank(e.level).name === tierFilter) && (!lbSearch.trim() || e.username?.toLowerCase().includes(lbSearch.trim().toLowerCase()))).length === 0 ? (
               <div className="text-center py-16">
-                <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center">
+                <div className="w-14 h-14 mx-auto mb-4 rounded-2xl glass-card flex items-center justify-center">
                   <Users size={24} className="text-white/15" />
                 </div>
                 <p className="text-sm font-semibold text-white/25">{tierFilter !== "all" || lbSearch.trim() ? "No Matches" : "No Rankings Yet"}</p>

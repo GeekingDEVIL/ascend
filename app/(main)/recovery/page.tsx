@@ -130,8 +130,6 @@ export default function RecoveryPage() {
 
   return (
     <main className="min-h-screen bg-[#050914] text-white pb-24 md:pb-10 relative">
-      <div className="pointer-events-none fixed inset-0 opacity-[0.03]" style={{ backgroundImage: "repeating-linear-gradient(0deg, #fff 0px, #fff 1px, transparent 1px, transparent 3px)" }} />
-      <div className="pointer-events-none fixed top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[rgb(var(--accent-rgb)/0.06)] rounded-full blur-[120px]" />
 
       <div className="relative z-10 max-w-xl mx-auto px-4 pt-6 space-y-5">
         <button onClick={() => router.push("/profile")} className="flex items-center gap-1 text-[10px] font-mono text-white/30 hover:text-white/60 transition">
@@ -141,7 +139,7 @@ export default function RecoveryPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-[rgb(var(--accent-light-rgb))]">Recovery</h1>
+            <h1 className="text-xl font-bold font-display text-[rgb(var(--accent-light-rgb))]">Recovery</h1>
             <p className="text-[11px] text-white/30 mt-0.5">Evidence-based per-muscle readiness</p>
           </div>
           {avgRecovery !== null && (
@@ -178,26 +176,26 @@ export default function RecoveryPage() {
           <>
             {/* Overview stats */}
             <div className="grid grid-cols-4 gap-1.5">
-              <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 text-center">
+              <div className="glass-card p-3 text-center">
                 <p className="text-lg font-bold font-mono text-white/90">{rows.length}</p>
                 <p className="text-[8px] font-mono text-white/25 mt-0.5">MUSCLES</p>
               </div>
-              <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 text-center">
+              <div className="glass-card p-3 text-center">
                 <p className="text-lg font-bold font-mono text-emerald-300">{readyCount}</p>
                 <p className="text-[8px] font-mono text-white/25 mt-0.5">READY</p>
               </div>
-              <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 text-center">
+              <div className="glass-card p-3 text-center">
                 <p className="text-lg font-bold font-mono text-orange-400">{fatiguedCount}</p>
                 <p className="text-[8px] font-mono text-white/25 mt-0.5">FATIGUED</p>
               </div>
-              <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 text-center">
+              <div className="glass-card p-3 text-center">
                 <p className="text-lg font-bold font-mono text-white/90">{totalWeeklyVolume}</p>
                 <p className="text-[8px] font-mono text-white/25 mt-0.5">SETS/WK</p>
               </div>
             </div>
 
             {/* Recovery heat map */}
-            <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
+            <div className="glass-card p-4">
               <div className="flex items-center justify-between mb-3">
                 <p className="text-[9px] font-mono tracking-widest text-white/20">READINESS MAP</p>
                 <div className="flex items-center gap-3 text-[8px] font-mono text-white/25">
@@ -240,7 +238,7 @@ export default function RecoveryPage() {
                   <motion.div
                     key={r.segment}
                     variants={staggerItem}
-                    className="rounded-xl border border-white/[0.06] bg-white/[0.02] overflow-hidden"
+                    className="glass-card overflow-hidden"
                   >
                     <button
                       onClick={() => setExpandedSegment(isExpanded ? null : r.segment)}

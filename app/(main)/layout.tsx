@@ -40,7 +40,10 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         <ActiveSessionBar />
         <div className="flex">
           <Sidebar />
-          <main className="flex-1 min-h-screen min-w-0">{children}</main>
+          <main className="flex-1 min-h-screen min-w-0 relative">
+            <div className="page-ambient" />
+            <div className="relative z-10">{children}</div>
+          </main>
           <MobileNav />
         </div>
       </AuthGuard>

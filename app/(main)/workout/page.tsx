@@ -91,7 +91,7 @@ function CardPanel({ children, className = "" }: { children: React.ReactNode; cl
 /* ─── STAT CELL ─── */
 function StatCell({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
     return (
-        <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] px-3 py-2.5 text-center">
+        <div className="glass-card px-3 py-2.5 text-center">
             <p className="text-[8px] font-mono tracking-widest text-white/25 mb-0.5">{label}</p>
             <p className={`text-lg font-bold font-mono ${accent ? "text-[rgb(var(--accent-rgb))]" : "text-white/90"}`}>{value}</p>
         </div>
@@ -832,8 +832,6 @@ export default function WorkoutPage() {
     // ── LOADING ──
     if (status === "loading") return (
         <main className="min-h-screen bg-[#050914] text-white flex items-center justify-center relative">
-            <div className="pointer-events-none fixed inset-0 opacity-[0.03]" style={{ backgroundImage: "repeating-linear-gradient(0deg, #fff 0px, #fff 1px, transparent 1px, transparent 3px)" }} />
-            <div className="pointer-events-none fixed top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[rgb(var(--accent-rgb)/0.06)] rounded-full blur-[120px]" />
             <div className="relative z-10">
                 <CubeLoader message="Loading workout…" />
             </div>
@@ -843,8 +841,6 @@ export default function WorkoutPage() {
     // ── REST DAY ──
     if (status === "rest_day") return (
         <main className="min-h-screen bg-[#050914] text-white flex items-center justify-center p-6 relative">
-            <div className="pointer-events-none fixed inset-0 opacity-[0.03]" style={{ backgroundImage: "repeating-linear-gradient(0deg, #fff 0px, #fff 1px, transparent 1px, transparent 3px)" }} />
-            <div className="pointer-events-none fixed top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[rgb(var(--accent-rgb)/0.06)] rounded-full blur-[120px]" />
             <div className="relative z-10 text-center">
                 <div className="w-14 h-14 mx-auto mb-4 rounded-2xl border border-emerald-400/20 bg-emerald-400/10 flex items-center justify-center">
                     <Moon size={24} className="text-emerald-400" />
@@ -858,8 +854,6 @@ export default function WorkoutPage() {
     // ── NO PLAN ──
     if (status === "no_plan") return (
         <main className="min-h-screen bg-[#050914] text-white p-4 pb-24 relative">
-            <div className="pointer-events-none fixed inset-0 opacity-[0.03]" style={{ backgroundImage: "repeating-linear-gradient(0deg, #fff 0px, #fff 1px, transparent 1px, transparent 3px)" }} />
-            <div className="pointer-events-none fixed top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[rgb(var(--accent-rgb)/0.06)] rounded-full blur-[120px]" />
             <div className="relative z-10 max-w-xl mx-auto pt-10">
                 <div className="text-center mb-8">
                     <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-[rgb(var(--accent-rgb)/0.1)] border border-[rgb(var(--accent-rgb)/0.2)] flex items-center justify-center">
@@ -901,13 +895,11 @@ export default function WorkoutPage() {
     // ── FREESTYLE (BUILD) ──
     if (status === "freestyle") return (
         <main className="min-h-screen bg-[#050914] text-white pb-24 relative">
-            <div className="pointer-events-none fixed inset-0 opacity-[0.03]" style={{ backgroundImage: "repeating-linear-gradient(0deg, #fff 0px, #fff 1px, transparent 1px, transparent 3px)" }} />
-            <div className="pointer-events-none fixed top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[rgb(var(--accent-rgb)/0.06)] rounded-full blur-[120px]" />
             <div className="relative z-10 max-w-xl mx-auto px-4 pt-6">
                 <button onClick={() => { setFreestyleExercises([]); setStatus(exercisesList.length > 0 ? "not_started" : "no_plan"); }} className="text-[10px] font-mono text-white/30 hover:text-white/60 transition mb-4">
                     ← Back
                 </button>
-                <h1 className="text-xl font-bold text-[rgb(var(--accent-light-rgb))] mb-1">Freestyle Session</h1>
+                <h1 className="text-xl font-bold font-display text-[rgb(var(--accent-light-rgb))] mb-1">Freestyle Session</h1>
                 <p className="text-[11px] text-white/30 mb-5">Pick exercises and start training</p>
 
                 <button onClick={() => setShowFreestyleAddModal(true)} className="w-full flex items-center justify-center gap-2 text-sm font-medium py-3 rounded-xl border border-[rgb(var(--accent-rgb)/0.2)] bg-[rgb(var(--accent-rgb)/0.05)] text-[rgb(var(--accent-rgb))] hover:bg-[rgb(var(--accent-rgb)/0.1)] transition mb-4">
@@ -921,7 +913,7 @@ export default function WorkoutPage() {
                 ) : (
                     <div className="space-y-2 mb-6">
                         {freestyleExercises.map((ex, i) => (
-                            <div key={ex.id} className="flex items-center gap-3 rounded-xl border border-white/[0.06] bg-white/[0.03] px-4 py-3">
+                            <div key={ex.id} className="flex items-center gap-3 glass-card px-4 py-3">
                                 <span className="text-[10px] font-mono text-white/20 w-5 shrink-0">{String(i + 1).padStart(2, "0")}</span>
                                 <div className="flex-1 min-w-0">
                                     <p className="text-[13px] font-medium text-white/80 truncate">{ex.name}</p>
@@ -953,8 +945,6 @@ export default function WorkoutPage() {
     // ── COMPLETED ──
     if (status === "completed" && summary) return (
         <main className="min-h-screen bg-[#050914] text-white flex items-center justify-center p-4 relative">
-            <div className="pointer-events-none fixed inset-0 opacity-[0.03]" style={{ backgroundImage: "repeating-linear-gradient(0deg, #fff 0px, #fff 1px, transparent 1px, transparent 3px)" }} />
-            <div className="pointer-events-none fixed top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[rgb(var(--accent-rgb)/0.06)] rounded-full blur-[120px]" />
             <div className="relative z-10 w-full max-w-xl">
                 <CardPanel className="p-5">
                     <div className="text-center mb-5">
@@ -990,7 +980,7 @@ export default function WorkoutPage() {
                         <StatCell label="XP EARNED" value={`+${summary.xpBreakdown.total}`} accent />
                     </div>
 
-                    <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-3 mb-5">
+                    <div className="glass-card p-3 mb-5">
                         <p className="text-[8px] font-mono tracking-widest text-white/20 mb-2">XP BREAKDOWN</p>
                         {summary.xpBreakdown.details.map((d, i) => (
                             <p key={i} className="text-[10px] font-mono text-white/40 leading-relaxed">{d}</p>
@@ -1049,8 +1039,6 @@ export default function WorkoutPage() {
     if (status === "completed_today") {
         return (
             <main className="min-h-screen bg-[#050914] text-white flex items-center justify-center p-4 relative">
-                <div className="pointer-events-none fixed inset-0 opacity-[0.03]" style={{ backgroundImage: "repeating-linear-gradient(0deg, #fff 0px, #fff 1px, transparent 1px, transparent 3px)" }} />
-                <div className="pointer-events-none fixed top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[rgb(var(--accent-rgb)/0.06)] rounded-full blur-[120px]" />
                 <div className="relative z-10 w-full max-w-xl">
                     <CardPanel className="p-5">
                         <div className="text-center mb-5">
@@ -1064,7 +1052,7 @@ export default function WorkoutPage() {
                         {todaySessions.length > 1 ? (
                             <div className="space-y-2 mb-4">
                                 {todaySessions.map((s, i) => (
-                                    <div key={s.id} className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
+                                    <div key={s.id} className="glass-card p-3">
                                         <p className="text-[8px] font-mono tracking-widest text-white/25 mb-2">SESSION {i + 1}</p>
                                         <div className="grid grid-cols-4 gap-2">
                                             <StatCell label="TIME" value={formatClock(s.duration)} />
@@ -1123,15 +1111,13 @@ export default function WorkoutPage() {
     // ── NOT STARTED / ACTIVE ──
     return (
         <main className="min-h-screen bg-[#050914] text-white pb-36 md:pb-10 relative">
-            <div className="pointer-events-none fixed inset-0 opacity-[0.03]" style={{ backgroundImage: "repeating-linear-gradient(0deg, #fff 0px, #fff 1px, transparent 1px, transparent 3px)" }} />
-            <div className="pointer-events-none fixed top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[rgb(var(--accent-rgb)/0.06)] rounded-full blur-[120px]" />
 
             <div className="relative z-10 max-w-xl mx-auto px-4 pt-6 space-y-4">
 
                 {/* ── TOP BAR ── */}
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-xl font-bold text-[rgb(var(--accent-light-rgb))]">{dayTitle}</h1>
+                        <h1 className="text-xl font-bold font-display text-[rgb(var(--accent-light-rgb))]">{dayTitle}</h1>
                         <p className="text-[10px] font-mono text-white/25 mt-0.5">
                             {status === "active" ? "Active session" : "Ready to start"}
                         </p>
@@ -1240,11 +1226,11 @@ export default function WorkoutPage() {
                         {/* Warm-up & Nutrition tips */}
                         {status === "not_started" && (
                             <div className="mt-3 pt-3 border-t border-white/[0.04] grid grid-cols-2 gap-2">
-                                <div className="rounded-lg border border-white/[0.04] bg-white/[0.02] p-2.5">
+                                <div className="glass-card p-2.5">
                                     <p className="text-[7px] font-mono tracking-widest text-white/20 mb-1">WARM-UP · {cycleProfile.warmUpGuidance.minutes} MIN</p>
                                     <p className="text-[9px] text-white/35 leading-relaxed">{cycleProfile.warmUpGuidance.focus}</p>
                                 </div>
-                                <div className="rounded-lg border border-white/[0.04] bg-white/[0.02] p-2.5">
+                                <div className="glass-card p-2.5">
                                     <p className="text-[7px] font-mono tracking-widest text-white/20 mb-1">NUTRITION TIP</p>
                                     <p className="text-[9px] text-white/35 leading-relaxed">{cycleProfile.nutritionTip}</p>
                                 </div>
@@ -1262,7 +1248,7 @@ export default function WorkoutPage() {
                             <StatCell label="EST. TIME" value={`${totalPlanned * 3}m`} />
                         </div>
 
-                        <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-3 mb-4">
+                        <div className="glass-card p-3 mb-4">
                             <p className="text-[8px] font-mono tracking-widest text-white/25 mb-2">PRE-WORKOUT BODY WEIGHT</p>
                             <div className="flex items-center gap-3">
                                 <input
@@ -1307,7 +1293,7 @@ export default function WorkoutPage() {
                             {exercisesList.map((ex, i) => {
                                 const hint = overloadHints[ex.exercise_id];
                                 return (
-                                    <div key={ex.id} className="rounded-xl border border-white/[0.06] bg-white/[0.03] px-4 py-3">
+                                    <div key={ex.id} className="glass-card px-4 py-3">
                                         <div className="flex items-center gap-3">
                                             <span className="text-[10px] font-mono text-white/15 w-5 shrink-0">{String(i + 1).padStart(2, "0")}</span>
                                             <div className="flex-1 min-w-0">

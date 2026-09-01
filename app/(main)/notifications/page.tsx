@@ -114,8 +114,6 @@ export default function NotificationsPage() {
 
   return (
     <main className="min-h-screen bg-[#050914] text-white pb-24 md:pb-10 relative">
-      <div className="pointer-events-none fixed inset-0 opacity-[0.03]" style={{ backgroundImage: "repeating-linear-gradient(0deg, #fff 0px, #fff 1px, transparent 1px, transparent 3px)" }} />
-      <div className="pointer-events-none fixed top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[rgb(var(--accent-rgb)/0.06)] rounded-full blur-[120px]" />
 
       <div className="relative z-10 max-w-xl mx-auto px-4 pt-6 space-y-4">
         <button onClick={() => router.push("/profile")} className="flex items-center gap-1 text-[10px] font-mono text-white/30 hover:text-white/60 transition">
@@ -124,7 +122,7 @@ export default function NotificationsPage() {
 
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div>
-            <h1 className="text-xl font-bold text-[rgb(var(--accent-light-rgb))]">Notifications</h1>
+            <h1 className="text-xl font-bold font-display text-[rgb(var(--accent-light-rgb))]">Notifications</h1>
             <p className="text-[11px] text-white/30 mt-0.5">
               {unreadCount > 0 ? `${unreadCount} unread` : "All caught up"}
             </p>
@@ -180,7 +178,7 @@ export default function NotificationsPage() {
           <CubeLoader message="Loading notifications…" />
         ) : visible.length === 0 ? (
           <div className="text-center py-16">
-            <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center">
+            <div className="w-14 h-14 mx-auto mb-4 rounded-2xl glass-card flex items-center justify-center">
               <Bell size={24} className="text-white/15" />
             </div>
             <p className="text-sm font-semibold text-white/30">All Caught Up</p>
