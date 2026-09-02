@@ -19,8 +19,9 @@ import { broadcastUnitChange } from "../../lib/useUnits";
 import { broadcastEquipmentChange } from "../../lib/useEquipment";
 import { kgToUnit, weightInputToKg } from "../../lib/units";
 import { rematerializeWeightTrend } from "../../lib/weightTrend";
-import SubNavPills from "../../components/ui/sub-nav-pills";
-import { youPills } from "../../lib/navPills";
+import SwipeNav from "../../components/ui/swipe-nav";
+import { getYouSections } from "../../lib/navPills";
+import { useModules } from "../../lib/useModules";
 
 type ProfileData = {
     goal: string;
@@ -116,6 +117,7 @@ export default function ProfilePage() {
     const { profile, user, refreshProfile } = useAuth();
     const router = useRouter();
     const { sex: hookSex } = useSex();
+    const { enabledKeys } = useModules();
     const [avatarUploading, setAvatarUploading] = useState(false);
     const [avatarError, setAvatarError] = useState<string | null>(null);
 
@@ -700,7 +702,7 @@ export default function ProfilePage() {
                     )}
                 </motion.button>
 
-                <SubNavPills pills={youPills} activeKey="/profile" onSelect={(k) => router.push(k)} />
+                <SwipeNav sections={getYouSections(enabledKeys)} />
 
                 {/* Quick Stats */}
                 <motion.div variants={staggerItem} className="grid grid-cols-4 gap-2">

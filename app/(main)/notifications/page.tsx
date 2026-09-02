@@ -7,8 +7,9 @@ import { motion } from "framer-motion";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../lib/AuthProvider";
 import CubeLoader from "../../components/ui/cube-loader";
-import SubNavPills from "../../components/ui/sub-nav-pills";
-import { youPills } from "../../lib/navPills";
+import SwipeNav from "../../components/ui/swipe-nav";
+import { getYouSections } from "../../lib/navPills";
+import { useModules } from "../../lib/useModules";
 import { staggerContainer, staggerItem } from "../../lib/motion";
 
 const TYPE_META: Record<string, { icon: (size: number) => React.ReactNode; bg: string; label: string; chipActive: string }> = {
@@ -54,6 +55,7 @@ function getDateGroup(dateStr: string): string {
 export default function NotificationsPage() {
   const { user } = useAuth();
   const router = useRouter();
+  const { enabledKeys } = useModules();
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "unread">("all");
@@ -118,7 +120,7 @@ export default function NotificationsPage() {
     <main className="min-h-screen bg-[#050914] text-white pb-24 md:pb-10 relative">
 
       <div className="relative z-10 max-w-xl mx-auto px-4 pt-6 space-y-4">
-        <SubNavPills pills={youPills} activeKey="/notifications" onSelect={(k) => router.push(k)} />
+        <SwipeNav sections={getYouSections(enabledKeys)} />
 
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div>

@@ -2,53 +2,31 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  LayoutDashboard, Dumbbell, Calendar, TrendingUp, HeartPulse, Sparkles,
-  Trophy, User, Award, Bell, Users, Droplets,
-} from "lucide-react";
+import { LayoutDashboard } from "lucide-react";
 import { useSex } from "../lib/useSex";
+import { useModules } from "../lib/useModules";
+import { getTrainPills, getTrackPills, getSocialPills, getYouPills } from "../lib/navPills";
+import type { NavPill } from "./ui/sub-nav-pills";
 
 type NavItem = { icon: any; label: string; href: string };
 
-const hubNav: NavItem[] = [
-  { icon: LayoutDashboard, label: "Hub", href: "/" },
-];
-
-const trainNav: NavItem[] = [
-  { icon: Dumbbell, label: "Workout", href: "/workout" },
-  { icon: Calendar, label: "Schedule", href: "/schedule" },
-];
-
-const trackNavBase: NavItem[] = [
-  { icon: TrendingUp, label: "Progress", href: "/progress" },
-  { icon: HeartPulse, label: "Recovery", href: "/recovery" },
-];
-
-const trackCyclePill: NavItem = { icon: Droplets, label: "Cycle", href: "/cycle" };
-
-const socialNav: NavItem[] = [
-  { icon: Trophy, label: "Rankings", href: "/rankings" },
-  { icon: Award, label: "Achievements", href: "/achievements" },
-];
-
-const youNav: NavItem[] = [
-  { icon: User, label: "Profile", href: "/profile" },
-  { icon: Sparkles, label: "AI Coach", href: "/coach" },
-  { icon: Bell, label: "Notifications", href: "/notifications" },
-];
-
-const sections = [
-  { label: "HUB", items: hubNav },
-  { label: "TRAIN", items: trainNav },
-  { label: "TRACK", items: trackNavBase },
-  { label: "SOCIAL", items: socialNav },
-  { label: "YOU", items: youNav },
-];
+function pillsToNavItems(pills: NavPill[]): NavItem[] {
+  return pills.map((p) => ({ icon: p.icon, label: p.label.charAt(0) + p.label.slice(1).toLowerCase(), href: p.key }));
+}
 
 export default function Sidebar() {
   const pathname = usePathname();
   const { sex } = useSex();
+  const { enabledKeys } = useModules();
   const isFemale = sex === "female";
+
+  const sections = [
+    { label: "HUB", items: [{ icon: LayoutDashboard, label: "Hub", href: "/" }] as NavItem[] },
+    { label: "TRAIN", items: pillsToNavItems(getTrainPills(enabledKeys)) },
+    { label: "TRACK", items: pillsToNavItems(getTrackPills(enabledKeys)) },
+    { label: "SOCIAL", items: pillsToNavItems(getSocialPills(enabledKeys)) },
+    { label: "YOU", items: pillsToNavItems(getYouPills(enabledKeys)) },
+  ];
 
   function NavLink({ item }: { item: NavItem }) {
     const active = pathname === item.href;
@@ -102,9 +80,6 @@ export default function Sidebar() {
               {section.items.map((item) => (
                 <NavLink key={item.label} item={item} />
               ))}
-              {section.label === "TRACK" && isFemale && (
-                <NavLink item={trackCyclePill} />
-              )}
             </div>
           </div>
         ))}

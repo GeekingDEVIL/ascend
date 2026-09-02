@@ -12,8 +12,9 @@ import type { Sex } from "../../lib/calorieEngine";
 import { useSex } from "../../lib/useSex";
 import CubeLoader from "../../components/ui/cube-loader";
 import { staggerContainer, staggerItem } from "../../lib/motion";
-import SubNavPills from "../../components/ui/sub-nav-pills";
-import { getTrackPills } from "../../lib/navPills";
+import SwipeNav from "../../components/ui/swipe-nav";
+import { getTrackSections } from "../../lib/navPills";
+import { useModules } from "../../lib/useModules";
 
 function getWeekStart(d: Date): string {
   const day = d.getDay();
@@ -90,6 +91,7 @@ function overallStatusLabel(avg: number): { label: string; color: string } {
 export default function RecoveryPage() {
   const { user } = useAuth();
   const router = useRouter();
+  const { enabledKeys } = useModules();
   const [recoveryData, setRecoveryData] = useState<Record<string, MuscleRecoveryData>>({});
   const [adaptiveData, setAdaptiveData] = useState<Record<string, AdaptiveVolumeData>>({});
   const [loading, setLoading] = useState(true);
@@ -134,7 +136,7 @@ export default function RecoveryPage() {
     <main className="min-h-screen bg-[#050914] text-white pb-24 md:pb-10 relative">
 
       <div className="relative z-10 max-w-xl mx-auto px-4 pt-6 space-y-5">
-        <SubNavPills pills={getTrackPills(userSex === "female")} activeKey="/recovery" onSelect={(k) => router.push(k)} />
+        <SwipeNav sections={getTrackSections(enabledKeys)} />
 
         {/* Header */}
         <div className="flex items-center justify-between">

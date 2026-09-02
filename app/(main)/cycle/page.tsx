@@ -25,8 +25,9 @@ import {
 import CubeLoader from "../../components/ui/cube-loader";
 import { staggerContainer, staggerItem, tabContent } from "../../lib/motion";
 import AnimatedTabs from "../../components/ui/animated-tabs";
-import SubNavPills from "../../components/ui/sub-nav-pills";
-import { getTrackPills } from "../../lib/navPills";
+import SwipeNav from "../../components/ui/swipe-nav";
+import { getTrackSections } from "../../lib/navPills";
+import { useModules } from "../../lib/useModules";
 
 type Tab = "today" | "log" | "insights" | "learn";
 
@@ -99,6 +100,7 @@ function CycleRing({ cycleDay, cycleLength, phase }: { cycleDay: number; cycleLe
 export default function CyclePage() {
   const { user } = useAuth();
   const router = useRouter();
+  const { enabledKeys } = useModules();
   const { sex: userSex } = useSex();
   const [tab, setTab] = useState<Tab>("today");
   const [loading, setLoading] = useState(true);
@@ -258,7 +260,7 @@ export default function CyclePage() {
     <main className="min-h-screen bg-[#050914] text-white pb-24 md:pb-10 relative">
 
       <div className="relative z-10 max-w-xl mx-auto px-4 pt-6 space-y-4">
-        <SubNavPills pills={getTrackPills(true)} activeKey="/cycle" onSelect={(k) => router.push(k)} accentRgb="236 72 153" />
+        <SwipeNav sections={getTrackSections(enabledKeys)} />
 
         {/* ── Phase Hero ── */}
         {insight && (

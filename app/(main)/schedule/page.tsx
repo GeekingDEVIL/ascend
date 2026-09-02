@@ -4,8 +4,9 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { Plus, Trash2, GripVertical, Pencil, Database, Settings2, Play, Moon, Flame, PersonStanding, ChevronDown, ChevronUp, X, Dumbbell, BarChart3, BookOpen } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import SubNavPills from "../../components/ui/sub-nav-pills";
-import { trainPills } from "../../lib/navPills";
+import SwipeNav from "../../components/ui/swipe-nav";
+import { getTrainSections } from "../../lib/navPills";
+import { useModules } from "../../lib/useModules";
 import { DndContext, closestCenter, PointerSensor, MouseSensor, TouchSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -449,6 +450,7 @@ export default function SchedulePage() {
     const { user } = useAuth();
     const router = useRouter();
     const searchParams = useSearchParams();
+    const { enabledKeys } = useModules();
 
     const [activeTab, setActiveTab] = useState<"week" | "today">("today");
     const [weekOffset, setWeekOffset] = useState(0);
@@ -748,7 +750,7 @@ export default function SchedulePage() {
                     </div>
                 </div>
 
-                <SubNavPills pills={trainPills} activeKey="/schedule" onSelect={(k) => router.push(k)} />
+                <SwipeNav sections={getTrainSections(enabledKeys)} />
 
                 {/* ─── Tabs ─── */}
                 <div className="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-white/[0.03] border border-white/[0.06]">

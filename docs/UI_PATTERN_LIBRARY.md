@@ -163,27 +163,30 @@ import GlassCard, { StatChip, ProgressRing } from "@/app/components/ui/glass-car
 
 ---
 
-### SubNavPills (`app/components/ui/sub-nav-pills.tsx`)
+### SwipeNav (`app/components/ui/swipe-nav.tsx`)
 
-Horizontal scrollable pill strip for Hub-and-Spoke sibling navigation. Uses Framer Motion `layoutId` for a spring-animated sliding active indicator.
+Swipe-between-sections navigation replacing the old SubNavPills. Uses Framer Motion `drag="x"` with spring physics for gesture-driven section switching.
 
 **Props:**
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `pills` | `NavPill[]` | required | `{ key, label, icon }` |
-| `activeKey` | `string` | required | Currently active pill key (route path) |
-| `onSelect` | `(key: string) => void` | required | Navigation handler |
-| `accentRgb` | `string?` | accent CSS var | Domain color override (RGB triplet) |
+| Prop | Type | Description |
+|------|------|-------------|
+| `sections` | `SwipeSection[]` | `{ key, label, colorRgb }` — route path, display label, domain color |
 
-**Animation:** `layoutId="pill-active"` — sliding background with spring (stiffness: 400, damping: 28). Auto-scrolls active pill into view.
+**Features:**
+- Indicator dots (active dot wider at 24px, inactive 6px, colored by domain)
+- Current section label with domain color, chevron arrows, counter (e.g., "1/3")
+- Edge gradient hints when more sections exist left/right
+- Swipe triggers `router.push()` — URLs stay bookmarkable
+- SWIPE_THRESHOLD = 50px, also triggers on velocity > 500
+- Hidden when only 1 section available
 
-**Pill definitions** are centralized in `app/lib/navPills.ts`:
-- `trainPills` — Workout + Schedule
-- `getTrackPills(isFemale)` — Progress + Recovery + conditional Cycle (pink accent)
-- `socialPills` — Rankings + Achievements (blue accent)
-- `youPills` — Profile + AI Coach + Alerts
+**Section definitions** in `app/lib/navPills.ts`:
+- `getTrainSections(enabledKeys)` — Workout + Schedule + optional Running/Martial Arts/Yoga
+- `getTrackSections(enabledKeys)` — Progress + optional Recovery/Nutrition/Cycle/Wellness
+- `getSocialSections(enabledKeys)` — Rankings + Achievements
+- `getYouSections(enabledKeys)` — Profile + optional AI Coach + Alerts + Discover
 
-**Used on:** All 10 interior pages under the 5-tab Hub-and-Spoke nav.
+**Used on:** All 11 interior pages under the 5-tab Hub-and-Spoke nav.
 
 ---
 
@@ -238,3 +241,38 @@ Correlates training volume with menstrual cycle phases.
 - **Inputs:** sessions + cycle log (last period start, cycle length)
 - **Outputs:** `PhasePerformanceResult` — per-phase stats, best/worst phase, recommendation
 - **Displayed in:** History tab (female mode only) — 4-phase bar chart with AI recommendation
+
+---
+
+## Module System (`app/lib/modules.ts`)
+
+Progressive disclosure — users enable the features they need.
+
+### Architecture
+- **Module registry** (`app/lib/modules.ts`): 12 modules with key, name, description, icon, domain color, core flag, phase number
+- **DB table** (`supabase/migrations/015_user_modules.sql`): `user_modules(user_id, module_key, enabled_at)` with RLS
+- **Hook** (`app/lib/useModules.ts`): `useModules()` → `{ enabledKeys, isEnabled, toggleModule, loaded }`
+- **Nav integration** (`app/lib/navPills.ts`): `getTrainPills(enabledKeys)`, `getTrackPills(enabledKeys)`, `getSocialPills(enabledKeys)`, `getYouPills(enabledKeys)`, `getAllRoutes(enabledKeys)`
+- **Discover page** (`app/(main)/discover/page.tsx`): Browse all modules, toggle on/off, see phase locks
+
+### Module Keys
+| Key | Name | Domain | Core | Phase |
+|-----|------|--------|------|-------|
+| gym | Training | train | yes | 0 |
+| progress | Progress | track | yes | 0 |
+| xp | XP & Leveling | social | yes | 0 |
+| nutrition | Nutrition | track | no | 0 |
+| cycle | Cycle Tracker | track | no | 0 |
+| recovery | Recovery | track | no | 0 |
+| wellness | Wellness | track | no | 1 |
+| social | Social | social | no | 2 |
+| ai_coach | AI Coach | you | no | 3 |
+| martial_arts | Martial Arts | train | no | 3 |
+| running | Running | train | no | 4 |
+| yoga | Yoga & Mobility | train | no | 4 |
+
+### Default Enabled
+`gym`, `progress`, `xp`, `nutrition`, `recovery`
+
+### How Nav Pills Work
+Each pill definition has an optional `module` field. `filterPills()` strips pills whose module isn't in `enabledKeys`. Core modules are always in `enabledKeys`. `MobileNav.tsx` and `Sidebar.tsx` use `getAllRoutes(enabledKeys)` and the getter functions respectively to build dynamic nav.

@@ -14,8 +14,9 @@ import type { LeaderboardRanking as PodiumRanking } from "../../components/ui/le
 import type { LeaderboardRankingItem } from "../../components/ui/leaderboard-rankings";
 import { staggerContainer, staggerItem, tabContent } from "../../lib/motion";
 import AnimatedTabs from "../../components/ui/animated-tabs";
-import SubNavPills from "../../components/ui/sub-nav-pills";
-import { socialPills } from "../../lib/navPills";
+import SwipeNav from "../../components/ui/swipe-nav";
+import { getSocialSections } from "../../lib/navPills";
+import { useModules } from "../../lib/useModules";
 
 type LeaderboardEntry = {
   user_id: string;
@@ -70,6 +71,7 @@ function getSortUnit(sortBy: LeaderboardSort): string {
 export default function RankingsPage() {
   const { user } = useAuth();
   const router = useRouter();
+  const { enabledKeys } = useModules();
   const [tab, setTab] = useState<"personal" | "leaderboard">("personal");
   const [totalXp, setTotalXp] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -155,7 +157,7 @@ export default function RankingsPage() {
     <main className="min-h-screen bg-[#050914] text-white pb-24 md:pb-10 relative">
 
       <div className="relative z-10 max-w-xl mx-auto px-4 pt-6 space-y-4">
-        <SubNavPills pills={socialPills} activeKey="/rankings" onSelect={(k) => router.push(k)} accentRgb="59 130 246" />
+        <SwipeNav sections={getSocialSections(enabledKeys)} />
 
         {/* Tab switcher */}
         <AnimatedTabs

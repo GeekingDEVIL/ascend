@@ -4,18 +4,22 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LayoutDashboard, Dumbbell, TrendingUp, Users, User } from "lucide-react";
 import { useSex } from "../lib/useSex";
-
-const tabs = [
-  { icon: LayoutDashboard, label: "Hub", href: "/", match: ["/"] },
-  { icon: Dumbbell, label: "Train", href: "/workout", match: ["/workout", "/schedule"] },
-  { icon: TrendingUp, label: "Track", href: "/progress", match: ["/progress", "/recovery", "/cycle"] },
-  { icon: Users, label: "Social", href: "/rankings", match: ["/rankings", "/achievements"] },
-  { icon: User, label: "You", href: "/profile", match: ["/profile", "/notifications", "/coach"] },
-];
+import { useModules } from "../lib/useModules";
+import { getAllRoutes } from "../lib/navPills";
 
 export default function MobileNav() {
   const pathname = usePathname();
   const { sex } = useSex();
+  const { enabledKeys } = useModules();
+  const routes = getAllRoutes(enabledKeys);
+
+  const tabs = [
+    { icon: LayoutDashboard, label: "Hub", href: "/", match: ["/"] },
+    { icon: Dumbbell, label: "Train", href: "/workout", match: routes.train },
+    { icon: TrendingUp, label: "Track", href: "/progress", match: routes.track },
+    { icon: Users, label: "Social", href: "/rankings", match: routes.social },
+    { icon: User, label: "You", href: "/profile", match: routes.you },
+  ];
 
   const isFemale = sex === "female";
   const modeColor = isFemale ? "rgb(236,72,153)" : "rgb(96,165,250)";

@@ -7,8 +7,9 @@ import { Calendar, Dumbbell, Weight, Trophy, ChevronDown, ChevronRight, Lock, Fl
 import { motion, AnimatePresence } from "framer-motion";
 import { tabContent } from "../../lib/motion";
 import AnimatedTabs from "../../components/ui/animated-tabs";
-import SubNavPills from "../../components/ui/sub-nav-pills";
-import { getTrackPills } from "../../lib/navPills";
+import SwipeNav from "../../components/ui/swipe-nav";
+import { getTrackSections } from "../../lib/navPills";
+import { useModules } from "../../lib/useModules";
 import CubeLoader from "../../components/ui/cube-loader";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../lib/AuthProvider";
@@ -195,6 +196,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 export default function ProgressPage() {
     const { user } = useAuth();
     const router = useRouter();
+    const { enabledKeys } = useModules();
     const [tab, setTab] = useState<Tab>("intake");
     const [loading, setLoading] = useState(true);
     const { sex: userSex } = useSex();
@@ -981,7 +983,7 @@ export default function ProgressPage() {
         <main className="min-h-screen bg-[#050914] text-white pb-24 md:pb-10 relative">
 
             <div className="relative z-10 max-w-xl mx-auto px-4 pt-6 space-y-5">
-                <SubNavPills pills={getTrackPills(isFemale)} activeKey="/progress" onSelect={(k) => router.push(k)} />
+                <SwipeNav sections={getTrackSections(enabledKeys)} />
 
                 <div>
                     <h1 className="text-xl font-bold font-display text-[rgb(var(--accent-light-rgb))]">Progress</h1>

@@ -17,8 +17,9 @@ import { updateExerciseLeaderboard } from "../../lib/updateExerciseLeaderboard";
 import AddExerciseModal from "../../components/AddExerciseModal";
 import { useSex } from "../../lib/useSex";
 import { useUnits } from "../../lib/useUnits";
-import SubNavPills from "../../components/ui/sub-nav-pills";
-import { trainPills } from "../../lib/navPills";
+import SwipeNav from "../../components/ui/swipe-nav";
+import { getTrainSections } from "../../lib/navPills";
+import { useModules } from "../../lib/useModules";
 import { kgToUnit, weightInputToKg } from "../../lib/units";
 import { fetchCycleTrainingData, assessExerciseRisk, getCycleAdjustedWeight, type PhaseTrainingProfile, type EnergyForecast, type ExerciseRisk } from "../../lib/cycleTrainingEngine";
 
@@ -148,6 +149,7 @@ function SwipeSet({ completed, onComplete, children }: { completed: boolean; onC
 export default function WorkoutPage() {
     const { user } = useAuth();
     const router = useRouter();
+    const { enabledKeys } = useModules();
 
     const [status, setStatus] = useState<SessionStatus>("loading");
     const [dayTitle, setDayTitle] = useState("");
@@ -1116,7 +1118,7 @@ export default function WorkoutPage() {
 
             <div className="relative z-10 max-w-xl mx-auto px-4 pt-6 space-y-4">
 
-                <SubNavPills pills={trainPills} activeKey="/workout" onSelect={(k) => router.push(k)} />
+                <SwipeNav sections={getTrainSections(enabledKeys)} />
 
                 {/* ── TOP BAR ── */}
                 <div className="flex items-center justify-between">
