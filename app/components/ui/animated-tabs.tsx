@@ -122,7 +122,7 @@ const contentVariants = {
     opacity: 1,
     x: 0,
     scale: 1,
-    transition: { type: "spring", stiffness: 350, damping: 28 },
+    transition: { type: "spring" as const, stiffness: 350, damping: 28 },
   },
   exit: (dir: string) => ({
     opacity: 0,

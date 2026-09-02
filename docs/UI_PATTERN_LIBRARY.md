@@ -160,3 +160,81 @@ import GlassCard, { StatChip, ProgressRing } from "@/app/components/ui/glass-car
   <ProgressRing value={1800} max={2200} colorRgb="245 158 11" label="kcal" />
 </GlassCard>
 ```
+
+---
+
+### SubNavPills (`app/components/ui/sub-nav-pills.tsx`)
+
+Horizontal scrollable pill strip for Hub-and-Spoke sibling navigation. Uses Framer Motion `layoutId` for a spring-animated sliding active indicator.
+
+**Props:**
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `pills` | `NavPill[]` | required | `{ key, label, icon }` |
+| `activeKey` | `string` | required | Currently active pill key (route path) |
+| `onSelect` | `(key: string) => void` | required | Navigation handler |
+| `accentRgb` | `string?` | accent CSS var | Domain color override (RGB triplet) |
+
+**Animation:** `layoutId="pill-active"` — sliding background with spring (stiffness: 400, damping: 28). Auto-scrolls active pill into view.
+
+**Pill definitions** are centralized in `app/lib/navPills.ts`:
+- `trainPills` — Workout + Schedule
+- `getTrackPills(isFemale)` — Progress + Recovery + conditional Cycle (pink accent)
+- `socialPills` — Rankings + Achievements (blue accent)
+- `youPills` — Profile + AI Coach + Alerts
+
+**Used on:** All 10 interior pages under the 5-tab Hub-and-Spoke nav.
+
+---
+
+### DrilldownList (`app/components/ui/drilldown-list.tsx`)
+
+Stagger-animated list of glass cards for drill-down navigation.
+
+**Props:**
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `items` | `DrilldownItem[]` | required | `{ icon, label, subtitle?, badge?, progress?, onClick }` |
+| `accentRgb` | `string?` | accent CSS var | Domain color for badges/progress |
+
+Each item supports: icon, label, subtitle, badge (color + label), progress bar, onClick, chevron arrow.
+
+**Animation:** `staggerContainer` + `staggerItem` from `motion.ts`.
+
+---
+
+## Page Transitions & Celebrations (`app/lib/motion.ts`)
+
+Additional Framer Motion variants added for navigation and gamification:
+
+| Variant | Usage |
+|---------|-------|
+| `pageDrillDown` | Slide right (x: 24→0) for drill-down navigation |
+| `pageBack` | Slide left (x: -24→0) for back navigation |
+| `celebrationBurst` | Scale + opacity burst for PR confetti |
+| `levelUpGlow` | Expanding glow shadow for rank-up animation |
+
+---
+
+## Insight Cards (Progress Page)
+
+Three data-driven insight engines wired into the Progress page:
+
+### Monthly Insights (`app/lib/monthlyInsights.ts`)
+Computes month-over-month training comparison from session data.
+- **Inputs:** workout sessions (date, volume, sets, duration, XP)
+- **Outputs:** `MonthlyComparison` — current/previous month buckets, % changes, streak, best month
+- **Displayed in:** History tab — 3-stat grid (workouts, volume, PRs) with trend arrows + streak counter
+
+### Strength Benchmark (`app/lib/strengthBenchmark.ts`)
+Compares estimated 1RM per exercise across two time periods.
+- **Inputs:** exercise set logs with name/body segment
+- **Outputs:** `StrengthBenchmarkResult` — per-exercise trend (up/down/stable), strongest gain, biggest drop
+- **Displayed in:** Strength tab — color-coded exercise list with % change bars
+- **Lazy loaded:** only fetches data when user switches to History or Strength tab
+
+### Phase Performance (`app/lib/phasePerformance.ts`) — Female only
+Correlates training volume with menstrual cycle phases.
+- **Inputs:** sessions + cycle log (last period start, cycle length)
+- **Outputs:** `PhasePerformanceResult` — per-phase stats, best/worst phase, recommendation
+- **Displayed in:** History tab (female mode only) — 4-phase bar chart with AI recommendation

@@ -39,6 +39,9 @@ import { modelScenario, type ScenarioResult } from "../../lib/scenarioModeling";
 import { shouldSuggestDietBreak, planDietBreak } from "../../lib/dietBreaks";
 import { comparePhaseToPhase, estimateCyclePhase, getCyclePhaseInfo, computeAdaptiveCycleLength, fetchCycleLogs, type CycleAwareComparison } from "../../lib/cycleAwareTrend";
 import { estimateSessionExpenditure, type SessionExpenditure } from "../../lib/exerciseExpenditure";
+import { buildMonthlyInsights, type MonthlyComparison } from "../../lib/monthlyInsights";
+import { buildStrengthBenchmark, type StrengthBenchmarkResult } from "../../lib/strengthBenchmark";
+import { buildPhasePerformance, type PhasePerformanceResult } from "../../lib/phasePerformance";
 
 const MEASUREMENT_TYPES: { type: MeasurementType; color: string; bar: string }[] = [
     { type: "Biceps", color: "text-pink-300", bar: "bg-pink-400" },
@@ -257,6 +260,9 @@ export default function ProgressPage() {
     const [insightCyclePhaseInfo, setInsightCyclePhaseInfo] = useState<string>("");
     const [insightExercise, setInsightExercise] = useState<SessionExpenditure | null>(null);
     const [scenarioParams, setScenarioParams] = useState<{ currentKg: number; targetKg: number; tdee: number; bmr: number; sex: string; heightCm: number; goalType: string } | null>(null);
+    const [monthlyInsights, setMonthlyInsights] = useState<MonthlyComparison | null>(null);
+    const [strengthBenchmark, setStrengthBenchmark] = useState<StrengthBenchmarkResult | null>(null);
+    const [phasePerformance, setPhasePerformance] = useState<PhasePerformanceResult | null>(null);
     const [myFoods, setMyFoods] = useState<{ id: string; label: string; kcal: number; protein_g: number; carbs_g: number; fat_g: number; use_count: number }[]>([]);
     const [intakeLoading, setIntakeLoading] = useState(false);
     const intakeLoadedDateRef = React.useRef<string | null>(null);
@@ -772,6 +778,68 @@ export default function ProgressPage() {
     }, [loadHistory, loadAchievements, loadLeaderboardCard, loadGoals, loadPRs, loadBodyWeight, loadMeasurements, loadWeeklyVolume]);
 
     useEffect(() => {
+        if (sessions.length === 0) { setMonthlyInsights(null); return; }
+        try {
+            setMonthlyInsights(buildMonthlyInsights(sessions.map(s => ({
+                date: s.date,
+                total_volume: Number(s.total_volume) || 0,
+                total_sets: Number(s.total_sets) || 0,
+                duration_seconds: s.duration_seconds || 0,
+                xp_earned: s.xp_earned || 0,
+            }))));
+        } catch { setMonthlyInsights(null); }
+    }, [sessions]);
+
+    const benchmarkLoadedRef = useRef(false);
+    useEffect(() => {
+        if (!user || sessions.length === 0) return;
+        if (tab !== "history" && tab !== "strength") return;
+        if (benchmarkLoadedRef.current) return;
+        benchmarkLoadedRef.current = true;
+        let cancelled = false;
+        async function loadBenchmarkAndPhase() {
+            const { data: logs } = await supabase
+                .from("exercise_set_logs")
+                .select("exercise_id, weight, reps, completed_at, exercises!inner(name, body_segment), workout_sessions!inner(sex)")
+                .eq("user_id", user!.id)
+                .eq("workout_sessions.sex", userSex)
+                .gt("weight", 0)
+                .order("completed_at", { ascending: true })
+                .limit(2000);
+            if (cancelled) return;
+            if (logs && logs.length > 0) {
+                try {
+                    setStrengthBenchmark(buildStrengthBenchmark(logs.map((l: any) => ({
+                        exercise_id: l.exercise_id,
+                        exercise_name: l.exercises?.name ?? "Unknown",
+                        body_segment: l.exercises?.body_segment ?? "Other",
+                        weight: Number(l.weight),
+                        reps: Number(l.reps),
+                        completed_at: l.completed_at,
+                    }))));
+                } catch { setStrengthBenchmark(null); }
+            } else { setStrengthBenchmark(null); }
+
+            if (isFemale && sessions.length >= 4) {
+                try {
+                    const cycleLogs = await fetchCycleLogs(user!.id);
+                    const periodStarts = cycleLogs.map(l => l.period_start);
+                    if (periodStarts.length > 0) {
+                        const cycleLen = computeAdaptiveCycleLength(periodStarts);
+                        const lastStart = periodStarts[0];
+                        setPhasePerformance(buildPhasePerformance(
+                            sessions.map(s => ({ date: s.date, total_volume: Number(s.total_volume) || 0, total_sets: Number(s.total_sets) || 0, duration_seconds: s.duration_seconds || 0 })),
+                            lastStart, cycleLen,
+                        ));
+                    } else { setPhasePerformance(null); }
+                } catch { setPhasePerformance(null); }
+            } else { setPhasePerformance(null); }
+        }
+        loadBenchmarkAndPhase();
+        return () => { cancelled = true; };
+    }, [user, userSex, isFemale, sessions, tab]);
+
+    useEffect(() => {
         if (tab === "intake") {
             let cancelled = false;
             const force = intakeLoadedDateRef.current !== null && intakeLoadedDateRef.current !== intakeDate;
@@ -1074,6 +1142,72 @@ export default function ProgressPage() {
                                             );
                                         })()}
 
+                                        {/* Monthly Insights */}
+                                        {monthlyInsights && (
+                                            <div className="glass-card rounded-2xl p-4">
+                                                <p className="text-[9px] font-mono tracking-[0.2em] text-white/20 mb-3">MONTHLY INSIGHTS</p>
+                                                <div className="grid grid-cols-3 gap-3 mb-4">
+                                                    <div className="text-center">
+                                                        <p className="text-2xl font-bold font-mono text-white/90">{monthlyInsights.current.workouts}</p>
+                                                        <p className="text-[9px] font-mono text-white/30">Workouts</p>
+                                                        {monthlyInsights.frequencyChange !== null && (
+                                                            <p className={`text-[9px] font-mono mt-0.5 ${monthlyInsights.frequencyChange >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+                                                                {monthlyInsights.frequencyChange >= 0 ? "+" : ""}{monthlyInsights.frequencyChange}%
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                    <div className="text-center">
+                                                        <p className="text-2xl font-bold font-mono text-[rgb(var(--accent-light-rgb))]">{(() => { const v = kgToUnit(monthlyInsights.current.totalVolume, weightUnit); return v >= 1000 ? `${(v / 1000).toFixed(1)}k` : Math.round(v); })()}</p>
+                                                        <p className="text-[9px] font-mono text-white/30">Volume ({weightUnit})</p>
+                                                        {monthlyInsights.volumeChange !== null && (
+                                                            <p className={`text-[9px] font-mono mt-0.5 ${monthlyInsights.volumeChange >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+                                                                {monthlyInsights.volumeChange >= 0 ? "+" : ""}{monthlyInsights.volumeChange}%
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                    <div className="text-center">
+                                                        <p className="text-2xl font-bold font-mono text-white/90">{monthlyInsights.current.prsHit}</p>
+                                                        <p className="text-[9px] font-mono text-white/30">PRs Hit</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-3 text-[9px] font-mono text-white/25 border-t border-white/[0.04] pt-3">
+                                                    <span className="flex items-center gap-1"><Flame size={10} className="text-orange-400" /> {monthlyInsights.streak} month streak</span>
+                                                    {monthlyInsights.current.uniqueExercises > 0 && (
+                                                        <span>{monthlyInsights.current.uniqueExercises} exercises</span>
+                                                    )}
+                                                    {monthlyInsights.durationChange !== null && (
+                                                        <span>Avg {Math.round(monthlyInsights.current.avgDuration / 60)}min</span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Phase Performance (female only) */}
+                                        {isFemale && phasePerformance && (
+                                            <div className="glass-card rounded-2xl p-4">
+                                                <p className="text-[9px] font-mono tracking-[0.2em] text-pink-300/50 mb-3">CYCLE PHASE PERFORMANCE</p>
+                                                <div className="grid grid-cols-4 gap-2 mb-3">
+                                                    {phasePerformance.phases.map((p) => (
+                                                        <div key={p.phase} className="text-center">
+                                                            <div className="w-full h-16 rounded-lg relative overflow-hidden mb-1" style={{ background: `${p.color}15`, border: `1px solid ${p.color}30` }}>
+                                                                <div className="absolute bottom-0 w-full transition-all" style={{
+                                                                    height: `${phasePerformance.bestPhase ? Math.round((p.avgVolume / phasePerformance.bestPhase.avgVolume) * 100) : 100}%`,
+                                                                    background: `${p.color}30`,
+                                                                }} />
+                                                                <div className="absolute inset-0 flex items-center justify-center">
+                                                                    <p className="text-xs font-bold font-mono" style={{ color: p.color }}>{p.workouts}</p>
+                                                                </div>
+                                                            </div>
+                                                            <p className="text-[8px] font-mono text-white/30">{p.label.slice(0, 3).toUpperCase()}</p>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                                {phasePerformance.recommendation && (
+                                                    <p className="text-[10px] text-white/40 leading-relaxed">{phasePerformance.recommendation}</p>
+                                                )}
+                                            </div>
+                                        )}
+
                                         {/* Session List — grouped by date */}
                                         <div>
                                             <p className="text-[9px] font-mono tracking-[0.2em] text-white/20 mb-3">WORKOUT LOG</p>
@@ -1246,6 +1380,52 @@ export default function ProgressPage() {
                                         </div>
                                     )}
                                 </div>
+
+                                {/* Strength Benchmark */}
+                                {strengthBenchmark && (
+                                    <div className="glass-card rounded-2xl p-4">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <p className="text-[9px] font-mono tracking-[0.2em] text-white/20">STRENGTH BENCHMARK</p>
+                                            <p className="text-[9px] font-mono text-white/20">{strengthBenchmark.period}</p>
+                                        </div>
+                                        <div className="flex items-center gap-3 mb-4">
+                                            <div className="flex items-center gap-1.5 text-[10px] font-mono">
+                                                <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                                                <span className="text-emerald-400">{strengthBenchmark.totalUp} up</span>
+                                            </div>
+                                            <div className="flex items-center gap-1.5 text-[10px] font-mono">
+                                                <span className="w-2 h-2 rounded-full bg-white/20" />
+                                                <span className="text-white/30">{strengthBenchmark.totalStable} stable</span>
+                                            </div>
+                                            <div className="flex items-center gap-1.5 text-[10px] font-mono">
+                                                <span className="w-2 h-2 rounded-full bg-red-400" />
+                                                <span className="text-red-400">{strengthBenchmark.totalDown} down</span>
+                                            </div>
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            {strengthBenchmark.exercises.slice(0, 8).map((ex) => (
+                                                <div key={ex.exerciseId} className="flex items-center gap-3 rounded-lg border border-white/[0.04] bg-white/[0.01] px-3 py-2">
+                                                    <div className={`w-1.5 h-8 rounded-full ${ex.trend === "up" ? "bg-emerald-400" : ex.trend === "down" ? "bg-red-400" : "bg-white/15"}`} />
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-[11px] font-bold text-white/80 truncate">{ex.exerciseName}</p>
+                                                        <p className="text-[9px] font-mono text-white/25">{ex.bodySegment}</p>
+                                                    </div>
+                                                    <div className="text-right shrink-0">
+                                                        <p className="text-[11px] font-bold font-mono text-white/80">{Math.round(kgToUnit(ex.currentE1rm, weightUnit))}<span className="text-[9px] text-white/30">{weightUnit}</span></p>
+                                                        <p className={`text-[9px] font-mono ${ex.changePercent > 0 ? "text-emerald-400" : ex.changePercent < 0 ? "text-red-400" : "text-white/25"}`}>
+                                                            {ex.changePercent > 0 ? "+" : ""}{ex.changePercent}%
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        {strengthBenchmark.strongestGain && (
+                                            <p className="text-[10px] text-white/30 mt-3 border-t border-white/[0.04] pt-3">
+                                                Biggest gain: <span className="text-emerald-400 font-bold">{strengthBenchmark.strongestGain.exerciseName}</span> +{strengthBenchmark.strongestGain.changePercent}%
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
                             </motion.div>
                         )}
 
