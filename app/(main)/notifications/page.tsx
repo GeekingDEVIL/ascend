@@ -88,14 +88,14 @@ export default function NotificationsPage() {
 
   async function dismissAll() {
     if (!user) return;
-    await supabase.from("notifications").update({ read: true }).eq("user_id", user.id).eq("read", false);
+    await supabase.from("notifications").update({ read: true }).eq("user_id", user.id).eq("sex", userSex).eq("read", false);
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
   }
 
   async function clearAll() {
     if (!user) return;
     if (!confirm("Delete all notifications permanently?")) return;
-    await supabase.from("notifications").delete().eq("user_id", user.id);
+    await supabase.from("notifications").delete().eq("user_id", user.id).eq("sex", userSex);
     setNotifications([]);
   }
 

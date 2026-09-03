@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { User, LogOut, Plus, Trash2, Check, Download, AlertTriangle, Eye, EyeOff, Target, Dumbbell, Shield, Heart, AtSign, Globe, Camera, Pencil, X, Flame, Phone, Mail, Trophy, Award, HeartPulse, Sparkles, Bell, ChevronRight, Compass, Building2, Home, Briefcase } from "lucide-react";
+import { User, LogOut, Plus, Trash2, Check, Download, AlertTriangle, Eye, EyeOff, Target, Dumbbell, Shield, AtSign, Globe, Camera, Pencil, X, Flame, Phone, Mail, ChevronRight, Compass, Building2, Home, Briefcase } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../lib/AuthProvider";
@@ -65,7 +65,7 @@ type TargetLift = {
     achieved_at: string | null;
 };
 
-type Section = "stats" | "goals" | "training" | "social" | "preferences" | "data";
+type Section = "stats" | "goals" | "training" | "appearance" | "privacy" | "data";
 
 const AVATAR_COLORS = ["rgb(var(--accent-rgb))", "#34d399", "#a78bfa", "#f97316", "#ef4444", "#f59e0b", "#ec4899", "#6366f1"];
 
@@ -695,13 +695,13 @@ export default function ProfilePage() {
         setCalorieSummary(summary);
     }, [latestWeight, data.height_cm, data.date_of_birth, data.sex, data.activity_level, goals.goal_type, goals.rate_per_week_kg, goals.diet_preference, goals.calorie_target_override]);
 
-    const SECTIONS: { key: Section; label: string; icon: any }[] = [
-        { key: "stats", label: "STATS", icon: User },
-        { key: "goals", label: "GOALS", icon: Target },
-        { key: "training", label: "TRAINING", icon: Dumbbell },
-        { key: "social", label: "SOCIAL", icon: Heart },
-        { key: "preferences", label: "SETTINGS", icon: Shield },
-        { key: "data", label: "DATA", icon: Download },
+    const SECTIONS: { key: Section; label: string; desc: string; icon: any }[] = [
+        { key: "stats", label: "Body Stats", desc: "Height, weight, BMI", icon: User },
+        { key: "goals", label: "Goals & Nutrition", desc: "Targets, calories, macros", icon: Target },
+        { key: "training", label: "Training Preferences", desc: "Experience, gym, equipment", icon: Dumbbell },
+        { key: "appearance", label: "Appearance", desc: "Theme, accent, mode", icon: Shield },
+        { key: "privacy", label: "Privacy & Visibility", desc: "Units, visibility", icon: EyeOff },
+        { key: "data", label: "Data & Account", desc: "Export, sign out", icon: Download },
     ];
 
     if (loading) {
@@ -756,7 +756,23 @@ export default function ProfilePage() {
                             <span className="text-white/15"> · </span>
                             <span className="text-white/25">Level {levelInfo.level}</span>
                         </p>
-                        <p className="text-[10px] font-mono text-white/20 mt-0.5">Member since {user?.created_at ? new Date(user.created_at).toLocaleDateString(undefined, { month: "long", year: "numeric" }) : "—"}</p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                            <p className="text-[10px] font-mono text-white/20">Member since {user?.created_at ? new Date(user.created_at).toLocaleDateString(undefined, { month: "long", year: "numeric" }) : "—"}</p>
+                            {(data.social_instagram || data.social_twitter) && (
+                                <div className="flex items-center gap-1.5 ml-1">
+                                    {data.social_instagram && (
+                                        <span className="text-white/20 hover:text-pink-400 transition cursor-pointer" title={data.social_instagram}>
+                                            <AtSign size={10} />
+                                        </span>
+                                    )}
+                                    {data.social_twitter && (
+                                        <span className="text-white/20 hover:text-sky-400 transition cursor-pointer" title={data.social_twitter}>
+                                            <Globe size={10} />
+                                        </span>
+                                    )}
+                                </div>
+                            )}
+                        </div>
                     </div>
                     {(saving || saved) && (
                         <span className={`shrink-0 text-[9px] font-mono px-2 py-1 rounded-md border transition ${saved ? "border-emerald-400/30 text-emerald-300" : "border-white/10 text-white/30"}`}>
@@ -822,24 +838,6 @@ export default function ProfilePage() {
                     </motion.div>
                 )}
 
-                {/* Quick Links */}
-                <motion.div variants={staggerItem} className="space-y-1">
-                    {[
-                        { icon: Trophy, label: "Rankings", desc: "Leaderboard & rank", href: "/rankings" },
-                        { icon: Award, label: "Achievements", desc: "Milestones & badges", href: "/achievements" },
-                        { icon: HeartPulse, label: "Recovery", desc: "Recovery status", href: "/recovery" },
-                        { icon: Sparkles, label: "AI Coach", desc: "Training advisor", href: "/coach" },
-                        { icon: Bell, label: "Notifications", desc: "Alerts & updates", href: "/notifications" },
-                    ].map((item) => (
-                        <button key={item.label} onClick={() => router.push(item.href)} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.04] hover:border-white/[0.1] transition text-left">
-                            <item.icon size={16} className="text-white/30 shrink-0" />
-                            <div className="flex-1 min-w-0">
-                                <p className="text-sm font-mono text-white/70">{item.label}</p>
-                            </div>
-                            <ChevronRight size={14} className="text-white/15 shrink-0" />
-                        </button>
-                    ))}
-                </motion.div>
 
                 {/* Enabled Modules */}
                 {enabledOptional.length > 0 && (
@@ -884,16 +882,22 @@ export default function ProfilePage() {
                     <ChevronRight size={16} className="text-white/20 shrink-0" />
                 </motion.div>
 
-                {/* Section Tabs */}
-                <motion.div variants={staggerItem} className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
+                {/* Settings Menu */}
+                <motion.div variants={staggerItem} className="space-y-1">
                     {SECTIONS.map((s) => (
                         <button
                             key={s.key}
                             onClick={() => setSection(s.key)}
-                            className={`flex items-center justify-center gap-1.5 text-[10px] font-mono px-2 py-2 rounded-lg border transition ${section === s.key ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/10 text-white/40 hover:text-white/70"
-                                }`}
+                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border transition text-left ${section === s.key ? "border-[rgb(var(--accent-rgb)/0.3)] bg-[rgb(var(--accent-rgb)/0.06)]" : "border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.04] hover:border-white/[0.1]"}`}
                         >
-                            <s.icon size={11} /> {s.label}
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${section === s.key ? "bg-[rgb(var(--accent-rgb)/0.12)]" : "bg-white/[0.04]"}`}>
+                                <s.icon size={14} className={section === s.key ? "text-[rgb(var(--accent-rgb))]" : "text-white/30"} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <p className={`text-sm font-medium ${section === s.key ? "text-[rgb(var(--accent-light-rgb))]" : "text-white/70"}`}>{s.label}</p>
+                                <p className="text-[10px] font-mono text-white/25">{s.desc}</p>
+                            </div>
+                            <ChevronRight size={14} className={section === s.key ? "text-[rgb(var(--accent-rgb)/0.5)]" : "text-white/15"} />
                         </button>
                     ))}
                 </motion.div>
@@ -1265,27 +1269,8 @@ export default function ProfilePage() {
                     </div>
                 )}
 
-                {/* ══════════ SOCIAL ══════════ */}
-                {section === "social" && (
-                    <div className="glass-card p-4 space-y-4">
-                        <p className="text-[10px] font-mono tracking-widest text-white/25">SOCIAL LINKS</p>
-
-                        <div>
-                            <label className="text-[9px] font-mono text-white/30 mb-1 flex items-center gap-1"><AtSign size={10} /> INSTAGRAM</label>
-                            <input type="text" value={data.social_instagram ?? ""} onChange={(e) => updateField("social_instagram", e.target.value)} placeholder="@username"
-                                className="w-full rounded-lg bg-white/[0.04] border border-white/[0.08] px-3 py-2.5 text-sm font-mono text-white/70 placeholder:text-white/20 focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition" />
-                        </div>
-                        <div>
-                            <label className="text-[9px] font-mono text-white/30 mb-1 flex items-center gap-1"><Globe size={10} /> X (TWITTER)</label>
-                            <input type="text" value={data.social_twitter ?? ""} onChange={(e) => updateField("social_twitter", e.target.value)} placeholder="@handle"
-                                className="w-full rounded-lg bg-white/[0.04] border border-white/[0.08] px-3 py-2.5 text-sm font-mono text-white/70 placeholder:text-white/20 focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition" />
-                        </div>
-
-                    </div>
-                )}
-
-                {/* ══════════ PREFERENCES ══════════ */}
-                {section === "preferences" && (
+                {/* ══════════ APPEARANCE ══════════ */}
+                {section === "appearance" && (
                     <div className="space-y-4">
                         {/* ── PROFILE MODE ── */}
                         <div className="relative rounded-2xl border-2 overflow-hidden transition-all duration-500"
@@ -1360,22 +1345,6 @@ export default function ProfilePage() {
                         </div>
 
                         <div className="glass-card p-4 space-y-4">
-                            <p className="text-[10px] font-mono tracking-widest text-white/25">UNITS</p>
-                            <div className="flex gap-2">
-                                <button onClick={() => updateField("unit_preference", "metric")}
-                                    className={`flex-1 text-center py-3 rounded-lg border transition ${data.unit_preference === "metric" ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/10 text-white/40"}`}>
-                                    <p className="text-sm font-mono font-bold">METRIC</p>
-                                    <p className="text-[9px] font-mono text-white/30">KG · CM · KM</p>
-                                </button>
-                                <button onClick={() => updateField("unit_preference", "imperial")}
-                                    className={`flex-1 text-center py-3 rounded-lg border transition ${data.unit_preference === "imperial" ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/10 text-white/40"}`}>
-                                    <p className="text-sm font-mono font-bold">IMPERIAL</p>
-                                    <p className="text-[9px] font-mono text-white/30">LBS · FT/IN · MI</p>
-                                </button>
-                            </div>
-                        </div>
-
-                        <div className="glass-card p-4 space-y-4">
                             <p className="text-[10px] font-mono tracking-widest text-white/25">THEME</p>
                             <div className="flex gap-2">
                                 <button onClick={() => applyTheme("navy")}
@@ -1407,6 +1376,28 @@ export default function ProfilePage() {
                                         <span className="text-[9px] font-mono text-white/50">{preset.label.toUpperCase()}</span>
                                     </button>
                                 ))}
+                            </div>
+                        </div>
+
+                    </div>
+                )}
+
+                {/* ══════════ PRIVACY & VISIBILITY ══════════ */}
+                {section === "privacy" && (
+                    <div className="space-y-4">
+                        <div className="glass-card p-4 space-y-4">
+                            <p className="text-[10px] font-mono tracking-widest text-white/25">UNITS</p>
+                            <div className="flex gap-2">
+                                <button onClick={() => updateField("unit_preference", "metric")}
+                                    className={`flex-1 text-center py-3 rounded-lg border transition ${data.unit_preference === "metric" ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/10 text-white/40"}`}>
+                                    <p className="text-sm font-mono font-bold">METRIC</p>
+                                    <p className="text-[9px] font-mono text-white/30">KG · CM · KM</p>
+                                </button>
+                                <button onClick={() => updateField("unit_preference", "imperial")}
+                                    className={`flex-1 text-center py-3 rounded-lg border transition ${data.unit_preference === "imperial" ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/10 text-white/40"}`}>
+                                    <p className="text-sm font-mono font-bold">IMPERIAL</p>
+                                    <p className="text-[9px] font-mono text-white/30">LBS · FT/IN · MI</p>
+                                </button>
                             </div>
                         </div>
 
@@ -1538,6 +1529,21 @@ export default function ProfilePage() {
                             <label className="text-[9px] font-mono text-white/30 mb-1 flex items-center gap-1"><Phone size={10} /> MOBILE NUMBER</label>
                             <div className="rounded-lg bg-white/[0.02] border border-white/[0.04] px-3 py-2.5 text-sm font-mono text-white/20 italic">
                                 Coming soon
+                            </div>
+                        </div>
+
+                        {/* Social Links */}
+                        <div className="space-y-3">
+                            <p className="text-[9px] font-mono text-white/30">SOCIAL LINKS</p>
+                            <div>
+                                <label className="text-[9px] font-mono text-white/25 mb-1 flex items-center gap-1"><AtSign size={10} /> INSTAGRAM</label>
+                                <input type="text" value={data.social_instagram ?? ""} onChange={(e) => updateField("social_instagram", e.target.value)} placeholder="@username"
+                                    className="w-full rounded-lg bg-white/[0.04] border border-white/[0.08] px-3 py-2.5 text-sm font-mono text-white/70 placeholder:text-white/20 focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition" />
+                            </div>
+                            <div>
+                                <label className="text-[9px] font-mono text-white/25 mb-1 flex items-center gap-1"><Globe size={10} /> X (TWITTER)</label>
+                                <input type="text" value={data.social_twitter ?? ""} onChange={(e) => updateField("social_twitter", e.target.value)} placeholder="@handle"
+                                    className="w-full rounded-lg bg-white/[0.04] border border-white/[0.08] px-3 py-2.5 text-sm font-mono text-white/70 placeholder:text-white/20 focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition" />
                             </div>
                         </div>
 
