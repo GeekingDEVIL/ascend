@@ -17,8 +17,7 @@ import { updateExerciseLeaderboard } from "../../lib/updateExerciseLeaderboard";
 import AddExerciseModal from "../../components/AddExerciseModal";
 import { useSex } from "../../lib/useSex";
 import { useUnits } from "../../lib/useUnits";
-import SwipeNav from "../../components/ui/swipe-nav";
-import { getTrainSections } from "../../lib/navPills";
+import MethodHeader from "../../components/ui/method-header";
 import { useModules } from "../../lib/useModules";
 import { kgToUnit, weightInputToKg } from "../../lib/units";
 import { fetchCycleTrainingData, assessExerciseRisk, getCycleAdjustedWeight, type PhaseTrainingProfile, type EnergyForecast, type ExerciseRisk } from "../../lib/cycleTrainingEngine";
@@ -860,13 +859,19 @@ export default function WorkoutPage() {
 
     // ── REST DAY ──
     if (status === "rest_day") return (
-        <main className="min-h-screen bg-[#050914] text-white flex items-center justify-center p-6 relative">
-            <div className="relative z-10 text-center">
-                <div className="w-14 h-14 mx-auto mb-4 rounded-2xl border border-emerald-400/20 bg-emerald-400/10 flex items-center justify-center">
-                    <Moon size={24} className="text-emerald-400" />
+        <main className="min-h-screen bg-[#050914] text-white p-4 pb-24 relative">
+            <div className="relative z-10 max-w-xl mx-auto pt-2">
+                <MethodHeader tabs={[
+                    { key: "today", label: "TODAY", href: "/workout" },
+                    { key: "schedule", label: "SCHEDULE", href: "/schedule" },
+                ]} />
+                <div className="flex flex-col items-center justify-center py-16">
+                    <div className="w-14 h-14 mx-auto mb-4 rounded-2xl border border-emerald-400/20 bg-emerald-400/10 flex items-center justify-center">
+                        <Moon size={24} className="text-emerald-400" />
+                    </div>
+                    <p className="text-base font-semibold text-emerald-400">Rest Day</p>
+                    <p className="text-[11px] text-white/30 mt-1.5 max-w-xs mx-auto text-center">Recovery is when your muscles grow. Nothing to log today.</p>
                 </div>
-                <p className="text-base font-semibold text-emerald-400">Rest Day</p>
-                <p className="text-[11px] text-white/30 mt-1.5 max-w-xs mx-auto">Recovery is when your muscles grow. Nothing to log today.</p>
             </div>
         </main>
     );
@@ -874,8 +879,12 @@ export default function WorkoutPage() {
     // ── NO PLAN ──
     if (status === "no_plan") return (
         <main className="min-h-screen bg-[#050914] text-white p-4 pb-24 relative">
-            <div className="relative z-10 max-w-xl mx-auto pt-10">
-                <div className="text-center mb-8">
+            <div className="relative z-10 max-w-xl mx-auto pt-2">
+                <MethodHeader tabs={[
+                    { key: "today", label: "TODAY", href: "/workout" },
+                    { key: "schedule", label: "SCHEDULE", href: "/schedule" },
+                ]} />
+                <div className="text-center mb-8 mt-8">
                     <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-[rgb(var(--accent-rgb)/0.1)] border border-[rgb(var(--accent-rgb)/0.2)] flex items-center justify-center">
                         <Dumbbell size={24} className="text-[rgb(var(--accent-rgb))]" />
                     </div>
@@ -964,15 +973,23 @@ export default function WorkoutPage() {
 
     // ── COMPLETED ──
     if (status === "completed" && summary) return (
-        <main className="min-h-screen bg-[#050914] text-white flex items-center justify-center p-4 relative">
-            <div className="relative z-10 w-full max-w-xl">
-                <CardPanel className="p-5">
-                    <div className="text-center mb-5">
-                        <div className="w-12 h-12 mx-auto mb-3 rounded-2xl bg-[rgb(var(--accent-rgb)/0.1)] border border-[rgb(var(--accent-rgb)/0.2)] flex items-center justify-center">
-                            <Award size={22} className="text-[rgb(var(--accent-rgb))]" />
+        <main className="min-h-screen bg-[#050914] text-white p-4 pb-24 relative">
+            <div className="relative z-10 w-full max-w-xl mx-auto pt-2">
+                <MethodHeader tabs={[
+                    { key: "today", label: "TODAY", href: "/workout" },
+                    { key: "schedule", label: "SCHEDULE", href: "/schedule" },
+                ]} />
+
+                <CardPanel className="p-5 mt-4">
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="w-11 h-11 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
+                            <Award size={20} className="text-emerald-400" />
                         </div>
-                        <p className="text-[9px] font-mono tracking-widest text-white/25 mb-1">SESSION COMPLETE</p>
-                        <p className="text-lg font-bold text-white/90">{dayTitle}</p>
+                        <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-white/90 truncate">{dayTitle}</p>
+                            <p className="text-[9px] font-mono text-white/25">Session complete</p>
+                        </div>
+                        <p className="text-base font-bold font-mono text-[rgb(var(--accent-rgb))] shrink-0">+{summary.xpBreakdown.total} XP</p>
                     </div>
 
                     {cycleProfile && (
@@ -1062,7 +1079,10 @@ export default function WorkoutPage() {
 
             <div className="relative z-10 max-w-xl mx-auto px-4 pt-6 space-y-4">
 
-                <SwipeNav sections={getTrainSections(enabledKeys)} />
+                <MethodHeader tabs={[
+                    { key: "today", label: "TODAY", href: "/workout" },
+                    { key: "schedule", label: "SCHEDULE", href: "/schedule" },
+                ]} />
 
                 {/* ── TOP BAR ── */}
                 <div className="flex items-center justify-between">
