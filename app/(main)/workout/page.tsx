@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Check, Plus, Play, X, RefreshCw, Pause, SkipForward, ChevronDown, Moon, Flame, Dumbbell, Timer, TrendingUp, Award, Share2, Trash2, Ban } from "lucide-react";
+import { Check, Plus, Play, X, RefreshCw, Pause, SkipForward, ChevronDown, Moon, Flame, Dumbbell, Timer, TrendingUp, Award, Share2, Trash2, Ban, Calendar } from "lucide-react";
 import { useSwipeable } from "react-swipeable";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../lib/AuthProvider";
@@ -18,7 +18,9 @@ import AddExerciseModal from "../../components/AddExerciseModal";
 import { useSex } from "../../lib/useSex";
 import { useUnits } from "../../lib/useUnits";
 import MethodHeader from "../../components/ui/method-header";
+import SwipeNav from "../../components/ui/swipe-nav";
 import { useModules } from "../../lib/useModules";
+import { getTrainSections } from "../../lib/navPills";
 import { kgToUnit, weightInputToKg } from "../../lib/units";
 import { fetchCycleTrainingData, assessExerciseRisk, getCycleAdjustedWeight, type PhaseTrainingProfile, type EnergyForecast, type ExerciseRisk } from "../../lib/cycleTrainingEngine";
 import { findSubstitutions, type Substitution } from "../../lib/substitutionEngine";
@@ -177,6 +179,10 @@ export default function WorkoutPage() {
     const [summary, setSummary] = useState<{ duration: number; sets: number; volume: number; xpBreakdown: XPBreakdown; level: number; rankName: string } | null>(null);
     const [todaySessions, setTodaySessions] = useState<{ id: string; duration: number; sets: number; volume: number; xp: number }[]>([]);
     const [sharing, setSharing] = useState(false);
+    const [recentSessions, setRecentSessions] = useState<{ id: string; date: string; title: string; sets: number; volume: number; xp: number }[]>([]);
+    const [weekDays, setWeekDays] = useState<boolean[]>(new Array(7).fill(false));
+    const [weeklyVolumes, setWeeklyVolumes] = useState<number[]>([]);
+    const [statsLoaded, setStatsLoaded] = useState(false);
     const [freestyleExercises, setFreestyleExercises] = useState<WorkoutExercise[]>([]);
     const [showFreestyleAddModal, setShowFreestyleAddModal] = useState(false);
     const [startingFreestyle, setStartingFreestyle] = useState(false);
@@ -295,7 +301,10 @@ export default function WorkoutPage() {
             .order("created_at", { ascending: true });
         if (completedSessions && completedSessions.length > 0 && completedSessions.length >= MAX_SESSIONS_PER_DAY) {
             localStorage.removeItem("ascend_active_session");
-            router.replace("/train");
+            const lastDone = completedSessions[completedSessions.length - 1];
+            setTodaySessions(completedSessions.map((s: any) => ({ id: s.id, sets: s.total_sets ?? 0, volume: Number(s.total_volume) || 0, duration: s.duration_seconds ?? 0, xp: s.xp_earned ?? 0 })));
+            setSummary({ sets: lastDone.total_sets ?? 0, volume: Number(lastDone.total_volume) || 0, duration: lastDone.duration_seconds ?? 0, xpBreakdown: { base: 0, setCompletion: 0, completionBonus: 0, prBonus: 0, progressionBonus: 0, consistencyBonus: 0, total: lastDone.xp_earned ?? 0, details: [] }, level: 0, rankName: "" });
+            setStatus("completed");
             return;
         }
 
@@ -339,6 +348,11 @@ export default function WorkoutPage() {
             localStorage.setItem("ascend_active_session", "true");
             setStatus("active");
             setExpandedId(mapped[0]?.id ?? null);
+        } else if (completedSessions && completedSessions.length > 0) {
+            const lastDone = completedSessions[completedSessions.length - 1];
+            setTodaySessions(completedSessions.map((s: any) => ({ id: s.id, sets: s.total_sets ?? 0, volume: Number(s.total_volume) || 0, duration: s.duration_seconds ?? 0, xp: s.xp_earned ?? 0 })));
+            setSummary({ sets: lastDone.total_sets ?? 0, volume: Number(lastDone.total_volume) || 0, duration: lastDone.duration_seconds ?? 0, xpBreakdown: { base: 0, setCompletion: 0, completionBonus: 0, prBonus: 0, progressionBonus: 0, consistencyBonus: 0, total: lastDone.xp_earned ?? 0, details: [] }, level: 0, rankName: "" });
+            setStatus("completed");
         } else {
             const initLogs: Record<string, SetEntry[]> = {};
             mapped.forEach((ex) => {
@@ -357,6 +371,61 @@ export default function WorkoutPage() {
     }, [user, today, userSex, weightUnit]);
 
     useEffect(() => { load(); }, [load]);
+
+    // Load workout stats for the dashboard view
+    useEffect(() => {
+        if (!user || (status !== "not_started" && status !== "completed")) return;
+        let cancelled = false;
+        async function loadStats() {
+            const sex = userSex;
+            const dateStr = toDateString(new Date());
+            const now = new Date(dateStr + "T00:00:00");
+            const dayOfWeek = now.getDay();
+            const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+            const monday = new Date(now);
+            monday.setDate(now.getDate() + mondayOffset);
+            const mondayStr = toDateString(monday);
+
+            const weeksBack = 6;
+            const sixWeeksAgo = new Date(monday);
+            sixWeeksAgo.setDate(sixWeeksAgo.getDate() - (weeksBack - 1) * 7);
+            const sixWeeksAgoStr = toDateString(sixWeeksAgo);
+
+            const [{ data: recent }, { data: weekSessions }, { data: volSessions }] = await Promise.all([
+                supabase.from("workout_sessions").select("id, date, title, total_sets, total_volume, xp_earned").eq("user_id", user!.id).eq("status", "completed").eq("sex", sex).order("date", { ascending: false }).limit(5),
+                supabase.from("workout_sessions").select("date").eq("user_id", user!.id).eq("status", "completed").eq("sex", sex).gte("date", mondayStr),
+                supabase.from("workout_sessions").select("id, date, total_volume").eq("user_id", user!.id).eq("status", "completed").eq("sex", sex).gte("date", sixWeeksAgoStr),
+            ]);
+            if (cancelled) return;
+
+            setRecentSessions((recent ?? []).map((s: any) => ({ id: s.id, date: s.date, title: s.title ?? "Workout", sets: s.total_sets ?? 0, volume: Number(s.total_volume) || 0, xp: s.xp_earned ?? 0 })));
+
+            const completedDates = new Set((weekSessions ?? []).map((s: any) => s.date));
+            const days: boolean[] = [];
+            for (let i = 0; i < 7; i++) {
+                const d = new Date(monday);
+                d.setDate(monday.getDate() + i);
+                days.push(completedDates.has(toDateString(d)));
+            }
+            setWeekDays(days);
+
+            const volumes: number[] = [];
+            for (let w = 0; w < weeksBack; w++) {
+                const wStart = new Date(monday);
+                wStart.setDate(monday.getDate() - (weeksBack - 1 - w) * 7);
+                const wEnd = new Date(wStart);
+                wEnd.setDate(wStart.getDate() + 7);
+                const wStartStr = toDateString(wStart);
+                const wEndStr = toDateString(wEnd);
+                const vol = (volSessions ?? []).filter((s: any) => s.date >= wStartStr && s.date < wEndStr).reduce((sum: number, s: any) => sum + (Number(s.total_volume) || 0), 0);
+                volumes.push(Math.round(vol));
+            }
+            setWeeklyVolumes(volumes);
+            setStatsLoaded(true);
+        }
+        loadStats();
+        return () => { cancelled = true; };
+    }, [user, status, userSex]);
 
     useEffect(() => {
         if (status !== "active" || !startedAt || sessionPaused) return;
@@ -861,10 +930,7 @@ export default function WorkoutPage() {
     if (status === "rest_day") return (
         <main className="min-h-screen bg-[#050914] text-white p-4 pb-24 relative">
             <div className="relative z-10 max-w-xl mx-auto pt-2">
-                <MethodHeader tabs={[
-                    { key: "today", label: "TODAY", href: "/workout" },
-                    { key: "schedule", label: "SCHEDULE", href: "/schedule" },
-                ]} />
+                <SwipeNav sections={getTrainSections(enabledKeys)} />
                 <div className="flex flex-col items-center justify-center py-16">
                     <div className="w-14 h-14 mx-auto mb-4 rounded-2xl border border-emerald-400/20 bg-emerald-400/10 flex items-center justify-center">
                         <Moon size={24} className="text-emerald-400" />
@@ -880,10 +946,7 @@ export default function WorkoutPage() {
     if (status === "no_plan") return (
         <main className="min-h-screen bg-[#050914] text-white p-4 pb-24 relative">
             <div className="relative z-10 max-w-xl mx-auto pt-2">
-                <MethodHeader tabs={[
-                    { key: "today", label: "TODAY", href: "/workout" },
-                    { key: "schedule", label: "SCHEDULE", href: "/schedule" },
-                ]} />
+                <SwipeNav sections={getTrainSections(enabledKeys)} />
                 <div className="text-center mb-8 mt-8">
                     <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-[rgb(var(--accent-rgb)/0.1)] border border-[rgb(var(--accent-rgb)/0.2)] flex items-center justify-center">
                         <Dumbbell size={24} className="text-[rgb(var(--accent-rgb))]" />
@@ -972,24 +1035,28 @@ export default function WorkoutPage() {
     );
 
     // ── COMPLETED ──
-    if (status === "completed" && summary) return (
-        <main className="min-h-screen bg-[#050914] text-white p-4 pb-24 relative">
-            <div className="relative z-10 w-full max-w-xl mx-auto pt-2">
-                <MethodHeader tabs={[
-                    { key: "today", label: "TODAY", href: "/workout" },
-                    { key: "schedule", label: "SCHEDULE", href: "/schedule" },
-                ]} />
+    if (status === "completed" && summary) {
+        const DAY_LABELS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
+        const todayDayIdx = (new Date().getDay() + 6) % 7;
+        const doneCount = weekDays.filter(Boolean).length;
+        const weekPct = Math.round((doneCount / 7) * 100);
+        const r = 28;
+        const circ = 2 * Math.PI * r;
+        const offset = circ - (weekPct / 100) * circ;
 
-                <CardPanel className="p-5 mt-4">
-                    <div className="flex items-center gap-3 mb-4">
-                        <div className="w-11 h-11 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
-                            <Award size={20} className="text-emerald-400" />
+        return (
+        <main className="min-h-screen bg-[#050914] text-white p-4 pb-24 relative">
+            <div className="relative z-10 w-full max-w-xl mx-auto pt-2 space-y-3">
+                <SwipeNav sections={getTrainSections(enabledKeys)} />
+
+                {/* Session Complete Hero */}
+                <CardPanel className="p-5">
+                    <div className="text-center mb-5">
+                        <div className="w-12 h-12 mx-auto mb-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+                            <Check size={22} className="text-emerald-400" />
                         </div>
-                        <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold text-white/90 truncate">{dayTitle}</p>
-                            <p className="text-[9px] font-mono text-white/25">Session complete</p>
-                        </div>
-                        <p className="text-base font-bold font-mono text-[rgb(var(--accent-rgb))] shrink-0">+{summary.xpBreakdown.total} XP</p>
+                        <p className="text-[9px] font-mono tracking-widest text-white/25 mb-1">COMPLETED TODAY</p>
+                        <p className="text-lg font-bold text-white/90">{dayTitle}</p>
                     </div>
 
                     {cycleProfile && (
@@ -1010,19 +1077,39 @@ export default function WorkoutPage() {
                         </div>
                     )}
 
-                    <div className="grid grid-cols-2 gap-2 mb-4">
-                        <StatCell label="DURATION" value={formatClock(summary.duration)} />
-                        <StatCell label="SETS" value={String(summary.sets)} />
-                        <StatCell label="VOLUME" value={`${Math.round(kgToUnit(summary.volume, weightUnit)).toLocaleString()} ${weightUnit}`} />
-                        <StatCell label="XP EARNED" value={`+${summary.xpBreakdown.total}`} accent />
-                    </div>
+                    {/* Per-session cards when multiple sessions today */}
+                    {todaySessions.length > 1 ? (
+                        <div className="space-y-2 mb-4">
+                            {todaySessions.map((s, i) => (
+                                <div key={s.id} className="glass-card p-3">
+                                    <p className="text-[8px] font-mono tracking-widest text-white/25 mb-2">SESSION {i + 1}</p>
+                                    <div className="grid grid-cols-4 gap-2 text-center">
+                                        <div><p className="text-[8px] font-mono text-white/25">TIME</p><p className="text-sm font-bold font-mono text-white/80">{formatClock(s.duration)}</p></div>
+                                        <div><p className="text-[8px] font-mono text-white/25">SETS</p><p className="text-sm font-bold font-mono text-white/80">{s.sets}</p></div>
+                                        <div><p className="text-[8px] font-mono text-white/25">VOL</p><p className="text-sm font-bold font-mono text-white/80">{Math.round(kgToUnit(s.volume, weightUnit)).toLocaleString()}</p></div>
+                                        <div><p className="text-[8px] font-mono text-[rgb(var(--accent-rgb)/0.5)]">XP</p><p className="text-sm font-bold font-mono text-[rgb(var(--accent-rgb))]">+{s.xp}</p></div>
+                                    </div>
+                                </div>
+                            ))}
+                            <div className="rounded-xl border border-[rgb(var(--accent-rgb)/0.15)] bg-[rgb(var(--accent-rgb)/0.05)] p-3">
+                                <p className="text-[8px] font-mono tracking-widest text-[rgb(var(--accent-rgb)/0.5)] mb-2">TODAY&apos;S TOTAL</p>
+                                <div className="grid grid-cols-3 gap-2 text-center">
+                                    <div><p className="text-[8px] font-mono text-white/25">SESSIONS</p><p className="text-sm font-bold font-mono text-white/80">{todaySessions.length}</p></div>
+                                    <div><p className="text-[8px] font-mono text-white/25">TOTAL SETS</p><p className="text-sm font-bold font-mono text-white/80">{todaySessions.reduce((a, s) => a + s.sets, 0)}</p></div>
+                                    <div><p className="text-[8px] font-mono text-[rgb(var(--accent-rgb)/0.5)]">TOTAL XP</p><p className="text-sm font-bold font-mono text-[rgb(var(--accent-rgb))]">+{todaySessions.reduce((a, s) => a + s.xp, 0)}</p></div>
+                                </div>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-2 gap-2 mb-4">
+                            <StatCell label="DURATION" value={formatClock(summary.duration)} />
+                            <StatCell label="SETS" value={String(summary.sets)} />
+                            <StatCell label="VOLUME" value={`${Math.round(kgToUnit(summary.volume, weightUnit)).toLocaleString()} ${weightUnit}`} />
+                            <StatCell label="XP EARNED" value={`+${summary.xpBreakdown.total}`} accent />
+                        </div>
+                    )}
 
-                    <div className="glass-card p-3 mb-5">
-                        <p className="text-[8px] font-mono tracking-widest text-white/20 mb-2">XP BREAKDOWN</p>
-                        {summary.xpBreakdown.details.map((d, i) => (
-                            <p key={i} className="text-[10px] font-mono text-white/40 leading-relaxed">{d}</p>
-                        ))}
-                    </div>
+                    <p className="text-[10px] font-mono text-white/20 text-center mb-4">Nice work! You can start another session or come back tomorrow.</p>
 
                     <div className="flex gap-2">
                         <button onClick={() => router.push("/")} className="flex-1 text-sm font-medium py-3 rounded-xl border border-white/[0.08] text-white/50 hover:text-white/80 hover:bg-white/[0.05] transition">
@@ -1048,6 +1135,92 @@ export default function WorkoutPage() {
                         </button>
                     )}
                 </CardPanel>
+
+                {/* Recent Sessions */}
+                {statsLoaded && recentSessions.length > 0 && (
+                    <CardPanel className="p-4">
+                        <div className="flex items-center justify-between mb-3">
+                            <p className="text-[9px] font-mono tracking-widest text-[rgb(var(--accent-light-rgb)/0.4)]">RECENT SESSIONS</p>
+                            <button onClick={() => router.push("/progress")} className="text-[9px] font-mono text-[rgb(var(--accent-rgb)/0.5)] hover:text-[rgb(var(--accent-rgb))] transition">View All</button>
+                        </div>
+                        <div className="space-y-0.5">
+                            {recentSessions.map((s) => {
+                                const d = new Date(s.date + "T12:00:00");
+                                const today = new Date();
+                                const diff = Math.floor((today.getTime() - d.getTime()) / 86400000);
+                                const label = diff === 0 ? "Today" : diff === 1 ? "Yesterday" : d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+                                return (
+                                    <div key={s.id} className="flex items-center justify-between py-2 px-1">
+                                        <span className="text-sm text-white/70 truncate flex-1 min-w-0">{s.title}</span>
+                                        <span className="text-xs font-mono text-white/25 shrink-0 ml-2">{label}</span>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </CardPanel>
+                )}
+
+                {/* This Week Ring */}
+                {statsLoaded && (
+                    <CardPanel className="p-4">
+                        <p className="text-[9px] font-mono tracking-widest text-[rgb(var(--accent-light-rgb)/0.4)] mb-3">THIS WEEK</p>
+                        <div className="flex items-center gap-4 mb-3">
+                            <div className="relative w-16 h-16 shrink-0">
+                                <svg viewBox="0 0 64 64" className="w-full h-full -rotate-90">
+                                    <circle cx="32" cy="32" r={r} fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="4" />
+                                    <circle cx="32" cy="32" r={r} fill="none" stroke="rgb(var(--accent-rgb))" strokeWidth="4" strokeLinecap="round"
+                                        strokeDasharray={circ} strokeDashoffset={offset} className="transition-all duration-700" />
+                                </svg>
+                                <span className="absolute inset-0 flex items-center justify-center text-xs font-mono font-bold text-white/80">{doneCount}/7</span>
+                            </div>
+                            <div>
+                                <p className="text-sm font-medium text-white/70">{doneCount === 0 ? "No sessions yet" : `${doneCount} session${doneCount !== 1 ? "s" : ""} done`}</p>
+                                <p className="text-[10px] font-mono text-white/25 mt-0.5">{7 - doneCount} day{7 - doneCount !== 1 ? "s" : ""} remaining</p>
+                            </div>
+                        </div>
+                        <div className="flex justify-between gap-1">
+                            {DAY_LABELS.map((day, i) => {
+                                const isToday = i === todayDayIdx;
+                                const done = weekDays[i];
+                                return (
+                                    <div key={day} className={`flex-1 py-1.5 rounded-lg text-center text-[10px] font-mono font-semibold transition-colors ${
+                                        done ? "bg-[rgb(var(--accent-rgb))] text-black"
+                                            : isToday ? "border border-[rgb(var(--accent-rgb)/0.4)] text-[rgb(var(--accent-rgb))] border-dashed"
+                                            : "bg-white/[0.04] text-white/20"
+                                    }`}>{day}</div>
+                                );
+                            })}
+                        </div>
+                    </CardPanel>
+                )}
+
+                {/* Volume Trend */}
+                {statsLoaded && weeklyVolumes.some(v => v > 0) && (
+                    <CardPanel className="p-4">
+                        <p className="text-[9px] font-mono tracking-widest text-[rgb(var(--accent-light-rgb)/0.4)] mb-3">VOLUME TREND</p>
+                        <div className="flex items-end gap-1.5 h-20">
+                            {(() => {
+                                const maxVol = Math.max(...weeklyVolumes, 1);
+                                return weeklyVolumes.map((vol, i) => {
+                                    const h = Math.max((vol / maxVol) * 100, 4);
+                                    const isLatest = i === weeklyVolumes.length - 1;
+                                    return (
+                                        <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                                            <div className="w-full relative flex-1 flex items-end">
+                                                <div className={`w-full rounded-t-md transition-all ${isLatest ? "bg-[rgb(var(--accent-rgb))]" : "bg-white/[0.08]"}`} style={{ height: `${h}%` }} />
+                                            </div>
+                                            <span className="text-[7px] font-mono text-white/20">{isLatest ? "NOW" : `W${i + 1}`}</span>
+                                        </div>
+                                    );
+                                });
+                            })()}
+                        </div>
+                        <div className="flex justify-between mt-2">
+                            <span className="text-[9px] font-mono text-white/20">6 weeks</span>
+                            <span className="text-[9px] font-mono text-white/30">{weeklyVolumes[weeklyVolumes.length - 1] > 0 ? `${(weeklyVolumes[weeklyVolumes.length - 1] / 1000).toFixed(1)}k ${weightUnit}` : "—"}</span>
+                        </div>
+                    </CardPanel>
+                )}
             </div>
 
             {showFreestylePrompt && (
@@ -1072,6 +1245,7 @@ export default function WorkoutPage() {
             )}
         </main>
     );
+    }
 
     // ── NOT STARTED / ACTIVE ──
     return (
@@ -1079,42 +1253,39 @@ export default function WorkoutPage() {
 
             <div className="relative z-10 max-w-xl mx-auto px-4 pt-6 space-y-4">
 
-                <MethodHeader tabs={[
-                    { key: "today", label: "TODAY", href: "/workout" },
-                    { key: "schedule", label: "SCHEDULE", href: "/schedule" },
-                ]} />
+                <SwipeNav sections={getTrainSections(enabledKeys)} />
 
                 {/* ── TOP BAR ── */}
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-xl font-bold font-display text-[rgb(var(--accent-light-rgb))]">{dayTitle}</h1>
-                        <p className="text-[10px] font-mono text-white/25 mt-0.5">
-                            {status === "active" ? "Active session" : "Ready to start"}
-                        </p>
+                <div>
+                    <div className="flex items-center justify-between">
+                        <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                                <span className="text-[9px] font-mono tracking-widest text-white/20 uppercase">
+                                    {new Date().toLocaleDateString("en-US", { weekday: "long" })}
+                                </span>
+                                {status === "active" && (
+                                    <span className="text-[8px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400/70 border border-emerald-500/15">LIVE</span>
+                                )}
+                            </div>
+                            <h1 className="text-lg font-bold text-white/90 leading-tight">{dayTitle}</h1>
+                        </div>
+                        {status === "active" && (
+                            <div className="text-right shrink-0 rounded-xl border border-[rgb(var(--accent-rgb)/0.15)] bg-[rgb(var(--accent-rgb)/0.05)] px-3 py-1.5">
+                                <p className="text-[8px] font-mono text-white/25">ELAPSED</p>
+                                <p className="text-lg font-bold font-mono text-[rgb(var(--accent-rgb))]">{formatClock(elapsed)}</p>
+                            </div>
+                        )}
+                        {status === "not_started" && (
+                            <div className="flex items-center gap-2 shrink-0">
+                                <button onClick={() => setShowDeletePlanConfirm(true)} className="w-9 h-9 flex items-center justify-center rounded-xl border border-white/[0.06] text-white/20 hover:text-red-400/80 hover:border-red-500/20 transition">
+                                    <Trash2 size={13} />
+                                </button>
+                                <button onClick={() => router.push("/schedule")} className="flex items-center gap-1.5 text-[10px] font-mono px-3 py-2 rounded-xl border border-white/[0.06] text-white/30 hover:text-white/60 hover:bg-white/[0.03] transition">
+                                    <Calendar size={11} /> Schedule
+                                </button>
+                            </div>
+                        )}
                     </div>
-                    {status === "active" && (
-                        <div className="text-right shrink-0 rounded-xl border border-[rgb(var(--accent-rgb)/0.15)] bg-[rgb(var(--accent-rgb)/0.05)] px-3 py-1.5">
-                            <p className="text-[8px] font-mono text-white/25">ELAPSED</p>
-                            <p className="text-lg font-bold font-mono text-[rgb(var(--accent-rgb))]">{formatClock(elapsed)}</p>
-                        </div>
-                    )}
-                    {status === "not_started" && (
-                        <div className="flex items-center gap-2 shrink-0">
-                            <button
-                                onClick={() => setShowDeletePlanConfirm(true)}
-                                className="flex items-center gap-1.5 text-[10px] font-mono px-3 py-2 rounded-xl border border-red-500/10 text-red-400/40 hover:text-red-400/80 hover:bg-red-500/5 transition"
-                            >
-                                <Trash2 size={11} />
-                            </button>
-
-                            <button
-                                onClick={() => router.push("/schedule")}
-                                className="flex items-center gap-1.5 text-[10px] font-mono px-3 py-2 rounded-xl border border-white/[0.06] text-white/30 hover:text-white/60 hover:bg-white/[0.03] transition"
-                            >
-                                <RefreshCw size={11} /> Edit Schedule
-                            </button>
-                        </div>
-                    )}
                 </div>
 
                 {/* ── PROGRESS BAR ── */}
@@ -1210,122 +1381,135 @@ export default function WorkoutPage() {
                     </div>
                 )}
 
-                {/* ── PRE-SESSION PREVIEW ── */}
+                {/* ── START WORKOUT HERO ── */}
                 {status === "not_started" && (
-                    <CardPanel className="p-4">
-                        <div className="grid grid-cols-3 gap-2 mb-4">
-                            <StatCell label="EXERCISES" value={String(exercisesList.length)} />
-                            <StatCell label="SETS" value={String(totalPlanned)} />
-                            <StatCell label="EST. TIME" value={`${totalPlanned * 3}m`} />
-                        </div>
-
-                        <div className="glass-card p-3 mb-4">
-                            <p className="text-[8px] font-mono tracking-widest text-white/25 mb-2">PRE-WORKOUT BODY WEIGHT</p>
-                            <div className="flex items-center gap-3">
-                                <input
-                                    type="number" min="0" onWheel={(e) => (e.target as HTMLElement).blur()}
-                                    inputMode="decimal"
-                                    value={preWorkoutWeight}
-                                    onChange={(e) => setPreWorkoutWeight(e.target.value)}
-                                    placeholder="—"
-                                    className="flex-1 min-w-0 h-11 rounded-xl bg-white/[0.04] border border-white/[0.06] text-center text-lg font-bold font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.3)] transition"
-                                />
-                                <span className="text-sm font-mono text-white/25 shrink-0">{weightUnit}</span>
-                                {preWorkoutWeight && !weightLogged && (
-                                    <button
-                                        onClick={async () => {
-                                            if (!user || !preWorkoutWeight) return;
-                                            await supabase.from("body_weight_logs").insert({
-                                                user_id: user.id,
-                                                weight: weightInputToKg(Number(preWorkoutWeight), weightUnit),
-                                                context: "pre_workout",
-                                                sex: userSex,
-                                            });
-                                            setWeightLogged(true);
-                                        }}
-                                        className="shrink-0 text-[10px] font-mono px-3 py-2 rounded-xl border border-[rgb(var(--accent-rgb)/0.2)] text-[rgb(var(--accent-rgb))] hover:bg-[rgb(var(--accent-rgb)/0.1)] transition"
-                                    >
-                                        Log
-                                    </button>
-                                )}
-                                {weightLogged && <Check size={16} className="shrink-0 text-[rgb(var(--accent-rgb))]" />}
+                    <div className="relative overflow-hidden rounded-2xl border border-[rgb(var(--accent-rgb)/0.15)] bg-gradient-to-br from-[rgb(var(--accent-rgb)/0.08)] to-transparent">
+                        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgb(var(--accent-rgb)/0.06),transparent_70%)]" />
+                        <div className="relative p-5">
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className="flex items-center gap-2 text-[10px] font-mono text-white/30">
+                                    <Dumbbell size={14} className="text-[rgb(var(--accent-rgb)/0.5)]" />
+                                    <span>{exercisesList.length} exercises</span>
+                                    <span className="text-white/10">·</span>
+                                    <span>{totalPlanned} sets</span>
+                                    <span className="text-white/10">·</span>
+                                    <span>~{totalPlanned * 3}m</span>
+                                </div>
                             </div>
-                            <p className="text-[9px] font-mono text-white/15 mt-1.5">Optional — helps track body composition.</p>
+
+                            <button onClick={startWorkout} className="w-full flex items-center justify-center gap-2.5 text-[15px] font-bold py-4 rounded-xl bg-[rgb(var(--accent-rgb))] text-black hover:brightness-110 active:scale-[0.98] transition-all shadow-[0_0_30px_rgb(var(--accent-rgb)/0.2)]">
+                                <Play size={18} fill="black" /> Begin Session
+                            </button>
+
+                            <div className="flex items-center justify-between mt-3">
+                                <button onClick={() => setStatus("freestyle")} className="text-[10px] font-mono text-white/20 hover:text-white/50 transition">
+                                    Train freestyle instead
+                                </button>
+                                <button onClick={() => router.push("/schedule")} className="text-[10px] font-mono text-[rgb(var(--accent-rgb)/0.4)] hover:text-[rgb(var(--accent-rgb)/0.8)] transition">
+                                    View exercises →
+                                </button>
+                            </div>
                         </div>
+                    </div>
+                )}
 
-                        <button onClick={startWorkout} className="w-full flex items-center justify-center gap-2 text-sm font-semibold py-3.5 rounded-xl bg-[rgb(var(--accent-rgb))] text-black hover:brightness-110 transition">
-                            <Play size={16} fill="black" /> Begin Session
-                        </button>
-                        <button onClick={() => setStatus("freestyle")} className="w-full text-center text-[11px] text-white/20 hover:text-white/50 transition py-2.5 mb-2">
-                            Not feeling today&apos;s plan? Train freestyle instead
-                        </button>
+                {/* ── BODY WEIGHT (compact, not_started only) ── */}
+                {status === "not_started" && (
+                    <div className="flex items-center gap-3 rounded-xl border border-white/[0.05] bg-white/[0.02] px-4 py-2.5">
+                        <p className="text-[9px] font-mono text-white/25 shrink-0">BODY WEIGHT</p>
+                        <input
+                            type="number" min="0" onWheel={(e) => (e.target as HTMLElement).blur()}
+                            inputMode="decimal"
+                            value={preWorkoutWeight}
+                            onChange={(e) => setPreWorkoutWeight(e.target.value)}
+                            placeholder="—"
+                            className="flex-1 min-w-0 h-8 rounded-lg bg-white/[0.04] border border-white/[0.06] text-center text-sm font-bold font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.3)] transition"
+                        />
+                        <span className="text-[10px] font-mono text-white/20 shrink-0">{weightUnit}</span>
+                        {preWorkoutWeight && !weightLogged && (
+                            <button
+                                onClick={async () => {
+                                    if (!user || !preWorkoutWeight) return;
+                                    await supabase.from("body_weight_logs").insert({ user_id: user.id, weight: weightInputToKg(Number(preWorkoutWeight), weightUnit), context: "pre_workout", sex: userSex });
+                                    setWeightLogged(true);
+                                }}
+                                className="shrink-0 text-[9px] font-mono px-2.5 py-1.5 rounded-lg border border-[rgb(var(--accent-rgb)/0.2)] text-[rgb(var(--accent-rgb))] hover:bg-[rgb(var(--accent-rgb)/0.1)] transition"
+                            >Log</button>
+                        )}
+                        {weightLogged && <Check size={14} className="shrink-0 text-[rgb(var(--accent-rgb))]" />}
+                    </div>
+                )}
 
-                        <div className="space-y-2 mb-4">
-                            {exercisesList.map((ex, i) => {
-                                const hint = overloadHints[ex.exercise_id];
-                                return (
-                                    <div key={ex.id} className="glass-card px-4 py-3">
-                                        <div className="flex items-center gap-3">
-                                            <span className="text-[10px] font-mono text-white/15 w-5 shrink-0">{String(i + 1).padStart(2, "0")}</span>
-                                            <div className="flex-1 min-w-0">
-                                                <div className="flex items-center gap-1.5">
-                                                    <p className="text-[13px] font-medium text-white/80 truncate">{ex.name}</p>
-                                                    {substitutions[ex.id] && (
-                                                        <span className="shrink-0 text-[8px] font-mono px-1.5 py-0.5 rounded bg-orange-400/10 text-orange-300/60 border border-orange-400/15">NO GEAR</span>
-                                                    )}
-                                                </div>
-                                                <p className="text-[9px] font-mono text-white/25">{ex.body_segment}</p>
-                                            </div>
-                                            <div className="flex items-center gap-3 shrink-0">
-                                                <div className="text-center">
-                                                    <p className="text-[7px] font-mono text-white/25">SETS</p>
-                                                    <p className="text-xs font-bold text-white/70">{ex.target_sets}</p>
-                                                </div>
-                                                <div className="text-center">
-                                                    <p className="text-[7px] font-mono text-white/25">REPS</p>
-                                                    <p className="text-xs font-bold text-white/70">{ex.target_reps}</p>
-                                                </div>
-                                                {ex.target_weight && (
-                                                    <div className="text-center">
-                                                        <p className="text-[7px] font-mono text-white/25">{weightUnit.toUpperCase()}</p>
-                                                        <p className="text-xs font-bold text-white/70">{Math.round(kgToUnit(ex.target_weight, weightUnit))}</p>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                        {hint && hint.type !== "first_time" && (
-                                            <p className="text-[9px] font-mono text-[rgb(var(--accent-light-rgb)/0.5)] mt-1.5 ml-8">
-                                                <TrendingUp size={10} className="inline mr-1 -mt-0.5" />{hint.text}
-                                            </p>
-                                        )}
-                                        {exerciseRisks[ex.id] && (
-                                            <p className="text-[9px] font-mono text-amber-400/50 mt-1 ml-8">
-                                                ⚠ {exerciseRisks[ex.id].reason}
-                                            </p>
-                                        )}
-                                        {substitutions[ex.id] && (
-                                            <div className="ml-8 mt-2 space-y-1">
-                                                <p className="text-[9px] font-mono text-orange-300/50">
-                                                    <Dumbbell size={9} className="inline mr-1" />{ex.equipment} not in your gear — swap before starting:
-                                                </p>
-                                                {substitutions[ex.id].slice(0, 2).map((sub) => (
-                                                    <button
-                                                        key={sub.exercise.id}
-                                                        onClick={() => handleSwap(ex, { id: sub.exercise.id, name: sub.exercise.name })}
-                                                        className="flex items-center gap-2 text-[10px] font-mono text-white/40 hover:text-emerald-300/80 transition"
-                                                    >
-                                                        <RefreshCw size={9} />
-                                                        <span>{sub.exercise.name}</span>
-                                                        <span className="text-white/20">({sub.reason})</span>
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        )}
+                {/* ── STATS DASHBOARD (not_started) ── */}
+                {status === "not_started" && statsLoaded && (recentSessions.length > 0 || weeklyVolumes.some(v => v > 0)) && (
+                    <div className="space-y-3 mt-2">
+                        <p className="text-[9px] font-mono tracking-widest text-white/15 px-1">YOUR TRAINING</p>
+
+                        {/* This Week + Volume side-by-side */}
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-3.5">
+                                <p className="text-[8px] font-mono tracking-widest text-white/20 mb-2">THIS WEEK</p>
+                                <p className="text-3xl font-black text-[rgb(var(--accent-light-rgb))] leading-none">{weekDays.filter(Boolean).length}</p>
+                                <p className="text-[9px] font-mono text-white/20 mt-1">of 7 days</p>
+                                <div className="flex gap-1 mt-3">
+                                    {["M", "T", "W", "T", "F", "S", "S"].map((day, i) => (
+                                        <div key={i} className={`flex-1 h-1.5 rounded-full transition-all ${
+                                            weekDays[i] ? "bg-[rgb(var(--accent-rgb))]" : "bg-white/[0.06]"
+                                        }`} />
+                                    ))}
+                                </div>
+                            </div>
+                            <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-3.5">
+                                <p className="text-[8px] font-mono tracking-widest text-white/20 mb-2">VOLUME</p>
+                                <p className="text-3xl font-black text-white/80 leading-none">
+                                    {weeklyVolumes[weeklyVolumes.length - 1] > 0 ? `${(weeklyVolumes[weeklyVolumes.length - 1] / 1000).toFixed(1)}` : "—"}
+                                </p>
+                                <p className="text-[9px] font-mono text-white/20 mt-1">{weeklyVolumes[weeklyVolumes.length - 1] > 0 ? `k ${weightUnit} this week` : "no data yet"}</p>
+                                {weeklyVolumes.some(v => v > 0) && (
+                                    <div className="flex items-end gap-0.5 mt-3 h-4">
+                                        {(() => {
+                                            const maxVol = Math.max(...weeklyVolumes, 1);
+                                            return weeklyVolumes.map((vol, i) => {
+                                                const h = Math.max((vol / maxVol) * 100, 8);
+                                                const isLatest = i === weeklyVolumes.length - 1;
+                                                return <div key={i} className={`flex-1 rounded-sm transition-all ${isLatest ? "bg-[rgb(var(--accent-rgb))]" : "bg-white/[0.1]"}`} style={{ height: `${h}%` }} />;
+                                            });
+                                        })()}
                                     </div>
-                                );
-                            })}
+                                )}
+                            </div>
                         </div>
-                    </CardPanel>
+
+                        {/* Recent Sessions */}
+                        {recentSessions.length > 0 && (
+                            <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-4">
+                                <div className="flex items-center justify-between mb-3">
+                                    <p className="text-[8px] font-mono tracking-widest text-white/20">RECENT</p>
+                                    <button onClick={() => router.push("/progress")} className="text-[9px] font-mono text-[rgb(var(--accent-rgb)/0.4)] hover:text-[rgb(var(--accent-rgb))] transition">All →</button>
+                                </div>
+                                <div className="space-y-1">
+                                    {recentSessions.slice(0, 3).map((s) => {
+                                        const d = new Date(s.date + "T12:00:00");
+                                        const today = new Date();
+                                        const diff = Math.floor((today.getTime() - d.getTime()) / 86400000);
+                                        const label = diff === 0 ? "Today" : diff === 1 ? "Yesterday" : d.toLocaleDateString("en-US", { weekday: "short" });
+                                        return (
+                                            <div key={s.id} className="flex items-center gap-3 py-2 border-b border-white/[0.03] last:border-0">
+                                                <div className="w-7 h-7 rounded-lg bg-[rgb(var(--accent-rgb)/0.08)] flex items-center justify-center shrink-0">
+                                                    <Dumbbell size={11} className="text-[rgb(var(--accent-rgb)/0.5)]" />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-[11px] font-medium text-white/60 truncate">{s.title}</p>
+                                                    <p className="text-[9px] font-mono text-white/20">{label} · {s.sets} sets</p>
+                                                </div>
+                                                <span className="text-[10px] font-bold font-mono text-[rgb(var(--accent-light-rgb)/0.6)] shrink-0">+{s.xp} xp</span>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 )}
 
                 {/* ── ACTIVE EXERCISE LIST ── */}
