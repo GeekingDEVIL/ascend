@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Dumbbell, Play, Check, Calendar, Activity, Swords, Wind,
-  PersonStanding, ChevronRight, Clock, Zap, Lock,
+  PersonStanding, ChevronRight, Lock,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import SwipeNav from "../../components/ui/swipe-nav";
@@ -52,11 +52,10 @@ type MethodCard = {
 };
 
 const METHODS: MethodCard[] = [
-  { key: "weights", href: "/workout", label: "Weights", desc: "Barbell, dumbbell, machine training", icon: Dumbbell, colorRgb: "139 92 246" },
-  { key: "running", href: "/running", label: "Running", desc: "GPS tracking, pace, splits", icon: Activity, colorRgb: "249 115 22", module: "running", comingSoon: true },
-  { key: "calisthenics", href: "/calisthenics", label: "Calisthenics", desc: "Bodyweight skills & progressions", icon: PersonStanding, colorRgb: "139 92 246", module: "calisthenics", comingSoon: true },
-  { key: "martial-arts", href: "/martial-arts", label: "Martial Arts", desc: "Muay Thai, BJJ, Boxing", icon: Swords, colorRgb: "239 68 68", module: "martial_arts", comingSoon: true },
-  { key: "yoga", href: "/yoga", label: "Yoga", desc: "Flows, poses, flexibility", icon: Wind, colorRgb: "236 72 153", module: "yoga", comingSoon: true },
+  { key: "running", href: "/running", label: "Running", desc: "GPS pace & splits", icon: Activity, colorRgb: "249 115 22", module: "running", comingSoon: true },
+  { key: "calisthenics", href: "/calisthenics", label: "Calisthenics", desc: "Bodyweight skills", icon: PersonStanding, colorRgb: "139 92 246", module: "calisthenics", comingSoon: true },
+  { key: "martial-arts", href: "/martial-arts", label: "Martial Arts", desc: "Striking & grappling", icon: Swords, colorRgb: "239 68 68", module: "martial_arts", comingSoon: true },
+  { key: "yoga", href: "/yoga", label: "Yoga", desc: "Flows & flexibility", icon: Wind, colorRgb: "236 72 153", module: "yoga", comingSoon: true },
 ];
 
 function toDateString(d: Date) {
@@ -198,27 +197,19 @@ export default function TrainHub() {
         initial="hidden"
         animate="visible"
       >
-        <motion.div variants={staggerItem} className="flex items-center justify-between">
-          <h1 className="text-xl font-bold font-display text-white/90">Train</h1>
-          <button
-            onClick={() => router.push("/schedule")}
-            className="flex items-center gap-1.5 text-[10px] font-mono text-[rgb(var(--accent-rgb)/0.6)] hover:text-[rgb(var(--accent-rgb))] transition"
-          >
-            <Calendar size={12} />
-            Schedule
-            <ChevronRight size={10} />
-          </button>
-        </motion.div>
+        <motion.h1 variants={staggerItem} className="text-xl font-bold font-display text-white/90">
+          Train
+        </motion.h1>
 
         <motion.div variants={staggerItem}>
           <SwipeNav sections={getTrainSections(enabledKeys)} />
         </motion.div>
 
-        {/* Today's Status — compact strip */}
+        {/* Today's Workout — hero card */}
         {todayLoading ? (
-          <motion.div variants={staggerItem} className="glass-card p-4">
+          <motion.div variants={staggerItem} className="glass-card p-5">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-white/[0.06] shimmer" />
+              <div className="w-11 h-11 rounded-xl bg-white/[0.06] shimmer" />
               <div className="flex-1 space-y-2">
                 <div className="h-4 w-32 rounded bg-white/[0.06] shimmer" />
                 <div className="h-3 w-48 rounded bg-white/[0.04] shimmer" />
@@ -226,10 +217,10 @@ export default function TrainHub() {
             </div>
           </motion.div>
         ) : todayPlan?.completed ? (
-          <motion.div variants={staggerItem} className="glass-card p-4">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-                <Check size={18} className="text-emerald-400" />
+          <motion.div variants={staggerItem} className="glass-card p-5">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-11 h-11 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+                <Check size={20} className="text-emerald-400" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-white/90 truncate">{todayPlan.title}</p>
@@ -282,7 +273,7 @@ export default function TrainHub() {
         ) : (
           <motion.div
             variants={staggerItem}
-            className="glass-card glass-card-interactive p-4 cursor-pointer"
+            className="glass-card p-5 cursor-pointer"
             onClick={() => {
               if (!todayPlan || todayPlan.is_rest) router.push("/schedule");
               else router.push("/workout");
@@ -290,7 +281,7 @@ export default function TrainHub() {
           >
             {!todayPlan ? (
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center">
+                <div className="w-11 h-11 rounded-xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center">
                   <Calendar size={18} className="text-white/25" />
                 </div>
                 <div className="flex-1">
@@ -301,7 +292,7 @@ export default function TrainHub() {
               </div>
             ) : todayPlan.is_rest ? (
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/15 flex items-center justify-center">
+                <div className="w-11 h-11 rounded-xl bg-blue-500/10 border border-blue-500/15 flex items-center justify-center">
                   <span className="text-lg">😴</span>
                 </div>
                 <div className="flex-1">
@@ -312,10 +303,10 @@ export default function TrainHub() {
             ) : (
               <div className="flex items-center gap-3">
                 <div
-                  className="w-10 h-10 rounded-xl flex items-center justify-center"
+                  className="w-11 h-11 rounded-xl flex items-center justify-center"
                   style={{ background: "rgb(139 92 246 / 0.12)", border: "1px solid rgb(139 92 246 / 0.2)" }}
                 >
-                  <Play size={16} className="text-violet-400 ml-0.5" fill="currentColor" />
+                  <Dumbbell size={18} className="text-violet-400" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-white/90">{todayPlan.title}</p>
@@ -325,11 +316,22 @@ export default function TrainHub() {
                 </div>
                 <button
                   onClick={(e) => { e.stopPropagation(); router.push("/workout"); }}
-                  className="px-4 py-2 rounded-lg bg-[rgb(var(--accent-rgb))] text-black text-xs font-bold hover:brightness-110 transition"
+                  className="px-5 py-2 rounded-lg bg-[rgb(var(--accent-rgb))] text-black text-xs font-bold hover:brightness-110 transition"
                 >
                   BEGIN
                 </button>
               </div>
+            )}
+
+            {/* Schedule link inside the card */}
+            {todayPlan && !todayPlan.is_rest && (
+              <button
+                onClick={(e) => { e.stopPropagation(); router.push("/schedule"); }}
+                className="mt-3 pt-3 border-t border-white/[0.04] w-full flex items-center justify-center gap-1.5 text-[10px] font-mono text-white/25 hover:text-white/50 transition"
+              >
+                <Calendar size={11} />
+                Edit Schedule
+              </button>
             )}
           </motion.div>
         )}
@@ -365,53 +367,50 @@ export default function TrainHub() {
           </motion.div>
         )}
 
-        {/* Training Methods */}
-        <motion.div variants={staggerItem}>
-          <p className="text-[9px] font-mono tracking-widest text-white/25 mb-2.5 px-0.5">TRAINING METHODS</p>
-          <div className="space-y-2">
-            {visibleMethods.map((method) => {
-              const Icon = method.icon;
-              return (
-                <motion.button
-                  key={method.key}
-                  variants={staggerItem}
-                  onClick={() => {
-                    if (!method.comingSoon) router.push(method.href);
-                  }}
-                  className={`w-full flex items-center gap-3.5 p-3.5 rounded-xl border transition text-left ${
-                    method.comingSoon
-                      ? "border-white/[0.04] opacity-50 cursor-default"
-                      : "border-white/[0.06] hover:border-white/[0.12] hover:bg-white/[0.02] cursor-pointer active:scale-[0.98]"
-                  }`}
-                >
-                  <div
-                    className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                    style={{
-                      background: `rgb(${method.colorRgb} / ${method.comingSoon ? 0.05 : 0.1})`,
-                      border: `1px solid rgb(${method.colorRgb} / ${method.comingSoon ? 0.08 : 0.15})`,
-                    }}
+        {/* Other Training Methods — 2-col grid */}
+        {visibleMethods.length > 0 && (
+          <motion.div variants={staggerItem}>
+            <p className="text-[9px] font-mono tracking-widest text-white/25 mb-2.5 px-0.5">MORE TRAINING</p>
+            <div className="grid grid-cols-2 gap-2">
+              {visibleMethods.map((method) => {
+                const Icon = method.icon;
+                return (
+                  <button
+                    key={method.key}
+                    onClick={() => { if (!method.comingSoon) router.push(method.href); }}
+                    className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition text-center ${
+                      method.comingSoon
+                        ? "border-white/[0.04] opacity-40 cursor-default"
+                        : "border-white/[0.06] hover:border-white/[0.12] hover:bg-white/[0.02] cursor-pointer active:scale-[0.97]"
+                    }`}
                   >
-                    <Icon
-                      size={18}
-                      style={{ color: method.comingSoon ? `rgb(${method.colorRgb} / 0.3)` : `rgb(${method.colorRgb})` }}
-                    />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className={`text-sm font-medium ${method.comingSoon ? "text-white/30" : "text-white/80"}`}>
-                      {method.label}
-                    </p>
-                    <p className="text-[10px] font-mono text-white/20 truncate">{method.desc}</p>
-                  </div>
-                  {method.comingSoon ? (
-                    <span className="text-[8px] font-mono tracking-widest text-white/15 uppercase shrink-0">Soon</span>
-                  ) : (
-                    <ChevronRight size={14} className="text-white/15 shrink-0" />
-                  )}
-                </motion.button>
-              );
-            })}
-          </div>
-        </motion.div>
+                    <div
+                      className="w-10 h-10 rounded-xl flex items-center justify-center"
+                      style={{
+                        background: `rgb(${method.colorRgb} / ${method.comingSoon ? 0.05 : 0.1})`,
+                        border: `1px solid rgb(${method.colorRgb} / ${method.comingSoon ? 0.08 : 0.15})`,
+                      }}
+                    >
+                      <Icon
+                        size={18}
+                        style={{ color: method.comingSoon ? `rgb(${method.colorRgb} / 0.3)` : `rgb(${method.colorRgb})` }}
+                      />
+                    </div>
+                    <div>
+                      <p className={`text-xs font-medium ${method.comingSoon ? "text-white/25" : "text-white/70"}`}>
+                        {method.label}
+                      </p>
+                      <p className="text-[9px] font-mono text-white/15 mt-0.5">{method.desc}</p>
+                    </div>
+                    {method.comingSoon && (
+                      <span className="text-[7px] font-mono tracking-widest text-white/15 uppercase">Coming Soon</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
 
       </motion.div>
     </main>
