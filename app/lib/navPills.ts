@@ -4,7 +4,7 @@ import {
   UtensilsCrossed, GlassWater,
   Activity, Swords, Wind,
   Flame, Shield, Scroll, Crown, Palette, CalendarClock,
-  Camera, Moon, Brain, Watch, PersonStanding, Ruler, Settings,
+  Camera, Moon, Brain, Watch, PersonStanding, Ruler, User,
 } from "lucide-react";
 import type { NavPill } from "../components/ui/sub-nav-pills";
 import type { SwipeSection } from "../components/ui/swipe-nav";
@@ -49,9 +49,9 @@ const socialPillsDef: ConditionalPill[] = [
 ];
 
 const youPillsDef: ConditionalPill[] = [
+  { key: "/profile", label: "PROFILE", icon: User, colorRgb: "34 211 238", description: "Your identity, stats, and settings" },
   { key: "/coach", label: "AI COACH", icon: Sparkles, module: "ai_coach", colorRgb: "20 184 166", description: "Personal training advisor powered by AI", comingSoon: true },
   { key: "/smart-programs", label: "PROGRAMS", icon: Brain, module: "smart_programs", colorRgb: "20 184 166", description: "AI-generated periodised training programs", comingSoon: true },
-  { key: "/setup", label: "SETUP", icon: Settings, colorRgb: "34 211 238", description: "Gym profile, theme, units, modules" },
   { key: "/notifications", label: "ALERTS", icon: Bell, colorRgb: "34 211 238", description: "Achievement unlocks, streak reminders" },
 ];
 

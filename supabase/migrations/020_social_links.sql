@@ -1,0 +1,5 @@
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS social_tiktok TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS social_whatsapp TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS social_snapchat TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS social_youtube TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS banner_preset TEXT DEFAULT 'accent';

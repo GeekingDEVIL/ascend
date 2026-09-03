@@ -1,0 +1,2 @@
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS banner_image TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS custom_banners TEXT[] DEFAULT '{}'::TEXT[];
