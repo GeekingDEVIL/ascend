@@ -565,7 +565,8 @@ export function getPhaseIntelligence(
   if (periodStarts.length === 0) return null;
 
   const cycleLen = computeAdaptiveCycleLength(periodStarts);
-  const today = new Date().toISOString().split("T")[0];
+  const _now = new Date();
+  const today = `${_now.getFullYear()}-${String(_now.getMonth() + 1).padStart(2, "0")}-${String(_now.getDate()).padStart(2, "0")}`;
   const lastStart = periodStarts[0] ?? today;
   const { phase, cycleDay } = estimateCyclePhase(lastStart, cycleLen, today);
   const { level } = getFertilityLevel(cycleDay, cycleLen);

@@ -152,7 +152,7 @@ export async function checkAndAwardAchievements(userId: string, sex: string = "m
   let streak = 0;
   const check = new Date();
   for (let i = 0; i < 120; i++) {
-    const d = check.toISOString().split("T")[0];
+    const d = `${check.getFullYear()}-${String(check.getMonth() + 1).padStart(2, "0")}-${String(check.getDate()).padStart(2, "0")}`;
     const wd = check.getDay();
     if (restDays.has(wd)) { check.setDate(check.getDate() - 1); continue; }
     if (completedDates.has(d)) { streak++; check.setDate(check.getDate() - 1); } else break;

@@ -12,6 +12,7 @@ import CustomSelect from "../../components/CustomSelect";
 import { staggerContainer, staggerItem } from "../../lib/motion";
 import { GOAL_OPTIONS } from "../../lib/goals";
 import { updateUserStats } from "../../lib/updateUserStats";
+import { autoCompleteHabits } from "../../lib/habitAutoComplete";
 import { ACCENT_PRESETS, DEFAULT_ACCENT, getAccentPreset, applyAccent, type AccentKey } from "../../lib/theme";
 import { getFullCalorieSummary, ageFromDOB, type GoalType, type Sex, type ActivityLevel, type DietPreference, type CalorieSummary } from "../../lib/calorieEngine";
 import { useSex, broadcastSexChange } from "../../lib/useSex";
@@ -312,6 +313,9 @@ export default function ProfilePage() {
         setLatestWeight(bw?.[0]?.weight ?? null);
         if (bw?.[0]?.weight != null) setWeightInput(String(kgToUnit(bw[0].weight, loadUnit)));
 
+        // Refresh user_stats (self-heal if post-workout update failed)
+        await updateUserStats(user.id).catch(() => {});
+
         // Summary stats
         const [{ data: sessions }, { data: statsRow }] = await Promise.all([
             supabase.from("workout_sessions").select("total_volume").eq("user_id", user.id).eq("status", "completed").eq("sex", currentSex),
@@ -477,8 +481,10 @@ export default function ProfilePage() {
         if (wKg === latestWeight) return;
         const currentSex = hookSex;
         setWeightSaving(true);
-        await supabase.from("body_weight_logs").insert({ user_id: user.id, weight: wKg, context: "morning", date: new Date().toISOString().split("T")[0], sex: currentSex });
+        const nowDate = new Date();
+        await supabase.from("body_weight_logs").insert({ user_id: user.id, weight: wKg, context: "morning", date: `${nowDate.getFullYear()}-${String(nowDate.getMonth() + 1).padStart(2, "0")}-${String(nowDate.getDate()).padStart(2, "0")}`, sex: currentSex });
         await rematerializeWeightTrend(user.id, currentSex);
+        autoCompleteHabits(user.id, "weight_logged").catch(() => {});
         setLatestWeight(wKg);
         setWeightSaving(false);
     }
@@ -569,7 +575,8 @@ export default function ProfilePage() {
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `ascend-full-export-${new Date().toISOString().split("T")[0]}.csv`;
+        const _ed = new Date();
+        a.download = `ascend-full-export-${_ed.getFullYear()}-${String(_ed.getMonth() + 1).padStart(2, "0")}-${String(_ed.getDate()).padStart(2, "0")}.csv`;
         a.click();
         URL.revokeObjectURL(url);
     }

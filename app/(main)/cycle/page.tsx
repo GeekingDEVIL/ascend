@@ -110,7 +110,7 @@ export default function CyclePage() {
   const [irregularities, setIrregularities] = useState<CycleIrregularity[]>([]);
   const [intelligence, setIntelligence] = useState<PhaseIntelligence | null>(null);
 
-  const [periodDate, setPeriodDate] = useState(new Date().toISOString().split("T")[0]);
+  const [periodDate, setPeriodDate] = useState(() => { const _d = new Date(); return `${_d.getFullYear()}-${String(_d.getMonth() + 1).padStart(2, "0")}-${String(_d.getDate()).padStart(2, "0")}`; });
   const [flowLevel, setFlowLevel] = useState("medium");
   const [logSaving, setLogSaving] = useState(false);
 
@@ -128,7 +128,7 @@ export default function CyclePage() {
   const [calMonth, setCalMonth] = useState(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); });
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = (() => { const _d = new Date(); return `${_d.getFullYear()}-${String(_d.getMonth() + 1).padStart(2, "0")}-${String(_d.getDate()).padStart(2, "0")}`; })();
 
   const loadData = useCallback(async () => {
     if (!user) return;
@@ -607,14 +607,15 @@ export default function CyclePage() {
                 const month = calMonth.getMonth();
                 const firstDay = new Date(year, month, 1).getDay();
                 const daysInMonth = new Date(year, month + 1, 0).getDate();
-                const todayStr = new Date().toISOString().split("T")[0];
+                const _td = new Date();
+                const todayStr = `${_td.getFullYear()}-${String(_td.getMonth() + 1).padStart(2, "0")}-${String(_td.getDate()).padStart(2, "0")}`;
 
                 const periodDays = new Map<string, { flow: string; isStart: boolean; isEnd: boolean }>();
                 for (const log of logs) {
                   const start = new Date(log.period_start + "T00:00:00");
                   const end = log.period_end ? new Date(log.period_end + "T00:00:00") : new Date();
                   for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-                    const ds = d.toISOString().split("T")[0];
+                    const ds = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
                     periodDays.set(ds, {
                       flow: log.flow_level,
                       isStart: ds === log.period_start,

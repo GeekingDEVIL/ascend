@@ -21,7 +21,7 @@ import { MODULE_REGISTRY } from "../lib/modules";
 type TodayPlan = { title: string; is_rest: boolean; count: number; sets: number; completed?: boolean };
 
 function toDateString(d: Date) {
-  return d.toISOString().split("T")[0];
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 function timeAgo(dateStr: string): string {
@@ -91,6 +91,7 @@ export default function Dashboard() {
   const [cyclePhase, setCyclePhase] = useState<{ phase: string; day: number; tip: string } | null>(null);
   const [hydrationMl, setHydrationMl] = useState<number | null>(null);
   const [habitStats, setHabitStats] = useState<{ completed: number; total: number } | null>(null);
+  const [pendingHabits, setPendingHabits] = useState<{ id: string; name: string; icon: string }[]>([]);
 
   useEffect(() => {
     const updateClock = () => setTime(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
@@ -484,7 +485,7 @@ export default function Dashboard() {
         : baseSummary;
       setCalorieSummary(summary);
 
-      const todayStr = new Date().toISOString().split("T")[0];
+      const todayStr = toDateString(new Date());
       const { data: di } = await supabase
         .from("daily_intake")
         .select("kcal, protein_g, carbs_g, fat_g")
@@ -651,20 +652,32 @@ export default function Dashboard() {
 
       // Habits card
       if (isEnabled("habits")) {
-        const todayDate = new Date().toISOString().slice(0, 10);
+        const now = new Date();
+        const todayDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
         const [{ data: habitsData }, { data: compData }] = await Promise.all([
-          supabase.from("habits").select("id").eq("user_id", user.id).eq("archived", false),
+          supabase.from("habits").select("id, name, icon, auto_source").eq("user_id", user.id).eq("archived", false),
           supabase.from("habit_completions").select("habit_id").eq("user_id", user.id).eq("completed_date", todayDate),
         ]);
         if (!cancelled && habitsData && habitsData.length > 0) {
           const completedIds = new Set((compData ?? []).map((c: any) => c.habit_id));
+          const pending = habitsData.filter((h: any) => !completedIds.has(h.id) && !h.auto_source);
           setHabitStats({ completed: habitsData.filter((h: any) => completedIds.has(h.id)).length, total: habitsData.length });
+          setPendingHabits(pending.slice(0, 3));
         }
       }
     }
     if (statsLoaded) loadDashboardCards();
     return () => { cancelled = true; };
   }, [user, userSex, statsLoaded, stats.streak, stats.totalWorkouts, stats.prCount, stats.recoveryPct, stats.weeklyVolume, weightUnit]);
+
+  async function quickCompleteHabit(habitId: string) {
+    if (!user) return;
+    const now = new Date();
+    const todayDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    await supabase.from("habit_completions").insert({ habit_id: habitId, user_id: user.id, completed_date: todayDate });
+    setPendingHabits((prev) => prev.filter((h) => h.id !== habitId));
+    setHabitStats((prev) => prev ? { ...prev, completed: prev.completed + 1 } : prev);
+  }
 
   async function dismissNotification(id: string) {
     await supabase.from("notifications").update({ read: true }).eq("id", id);
@@ -932,33 +945,47 @@ export default function Dashboard() {
         {habitStats && isEnabled("habits") && (
           <motion.div
             variants={staggerItem}
-            className="rounded-xl border border-rose-400/10 bg-rose-400/[0.03] px-4 py-3 flex items-center gap-3 cursor-pointer"
+            className="rounded-xl border border-rose-400/10 bg-rose-400/[0.03] px-4 py-3 space-y-2"
             style={{ order: cardOrder.habitsOrder }}
-            onClick={() => router.push("/habits")}
           >
-            <Flame size={16} className="text-rose-400/70 shrink-0" />
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between">
-                <p className="text-[11px] font-mono text-white/50">
-                  {habitStats.completed}/{habitStats.total} habits
-                </p>
-                <span className="text-[9px] font-mono text-white/25">
-                  {habitStats.completed === habitStats.total ? "Perfect!" : `${Math.round((habitStats.completed / habitStats.total) * 100)}%`}
-                </span>
+            <div className="flex items-center gap-3 cursor-pointer" onClick={() => router.push("/habits")}>
+              <Flame size={16} className="text-rose-400/70 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between">
+                  <p className="text-[11px] font-mono text-white/50">
+                    {habitStats.completed}/{habitStats.total} habits
+                  </p>
+                  <span className="text-[9px] font-mono text-white/25">
+                    {habitStats.completed === habitStats.total ? "Perfect!" : `${Math.round((habitStats.completed / habitStats.total) * 100)}%`}
+                  </span>
+                </div>
+                <div className="h-1 rounded-full bg-white/[0.04] overflow-hidden mt-1">
+                  <div
+                    className="h-full rounded-full transition-all"
+                    style={{
+                      width: `${(habitStats.completed / habitStats.total) * 100}%`,
+                      background: habitStats.completed === habitStats.total
+                        ? "rgb(16 185 129 / 0.6)"
+                        : "rgb(244 63 94 / 0.4)",
+                    }}
+                  />
+                </div>
               </div>
-              <div className="h-1 rounded-full bg-white/[0.04] overflow-hidden mt-1">
-                <div
-                  className="h-full rounded-full transition-all"
-                  style={{
-                    width: `${(habitStats.completed / habitStats.total) * 100}%`,
-                    background: habitStats.completed === habitStats.total
-                      ? "rgb(16 185 129 / 0.6)"
-                      : "rgb(244 63 94 / 0.4)",
-                  }}
-                />
-              </div>
+              <ChevronRight size={12} className="text-white/15 shrink-0" />
             </div>
-            <ChevronRight size={12} className="text-white/15 shrink-0" />
+            {pendingHabits.length > 0 && (
+              <div className="flex gap-1.5 flex-wrap">
+                {pendingHabits.map((h) => (
+                  <button
+                    key={h.id}
+                    onClick={() => quickCompleteHabit(h.id)}
+                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.06] text-[10px] font-mono text-white/40 hover:text-white/60 transition active:scale-95"
+                  >
+                    <span>{h.icon}</span> {h.name}
+                  </button>
+                ))}
+              </div>
+            )}
           </motion.div>
         )}
 

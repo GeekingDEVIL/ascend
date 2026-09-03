@@ -54,7 +54,7 @@ export function modelScenario(params: {
   const feasibility = checkFeasibility({
     currentKg,
     targetKg,
-    targetDate: etaDate.toISOString().split("T")[0],
+    targetDate: `${etaDate.getFullYear()}-${String(etaDate.getMonth() + 1).padStart(2, "0")}-${String(etaDate.getDate()).padStart(2, "0")}`,
     tdee,
     bmr,
     sex,
@@ -67,7 +67,7 @@ export function modelScenario(params: {
     weeklyDeficit,
     rateKgPerWeek,
     etaDays,
-    etaDate: etaDate.toISOString().split("T")[0],
+    etaDate: `${etaDate.getFullYear()}-${String(etaDate.getMonth() + 1).padStart(2, "0")}-${String(etaDate.getDate()).padStart(2, "0")}`,
     feasibility,
   };
 }

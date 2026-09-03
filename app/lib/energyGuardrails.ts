@@ -104,7 +104,7 @@ export function applyGuardrails(params: {
         const daysNeeded = Math.ceil(weeksNeeded * 7);
         const newDate = new Date();
         newDate.setDate(newDate.getDate() + daysNeeded);
-        revisedETA = newDate.toISOString().split("T")[0];
+        revisedETA = `${newDate.getFullYear()}-${String(newDate.getMonth() + 1).padStart(2, "0")}-${String(newDate.getDate()).padStart(2, "0")}`;
       }
     }
   }
@@ -154,7 +154,7 @@ export function checkFeasibility(params: {
       requiredRateKgWeek: safeRate,
       safeRateKgWeek: safeRate,
       estimatedDaysNeeded: safeDays,
-      suggestedDate: suggested.toISOString().split("T")[0],
+      suggestedDate: `${suggested.getFullYear()}-${String(suggested.getMonth() + 1).padStart(2, "0")}-${String(suggested.getDate()).padStart(2, "0")}`,
       reason: `At a safe rate of ${safeRate} kg/week, this would take ~${Math.ceil(safeWeeks)} weeks.`,
       violations,
     };
@@ -172,7 +172,7 @@ export function checkFeasibility(params: {
   if (isLoss && requiredRate > actualMaxRateKgWeek) {
     const suggested = new Date();
     suggested.setDate(suggested.getDate() + safeDays);
-    violations.push({ rule: "Rate exceeds safe maximum", detail: `Required ${requiredRate} kg/week > safe max ${actualMaxRateKgWeek} kg/week`, action: `Date pushed to ${suggested.toISOString().split("T")[0]}` });
+    violations.push({ rule: "Rate exceeds safe maximum", detail: `Required ${requiredRate} kg/week > safe max ${actualMaxRateKgWeek} kg/week`, action: `Date pushed to ${suggested.getFullYear()}-${String(suggested.getMonth() + 1).padStart(2, "0")}-${String(suggested.getDate()).padStart(2, "0")}` });
     if (bmi < 22) {
       violations.push({ rule: "Already lean", detail: `BMI ${bmi} < 22 — reduced to 0.75% BW/week max rate`, action: "Slower rate enforced" });
     }
@@ -181,7 +181,7 @@ export function checkFeasibility(params: {
       requiredRateKgWeek: requiredRate,
       safeRateKgWeek: actualMaxRateKgWeek,
       estimatedDaysNeeded: safeDays,
-      suggestedDate: suggested.toISOString().split("T")[0],
+      suggestedDate: `${suggested.getFullYear()}-${String(suggested.getMonth() + 1).padStart(2, "0")}-${String(suggested.getDate()).padStart(2, "0")}`,
       reason: `Requires ${requiredRate} kg/week loss, but safe maximum is ${actualMaxRateKgWeek} kg/week. Date moved.`,
       violations,
     };
@@ -190,13 +190,13 @@ export function checkFeasibility(params: {
   if (!isLoss && requiredRate > 0.5) {
     const suggested = new Date();
     suggested.setDate(suggested.getDate() + safeDays);
-    violations.push({ rule: "Gain rate too fast", detail: `Required ${requiredRate} kg/week > 0.5 kg/week max`, action: `Date pushed to ${suggested.toISOString().split("T")[0]}` });
+    violations.push({ rule: "Gain rate too fast", detail: `Required ${requiredRate} kg/week > 0.5 kg/week max`, action: `Date pushed to ${suggested.getFullYear()}-${String(suggested.getMonth() + 1).padStart(2, "0")}-${String(suggested.getDate()).padStart(2, "0")}` });
     return {
       feasible: false,
       requiredRateKgWeek: requiredRate,
       safeRateKgWeek: 0.5,
       estimatedDaysNeeded: safeDays,
-      suggestedDate: suggested.toISOString().split("T")[0],
+      suggestedDate: `${suggested.getFullYear()}-${String(suggested.getMonth() + 1).padStart(2, "0")}-${String(suggested.getDate()).padStart(2, "0")}`,
       reason: `Requires ${requiredRate} kg/week gain, but safe maximum is 0.5 kg/week.`,
       violations,
     };

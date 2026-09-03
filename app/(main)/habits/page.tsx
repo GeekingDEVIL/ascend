@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useMemo } from "react";
-import { Flame, Plus, Check, Trash2, Zap, Star, Sparkles, Sun, Moon, Clock } from "lucide-react";
+import { Flame, Plus, Check, Trash2, Zap, Star, Sparkles, Sun, Moon, Clock, Link, Dumbbell, Droplets, Scale } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../lib/AuthProvider";
@@ -20,7 +20,14 @@ type Habit = {
   xp_reward: number;
   sort_order: number;
   routine: "morning" | "evening" | "anytime";
+  auto_source: string | null;
 };
+
+const AUTO_SOURCES = [
+  { key: "workout_complete", label: "Workout", icon: Dumbbell, desc: "Auto-completes when you finish a workout" },
+  { key: "water_goal", label: "Water Goal", icon: Droplets, desc: "Auto-completes when you hit your daily water goal" },
+  { key: "weight_logged", label: "Weight Log", icon: Scale, desc: "Auto-completes when you log your weight" },
+] as const;
 
 const ROUTINES = [
   { key: "anytime", label: "Anytime", icon: Clock },
@@ -41,16 +48,16 @@ const DIFFICULTIES = [
   { key: "hard", label: "Hard", xp: 20, color: "239 68 68", desc: "Real challenge" },
 ] as const;
 
-const SUGGESTED_HABITS = [
-  { name: "Drink 2L Water", icon: "💧", difficulty: "easy" },
+const SUGGESTED_HABITS: { name: string; icon: string; difficulty: string; auto_source?: string }[] = [
+  { name: "Daily Workout", icon: "💪", difficulty: "hard", auto_source: "workout_complete" },
+  { name: "Hit Water Goal", icon: "💧", difficulty: "easy", auto_source: "water_goal" },
+  { name: "Log Weight", icon: "⚖️", difficulty: "easy", auto_source: "weight_logged" },
   { name: "10 Min Stretch", icon: "🧘", difficulty: "easy" },
-  { name: "Read 20 Pages", icon: "📖", difficulty: "medium" },
-  { name: "Morning Workout", icon: "💪", difficulty: "hard" },
   { name: "8 Hours Sleep", icon: "😴", difficulty: "medium" },
   { name: "No Junk Food", icon: "🥗", difficulty: "hard" },
 ];
 
-const todayStr = () => new Date().toISOString().slice(0, 10);
+const todayStr = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
 
 function getHeatmapDays(weeks: number): string[] {
   const days: string[] = [];
@@ -59,7 +66,7 @@ function getHeatmapDays(weeks: number): string[] {
   for (let i = totalDays - 1; i >= 0; i--) {
     const d = new Date(now);
     d.setDate(d.getDate() - i);
-    days.push(d.toISOString().slice(0, 10));
+    days.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`);
   }
   return days;
 }
@@ -75,6 +82,7 @@ export default function HabitsPage() {
   const [newIcon, setNewIcon] = useState("✅");
   const [newDifficulty, setNewDifficulty] = useState<"easy" | "medium" | "hard">("medium");
   const [newRoutine, setNewRoutine] = useState<"morning" | "evening" | "anytime">("anytime");
+  const [newAutoSource, setNewAutoSource] = useState<string | null>(null);
   const [xpPop, setXpPop] = useState<string | null>(null);
   const [perfectDay, setPerfectDay] = useState(false);
 
@@ -86,10 +94,10 @@ export default function HabitsPage() {
     const twelveWeeksAgo = new Date();
     twelveWeeksAgo.setDate(twelveWeeksAgo.getDate() - 84);
     const [{ data: habitsData }, { data: compData }] = await Promise.all([
-      supabase.from("habits").select("id, name, icon, color_rgb, xp_reward, sort_order, routine")
+      supabase.from("habits").select("id, name, icon, color_rgb, xp_reward, sort_order, routine, auto_source")
         .eq("user_id", user.id).eq("archived", false).order("sort_order"),
       supabase.from("habit_completions").select("habit_id, completed_date")
-        .eq("user_id", user.id).gte("completed_date", twelveWeeksAgo.toISOString().slice(0, 10)),
+        .eq("user_id", user.id).gte("completed_date", `${twelveWeeksAgo.getFullYear()}-${String(twelveWeeksAgo.getMonth() + 1).padStart(2, "0")}-${String(twelveWeeksAgo.getDate()).padStart(2, "0")}`),
     ]);
     setHabits(habitsData ?? []);
     setCompletions(compData ?? []);
@@ -97,6 +105,12 @@ export default function HabitsPage() {
   }, [user]);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  useEffect(() => {
+    const onFocus = () => { if (!loading) loadData(); };
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [loadData, loading]);
 
   const completionSet = useMemo(() => {
     const s = new Set<string>();
@@ -108,11 +122,12 @@ export default function HabitsPage() {
   const todayTotal = habits.length;
   const todayPct = todayTotal > 0 ? Math.round((todayCompleted / todayTotal) * 100) : 0;
 
-  async function addHabit(name?: string, icon?: string, diff?: "easy" | "medium" | "hard") {
+  async function addHabit(name?: string, icon?: string, diff?: "easy" | "medium" | "hard", autoSource?: string) {
     if (!user) return;
     const habitName = name ?? newName.trim();
     const habitIcon = icon ?? newIcon;
     const difficulty = diff ?? newDifficulty;
+    const source = autoSource ?? newAutoSource;
     if (!habitName) return;
     const xp = DIFFICULTIES.find((d) => d.key === difficulty)!.xp;
     const { data } = await supabase.from("habits").insert({
@@ -122,11 +137,13 @@ export default function HabitsPage() {
       xp_reward: xp,
       routine: diff ? "anytime" : newRoutine,
       sort_order: habits.length,
-    }).select("id, name, icon, color_rgb, xp_reward, sort_order, routine").single();
+      ...(source ? { auto_source: source } : {}),
+    }).select("id, name, icon, color_rgb, xp_reward, sort_order, routine, auto_source").single();
     if (data) setHabits((prev) => [...prev, data]);
     setNewName("");
     setNewIcon("✅");
     setNewDifficulty("medium");
+    setNewAutoSource(null);
     setShowAdd(false);
   }
 
@@ -174,7 +191,7 @@ export default function HabitsPage() {
     for (let i = 0; i <= 365; i++) {
       const d = new Date(now);
       d.setDate(d.getDate() - i);
-      const dateStr = d.toISOString().slice(0, 10);
+      const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
       if (completionSet.has(`${habitId}:${dateStr}`)) streak++;
       else if (i > 0) break;
       else break;
@@ -221,25 +238,27 @@ export default function HabitsPage() {
                 const done = completionSet.has(`${habit.id}:${today}`);
                 const streak = getHabitStreak(habit.id);
                 const heatmap = getHabitHeatmap(habit.id);
+                const isAuto = !!habit.auto_source;
+                const autoInfo = AUTO_SOURCES.find((a) => a.key === habit.auto_source);
                 return (
                   <motion.div
                     key={habit.id}
                     variants={staggerItem}
-                    className={`rounded-xl border p-3 transition ${
+                    onClick={() => !isAuto && toggleHabit(habit.id)}
+                    className={`rounded-xl border p-3 transition ${isAuto ? "" : "cursor-pointer active:scale-[0.98]"} ${
                       done ? "border-emerald-500/20 bg-emerald-500/[0.04]" : "border-white/[0.06] bg-white/[0.02]"
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <button
-                        onClick={() => toggleHabit(habit.id)}
-                        className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 transition active:scale-90 ${
+                      <div
+                        className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 transition ${
                           done
                             ? "bg-emerald-500/20 border border-emerald-500/30"
                             : "bg-white/[0.03] border border-white/10"
                         }`}
                       >
                         {done ? <Check size={18} className="text-emerald-400" /> : <span className="text-lg">{habit.icon}</span>}
-                      </button>
+                      </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <p className={`text-sm font-bold truncate ${done ? "text-white/50 line-through" : "text-white/80"}`}>
@@ -270,10 +289,17 @@ export default function HabitsPage() {
                               <Flame size={9} /> {streak}d
                             </span>
                           )}
+                          {isAuto ? (
+                            <span className="flex items-center gap-0.5 text-[8px] font-mono text-cyan-400/50">
+                              <Link size={8} /> {autoInfo?.label ?? "Auto"}
+                            </span>
+                          ) : !done && (
+                            <span className="text-[8px] font-mono text-white/15">Tap to complete</span>
+                          )}
                         </div>
                       </div>
                       <button
-                        onClick={() => deleteHabit(habit.id)}
+                        onClick={(e) => { e.stopPropagation(); deleteHabit(habit.id); }}
                         className="p-1.5 text-white/15 hover:text-red-400/50 transition"
                       >
                         <Trash2 size={14} />
@@ -408,6 +434,40 @@ export default function HabitsPage() {
                       })}
                     </div>
                   </div>
+                  <div>
+                    <p className="text-[8px] font-mono text-white/20 mb-1.5">AUTO-COMPLETE <span className="text-white/10">(optional)</span></p>
+                    <div className="flex gap-1.5">
+                      <button
+                        onClick={() => setNewAutoSource(null)}
+                        className={`px-2.5 py-1.5 rounded-lg text-[10px] font-mono text-center transition ${
+                          newAutoSource === null
+                            ? "border bg-white/[0.08] border-white/20 text-white/80"
+                            : "border border-white/[0.06] text-white/25 hover:text-white/40"
+                        }`}
+                      >
+                        Manual
+                      </button>
+                      {AUTO_SOURCES.map((a) => {
+                        const Icon = a.icon;
+                        return (
+                          <button
+                            key={a.key}
+                            onClick={() => setNewAutoSource(a.key)}
+                            className={`flex-1 py-1.5 rounded-lg text-[10px] font-mono text-center flex items-center justify-center gap-1 transition ${
+                              newAutoSource === a.key
+                                ? "border bg-cyan-500/[0.08] border-cyan-500/20 text-cyan-400/80"
+                                : "border border-white/[0.06] text-white/25 hover:text-white/40"
+                            }`}
+                          >
+                            <Icon size={10} /> {a.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {newAutoSource && (
+                      <p className="text-[8px] font-mono text-cyan-400/40 mt-1">{AUTO_SOURCES.find((a) => a.key === newAutoSource)?.desc}</p>
+                    )}
+                  </div>
                   <div className="flex gap-2">
                     <button
                       onClick={() => addHabit()}
@@ -474,13 +534,16 @@ export default function HabitsPage() {
                       return (
                         <button
                           key={s.name}
-                          onClick={() => addHabit(s.name, s.icon, s.difficulty as "easy" | "medium" | "hard")}
+                          onClick={() => addHabit(s.name, s.icon, s.difficulty as "easy" | "medium" | "hard", s.auto_source)}
                           className="flex items-center gap-2 p-2.5 rounded-lg border border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.04] text-left transition active:scale-95"
                         >
                           <span className="text-base">{s.icon}</span>
                           <div className="min-w-0">
                             <p className="text-[11px] font-bold text-white/60 truncate">{s.name}</p>
-                            <p className="text-[8px] font-mono" style={{ color: `rgb(${diff.color} / 0.6)` }}>+{diff.xp} XP</p>
+                            <div className="flex items-center gap-1.5">
+                              <p className="text-[8px] font-mono" style={{ color: `rgb(${diff.color} / 0.6)` }}>+{diff.xp} XP</p>
+                              {s.auto_source && <span className="flex items-center gap-0.5 text-[7px] font-mono text-cyan-400/40"><Link size={7} />Auto</span>}
+                            </div>
                           </div>
                         </button>
                       );

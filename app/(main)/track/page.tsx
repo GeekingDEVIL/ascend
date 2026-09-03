@@ -15,7 +15,7 @@ import { supabase } from "../../lib/supabase";
 import { staggerContainer, staggerItem } from "../../lib/motion";
 
 function toDateString(d: Date) {
-  return d.toISOString().split("T")[0];
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 function MiniBarChart({ data, color }: { data: number[]; color: string }) {

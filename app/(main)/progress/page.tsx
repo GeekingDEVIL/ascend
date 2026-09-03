@@ -170,7 +170,7 @@ function getWeekStart(dateStr: string): string {
     const diff = d.getDate() - day + (day === 0 ? -6 : 1);
     const monday = new Date(d);
     monday.setDate(diff);
-    return monday.toISOString().split("T")[0];
+    return `${monday.getFullYear()}-${String(monday.getMonth() + 1).padStart(2, "0")}-${String(monday.getDate()).padStart(2, "0")}`;
 }
 
 function estimateE1RM(weight: number, reps: number): number {
@@ -231,7 +231,7 @@ export default function ProgressPage() {
     const [weeklyVolumeData, setWeeklyVolumeData] = useState<WeeklyVolume[]>([]);
 
     // Intake
-    const [intakeDate, setIntakeDate] = useState(() => new Date().toISOString().split("T")[0]);
+    const [intakeDate, setIntakeDate] = useState(() => { const _d = new Date(); return `${_d.getFullYear()}-${String(_d.getMonth() + 1).padStart(2, "0")}-${String(_d.getDate()).padStart(2, "0")}`; });
     const [intakeEntries, setIntakeEntries] = useState<FoodEntry[]>([]);
     const [intakeMealSlot, setIntakeMealSlot] = useState<MealSlot>("breakfast");
     const [intakeLabel, setIntakeLabel] = useState("");
@@ -485,7 +485,7 @@ export default function ProgressPage() {
                 .select("date")
                 .eq("user_id", user.id)
                 .eq("sex", userSex)
-                .gte("date", new Date(Date.now() - 30 * 86400000).toISOString().split("T")[0]),
+                .gte("date", (() => { const _d = new Date(Date.now() - 30 * 86400000); return `${_d.getFullYear()}-${String(_d.getMonth() + 1).padStart(2, "0")}-${String(_d.getDate()).padStart(2, "0")}`; })()),
             supabase
                 .from("daily_intake")
                 .select("date, kcal")
@@ -584,7 +584,8 @@ export default function ProgressPage() {
 
             setLedgerCalorieSummary(summary);
             if (allIntake && allIntake.length > 0) {
-                const today = new Date().toISOString().split("T")[0];
+                const _td1 = new Date();
+                const today = `${_td1.getFullYear()}-${String(_td1.getMonth() + 1).padStart(2, "0")}-${String(_td1.getDate()).padStart(2, "0")}`;
                 const completedDays = allIntake.filter((r: any) => r.date < today);
                 setLedger(buildLedger(completedDays.map((r: any) => ({ date: r.date, kcal: Number(r.kcal) })), summary.calorieTarget));
             }
@@ -674,10 +675,11 @@ export default function ProgressPage() {
                 } else { setInsightRecomp(null); }
             }
 
-            const today = new Date().toISOString().split("T")[0];
+            const _td2 = new Date();
+            const today = `${_td2.getFullYear()}-${String(_td2.getMonth() + 1).padStart(2, "0")}-${String(_td2.getDate()).padStart(2, "0")}`;
             const weekStart = new Date();
             weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1);
-            const weekDays = dailyIntakes.filter(d => d.date >= weekStart.toISOString().split("T")[0] && d.date <= today);
+            const weekDays = dailyIntakes.filter(d => d.date >= `${weekStart.getFullYear()}-${String(weekStart.getMonth() + 1).padStart(2, "0")}-${String(weekStart.getDate()).padStart(2, "0")}` && d.date <= today);
             try {
                 setInsightBudget(calcWeeklyBudget({
                     dailyTarget: summary.calorieTarget,
@@ -887,7 +889,8 @@ export default function ProgressPage() {
         const rawValue = Number(newWeight);
         if (rawValue <= 0) return;
         const storedKg = weightInputToKg(rawValue, weightUnit);
-        const today = new Date().toISOString().split("T")[0];
+        const _td3 = new Date();
+        const today = `${_td3.getFullYear()}-${String(_td3.getMonth() + 1).padStart(2, "0")}-${String(_td3.getDate()).padStart(2, "0")}`;
 
         await supabase.from("body_weight_logs").insert({
             user_id: user.id,
@@ -911,7 +914,7 @@ export default function ProgressPage() {
         const targetDate = new Date();
         targetDate.setDate(targetDate.getDate() + days);
         try {
-            setInsightScenario(modelScenario({ ...scenarioParams, targetDate: targetDate.toISOString().split("T")[0] }));
+            setInsightScenario(modelScenario({ ...scenarioParams, targetDate: `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, "0")}-${String(targetDate.getDate()).padStart(2, "0")}` }));
         } catch { /* ignore */ }
     }
 
@@ -1604,20 +1607,20 @@ export default function ProgressPage() {
                                 {/* Date selector — always visible */}
                                 <div className="flex items-center justify-between">
                                     <button
-                                        onClick={() => { const d = new Date(intakeDate); d.setDate(d.getDate() - 1); setIntakeDate(d.toISOString().split("T")[0]); }}
+                                        onClick={() => { const d = new Date(intakeDate); d.setDate(d.getDate() - 1); setIntakeDate(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`); }}
                                         className="text-[10px] font-mono px-3 py-2 rounded-lg border border-white/[0.08] text-white/40 hover:text-white/70 transition"
                                     >‹</button>
                                     <div className="text-center">
                                         <p className="text-sm font-bold font-mono text-white/80">
                                             {new Date(intakeDate + "T12:00:00").toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}
                                         </p>
-                                        {intakeDate !== new Date().toISOString().split("T")[0] && (
-                                            <button onClick={() => setIntakeDate(new Date().toISOString().split("T")[0])} className="text-[8px] font-mono text-[rgb(var(--accent-light-rgb)/0.5)] hover:text-[rgb(var(--accent-light-rgb))] transition">TODAY</button>
+                                        {intakeDate !== (() => { const _d = new Date(); return `${_d.getFullYear()}-${String(_d.getMonth() + 1).padStart(2, "0")}-${String(_d.getDate()).padStart(2, "0")}`; })() && (
+                                            <button onClick={() => { const _d = new Date(); setIntakeDate(`${_d.getFullYear()}-${String(_d.getMonth() + 1).padStart(2, "0")}-${String(_d.getDate()).padStart(2, "0")}`); }} className="text-[8px] font-mono text-[rgb(var(--accent-light-rgb)/0.5)] hover:text-[rgb(var(--accent-light-rgb))] transition">TODAY</button>
                                         )}
                                     </div>
                                     <button
-                                        onClick={() => { const d = new Date(intakeDate); d.setDate(d.getDate() + 1); setIntakeDate(d.toISOString().split("T")[0]); }}
-                                        disabled={intakeDate >= new Date().toISOString().split("T")[0]}
+                                        onClick={() => { const d = new Date(intakeDate); d.setDate(d.getDate() + 1); setIntakeDate(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`); }}
+                                        disabled={intakeDate >= (() => { const _d = new Date(); return `${_d.getFullYear()}-${String(_d.getMonth() + 1).padStart(2, "0")}-${String(_d.getDate()).padStart(2, "0")}`; })()}
                                         className="text-[10px] font-mono px-3 py-2 rounded-lg border border-white/[0.08] text-white/40 hover:text-white/70 disabled:opacity-20 transition"
                                     >›</button>
                                 </div>
@@ -1656,7 +1659,8 @@ export default function ProgressPage() {
                                     const pct = target > 0 ? Math.min((totals.kcal / target) * 100, 100) : 0;
                                     const overTarget = totals.kcal > target;
                                     const overBy = totals.kcal - target;
-                                    const isToday = intakeDate === new Date().toISOString().split("T")[0];
+                                    const _td4 = new Date();
+                                    const isToday = intakeDate === `${_td4.getFullYear()}-${String(_td4.getMonth() + 1).padStart(2, "0")}-${String(_td4.getDate()).padStart(2, "0")}`;
 
                                     const mealColors: Record<string, string> = { breakfast: "rgb(251,191,36)", lunch: "rgb(52,211,153)", dinner: "rgb(129,140,248)", snack: "rgb(244,114,182)" };
                                     const mealTotals = (["breakfast", "lunch", "dinner", "snack"] as const).map((slot) => ({

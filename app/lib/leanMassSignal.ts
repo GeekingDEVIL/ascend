@@ -21,7 +21,7 @@ export function assessLeanMassSignal(params: {
 
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - windowDays);
-  const cutoffStr = cutoff.toISOString().split("T")[0];
+  const cutoffStr = `${cutoff.getFullYear()}-${String(cutoff.getMonth() + 1).padStart(2, "0")}-${String(cutoff.getDate()).padStart(2, "0")}`;
 
   const recentWeights = weightTrend.filter((w) => w.date >= cutoffStr);
   const recentStrength = strengthData.filter((s) => s.date >= cutoffStr);

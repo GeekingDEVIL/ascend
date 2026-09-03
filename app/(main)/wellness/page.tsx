@@ -11,6 +11,7 @@ import { useModules } from "../../lib/useModules";
 import CubeLoader from "../../components/ui/cube-loader";
 import { staggerContainer, staggerItem } from "../../lib/motion";
 import OnboardingTooltip from "../../components/ui/onboarding-tooltip";
+import { autoCompleteHabits } from "../../lib/habitAutoComplete";
 
 const GOAL_ML = 3000;
 const QUICK_AMOUNTS = [250, 500, 750, 1000];
@@ -35,7 +36,7 @@ function getDayTotals(logs: WaterLog[], days: number): DayTotal[] {
   for (let i = days - 1; i >= 0; i--) {
     const d = new Date(now);
     d.setDate(d.getDate() - i);
-    const dateStr = d.toISOString().slice(0, 10);
+    const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
     const dayLogs = logs.filter((l) => l.logged_at.slice(0, 10) === dateStr);
     const total = dayLogs.reduce((s, l) => s + l.amount_ml, 0);
     result.push({
@@ -115,8 +116,13 @@ export default function WellnessPage() {
       .select("id, amount_ml, logged_at")
       .single();
     if (data) {
-      setTodayLogs((prev) => [data, ...prev]);
+      const newLogs = [data, ...todayLogs];
+      setTodayLogs(newLogs);
       setWeekLogs((prev) => [data, ...prev]);
+      const newTotal = newLogs.reduce((s, l: any) => s + (l.amount_ml || 0), 0);
+      if (newTotal >= GOAL_ML && totalMl < GOAL_ML) {
+        autoCompleteHabits(user.id, "water_goal").catch(() => {});
+      }
     }
   }
 

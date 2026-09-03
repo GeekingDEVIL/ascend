@@ -124,7 +124,7 @@ function calcLoggingAdherence(intakes: { date: string }[], start: string, end: s
   for (let i = 0; i < totalDays; i++) {
     const d = new Date(startDate);
     d.setDate(d.getDate() + i);
-    if (loggedDates.has(d.toISOString().split("T")[0])) count++;
+    if (loggedDates.has(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`)) count++;
   }
   return Math.round((count / totalDays) * 100);
 }

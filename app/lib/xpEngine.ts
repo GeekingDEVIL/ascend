@@ -127,7 +127,7 @@ export async function calculateSessionXP(
     let streak = 0;
     const check = new Date();
     for (let i = 0; i < 60; i++) {
-      const d = check.toISOString().split("T")[0];
+      const d = `${check.getFullYear()}-${String(check.getMonth() + 1).padStart(2, "0")}-${String(check.getDate()).padStart(2, "0")}`;
       const wd = check.getDay();
       if (restWeekdays.has(wd)) {
         check.setDate(check.getDate() - 1);

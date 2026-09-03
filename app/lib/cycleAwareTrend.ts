@@ -123,7 +123,7 @@ export function getPredictionRange(lastPeriodStart: string, cycleLength: number,
   early.setDate(early.getDate() + cycleLength - margin);
   const late = new Date(base);
   late.setDate(late.getDate() + cycleLength + margin);
-  return [early.toISOString().split("T")[0], late.toISOString().split("T")[0]];
+  return [`${early.getFullYear()}-${String(early.getMonth() + 1).padStart(2, "0")}-${String(early.getDate()).padStart(2, "0")}`, `${late.getFullYear()}-${String(late.getMonth() + 1).padStart(2, "0")}-${String(late.getDate()).padStart(2, "0")}`];
 }
 
 export function detectIrregularities(periodStarts: string[], logs: CycleLog[]): CycleIrregularity[] {
@@ -227,7 +227,7 @@ export function estimateCyclePhase(
 export function estimateNextPeriod(lastPeriodStart: string, cycleLength: number): string {
   const d = new Date(lastPeriodStart + "T12:00:00");
   d.setDate(d.getDate() + cycleLength);
-  return d.toISOString().split("T")[0];
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 export function getCycleInsight(
@@ -316,7 +316,7 @@ export async function fetchCycleSymptoms(userId: string, days: number = 30): Pro
     .from("cycle_symptoms")
     .select("*")
     .eq("user_id", userId)
-    .gte("date", since.toISOString().split("T")[0])
+    .gte("date", `${since.getFullYear()}-${String(since.getMonth() + 1).padStart(2, "0")}-${String(since.getDate()).padStart(2, "0")}`)
     .order("date", { ascending: false });
   return (data ?? []) as CycleSymptomLog[];
 }

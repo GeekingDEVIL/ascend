@@ -23,7 +23,7 @@ export function planDietBreak(params: {
   // Females benefit from slightly longer diet breaks (Trexler et al., 2014)
   const defaultDuration = sex === "female" ? 12 : 10;
   const durationDays = params.durationDays ?? defaultDuration;
-  const start = params.startDate ?? new Date().toISOString().split("T")[0];
+  const start = params.startDate ?? (() => { const _d = new Date(); return `${_d.getFullYear()}-${String(_d.getMonth() + 1).padStart(2, "0")}-${String(_d.getDate()).padStart(2, "0")}`; })();
   const endDate = new Date(start + "T12:00:00");
   endDate.setDate(endDate.getDate() + durationDays - 1);
 
@@ -39,7 +39,7 @@ export function planDietBreak(params: {
   return {
     phase: "diet_break",
     startDate: start,
-    endDate: endDate.toISOString().split("T")[0],
+    endDate: `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, "0")}-${String(endDate.getDate()).padStart(2, "0")}`,
     durationDays,
     maintenanceKcal: tdee,
     reason,
@@ -72,5 +72,6 @@ export function getDietBreakTarget(tdee: number): number {
 export function isInDietBreak(phase: Phase, breakEndDate?: string): boolean {
   if (phase !== "diet_break") return false;
   if (!breakEndDate) return true;
-  return new Date().toISOString().split("T")[0] <= breakEndDate;
+  const _d = new Date();
+  return `${_d.getFullYear()}-${String(_d.getMonth() + 1).padStart(2, "0")}-${String(_d.getDate()).padStart(2, "0")}` <= breakEndDate;
 }

@@ -62,5 +62,6 @@ export async function updateExerciseLeaderboard(userId: string) {
     updated_at: new Date().toISOString(),
   }));
 
-  await supabase.from("exercise_leaderboard").upsert(rows, { onConflict: "user_id,exercise_id,sex" });
+  const { error } = await supabase.from("exercise_leaderboard").upsert(rows, { onConflict: "user_id,exercise_id,sex" });
+  if (error) console.error("[updateExerciseLeaderboard] upsert failed:", error.message, error.code);
 }

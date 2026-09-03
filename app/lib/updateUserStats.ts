@@ -35,7 +35,7 @@ export async function updateUserStats(userId: string) {
   let streak = 0;
   const check = new Date();
   for (let i = 0; i < 120; i++) {
-    const d = check.toISOString().split("T")[0];
+    const d = `${check.getFullYear()}-${String(check.getMonth() + 1).padStart(2, "0")}-${String(check.getDate()).padStart(2, "0")}`;
     const wd = check.getDay();
     if (restDays.has(wd)) { check.setDate(check.getDate() - 1); continue; }
     if (completedDates.has(d)) { streak++; check.setDate(check.getDate() - 1); } else break;
@@ -48,13 +48,13 @@ export async function updateUserStats(userId: string) {
 
   const { data: existing } = await supabase
     .from("user_stats")
-    .select("best_streak")
+    .select("id, best_streak")
     .eq("user_id", userId)
     .eq("sex", sex)
     .maybeSingle();
   const bestStreak = Math.max(streak, existing?.best_streak ?? 0);
 
-  await supabase.from("user_stats").upsert({
+  const payload = {
     user_id: userId,
     username,
     avatar_url: avatarUrl,
@@ -68,5 +68,13 @@ export async function updateUserStats(userId: string) {
     achievement_count: achievementCount ?? 0,
     best_streak: bestStreak,
     updated_at: new Date().toISOString(),
-  }, { onConflict: "user_id,sex" });
+  };
+
+  if (existing?.id) {
+    const { error } = await supabase.from("user_stats").update(payload).eq("id", existing.id);
+    if (error) console.error("[updateUserStats] update failed:", error.message, error.code);
+  } else {
+    const { error } = await supabase.from("user_stats").insert(payload);
+    if (error) console.error("[updateUserStats] insert failed:", error.message, error.code);
+  }
 }

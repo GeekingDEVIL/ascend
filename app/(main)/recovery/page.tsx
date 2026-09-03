@@ -21,7 +21,7 @@ function getWeekStart(d: Date): string {
   const diff = d.getDate() - day + (day === 0 ? -6 : 1);
   const monday = new Date(d);
   monday.setDate(diff);
-  return monday.toISOString().split("T")[0];
+  return `${monday.getFullYear()}-${String(monday.getMonth() + 1).padStart(2, "0")}-${String(monday.getDate()).padStart(2, "0")}`;
 }
 
 function timeAgo(hours: number | null): string {

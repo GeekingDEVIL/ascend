@@ -393,7 +393,7 @@ export function getEnergyForecast(
   for (let i = 0; i < 7; i++) {
     const d = new Date(today);
     d.setDate(d.getDate() + i);
-    const dateStr = d.toISOString().split("T")[0];
+    const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
     const { phase, cycleDay, phaseDaysRemaining } = estimateCyclePhase(lastPeriodStart, cycleLength, dateStr);
     const sub = getSubPhase(phaseDaysRemaining, phase, cycleDay);
     let energy = ENERGY_CURVE[phase][sub];
@@ -505,7 +505,8 @@ export async function fetchCycleTrainingData(userId: string): Promise<{
 
   const cycleLength = computeAdaptiveCycleLength(periodStarts);
   const lastPeriodStart = periodStarts[0];
-  const today = new Date().toISOString().split("T")[0];
+  const _now = new Date();
+  const today = `${_now.getFullYear()}-${String(_now.getMonth() + 1).padStart(2, "0")}-${String(_now.getDate()).padStart(2, "0")}`;
   const { phase, cycleDay, phaseDaysRemaining } = estimateCyclePhase(lastPeriodStart, cycleLength, today);
 
   // Fetch today's symptoms

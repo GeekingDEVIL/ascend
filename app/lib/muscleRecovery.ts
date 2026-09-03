@@ -146,7 +146,7 @@ export async function analyzeRecovery(userId: string, sex?: Sex | null): Promise
 
   const twoWeeksAgo = new Date();
   twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
-  const cutoff = twoWeeksAgo.toISOString().split("T")[0];
+  const cutoff = `${twoWeeksAgo.getFullYear()}-${String(twoWeeksAgo.getMonth() + 1).padStart(2, "0")}-${String(twoWeeksAgo.getDate()).padStart(2, "0")}`;
 
   const { data: logs } = await supabase
     .from("exercise_set_logs")
@@ -200,7 +200,7 @@ export async function analyzeRecovery(userId: string, sex?: Sex | null): Promise
   const dayOfWeek = weekStart.getDay();
   weekStart.setDate(weekStart.getDate() - ((dayOfWeek + 6) % 7));
   weekStart.setHours(0, 0, 0, 0);
-  const weekStartStr = weekStart.toISOString().split("T")[0];
+  const weekStartStr = `${weekStart.getFullYear()}-${String(weekStart.getMonth() + 1).padStart(2, "0")}-${String(weekStart.getDate()).padStart(2, "0")}`;
 
   for (const [segment, data] of Object.entries(muscleData)) {
     const recoveryTable = getBaseRecoveryHours(sex);

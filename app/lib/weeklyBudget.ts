@@ -16,7 +16,7 @@ export function calcWeeklyBudget(params: {
   intakes: { date: string; kcal: number }[];
   today?: string;
 }): WeeklyBudget {
-  const todayStr = params.today ?? new Date().toISOString().split("T")[0];
+  const todayStr = params.today ?? (() => { const _d = new Date(); return `${_d.getFullYear()}-${String(_d.getMonth() + 1).padStart(2, "0")}-${String(_d.getDate()).padStart(2, "0")}`; })();
   const todayDate = new Date(todayStr + "T12:00:00");
   const dayOfWeek = todayDate.getDay();
   const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
@@ -26,8 +26,8 @@ export function calcWeeklyBudget(params: {
   const sunday = new Date(monday);
   sunday.setDate(sunday.getDate() + 6);
 
-  const weekStart = monday.toISOString().split("T")[0];
-  const weekEnd = sunday.toISOString().split("T")[0];
+  const weekStart = `${monday.getFullYear()}-${String(monday.getMonth() + 1).padStart(2, "0")}-${String(monday.getDate()).padStart(2, "0")}`;
+  const weekEnd = `${sunday.getFullYear()}-${String(sunday.getMonth() + 1).padStart(2, "0")}-${String(sunday.getDate()).padStart(2, "0")}`;
   const weeklyTarget = params.dailyTarget * 7;
 
   const weekIntakes = params.intakes.filter((d) => d.date >= weekStart && d.date <= weekEnd);

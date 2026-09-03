@@ -87,7 +87,7 @@ function getWeekStart(dateStr: string): string {
   const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Monday start
   const monday = new Date(d);
   monday.setDate(diff);
-  return monday.toISOString().split("T")[0];
+  return `${monday.getFullYear()}-${String(monday.getMonth() + 1).padStart(2, "0")}-${String(monday.getDate()).padStart(2, "0")}`;
 }
 
 function estimateE1RM(weight: number, reps: number): number {
@@ -177,7 +177,7 @@ export async function analyzeAdaptiveVolume(
 
   const eightWeeksAgo = new Date();
   eightWeeksAgo.setDate(eightWeeksAgo.getDate() - 56);
-  const cutoff = eightWeeksAgo.toISOString().split("T")[0];
+  const cutoff = `${eightWeeksAgo.getFullYear()}-${String(eightWeeksAgo.getMonth() + 1).padStart(2, "0")}-${String(eightWeeksAgo.getDate()).padStart(2, "0")}`;
 
   // Fetch all completed set logs from the last 8 weeks
   const { data: logs } = await supabase

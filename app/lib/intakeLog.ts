@@ -72,7 +72,7 @@ export function calcAdherence(
   for (let i = 0; i < windowDays; i++) {
     const d = new Date(today);
     d.setDate(d.getDate() - i);
-    const dateStr = d.toISOString().split("T")[0];
+    const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
     if (loggedDates.has(dateStr)) count++;
   }
   return Math.round((count / windowDays) * 100);

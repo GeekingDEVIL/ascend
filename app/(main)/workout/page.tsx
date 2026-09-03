@@ -25,6 +25,7 @@ import { kgToUnit, weightInputToKg } from "../../lib/units";
 import { fetchCycleTrainingData, assessExerciseRisk, getCycleAdjustedWeight, type PhaseTrainingProfile, type EnergyForecast, type ExerciseRisk } from "../../lib/cycleTrainingEngine";
 import { findSubstitutions, type Substitution } from "../../lib/substitutionEngine";
 import { useEquipment } from "../../lib/useEquipment";
+import { autoCompleteHabits } from "../../lib/habitAutoComplete";
 
 /* ─── TYPES ─── */
 type WorkoutExercise = {
@@ -65,7 +66,7 @@ type OverloadSuggestion = {
 };
 
 /* ─── HELPERS ─── */
-function toDateString(d: Date) { return d.toISOString().split("T")[0]; }
+function toDateString(d: Date) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
 
 function formatClock(totalSeconds: number) {
     const m = Math.floor(totalSeconds / 60);
@@ -762,6 +763,9 @@ export default function WorkoutPage() {
         // Update leaderboard stats
         await updateUserStats(user.id);
         await updateExerciseLeaderboard(user.id);
+
+        // Auto-complete workout habits
+        await autoCompleteHabits(user.id, "workout_complete").catch(() => {});
 
         // Freestyle → offer to make it a recurring plan if today has none
         if (dayTitle === "Freestyle Session") {
