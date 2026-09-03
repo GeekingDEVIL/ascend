@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { TrendingUp } from "lucide-react";
+import { TrendingUp, Calendar, Target, Flame } from "lucide-react";
 import { motion } from "framer-motion";
 import SwipeNav from "../../components/ui/swipe-nav";
 import { getTrackSections } from "../../lib/navPills";
@@ -65,6 +65,39 @@ function RecoveryRing({ pct, size = 72 }: { pct: number; size?: number }) {
   );
 }
 
+const MUSCLE_GROUPS = [
+  { key: "chest", label: "Chest", color: "rgb(139 92 246)" },
+  { key: "back", label: "Back", color: "rgb(59 130 246)" },
+  { key: "shoulders", label: "Shoulders", color: "rgb(249 115 22)" },
+  { key: "arms", label: "Arms", color: "rgb(236 72 153)" },
+  { key: "core", label: "Core", color: "rgb(251 191 36)" },
+  { key: "legs", label: "Legs", color: "rgb(52 211 153)" },
+];
+
+function MuscleDistBar({ groups, total }: { groups: { key: string; count: number }[]; total: number }) {
+  if (total === 0) return null;
+  return (
+    <div className="space-y-1.5">
+      {groups.map((g) => {
+        const mg = MUSCLE_GROUPS.find((m) => m.key === g.key);
+        const pct = Math.round((g.count / total) * 100);
+        return (
+          <div key={g.key} className="flex items-center gap-2">
+            <span className="text-[9px] font-mono text-white/30 w-16 text-right shrink-0">{mg?.label ?? g.key}</span>
+            <div className="flex-1 h-2 rounded-full bg-white/[0.04] overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all duration-500"
+                style={{ width: `${Math.max(pct, 3)}%`, backgroundColor: mg?.color ?? "rgb(var(--accent-rgb))" }}
+              />
+            </div>
+            <span className="text-[9px] font-mono text-white/20 w-7 shrink-0">{pct}%</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function TrackHub() {
   const router = useRouter();
   const { user } = useAuth();
@@ -80,6 +113,10 @@ export default function TrackHub() {
     bodyWeightChange: null as number | null,
     recoveryPct: null as number | null,
     weeklyVolumes: [] as number[],
+    monthSessions: 0,
+    monthTarget: 16,
+    muscleGroups: [] as { key: string; count: number }[],
+    totalMuscleHits: 0,
   });
   const [loaded, setLoaded] = useState(false);
 
@@ -93,26 +130,29 @@ export default function TrackHub() {
       const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
       const monday = new Date(now);
       monday.setDate(now.getDate() + mondayOffset);
-      const mondayStr = toDateString(monday);
       const lastMonday = new Date(monday);
       lastMonday.setDate(lastMonday.getDate() - 7);
-      const lastMondayStr = toDateString(lastMonday);
 
       const weeksBack = 6;
       const sixWeeksAgo = new Date(monday);
       sixWeeksAgo.setDate(sixWeeksAgo.getDate() - (weeksBack - 1) * 7);
       const sixWeeksAgoStr = toDateString(sixWeeksAgo);
 
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const monthStartStr = toDateString(monthStart);
+
       const [
         { data: allSessions },
         { data: prData },
         { data: weightLogs },
         { data: lastSession },
+        { data: monthData },
       ] = await Promise.all([
         supabase.from("workout_sessions").select("id, date").eq("user_id", user.id).eq("status", "completed").eq("sex", userSex).gte("date", sixWeeksAgoStr),
         supabase.from("exercise_leaderboard").select("exercise_id").eq("user_id", user.id).eq("sex", userSex),
         supabase.from("body_weight_logs").select("weight, logged_at").eq("user_id", user.id).eq("sex", userSex).order("logged_at", { ascending: false }).limit(2),
         supabase.from("workout_sessions").select("completed_at").eq("user_id", user.id).eq("status", "completed").eq("sex", userSex).order("completed_at", { ascending: false }).limit(1),
+        supabase.from("workout_sessions").select("id").eq("user_id", user.id).eq("status", "completed").eq("sex", userSex).gte("date", monthStartStr),
       ]);
 
       if (cancelled) return;
@@ -120,13 +160,10 @@ export default function TrackHub() {
       const sessionIds = (allSessions ?? []).map((s: any) => s.id);
       let allLogs: any[] = [];
       if (sessionIds.length > 0) {
-        const { data: logs } = await supabase.from("exercise_set_logs").select("weight, reps, workout_session_id").in("workout_session_id", sessionIds);
+        const { data: logs } = await supabase.from("exercise_set_logs").select("weight, reps, workout_session_id, body_part").in("workout_session_id", sessionIds);
         allLogs = logs ?? [];
       }
       if (cancelled) return;
-
-      const sessionDateMap = new Map<string, string>();
-      (allSessions ?? []).forEach((s: any) => { sessionDateMap.set(s.id, s.date); });
 
       const weekVolumes: number[] = [];
       let thisWeekVol = 0;
@@ -164,6 +201,29 @@ export default function TrackHub() {
         rp = Math.min(100, Math.round((hoursSince / 48) * 100));
       }
 
+      const segmentMap: Record<string, string> = {
+        chest: "chest", pectorals: "chest",
+        back: "back", lats: "back", "upper back": "back", "lower back": "back", traps: "back",
+        shoulders: "shoulders", delts: "shoulders", "front delts": "shoulders", "rear delts": "shoulders", "side delts": "shoulders",
+        biceps: "arms", triceps: "arms", forearms: "arms",
+        abs: "core", core: "core", obliques: "core",
+        quads: "legs", hamstrings: "legs", glutes: "legs", calves: "legs", "hip flexors": "legs", adductors: "legs", abductors: "legs",
+      };
+
+      const muscleCounts: Record<string, number> = {};
+      let totalHits = 0;
+      for (const log of allLogs) {
+        const bp = (log.body_part ?? "").toLowerCase().trim();
+        const group = segmentMap[bp];
+        if (group) {
+          muscleCounts[group] = (muscleCounts[group] || 0) + 1;
+          totalHits++;
+        }
+      }
+      const muscleGroups = Object.entries(muscleCounts)
+        .map(([key, count]) => ({ key, count }))
+        .sort((a, b) => b.count - a.count);
+
       setStats({
         weeklyVolume: Math.round(thisWeekVol),
         lastWeekVolume: Math.round(lastWeekVol),
@@ -172,6 +232,10 @@ export default function TrackHub() {
         bodyWeightChange: bwc,
         recoveryPct: rp,
         weeklyVolumes: weekVolumes,
+        monthSessions: monthData?.length ?? 0,
+        monthTarget: 16,
+        muscleGroups,
+        totalMuscleHits: totalHits,
       });
       setLoaded(true);
     }
@@ -182,6 +246,8 @@ export default function TrackHub() {
   const volChange = stats.lastWeekVolume > 0
     ? Math.round(((stats.weeklyVolume - stats.lastWeekVolume) / stats.lastWeekVolume) * 100)
     : null;
+
+  const monthPct = Math.min(100, Math.round((stats.monthSessions / stats.monthTarget) * 100));
 
   return (
     <main className="relative min-h-screen w-full bg-[#050914] text-white pb-24 md:pb-10 overflow-x-hidden">
@@ -220,55 +286,87 @@ export default function TrackHub() {
           </div>
         </motion.div>
 
-        {/* PRs + Body Weight side-by-side */}
-        <motion.div variants={staggerItem} className="grid grid-cols-2 gap-2.5">
-          <div className="glass-card p-4">
-            <p className="text-[9px] font-mono tracking-widest text-yellow-400/60 mb-2">PRs</p>
-            <p className="text-3xl font-bold font-mono text-white/90">
+        {/* PRs + Body Weight + Frequency */}
+        <motion.div variants={staggerItem} className="grid grid-cols-3 gap-2">
+          <div className="glass-card p-3 text-center">
+            <p className="text-[8px] font-mono tracking-widest text-yellow-400/60 mb-1.5">PRs</p>
+            <p className="text-2xl font-bold font-mono text-white/90">
               {loaded ? stats.prCount : "—"}
             </p>
-            <p className="text-[10px] font-mono text-white/25 mt-1">personal records</p>
+            <p className="text-[9px] font-mono text-white/20 mt-0.5">records</p>
           </div>
-          <div className="glass-card p-4">
-            <p className="text-[9px] font-mono tracking-widest text-[rgb(var(--accent-light-rgb)/0.4)] mb-2">BODY WEIGHT</p>
-            <p className="text-3xl font-bold font-mono text-white/90">
+          <div className="glass-card p-3 text-center">
+            <p className="text-[8px] font-mono tracking-widest text-[rgb(var(--accent-light-rgb)/0.4)] mb-1.5">WEIGHT</p>
+            <p className="text-2xl font-bold font-mono text-white/90">
               {loaded && stats.bodyWeight !== null ? formatWeight(stats.bodyWeight, weightUnit, 1) : "—"}
             </p>
-            <p className={`text-[10px] font-mono mt-1 ${
+            <p className={`text-[9px] font-mono mt-0.5 ${
               stats.bodyWeightChange !== null
                 ? stats.bodyWeightChange > 0 ? "text-orange-300/50" : stats.bodyWeightChange < 0 ? "text-emerald-300/50" : "text-white/20"
                 : "text-white/20"
             }`}>
               {loaded && stats.bodyWeightChange !== null
-                ? `${stats.bodyWeightChange > 0 ? "+" : stats.bodyWeightChange < 0 ? "−" : ""}${formatWeight(Math.abs(stats.bodyWeightChange), weightUnit, 1)} ${weightUnit}`
+                ? `${stats.bodyWeightChange > 0 ? "+" : stats.bodyWeightChange < 0 ? "−" : ""}${formatWeight(Math.abs(stats.bodyWeightChange), weightUnit, 1)}`
                 : weightUnit}
             </p>
           </div>
+          <div className="glass-card p-3 text-center">
+            <p className="text-[8px] font-mono tracking-widest text-violet-400/60 mb-1.5">THIS MONTH</p>
+            <p className="text-2xl font-bold font-mono text-white/90">
+              {loaded ? stats.monthSessions : "—"}
+            </p>
+            <p className="text-[9px] font-mono text-white/20 mt-0.5">sessions</p>
+          </div>
         </motion.div>
 
-        {/* Recovery with ring */}
-        <motion.div variants={staggerItem} className="glass-card p-4">
-          <p className="text-[9px] font-mono tracking-widest text-emerald-400/60 mb-3">READINESS</p>
-          <div className="flex items-center gap-5">
+        {/* Workout Frequency bar */}
+        {loaded && (
+          <motion.div variants={staggerItem} className="glass-card p-4">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[9px] font-mono tracking-widest text-violet-400/60">MONTHLY FREQUENCY</p>
+              <span className="text-[10px] font-mono text-white/25">{stats.monthSessions}/{stats.monthTarget} target</span>
+            </div>
+            <div className="h-2 rounded-full bg-white/[0.04] overflow-hidden">
+              <motion.div
+                className="h-full rounded-full"
+                style={{ backgroundColor: monthPct >= 100 ? "rgb(52 211 153)" : "rgb(var(--accent-rgb))" }}
+                initial={{ width: 0 }}
+                animate={{ width: `${monthPct}%` }}
+                transition={{ duration: 0.8, ease: "easeOut" }}
+              />
+            </div>
+          </motion.div>
+        )}
+
+        {/* Recovery + Muscle Distribution side-by-side */}
+        <motion.div variants={staggerItem} className="grid grid-cols-5 gap-2.5">
+          {/* Recovery ring — 2 cols */}
+          <div className="col-span-2 glass-card p-4 flex flex-col items-center justify-center">
+            <p className="text-[8px] font-mono tracking-widest text-emerald-400/60 mb-2">READINESS</p>
             {loaded && stats.recoveryPct !== null ? (
-              <RecoveryRing pct={stats.recoveryPct} />
+              <RecoveryRing pct={stats.recoveryPct} size={64} />
             ) : (
-              <div className="w-[72px] h-[72px] rounded-full border-4 border-white/[0.04] flex items-center justify-center">
+              <div className="w-16 h-16 rounded-full border-4 border-white/[0.04] flex items-center justify-center">
                 <span className="text-sm font-mono text-white/20">—</span>
               </div>
             )}
-            <div>
-              <p className="text-sm font-medium text-white/70">
-                {loaded && stats.recoveryPct !== null
-                  ? stats.recoveryPct >= 80 ? "Good recovery" : stats.recoveryPct >= 50 ? "Partially recovered" : "Rest suggested"
-                  : "No data yet"}
+            <p className="text-[9px] font-mono text-white/20 mt-2 text-center">
+              {loaded && stats.recoveryPct !== null
+                ? stats.recoveryPct >= 80 ? "Ready" : stats.recoveryPct >= 50 ? "Moderate" : "Rest"
+                : "No data"}
+            </p>
+          </div>
+
+          {/* Muscle distribution — 3 cols */}
+          <div className="col-span-3 glass-card p-4">
+            <p className="text-[8px] font-mono tracking-widest text-blue-400/60 mb-3">MUSCLE DISTRIBUTION</p>
+            {loaded && stats.muscleGroups.length > 0 ? (
+              <MuscleDistBar groups={stats.muscleGroups} total={stats.totalMuscleHits} />
+            ) : (
+              <p className="text-[10px] font-mono text-white/15 text-center py-6">
+                {loaded ? "Train to see distribution" : "Loading..."}
               </p>
-              <p className="text-[10px] font-mono text-white/25 mt-1">
-                {loaded && stats.recoveryPct !== null
-                  ? stats.recoveryPct >= 80 ? "Ready to train hard" : stats.recoveryPct >= 50 ? "Light session OK" : "Take it easy today"
-                  : "Complete a workout to start tracking"}
-              </p>
-            </div>
+            )}
           </div>
         </motion.div>
 

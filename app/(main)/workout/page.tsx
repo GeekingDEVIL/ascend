@@ -9,7 +9,7 @@ import { useAuth } from "../../lib/AuthProvider";
 import CubeLoader from "../../components/ui/cube-loader";
 import { calculateSessionXP, type XPBreakdown } from "../../lib/xpEngine";
 import { generateWarmupSets } from "../../lib/warmupSets";
-import StretchingStickman from "../../components/ui/stretching-stickman";
+
 import { computeLevel, getRank } from "../../lib/levelSystem";
 import { checkAndAwardAchievements } from "../../lib/achievements";
 import { updateUserStats } from "../../lib/updateUserStats";
@@ -166,6 +166,8 @@ export default function WorkoutPage() {
     const [expandedId, setExpandedId] = useState<string | null>(null);
     const [restRemaining, setRestRemaining] = useState<number | null>(null);
     const [restPaused, setRestPaused] = useState(false);
+    const [sessionPaused, setSessionPaused] = useState(false);
+    const [pausedElapsed, setPausedElapsed] = useState(0);
     const [swapTargetId, setSwapTargetId] = useState<string | null>(null);
     const [showAddModal, setShowAddModal] = useState(false);
     const [showEndConfirm, setShowEndConfirm] = useState(false);
@@ -358,12 +360,21 @@ export default function WorkoutPage() {
     useEffect(() => { load(); }, [load]);
 
     useEffect(() => {
-        if (status !== "active" || !startedAt) return;
-        const tick = () => setElapsed(Math.floor((Date.now() - startedAt) / 1000));
+        if (status !== "active" || !startedAt || sessionPaused) return;
+        const tick = () => setElapsed(Math.floor((Date.now() - startedAt) / 1000) - pausedElapsed);
         tick();
         const id = setInterval(tick, 1000);
         return () => clearInterval(id);
-    }, [status, startedAt]);
+    }, [status, startedAt, sessionPaused, pausedElapsed]);
+
+    const pauseStartRef = useRef<number | null>(null);
+    useEffect(() => {
+        if (sessionPaused) { pauseStartRef.current = Date.now(); }
+        else if (pauseStartRef.current) {
+            setPausedElapsed((prev) => prev + Math.floor((Date.now() - pauseStartRef.current!) / 1000));
+            pauseStartRef.current = null;
+        }
+    }, [sessionPaused]);
 
     useEffect(() => {
         if (restRemaining === null || restPaused) return;
@@ -520,7 +531,10 @@ export default function WorkoutPage() {
         if (logId) { await supabase.from("exercise_set_logs").update(payload).eq("id", logId); }
         else { const { data } = await supabase.from("exercise_set_logs").insert(payload).select().single(); logId = data?.id ?? null; }
         setLogs((p) => ({ ...p, [ex.id]: p[ex.id].map((s) => (s.index === idx ? { ...s, logId } : s)) }));
-        // Don't auto-start rest timer — user taps to start if they want
+
+        const restSec = ex.rest_seconds ?? 90;
+        const adjustedRest = Math.round(restSec * (cycleProfile?.restMultiplier ?? 1));
+        if (adjustedRest > 0) { setRestRemaining(adjustedRest); setRestPaused(false); }
     }
 
     async function propagateToTemplate(orderIdx: number, newExId: string) {
@@ -641,7 +655,7 @@ export default function WorkoutPage() {
         const workingSets = allSets.filter((s) => !s.is_warmup);
         const totalSets = workingSets.length;
         const totalVolume = workingSets.reduce((sum, s) => sum + (Number(s.weight) || 0) * (Number(s.reps) || 0), 0);
-        const dur = Math.floor((Date.now() - startedAt) / 1000);
+        const dur = Math.floor((Date.now() - startedAt) / 1000) - pausedElapsed;
         const totalPlanned = exercisesList.reduce((sum, e) => sum + e.target_sets, 0);
         const setsData = workingSets.map((s) => { const ex = exercisesList.find((e) => logs[e.id]?.includes(s)); return { exercise_id: ex?.exercise_id ?? "", weight: Number(s.weight) || null, reps: Number(s.reps) || null }; });
         const xp = await calculateSessionXP(user.id, sessionId, setsData, totalPlanned, prCount, userSex);
@@ -1396,22 +1410,22 @@ export default function WorkoutPage() {
                                             )}
 
                                             {/* Swap / Skip / Remove / Warm-up */}
-                                            <div className="px-4 pt-2.5 pb-1 flex items-center gap-4">
-                                                <button onClick={() => setSwapTargetId(ex.id)} className="flex items-center gap-1.5 text-white/15 text-[10px] font-mono hover:text-white/40 transition">
-                                                    <RefreshCw size={10} /> Swap
+                                            <div className="px-4 pt-2.5 pb-1 flex items-center gap-3">
+                                                <button onClick={() => setSwapTargetId(ex.id)} className="flex items-center gap-1.5 text-white/40 text-[10px] font-mono hover:text-emerald-400 active:scale-95 transition px-2 py-1.5 rounded-md hover:bg-emerald-400/10">
+                                                    <RefreshCw size={11} /> Swap
                                                 </button>
-                                                <button onClick={() => skipExercise(ex.id)} className="flex items-center gap-1.5 text-white/15 text-[10px] font-mono hover:text-amber-400/60 transition">
-                                                    <SkipForward size={10} /> Skip
+                                                <button onClick={() => skipExercise(ex.id)} className="flex items-center gap-1.5 text-white/40 text-[10px] font-mono hover:text-amber-400 active:scale-95 transition px-2 py-1.5 rounded-md hover:bg-amber-400/10">
+                                                    <SkipForward size={11} /> Skip
                                                 </button>
                                                 {done === 0 && (
-                                                    <button onClick={() => removeExercise(ex.id)} className="flex items-center gap-1.5 text-white/15 text-[10px] font-mono hover:text-red-400/60 transition">
-                                                        <X size={10} /> Remove
+                                                    <button onClick={() => removeExercise(ex.id)} className="flex items-center gap-1.5 text-white/40 text-[10px] font-mono hover:text-red-400 active:scale-95 transition px-2 py-1.5 rounded-md hover:bg-red-400/10">
+                                                        <X size={11} /> Remove
                                                     </button>
                                                 )}
                                                 {!ex.isCardio && !ex.isBodyweight && (
-                                                    <button onClick={() => toggleWarmup(ex)} className={`flex items-center gap-1.5 text-[10px] font-mono transition ml-auto ${warmupExercises.has(ex.id) ? "text-amber-400/70 hover:text-amber-400" : "text-white/15 hover:text-amber-400/60"}`}>
-                                                        {warmupExercises.has(ex.id) ? <StretchingStickman size={18} color="#fbbf24" /> : <Flame size={10} />}
-                                                        {warmupExercises.has(ex.id) ? "Remove warm-up" : "Warm-up"}
+                                                    <button onClick={() => toggleWarmup(ex)} className={`flex items-center gap-1.5 text-[10px] font-mono transition ml-auto px-2 py-1.5 rounded-md active:scale-95 ${warmupExercises.has(ex.id) ? "text-amber-400 bg-amber-400/10 hover:bg-amber-400/15" : "text-white/40 hover:text-amber-400 hover:bg-amber-400/10"}`}>
+                                                        <Flame size={11} />
+                                                        {warmupExercises.has(ex.id) ? "Remove Warm-up" : "Add Warm-up"}
                                                     </button>
                                                 )}
                                             </div>
@@ -1599,18 +1613,40 @@ export default function WorkoutPage() {
             )}
 
             {/* ── STICKY ACTION BAR ── */}
-            {status === "active" && restRemaining === null && completedCount > 0 && (
+            {status === "active" && restRemaining === null && (
                 <div className="fixed bottom-16 md:bottom-6 left-0 right-0 md:left-1/2 md:-translate-x-1/2 md:max-w-sm md:rounded-xl z-20">
                     <div className="border-t md:border border-white/[0.06] bg-[#080d18]/95 backdrop-blur-xl px-5 py-3 md:rounded-xl flex items-center gap-2">
-                        <button
-                            onClick={() => { setRestRemaining(Math.round(90 * (cycleProfile?.restMultiplier ?? 1))); setRestPaused(false); }}
-                            className="flex-1 text-[10px] font-mono font-medium py-3 rounded-xl border border-white/[0.08] text-white/40 hover:text-white/70 transition"
-                        >
-                            Rest Timer
-                        </button>
-                        <button onClick={() => setShowEndConfirm(true)} className="flex-1 text-sm font-semibold py-3 rounded-xl bg-[rgb(var(--accent-rgb))] text-black hover:brightness-110 transition">
-                            Complete · {completedCount} sets
-                        </button>
+                        {!sessionPaused ? (
+                            <>
+                                <button
+                                    onClick={() => {
+                                        const curEx = exercisesList.find((e) => e.id === expandedId);
+                                        const sec = curEx?.rest_seconds ?? 90;
+                                        setRestRemaining(Math.round(sec * (cycleProfile?.restMultiplier ?? 1)));
+                                        setRestPaused(false);
+                                    }}
+                                    className="text-[10px] font-mono font-medium py-3 px-3 rounded-xl border border-white/[0.08] text-white/40 hover:text-white/70 transition"
+                                >
+                                    <Timer size={12} className="inline mr-1" />Rest
+                                </button>
+                                <button
+                                    onClick={() => setSessionPaused(true)}
+                                    className="text-[10px] font-mono font-medium py-3 px-3 rounded-xl border border-white/[0.08] text-white/40 hover:text-white/70 transition"
+                                >
+                                    <Pause size={12} className="inline mr-1" />Pause
+                                </button>
+                                <button onClick={() => setShowEndConfirm(true)} className="flex-1 text-sm font-semibold py-3 rounded-xl bg-[rgb(var(--accent-rgb))] text-black hover:brightness-110 transition">
+                                    {completedCount > 0 ? `Complete · ${completedCount} sets` : "End Session"}
+                                </button>
+                            </>
+                        ) : (
+                            <button
+                                onClick={() => setSessionPaused(false)}
+                                className="flex-1 text-sm font-semibold py-3 rounded-xl bg-amber-500 text-black hover:brightness-110 transition flex items-center justify-center gap-2"
+                            >
+                                <Play size={14} /> Resume Session
+                            </button>
+                        )}
                     </div>
                 </div>
             )}
@@ -1626,7 +1662,11 @@ export default function WorkoutPage() {
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
                     <div className="w-full max-w-sm rounded-2xl border border-white/[0.08] bg-[#080d18] p-5">
                         <p className="text-sm font-semibold text-white/85 mb-2">End workout?</p>
-                        {completedCount < totalPlanned ? (
+                        {completedCount === 0 ? (
+                            <p className="text-[11px] text-white/35 mb-4">
+                                No sets completed. This session will be saved as ended early.
+                            </p>
+                        ) : completedCount < totalPlanned ? (
                             <p className="text-[11px] text-white/35 mb-4">
                                 You&apos;ve completed {completedCount} of {totalPlanned} planned sets. Unfinished sets won&apos;t be logged.
                             </p>
