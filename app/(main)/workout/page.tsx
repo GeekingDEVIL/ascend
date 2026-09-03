@@ -1112,8 +1112,8 @@ export default function WorkoutPage() {
                     <p className="text-[10px] font-mono text-white/20 text-center mb-4">Nice work! You can start another session or come back tomorrow.</p>
 
                     <div className="flex gap-2">
-                        <button onClick={() => router.push("/")} className="flex-1 text-sm font-medium py-3 rounded-xl border border-white/[0.08] text-white/50 hover:text-white/80 hover:bg-white/[0.05] transition">
-                            Dashboard
+                        <button onClick={() => router.push("/schedule")} className="flex-1 text-sm font-medium py-3 rounded-xl border border-white/[0.08] text-white/50 hover:text-white/80 hover:bg-white/[0.05] transition">
+                            <Calendar size={14} className="inline -mt-0.5 mr-1.5" />Schedule
                         </button>
                         <button onClick={() => router.push("/progress")} className="flex-1 text-sm font-semibold py-3 rounded-xl bg-[rgb(var(--accent-rgb))] text-black hover:brightness-110 transition">
                             View Progress
