@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, useRef } from "react";
 import { createPortal } from "react-dom";
-import { Search, X, SlidersHorizontal, ChevronDown, Star, Clock, Flame, Plus } from "lucide-react";
+import { Search, X, SlidersHorizontal, ChevronDown, Star, Clock, Flame, Plus, Dumbbell } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../lib/AuthProvider";
 import { useSex } from "../lib/useSex";
@@ -58,11 +58,13 @@ function Chip({ active, children, onClick, size = "sm" }: { active: boolean; chi
   );
 }
 
-function Tag({ children, variant = "default" }: { children: React.ReactNode; variant?: "default" | "muted" | "accent" }) {
-  const classes = {
+function Tag({ children, variant = "default" }: { children: React.ReactNode; variant?: "default" | "muted" | "accent" | "owned" | "unowned" }) {
+  const classes: Record<string, string> = {
     default: "bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))] border-[rgb(var(--accent-rgb)/0.2)]",
     muted: "bg-white/5 text-white/40 border-white/10",
     accent: "bg-emerald-400/10 text-emerald-300 border-emerald-400/20",
+    owned: "bg-emerald-400/10 text-emerald-300/80 border-emerald-400/20",
+    unowned: "bg-orange-400/5 text-orange-300/40 border-orange-400/10",
   };
   return (
     <span className={`text-[10px] font-mono px-2 py-0.5 rounded border ${classes[variant]}`}>
@@ -116,7 +118,7 @@ export default function AddExerciseModal({
   const [showFilters, setShowFilters] = useState(false);
   const [recentExerciseIds, setRecentExerciseIds] = useState<Set<string>>(new Set());
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
-  const [sortBy, setSortBy] = useState<"name" | "recent" | "popular">("name");
+  const [sortBy, setSortBy] = useState<"name" | "recent" | "popular" | "equipment">("name");
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState("");
@@ -210,6 +212,13 @@ export default function AddExerciseModal({
           const aRecent = recentExerciseIds.has(a.id) ? 1 : 0;
           const bRecent = recentExerciseIds.has(b.id) ? 1 : 0;
           if (aRecent !== bRecent) return bRecent - aRecent;
+          return a.name.localeCompare(b.name);
+        });
+      } else if (sortBy === "equipment") {
+        base.sort((a, b) => {
+          const aOwned = a.equipment === "Bodyweight" || equipmentAccess.includes(a.equipment) ? 1 : 0;
+          const bOwned = b.equipment === "Bodyweight" || equipmentAccess.includes(b.equipment) ? 1 : 0;
+          if (aOwned !== bOwned) return bOwned - aOwned;
           return a.name.localeCompare(b.name);
         });
       }
@@ -407,6 +416,11 @@ export default function AddExerciseModal({
               <button onClick={() => setSortBy("popular")} className={`flex items-center gap-1 text-[10px] font-mono px-2 py-1 rounded border transition ${sortBy === "popular" ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/[0.06] text-white/30 hover:text-white/60"}`}>
                 <Flame size={10} /> Popular
               </button>
+              {hasEquipmentProfile && (
+                <button onClick={() => setSortBy("equipment")} className={`flex items-center gap-1 text-[10px] font-mono px-2 py-1 rounded border transition ${sortBy === "equipment" ? "border-emerald-400/40 bg-emerald-400/10 text-emerald-300" : "border-white/[0.06] text-white/30 hover:text-white/60"}`}>
+                  <Dumbbell size={10} /> My Gear
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -547,7 +561,7 @@ export default function AddExerciseModal({
                     </div>
                     <div className="flex flex-wrap gap-1.5">
                       <Tag>{ex.primary_muscle}</Tag>
-                      <Tag variant="muted">{ex.equipment}</Tag>
+                      <Tag variant={hasEquipmentProfile ? (ex.equipment === "Bodyweight" || equipmentAccess.includes(ex.equipment) ? "owned" : "unowned") : "muted"}>{ex.equipment}</Tag>
                       <Tag variant="muted">{ex.category}</Tag>
                       {isRecent && <Tag variant="accent">Recent</Tag>}
                     </div>

@@ -22,6 +22,8 @@ import { getTrainSections } from "../../lib/navPills";
 import { useModules } from "../../lib/useModules";
 import { kgToUnit, weightInputToKg } from "../../lib/units";
 import { fetchCycleTrainingData, assessExerciseRisk, getCycleAdjustedWeight, type PhaseTrainingProfile, type EnergyForecast, type ExerciseRisk } from "../../lib/cycleTrainingEngine";
+import { findSubstitutions, type Substitution } from "../../lib/substitutionEngine";
+import { useEquipment } from "../../lib/useEquipment";
 
 /* ─── TYPES ─── */
 type WorkoutExercise = {
@@ -53,7 +55,7 @@ type SetEntry = {
     warmup_label?: string;
 };
 
-type SessionStatus = "loading" | "not_started" | "active" | "completed" | "completed_today" | "rest_day" | "no_plan" | "freestyle";
+type SessionStatus = "loading" | "not_started" | "active" | "completed" | "rest_day" | "no_plan" | "freestyle";
 
 type OverloadSuggestion = {
     type: "weight_up" | "reps_up" | "first_time" | "maintain";
@@ -187,7 +189,9 @@ export default function WorkoutPage() {
     const [cycleProfile, setCycleProfile] = useState<PhaseTrainingProfile | null>(null);
     const [energyForecast, setEnergyForecast] = useState<EnergyForecast[]>([]);
     const [exerciseRisks, setExerciseRisks] = useState<Record<string, ExerciseRisk>>({});
+    const [substitutions, setSubstitutions] = useState<Record<string, Substitution[]>>({});
     const { sex: userSex } = useSex();
+    const { equipmentAccess } = useEquipment();
     const weightUnit = useUnits();
 
     const today = toDateString(new Date());
@@ -288,30 +292,9 @@ export default function WorkoutPage() {
             .eq("sex", sex)
             .eq("status", "completed")
             .order("created_at", { ascending: true });
-        if (completedSessions && completedSessions.length > 0) {
-            setDayTitle(planTitle);
-            const { data: statsRow } = await supabase.from("user_stats").select("total_xp").eq("user_id", user.id).eq("sex", sex).maybeSingle();
-            const curLevel = computeLevel(statsRow?.total_xp ?? 0).level;
-            const allSessions = completedSessions.map((s: any) => ({
-                id: s.id,
-                duration: s.duration_seconds || 0,
-                sets: s.total_sets || 0,
-                volume: Number(s.total_volume) || 0,
-                xp: s.xp_earned || 0,
-            }));
-            setTodaySessions(allSessions);
-            const latest = completedSessions[completedSessions.length - 1];
-            const totalXp = allSessions.reduce((sum: number, s: any) => sum + s.xp, 0);
-            setSummary({
-                duration: latest.duration_seconds || 0,
-                sets: latest.total_sets || 0,
-                volume: Number(latest.total_volume) || 0,
-                xpBreakdown: { total: latest.xp_earned || 0, base: 0, setCompletion: 0, completionBonus: 0, prBonus: 0, progressionBonus: 0, consistencyBonus: 0, details: [] } as XPBreakdown,
-                level: curLevel,
-                rankName: getRank(curLevel).name,
-            });
+        if (completedSessions && completedSessions.length > 0 && completedSessions.length >= MAX_SESSIONS_PER_DAY) {
             localStorage.removeItem("ascend_active_session");
-            setStatus("completed_today");
+            router.replace("/train");
             return;
         }
 
@@ -388,6 +371,24 @@ export default function WorkoutPage() {
         const id = setTimeout(() => setRestRemaining((r) => (r !== null ? r - 1 : null)), 1000);
         return () => clearTimeout(id);
     }, [restRemaining, restPaused]);
+
+    useEffect(() => {
+        if (equipmentAccess.length === 0 || exercisesList.length === 0) return;
+        const ownedSet = new Set([...equipmentAccess, "Bodyweight"]);
+        const unavailable = exercisesList.filter((ex) => !ownedSet.has(ex.equipment));
+        if (unavailable.length === 0) { setSubstitutions({}); return; }
+        const existingIds = new Set(exercisesList.map((e) => e.exercise_id));
+        Promise.all(
+            unavailable.map(async (ex) => {
+                const subs = await findSubstitutions(ex.exercise_id, equipmentAccess, { limit: 3, excludeIds: existingIds });
+                return [ex.id, subs] as const;
+            }),
+        ).then((results) => {
+            const map: Record<string, Substitution[]> = {};
+            for (const [id, subs] of results) if (subs.length > 0) map[id] = subs;
+            setSubstitutions(map);
+        });
+    }, [exercisesList, equipmentAccess]);
 
     /* ─── ACTIONS ─── */
     async function startWorkout() {
@@ -492,7 +493,7 @@ export default function WorkoutPage() {
         const prev = data?.[0]?.weight ?? 0;
         if (w > prev && prev > 0) {
             setPrCount((c) => c + 1);
-            await supabase.from("notifications").insert({ user_id: user.id, type: "new_pr", title: "NEW PERSONAL RECORD", message: `${name}: ${kgToUnit(w, weightUnit)}${weightUnit} × ${r} — previous best was ${kgToUnit(prev, weightUnit)}${weightUnit}`, metadata: { exercise_name: name, weight: w, reps: r, previous_best: prev } });
+            await supabase.from("notifications").insert({ user_id: user.id, type: "new_pr", title: "NEW PERSONAL RECORD", message: `${name}: ${kgToUnit(w, weightUnit)}${weightUnit} × ${r} — previous best was ${kgToUnit(prev, weightUnit)}${weightUnit}`, metadata: { exercise_name: name, weight: w, reps: r, previous_best: prev }, sex: userSex });
         }
     }
 
@@ -646,7 +647,7 @@ export default function WorkoutPage() {
         const xp = await calculateSessionXP(user.id, sessionId, setsData, totalPlanned, prCount, userSex);
 
         await supabase.from("workout_sessions").update({ status: "completed", completed_at: new Date().toISOString(), duration_seconds: dur, total_volume: totalVolume, total_sets: totalSets, xp_earned: xp.total, ...(cycleProfile ? { cycle_phase: cycleProfile.phase, cycle_day: cycleProfile.cycleDay } : {}) }).eq("id", sessionId);
-        await supabase.from("notifications").insert({ user_id: user.id, type: "workout_complete", title: "WORKOUT COMPLETE", message: `${dayTitle} — ${totalSets} sets, ${Math.round(kgToUnit(totalVolume, weightUnit)).toLocaleString()}${weightUnit} volume, +${xp.total} XP`, metadata: { sets: totalSets, volume: totalVolume, xp: xp.total } });
+        await supabase.from("notifications").insert({ user_id: user.id, type: "workout_complete", title: "WORKOUT COMPLETE", message: `${dayTitle} — ${totalSets} sets, ${Math.round(kgToUnit(totalVolume, weightUnit)).toLocaleString()}${weightUnit} volume, +${xp.total} XP`, metadata: { sets: totalSets, volume: totalVolume, xp: xp.total }, sex: userSex });
 
         // Streak + Level checks
         const { data: sessions } = await supabase.from("workout_sessions").select("date").eq("user_id", user.id).eq("status", "completed").eq("sex", userSex).order("date", { ascending: false }).limit(120);
@@ -656,7 +657,7 @@ export default function WorkoutPage() {
             const dates = new Set(sessions.map((s: any) => s.date));
             let streak = 0; const check = new Date(today + "T00:00:00");
             for (let i = 0; i < 120; i++) { const d = toDateString(check); const wd = check.getDay(); if (restDays.has(wd)) { check.setDate(check.getDate() - 1); continue; } if (dates.has(d)) { streak++; check.setDate(check.getDate() - 1); } else break; }
-            if ([7, 14, 30, 60, 100].includes(streak)) await supabase.from("notifications").insert({ user_id: user.id, type: "streak_milestone", title: `${streak}-DAY STREAK`, message: `Consistent for ${streak} days!`, metadata: { streak } });
+            if ([7, 14, 30, 60, 100].includes(streak)) await supabase.from("notifications").insert({ user_id: user.id, type: "streak_milestone", title: `${streak}-DAY STREAK`, message: `Consistent for ${streak} days!`, metadata: { streak }, sex: userSex });
         }
 
         // Level up check
@@ -669,6 +670,7 @@ export default function WorkoutPage() {
                 user_id: user.id, type: "level_up", title: "LEVEL UP",
                 message: `You've reached Level ${lvlAfter}!`,
                 metadata: { level: lvlAfter, total_xp: totalXp },
+                sex: userSex,
             });
         }
 
@@ -1040,78 +1042,6 @@ export default function WorkoutPage() {
         </main>
     );
 
-    if (status === "completed_today") {
-        return (
-            <main className="min-h-screen bg-[#050914] text-white flex items-center justify-center p-4 relative">
-                <div className="relative z-10 w-full max-w-xl">
-                    <CardPanel className="p-5">
-                        <div className="text-center mb-5">
-                            <div className="w-12 h-12 mx-auto mb-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-                                <Check size={22} className="text-emerald-400" />
-                            </div>
-                            <p className="text-[9px] font-mono tracking-widest text-white/25 mb-1">COMPLETED TODAY</p>
-                            <p className="text-lg font-bold text-white/90">{dayTitle}</p>
-                        </div>
-
-                        {todaySessions.length > 1 ? (
-                            <div className="space-y-2 mb-4">
-                                {todaySessions.map((s, i) => (
-                                    <div key={s.id} className="glass-card p-3">
-                                        <p className="text-[8px] font-mono tracking-widest text-white/25 mb-2">SESSION {i + 1}</p>
-                                        <div className="grid grid-cols-4 gap-2">
-                                            <StatCell label="TIME" value={formatClock(s.duration)} />
-                                            <StatCell label="SETS" value={String(s.sets)} />
-                                            <StatCell label="VOL" value={`${Math.round(s.volume).toLocaleString()}`} />
-                                            <StatCell label="XP" value={`+${s.xp}`} accent />
-                                        </div>
-                                    </div>
-                                ))}
-                                <div className="rounded-xl border border-[rgb(var(--accent-rgb)/0.15)] bg-[rgb(var(--accent-rgb)/0.05)] p-3">
-                                    <p className="text-[8px] font-mono tracking-widest text-[rgb(var(--accent-rgb)/0.5)] mb-2">TODAY&apos;S TOTAL</p>
-                                    <div className="grid grid-cols-3 gap-2">
-                                        <StatCell label="SESSIONS" value={String(todaySessions.length)} />
-                                        <StatCell label="TOTAL SETS" value={String(todaySessions.reduce((a, s) => a + s.sets, 0))} />
-                                        <StatCell label="TOTAL XP" value={`+${todaySessions.reduce((a, s) => a + s.xp, 0)}`} accent />
-                                    </div>
-                                </div>
-                            </div>
-                        ) : summary ? (
-                            <div className="grid grid-cols-2 gap-2 mb-4">
-                                <StatCell label="DURATION" value={formatClock(summary.duration)} />
-                                <StatCell label="SETS" value={String(summary.sets)} />
-                                <StatCell label="VOLUME" value={`${Math.round(kgToUnit(summary.volume, weightUnit)).toLocaleString()} ${weightUnit}`} />
-                                <StatCell label="XP EARNED" value={`+${summary.xpBreakdown.total}`} accent />
-                            </div>
-                        ) : null}
-
-                        <p className="text-[10px] font-mono text-white/20 text-center mb-4">Nice work! You can start another session or come back tomorrow.</p>
-
-                        <div className="flex gap-2">
-                            <button onClick={() => router.push("/")} className="flex-1 text-sm font-medium py-3 rounded-xl border border-white/[0.08] text-white/50 hover:text-white/80 hover:bg-white/[0.05] transition">
-                                Dashboard
-                            </button>
-                            <button onClick={() => router.push("/progress")} className="flex-1 text-sm font-semibold py-3 rounded-xl bg-[rgb(var(--accent-rgb))] text-black hover:brightness-110 transition">
-                                View Progress
-                            </button>
-                        </div>
-                        {todaySessions.length >= MAX_SESSIONS_PER_DAY ? (
-                            <p className="w-full mt-2 text-[10px] font-mono py-2.5 text-center text-white/20">
-                                Daily session limit reached ({MAX_SESSIONS_PER_DAY}/{MAX_SESSIONS_PER_DAY})
-                            </p>
-                        ) : (
-                            <button
-                                onClick={() => { setSummary(null); setSessionId(null); setStatus("not_started"); }}
-                                className="w-full mt-2 text-[10px] font-mono py-2.5 rounded-xl border border-white/[0.06] text-white/30 hover:text-white/60 hover:border-white/15 transition"
-                            >
-                                Start another workout ({todaySessions.length}/{MAX_SESSIONS_PER_DAY})
-                            </button>
-                        )}
-                    </CardPanel>
-                </div>
-            </main>
-        );
-    }
-
     // ── NOT STARTED / ACTIVE ──
     return (
         <main className="min-h-screen bg-[#050914] text-white pb-36 md:pb-10 relative">
@@ -1304,7 +1234,12 @@ export default function WorkoutPage() {
                                         <div className="flex items-center gap-3">
                                             <span className="text-[10px] font-mono text-white/15 w-5 shrink-0">{String(i + 1).padStart(2, "0")}</span>
                                             <div className="flex-1 min-w-0">
-                                                <p className="text-[13px] font-medium text-white/80 truncate">{ex.name}</p>
+                                                <div className="flex items-center gap-1.5">
+                                                    <p className="text-[13px] font-medium text-white/80 truncate">{ex.name}</p>
+                                                    {substitutions[ex.id] && (
+                                                        <span className="shrink-0 text-[8px] font-mono px-1.5 py-0.5 rounded bg-orange-400/10 text-orange-300/60 border border-orange-400/15">NO GEAR</span>
+                                                    )}
+                                                </div>
                                                 <p className="text-[9px] font-mono text-white/25">{ex.body_segment}</p>
                                             </div>
                                             <div className="flex items-center gap-3 shrink-0">
@@ -1333,6 +1268,24 @@ export default function WorkoutPage() {
                                             <p className="text-[9px] font-mono text-amber-400/50 mt-1 ml-8">
                                                 ⚠ {exerciseRisks[ex.id].reason}
                                             </p>
+                                        )}
+                                        {substitutions[ex.id] && (
+                                            <div className="ml-8 mt-2 space-y-1">
+                                                <p className="text-[9px] font-mono text-orange-300/50">
+                                                    <Dumbbell size={9} className="inline mr-1" />{ex.equipment} not in your gear — swap before starting:
+                                                </p>
+                                                {substitutions[ex.id].slice(0, 2).map((sub) => (
+                                                    <button
+                                                        key={sub.exercise.id}
+                                                        onClick={() => handleSwap(ex, { id: sub.exercise.id, name: sub.exercise.name })}
+                                                        className="flex items-center gap-2 text-[10px] font-mono text-white/40 hover:text-emerald-300/80 transition"
+                                                    >
+                                                        <RefreshCw size={9} />
+                                                        <span>{sub.exercise.name}</span>
+                                                        <span className="text-white/20">({sub.reason})</span>
+                                                    </button>
+                                                ))}
+                                            </div>
                                         )}
                                     </div>
                                 );
@@ -1364,7 +1317,12 @@ export default function WorkoutPage() {
                                             {isSkipped ? <Ban size={12} /> : allDone ? <Check size={14} /> : String(i + 1).padStart(2, "0")}
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <p className={`text-[13px] font-medium truncate ${isSkipped ? "text-white/30 line-through" : "text-white/80"}`}>{ex.name}</p>
+                                            <div className="flex items-center gap-1.5">
+                                                <p className={`text-[13px] font-medium truncate ${isSkipped ? "text-white/30 line-through" : "text-white/80"}`}>{ex.name}</p>
+                                                {substitutions[ex.id] && !isSkipped && (
+                                                    <span className="shrink-0 text-[8px] font-mono px-1.5 py-0.5 rounded bg-orange-400/10 text-orange-300/60 border border-orange-400/15">NO GEAR</span>
+                                                )}
+                                            </div>
                                             <p className="text-[9px] font-mono text-white/25">
                                                 {isSkipped ? "Skipped" : `${done}/${workingSetsOnly.length} sets${warmupSetsOnly.length > 0 ? ` + ${warmupDone}/${warmupSetsOnly.length} warm-up` : ""}${last ? ` · Last: ${last.weight != null ? kgToUnit(last.weight, weightUnit) : "—"}${ex.isCardio ? "" : ex.isBodyweight ? " BW" : weightUnit} × ${last.reps ?? "—"}` : ""}`}
                                             </p>
@@ -1411,6 +1369,31 @@ export default function WorkoutPage() {
                                                     </div>
                                                 ) : null;
                                             })()}
+
+                                            {/* Smart substitution suggestions */}
+                                            {substitutions[ex.id] && (
+                                                <div className="mx-4 mt-2 rounded-lg bg-orange-400/[0.04] border border-orange-400/10 p-3">
+                                                    <p className="text-[9px] font-mono text-orange-300/60 mb-2">
+                                                        <Dumbbell size={9} className="inline mr-1" />
+                                                        {ex.equipment} not in your gear — try:
+                                                    </p>
+                                                    <div className="space-y-1.5">
+                                                        {substitutions[ex.id].map((sub) => (
+                                                            <button
+                                                                key={sub.exercise.id}
+                                                                onClick={() => handleSwap(ex, { id: sub.exercise.id, name: sub.exercise.name })}
+                                                                className="w-full flex items-center justify-between gap-2 rounded-md bg-white/[0.03] border border-white/[0.06] px-3 py-2 hover:border-emerald-400/20 hover:bg-emerald-400/[0.04] transition group"
+                                                            >
+                                                                <div className="min-w-0">
+                                                                    <p className="text-xs text-white/80 font-medium truncate">{sub.exercise.name}</p>
+                                                                    <p className="text-[9px] font-mono text-white/30">{sub.reason} · {sub.exercise.equipment}</p>
+                                                                </div>
+                                                                <span className="text-[9px] font-mono text-emerald-400/50 group-hover:text-emerald-400/80 shrink-0">Swap →</span>
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
 
                                             {/* Swap / Skip / Remove / Warm-up */}
                                             <div className="px-4 pt-2.5 pb-1 flex items-center gap-4">

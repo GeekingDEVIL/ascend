@@ -2,6 +2,9 @@ import {
   Dumbbell, TrendingUp, Zap, UtensilsCrossed, Droplets,
   HeartPulse, Sparkles, Users, Swords, Wind, Activity,
   GlassWater, type LucideIcon,
+  Flame, Shield, Scroll, Crown, Palette, CalendarClock,
+  Camera, Barcode, Moon, Brain, Tv,
+  Watch, PersonStanding,
 } from "lucide-react";
 
 export type ModuleKey =
@@ -9,7 +12,11 @@ export type ModuleKey =
   | "nutrition" | "cycle" | "recovery"
   | "ai_coach" | "social"
   | "running" | "martial_arts" | "yoga"
-  | "wellness";
+  | "wellness"
+  | "habits" | "guilds" | "challenges"
+  | "daily_quests" | "character_sheet" | "cosmetics" | "seasons"
+  | "calisthenics" | "recipes" | "wearables"
+  | "sleep" | "progress_photos" | "smart_programs";
 
 export type ModuleDef = {
   key: ModuleKey;
@@ -41,7 +48,7 @@ export const MODULE_REGISTRY: Record<ModuleKey, ModuleDef> = {
     icon: TrendingUp,
     colorRgb: "16 185 129",
     domain: "track",
-    core: true,
+    core: false,
     phase: 0,
   },
   xp: {
@@ -51,7 +58,7 @@ export const MODULE_REGISTRY: Record<ModuleKey, ModuleDef> = {
     icon: Zap,
     colorRgb: "34 211 238",
     domain: "social",
-    core: true,
+    core: false,
     phase: 0,
   },
   nutrition: {
@@ -144,6 +151,136 @@ export const MODULE_REGISTRY: Record<ModuleKey, ModuleDef> = {
     domain: "track",
     core: false,
     phase: 1,
+  },
+  habits: {
+    key: "habits",
+    name: "Habits",
+    description: "Daily habit streaks, hydration tracking, custom goals",
+    icon: Flame,
+    colorRgb: "244 63 94",
+    domain: "lifestyle",
+    core: false,
+    phase: 1,
+  },
+  guilds: {
+    key: "guilds",
+    name: "Guilds",
+    description: "Create or join guilds, co-op challenges, guild chat",
+    icon: Shield,
+    colorRgb: "59 130 246",
+    domain: "social",
+    core: false,
+    phase: 2,
+  },
+  challenges: {
+    key: "challenges",
+    name: "Challenges",
+    description: "Weekly and monthly fitness challenges with friends",
+    icon: Swords,
+    colorRgb: "59 130 246",
+    domain: "social",
+    core: false,
+    phase: 2,
+  },
+  daily_quests: {
+    key: "daily_quests",
+    name: "Daily Quests",
+    description: "Rotating daily objectives for bonus XP rewards",
+    icon: Scroll,
+    colorRgb: "249 115 22",
+    domain: "gamification",
+    core: false,
+    phase: 2,
+  },
+  character_sheet: {
+    key: "character_sheet",
+    name: "Character Sheet",
+    description: "RPG-style profile with class, rank, stats, skill trees",
+    icon: Crown,
+    colorRgb: "249 115 22",
+    domain: "gamification",
+    core: false,
+    phase: 2,
+  },
+  cosmetics: {
+    key: "cosmetics",
+    name: "Cosmetics",
+    description: "Earned avatars, frames, and profile flair from achievements",
+    icon: Palette,
+    colorRgb: "249 115 22",
+    domain: "gamification",
+    core: false,
+    phase: 2,
+  },
+  seasons: {
+    key: "seasons",
+    name: "Seasons",
+    description: "8-week seasons with reward tracks and boss battles",
+    icon: CalendarClock,
+    colorRgb: "249 115 22",
+    domain: "gamification",
+    core: false,
+    phase: 3,
+  },
+  calisthenics: {
+    key: "calisthenics",
+    name: "Calisthenics",
+    description: "Bodyweight skill progressions, holds, and planche training",
+    icon: PersonStanding,
+    colorRgb: "139 92 246",
+    domain: "train",
+    core: false,
+    phase: 3,
+  },
+  recipes: {
+    key: "recipes",
+    name: "Recipes",
+    description: "Macro-friendly recipes, meal plans, community submissions",
+    icon: UtensilsCrossed,
+    colorRgb: "245 158 11",
+    domain: "nutrition",
+    core: false,
+    phase: 4,
+  },
+  wearables: {
+    key: "wearables",
+    name: "Wearables",
+    description: "Apple Health, Google Fit, Garmin sync for heart rate and steps",
+    icon: Watch,
+    colorRgb: "34 211 238",
+    domain: "wearables",
+    core: false,
+    phase: 5,
+  },
+  sleep: {
+    key: "sleep",
+    name: "Sleep Tracking",
+    description: "Sleep duration, quality scoring, recovery integration",
+    icon: Moon,
+    colorRgb: "139 92 246",
+    domain: "track",
+    core: false,
+    phase: 4,
+  },
+  progress_photos: {
+    key: "progress_photos",
+    name: "Progress Photos",
+    description: "Body transformation timeline with side-by-side comparisons",
+    icon: Camera,
+    colorRgb: "16 185 129",
+    domain: "track",
+    core: false,
+    phase: 4,
+  },
+  smart_programs: {
+    key: "smart_programs",
+    name: "Smart Programs",
+    description: "AI-generated periodised training programs with auto-progression",
+    icon: Brain,
+    colorRgb: "20 184 166",
+    domain: "you",
+    core: false,
+    phase: 5,
   },
 };
 

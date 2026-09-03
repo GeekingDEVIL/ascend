@@ -19,15 +19,19 @@ export function useModules() {
   const { user } = useAuth();
   const { sex } = useSex();
   const [optionalKeys, setOptionalKeys] = useState<ModuleKey[]>(() => {
+    const defaults = DEFAULT_ENABLED.filter(
+      (k) => !CORE_MODULES.some((m) => m.key === k),
+    );
     if (typeof window !== "undefined") {
       const stored = localStorage.getItem(MODULES_KEY);
       if (stored) {
-        try { return JSON.parse(stored) as ModuleKey[]; } catch { /* fall through */ }
+        try {
+          const parsed = JSON.parse(stored) as ModuleKey[];
+          return Array.from(new Set([...defaults, ...parsed]));
+        } catch { /* fall through */ }
       }
     }
-    return DEFAULT_ENABLED.filter(
-      (k) => !CORE_MODULES.some((m) => m.key === k),
-    );
+    return defaults;
   });
   const [loaded, setLoaded] = useState(false);
 
@@ -39,9 +43,10 @@ export function useModules() {
       .eq("user_id", user.id)
       .then(({ data }) => {
         if (data && data.length > 0) {
-          const keys = data.map((r) => r.module_key as ModuleKey);
-          setOptionalKeys(keys);
-          localStorage.setItem(MODULES_KEY, JSON.stringify(keys));
+          const dbKeys = data.map((r) => r.module_key as ModuleKey);
+          const merged = Array.from(new Set([...DEFAULT_ENABLED.filter(k => !CORE_MODULES.some(m => m.key === k)), ...dbKeys]));
+          setOptionalKeys(merged);
+          localStorage.setItem(MODULES_KEY, JSON.stringify(merged));
         }
         setLoaded(true);
       });
@@ -59,16 +64,23 @@ export function useModules() {
   }, []);
 
   const coreKeys = useMemo(
-    () => CORE_MODULES.map((m) => m.key),
-    [],
+    () => {
+      const keys = CORE_MODULES.map((m) => m.key);
+      if (sex === "female" && !keys.includes("cycle")) keys.push("cycle");
+      return keys;
+    },
+    [sex],
   );
 
   const enabledKeys = useMemo(
-    () => [...coreKeys, ...optionalKeys].filter((k) => {
-      const mod = MODULE_REGISTRY[k];
-      if (mod.sexGate && mod.sexGate !== sex) return false;
-      return true;
-    }),
+    () => {
+      const merged = new Set([...coreKeys, ...optionalKeys]);
+      return Array.from(merged).filter((k) => {
+        const mod = MODULE_REGISTRY[k];
+        if (mod.sexGate && mod.sexGate !== sex) return false;
+        return true;
+      });
+    },
     [coreKeys, optionalKeys, sex],
   );
 
@@ -82,10 +94,14 @@ export function useModules() {
     [enabledKeys],
   );
 
+  const isCoreKey = useCallback(
+    (key: ModuleKey) => coreKeys.includes(key),
+    [coreKeys],
+  );
+
   const toggleModule = useCallback(
     async (key: ModuleKey) => {
-      const mod = MODULE_REGISTRY[key];
-      if (mod.core) return;
+      if (coreKeys.includes(key)) return;
 
       const alreadyOn = optionalKeys.includes(key);
       const next = alreadyOn
@@ -109,8 +125,8 @@ export function useModules() {
           .upsert({ user_id: user.id, module_key: key });
       }
     },
-    [user, optionalKeys],
+    [user, optionalKeys, coreKeys],
   );
 
-  return { enabledKeys, visibleModules, isEnabled, toggleModule, loaded };
+  return { enabledKeys, visibleModules, isEnabled, isCoreKey, toggleModule, loaded };
 }

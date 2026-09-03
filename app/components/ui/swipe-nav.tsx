@@ -16,7 +16,8 @@ type SwipeNavProps = {
 
 const SWIPE_THRESHOLD = 50;
 
-export default function SwipeNav({ sections }: SwipeNavProps) {
+export default function SwipeNav({ sections, sectionId }: SwipeNavProps & { sectionId?: string }) {
+  const layoutGroup = sectionId ?? sections[0]?.key ?? "swipe";
   const router = useRouter();
   const pathname = usePathname();
   const currentIndex = sections.findIndex((s) => s.key === pathname);
@@ -92,7 +93,7 @@ export default function SwipeNav({ sections }: SwipeNavProps) {
               </span>
               {isActive && (
                 <motion.div
-                  layoutId="swipe-indicator"
+                  layoutId={`swipe-indicator-${layoutGroup}`}
                   className="absolute bottom-0 left-2.5 right-2.5 h-[2px] rounded-full"
                   style={{ backgroundColor: `rgb(${s.colorRgb})` }}
                   transition={{ type: "spring", stiffness: 400, damping: 30 }}

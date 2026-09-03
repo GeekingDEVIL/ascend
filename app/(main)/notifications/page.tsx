@@ -10,6 +10,7 @@ import CubeLoader from "../../components/ui/cube-loader";
 import SwipeNav from "../../components/ui/swipe-nav";
 import { getYouSections } from "../../lib/navPills";
 import { useModules } from "../../lib/useModules";
+import { useSex } from "../../lib/useSex";
 import { staggerContainer, staggerItem } from "../../lib/motion";
 
 const TYPE_META: Record<string, { icon: (size: number) => React.ReactNode; bg: string; label: string; chipActive: string }> = {
@@ -56,6 +57,7 @@ export default function NotificationsPage() {
   const { user } = useAuth();
   const router = useRouter();
   const { enabledKeys } = useModules();
+  const { sex: userSex } = useSex();
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "unread">("all");
@@ -68,6 +70,7 @@ export default function NotificationsPage() {
         .from("notifications")
         .select("*")
         .eq("user_id", user.id)
+        .eq("sex", userSex)
         .order("created_at", { ascending: false })
         .limit(50);
       if (filter === "unread") query.eq("read", false);
@@ -76,7 +79,7 @@ export default function NotificationsPage() {
       setLoading(false);
     }
     load();
-  }, [user, filter]);
+  }, [user, filter, userSex]);
 
   async function dismiss(id: string) {
     await supabase.from("notifications").update({ read: true }).eq("id", id);

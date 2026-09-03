@@ -134,8 +134,15 @@ function estimateRPE(sets: { weight: number; reps: number }[]): number {
   return totalEffort / sets.length;
 }
 
-export async function analyzeRecovery(userId: string, sex?: Sex | null): Promise<Record<string, MuscleRecoveryData>> {
+export type RecoveryDiagnostics = {
+  totalLogs: number;
+  skippedNoSegment: number;
+  skippedCardioFullBody: number;
+};
+
+export async function analyzeRecovery(userId: string, sex?: Sex | null): Promise<{ data: Record<string, MuscleRecoveryData>; diagnostics: RecoveryDiagnostics }> {
   const result: Record<string, MuscleRecoveryData> = {};
+  const diagnostics: RecoveryDiagnostics = { totalLogs: 0, skippedNoSegment: 0, skippedCardioFullBody: 0 };
 
   const twoWeeksAgo = new Date();
   twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
@@ -149,7 +156,7 @@ export async function analyzeRecovery(userId: string, sex?: Sex | null): Promise
     .eq("workout_sessions.sex", sex ?? "male")
     .gte("workout_sessions.date", cutoff);
 
-  if (!logs || logs.length === 0) return result;
+  if (!logs || logs.length === 0) return { data: result, diagnostics };
 
   // Group by muscle segment
   const muscleData: Record<string, {
@@ -157,9 +164,11 @@ export async function analyzeRecovery(userId: string, sex?: Sex | null): Promise
     lastTrainedAt: string;
   }> = {};
 
+  diagnostics.totalLogs = logs.length;
   logs.forEach((log: any) => {
     const segment = log.exercises?.body_segment;
-    if (!segment || segment === "Cardio" || segment === "Full Body") return;
+    if (!segment) { diagnostics.skippedNoSegment++; return; }
+    if (segment === "Cardio" || segment === "Full Body") { diagnostics.skippedCardioFullBody++; return; }
 
     const dateStr = log.workout_sessions?.date;
     const completedAt = log.completed_at || dateStr;
@@ -234,5 +243,5 @@ export async function analyzeRecovery(userId: string, sex?: Sex | null): Promise
     };
   }
 
-  return result;
+  return { data: result, diagnostics };
 }

@@ -10,24 +10,26 @@ export type AchievementDef = {
   icon: string;
   rarity: AchievementRarity;
   category: string;
+  secret?: boolean;
+  chain?: string;
 };
 
 export const ACHIEVEMENT_DEFS: AchievementDef[] = [
   // ── MILESTONES ──
-  { key: "first_workout",     name: "First Step",          description: "Complete your first workout",                icon: "🏁", rarity: "COMMON",    category: "Milestones" },
-  { key: "workouts_10",       name: "Getting Started",     description: "Complete 10 workouts",                       icon: "⚡", rarity: "COMMON",    category: "Milestones" },
-  { key: "workouts_25",       name: "Building Momentum",   description: "Complete 25 workouts",                       icon: "🔥", rarity: "UNCOMMON",  category: "Milestones" },
-  { key: "workouts_50",       name: "Half Century",        description: "Complete 50 workouts",                       icon: "💪", rarity: "UNCOMMON",  category: "Milestones" },
-  { key: "workouts_100",      name: "Centurion",           description: "Complete 100 workouts",                      icon: "🏆", rarity: "RARE",      category: "Milestones" },
-  { key: "workouts_250",      name: "Ironclad",            description: "Complete 250 workouts",                      icon: "⚔️", rarity: "EPIC",      category: "Milestones" },
-  { key: "workouts_500",      name: "Unstoppable",         description: "Complete 500 workouts",                      icon: "👑", rarity: "LEGENDARY", category: "Milestones" },
+  { key: "first_workout",     name: "First Step",          description: "Complete your first workout",                icon: "🏁", rarity: "COMMON",    category: "Milestones", chain: "workout_chain" },
+  { key: "workouts_10",       name: "Getting Started",     description: "Complete 10 workouts",                       icon: "⚡", rarity: "COMMON",    category: "Milestones", chain: "workout_chain" },
+  { key: "workouts_25",       name: "Building Momentum",   description: "Complete 25 workouts",                       icon: "🔥", rarity: "UNCOMMON",  category: "Milestones", chain: "workout_chain" },
+  { key: "workouts_50",       name: "Half Century",        description: "Complete 50 workouts",                       icon: "💪", rarity: "UNCOMMON",  category: "Milestones", chain: "workout_chain" },
+  { key: "workouts_100",      name: "Centurion",           description: "Complete 100 workouts",                      icon: "🏆", rarity: "RARE",      category: "Milestones", chain: "workout_chain" },
+  { key: "workouts_250",      name: "Ironclad",            description: "Complete 250 workouts",                      icon: "⚔️", rarity: "EPIC",      category: "Milestones", chain: "workout_chain" },
+  { key: "workouts_500",      name: "Unstoppable",         description: "Complete 500 workouts",                      icon: "👑", rarity: "LEGENDARY", category: "Milestones", chain: "workout_chain" },
 
   // ── STREAKS ──
-  { key: "streak_7",          name: "One Week Strong",     description: "Maintain a 7-day training streak",           icon: "🔥", rarity: "COMMON",    category: "Streaks" },
-  { key: "streak_14",         name: "Two Weeks In",        description: "Maintain a 14-day training streak",          icon: "🔥", rarity: "UNCOMMON",  category: "Streaks" },
-  { key: "streak_30",         name: "Monthly Warrior",     description: "Maintain a 30-day training streak",          icon: "🔥", rarity: "RARE",      category: "Streaks" },
-  { key: "streak_60",         name: "Relentless",          description: "Maintain a 60-day training streak",          icon: "🔥", rarity: "EPIC",      category: "Streaks" },
-  { key: "streak_100",        name: "Unbreakable",         description: "Maintain a 100-day training streak",         icon: "🔥", rarity: "LEGENDARY", category: "Streaks" },
+  { key: "streak_7",          name: "One Week Strong",     description: "Maintain a 7-day training streak",           icon: "🔥", rarity: "COMMON",    category: "Streaks", chain: "streak_chain" },
+  { key: "streak_14",         name: "Two Weeks In",        description: "Maintain a 14-day training streak",          icon: "🔥", rarity: "UNCOMMON",  category: "Streaks", chain: "streak_chain" },
+  { key: "streak_30",         name: "Monthly Warrior",     description: "Maintain a 30-day training streak",          icon: "🔥", rarity: "RARE",      category: "Streaks", chain: "streak_chain" },
+  { key: "streak_60",         name: "Relentless",          description: "Maintain a 60-day training streak",          icon: "🔥", rarity: "EPIC",      category: "Streaks", chain: "streak_chain" },
+  { key: "streak_100",        name: "Unbreakable",         description: "Maintain a 100-day training streak",         icon: "🔥", rarity: "LEGENDARY", category: "Streaks", chain: "streak_chain" },
 
   // ── STRENGTH ──
   { key: "first_pr",          name: "New Record",          description: "Set your first personal record",             icon: "🏅", rarity: "COMMON",    category: "Strength" },
@@ -73,6 +75,13 @@ export const ACHIEVEMENT_DEFS: AchievementDef[] = [
   { key: "xp_10000",          name: "Ten Thousand Strong",  description: "Earn 10,000 total XP",                       icon: "⚡", rarity: "RARE",      category: "XP" },
   { key: "xp_50000",          name: "Ascendant",           description: "Earn 50,000 total XP",                        icon: "⚡", rarity: "EPIC",      category: "XP" },
   { key: "xp_100000",         name: "Transcendence",       description: "Earn 100,000 total XP",                       icon: "⚡", rarity: "LEGENDARY", category: "XP" },
+
+  // ── SECRET ──
+  { key: "secret_midnight",   name: "Midnight Grinder",    description: "Start a workout between midnight and 4 AM",    icon: "🦇", rarity: "RARE",      category: "Secret", secret: true },
+  { key: "secret_marathon",   name: "Marathon Session",    description: "Complete a workout lasting over 2 hours",       icon: "⏰", rarity: "RARE",      category: "Secret", secret: true },
+  { key: "secret_comeback",   name: "The Comeback",        description: "Return after 14+ days without training",       icon: "🔄", rarity: "UNCOMMON",  category: "Secret", secret: true },
+  { key: "secret_variety",    name: "Variety Show",        description: "Use 5+ different exercises in a single workout",icon: "🎭", rarity: "UNCOMMON",  category: "Secret", secret: true },
+  { key: "secret_bw_match",   name: "Body Weight Club",    description: "Lift your own body weight on any exercise",     icon: "⚖️", rarity: "EPIC",      category: "Secret", secret: true },
 ];
 
 export const RARITY_COLORS: Record<AchievementRarity, { text: string; border: string; bg: string; glow: string }> = {
@@ -103,6 +112,7 @@ export async function checkAndAwardAchievements(userId: string, sex: string = "m
           title: "ACHIEVEMENT UNLOCKED",
           message: `${def.icon} ${def.name} — ${def.description}`,
           metadata: { achievement_key: key, rarity: def.rarity },
+          sex,
         });
       }
     }
@@ -122,7 +132,7 @@ export async function checkAndAwardAchievements(userId: string, sex: string = "m
 
   const { data: prNotifs } = await supabase
     .from("notifications").select("id", { count: "exact", head: true })
-    .eq("user_id", userId).eq("type", "new_pr");
+    .eq("user_id", userId).eq("type", "new_pr").eq("sex", sex);
   const prCount = prNotifs?.length ?? 0;
 
   const { data: exercisesUsed } = await supabase
@@ -216,6 +226,24 @@ export async function checkAndAwardAchievements(userId: string, sex: string = "m
   if (totalXp >= 10000)  await award("xp_10000");
   if (totalXp >= 50000)  await award("xp_50000");
   if (totalXp >= 100000) await award("xp_100000");
+
+  // ── Secret ──
+  if (startHour !== null && startHour >= 0 && startHour < 4) await award("secret_midnight");
+  if (latestSession) {
+    const dur = (latestSession as any).duration_seconds ?? ((latestSession as any).started_at && (latestSession as any).completed_at
+      ? (new Date((latestSession as any).completed_at).getTime() - new Date((latestSession as any).started_at).getTime()) / 1000
+      : 0);
+    if (dur >= 7200) await award("secret_marathon");
+  }
+  if (wc >= 1) {
+    const sortedDates = (xpData ?? []).map((s: any) => s.date).filter(Boolean).sort();
+    if (sortedDates.length >= 2) {
+      for (let i = 1; i < sortedDates.length; i++) {
+        const gap = (new Date(sortedDates[i]).getTime() - new Date(sortedDates[i - 1]).getTime()) / (1000 * 60 * 60 * 24);
+        if (gap >= 14) { await award("secret_comeback"); break; }
+      }
+    }
+  }
 
   return newlyEarned;
 }

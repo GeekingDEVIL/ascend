@@ -6,7 +6,7 @@ import { HeartPulse, TrendingUp, TrendingDown, Minus, AlertCircle, ChevronLeft, 
 import { motion } from "framer-motion";
 import { useAuth } from "../../lib/AuthProvider";
 import { supabase } from "../../lib/supabase";
-import { analyzeRecovery, type MuscleRecoveryData, type RecoveryStatus } from "../../lib/muscleRecovery";
+import { analyzeRecovery, type MuscleRecoveryData, type RecoveryStatus, type RecoveryDiagnostics } from "../../lib/muscleRecovery";
 import { analyzeAdaptiveVolume, getVolumeStatus, getVolumeGuidelines, type AdaptiveVolumeData } from "../../lib/volumeAnalysis";
 import type { Sex } from "../../lib/calorieEngine";
 import { useSex } from "../../lib/useSex";
@@ -94,6 +94,7 @@ export default function RecoveryPage() {
   const { enabledKeys } = useModules();
   const [recoveryData, setRecoveryData] = useState<Record<string, MuscleRecoveryData>>({});
   const [adaptiveData, setAdaptiveData] = useState<Record<string, AdaptiveVolumeData>>({});
+  const [diagnostics, setDiagnostics] = useState<RecoveryDiagnostics | null>(null);
   const [loading, setLoading] = useState(true);
   const [expandedSegment, setExpandedSegment] = useState<string | null>(null);
   const { sex: userSex } = useSex();
@@ -107,7 +108,8 @@ export default function RecoveryPage() {
         analyzeAdaptiveVolume(user.id, userSex),
       ]);
       if (cancelled) return;
-      setRecoveryData(recovery);
+      setRecoveryData(recovery.data);
+      setDiagnostics(recovery.diagnostics);
       setAdaptiveData(adaptive);
       setLoading(false);
     })();
@@ -171,8 +173,22 @@ export default function RecoveryPage() {
             <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center">
               <HeartPulse size={24} className="text-white/15" />
             </div>
-            <p className="text-sm font-semibold text-white/25">No Training Data</p>
-            <p className="text-xs text-white/20 mt-1">Complete a few workouts to see per-muscle recovery here.</p>
+            {diagnostics && diagnostics.totalLogs > 0 ? (
+              <>
+                <p className="text-sm font-semibold text-white/25">Exercises Need Body Segments</p>
+                <p className="text-xs text-white/20 mt-1 max-w-xs mx-auto">
+                  Found {diagnostics.totalLogs} logged sets but none mapped to a muscle group.
+                  {diagnostics.skippedNoSegment > 0 && ` ${diagnostics.skippedNoSegment} sets have exercises without a body segment assigned.`}
+                  {diagnostics.skippedCardioFullBody > 0 && ` ${diagnostics.skippedCardioFullBody} sets are Cardio/Full Body (tracked separately).`}
+                </p>
+                <p className="text-[10px] text-white/15 mt-2">Make sure your exercises have a body segment (Chest, Back, Legs, etc.) in the exercise database.</p>
+              </>
+            ) : (
+              <>
+                <p className="text-sm font-semibold text-white/25">No Training Data</p>
+                <p className="text-xs text-white/20 mt-1">Complete a few workouts to see per-muscle recovery here.</p>
+              </>
+            )}
           </div>
         ) : (
           <>

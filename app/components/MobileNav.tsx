@@ -3,9 +3,36 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LayoutDashboard, Dumbbell, TrendingUp, Users, User } from "lucide-react";
+import { motion, useAnimation } from "framer-motion";
 import { useSex } from "../lib/useSex";
 import { useModules } from "../lib/useModules";
 import { getAllRoutes } from "../lib/navPills";
+
+function TabIcon({ icon: Icon, active, onClick }: { icon: any; active: boolean; onClick?: () => void }) {
+  const controls = useAnimation();
+
+  function handleTap() {
+    controls.start({
+      y: [0, -6, 0],
+      scale: [1, 1.15, 1],
+      transition: { duration: 0.35, ease: "easeOut" },
+    });
+    onClick?.();
+  }
+
+  return (
+    <motion.div animate={controls} onTap={handleTap} className="relative">
+      <Icon size={20} />
+      {active && (
+        <motion.div
+          layoutId="tab-dot"
+          className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[rgb(var(--accent-rgb))]"
+          transition={{ type: "spring", stiffness: 400, damping: 25 }}
+        />
+      )}
+    </motion.div>
+  );
+}
 
 export default function MobileNav() {
   const pathname = usePathname();
@@ -15,10 +42,10 @@ export default function MobileNav() {
 
   const tabs = [
     { icon: LayoutDashboard, label: "Hub", href: "/", match: ["/"] },
-    { icon: Dumbbell, label: "Train", href: "/workout", match: routes.train },
-    { icon: TrendingUp, label: "Track", href: "/progress", match: routes.track },
-    { icon: Users, label: "Social", href: "/rankings", match: routes.social },
-    { icon: User, label: "You", href: "/profile", match: routes.you },
+    { icon: Dumbbell, label: "Train", href: "/train", match: ["/train", ...routes.train] },
+    { icon: TrendingUp, label: "Track", href: "/track", match: ["/track", ...routes.track] },
+    { icon: Users, label: "Social", href: "/social", match: ["/social", ...routes.social] },
+    { icon: User, label: "You", href: "/you", match: ["/you", ...routes.you] },
   ];
 
   const isFemale = sex === "female";
@@ -34,7 +61,7 @@ export default function MobileNav() {
           const active = item.match.includes(pathname);
           return (
             <Link key={item.label} href={item.href} className={`flex flex-col items-center gap-1 px-3 py-1.5 ${active ? "text-[rgb(var(--accent-rgb))]" : "text-white/40"}`}>
-              <item.icon size={20} />
+              <TabIcon icon={item.icon} active={active} />
               <span className="text-[9px] font-mono tracking-wide">{item.label}</span>
             </Link>
           );

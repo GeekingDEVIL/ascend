@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Dumbbell, Activity, Flame, Zap, HeartPulse, Trophy, Award, Bell, ChevronRight, TrendingUp, Target, Play, Calendar } from "lucide-react";
+import { Dumbbell, Activity, Flame, Zap, HeartPulse, Trophy, Award, Bell, ChevronRight, TrendingUp, Target, Play, Calendar, Droplets, AlertCircle, BarChart3, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "../lib/supabase";
 import { computeLevel, getRank, getNextRank } from "../lib/levelSystem";
@@ -15,6 +15,8 @@ import { staggerContainer, staggerItem, fadeInUp } from "../lib/motion";
 import { useSex } from "../lib/useSex";
 import { useUnits } from "../lib/useUnits";
 import { formatWeight, kgToUnit } from "../lib/units";
+import { useModules } from "../lib/useModules";
+import { MODULE_REGISTRY } from "../lib/modules";
 
 type TodayPlan = { title: string; is_rest: boolean; count: number; sets: number; completed?: boolean };
 
@@ -62,6 +64,17 @@ export default function Dashboard() {
   const [todayIntake, setTodayIntake] = useState<{ kcal: number; protein_g: number; carbs_g: number; fat_g: number } | null>(null);
   const { sex: userSex } = useSex();
   const weightUnit = useUnits();
+  const { isEnabled } = useModules();
+  const pillRef = useRef<HTMLDivElement>(null);
+  const handlePillTouch = useCallback((e: React.TouchEvent) => {
+    const track = pillRef.current?.querySelector(".pill-marquee-track") as HTMLElement | null;
+    if (!track) return;
+    track.style.animationPlayState = "paused";
+    const resume = () => { track.style.animationPlayState = ""; };
+    e.currentTarget.addEventListener("touchend", resume, { once: true });
+    e.currentTarget.addEventListener("touchcancel", resume, { once: true });
+  }, []);
+
   const [showQuickLog, setShowQuickLog] = useState(false);
   const [qlLabel, setQlLabel] = useState("");
   const [qlKcal, setQlKcal] = useState("");
@@ -69,6 +82,15 @@ export default function Dashboard() {
   const [qlCarbs, setQlCarbs] = useState("");
   const [qlFat, setQlFat] = useState("");
   const [qlSaving, setQlSaving] = useState(false);
+
+  // Dashboard intelligence cards
+  const [insight, setInsight] = useState<string | null>(null);
+  const [missedWorkout, setMissedWorkout] = useState<string | null>(null);
+  const [weeklyRecap, setWeeklyRecap] = useState<{ workouts: number; volume: number; prs: number; streak: number } | null>(null);
+  const [recentPR, setRecentPR] = useState<{ exercise: string; detail: string } | null>(null);
+  const [cyclePhase, setCyclePhase] = useState<{ phase: string; day: number; tip: string } | null>(null);
+  const [hydrationMl, setHydrationMl] = useState<number | null>(null);
+  const [habitStats, setHabitStats] = useState<{ completed: number; total: number } | null>(null);
 
   useEffect(() => {
     const updateClock = () => setTime(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
@@ -486,6 +508,7 @@ export default function Dashboard() {
         .from("notifications")
         .select("*")
         .eq("user_id", user.id)
+        .eq("sex", userSex)
         .eq("read", false)
         .order("created_at", { ascending: false })
         .limit(5);
@@ -493,7 +516,155 @@ export default function Dashboard() {
       setNotifLoaded(true);
     }
     loadNotifications();
-  }, [user]);
+  }, [user, userSex]);
+
+  // Dashboard intelligence: insight, missed workout, weekly recap, PR celebration, cycle phase
+  useEffect(() => {
+    let cancelled = false;
+    async function loadDashboardCards() {
+      if (!user) return;
+      const dateStr = toDateString(new Date());
+      const now = new Date();
+      const dayOfWeek = now.getDay();
+
+      // ── Missed workout detection (check yesterday, local time) ──
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yy = yesterday.getFullYear();
+      const ym = String(yesterday.getMonth() + 1).padStart(2, "0");
+      const yd = String(yesterday.getDate()).padStart(2, "0");
+      const yesterdayStr = `${yy}-${ym}-${yd}`;
+      const yesterdayWeekday = yesterday.getDay();
+      const { data: yesterdayPlan } = await supabase
+        .from("recurring_plans")
+        .select("is_rest, workout_templates(name)")
+        .eq("user_id", user.id)
+        .eq("weekday", yesterdayWeekday)
+        .eq("sex", userSex)
+        .maybeSingle();
+      if (cancelled) return;
+      if (yesterdayPlan && !yesterdayPlan.is_rest && (yesterdayPlan as any).workout_templates?.name) {
+        // Check if session exists for yesterday OR today (covers working out a day late)
+        const { count } = await supabase
+          .from("workout_sessions")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", user.id)
+          .gte("date", yesterdayStr)
+          .eq("sex", userSex)
+          .eq("status", "completed");
+        if (cancelled) return;
+        if ((count ?? 0) === 0) {
+          setMissedWorkout((yesterdayPlan as any).workout_templates.name);
+        }
+      }
+
+      // ── Weekly recap (show on Monday) ──
+      if (dayOfWeek === 1) {
+        const lastMonday = new Date(now);
+        lastMonday.setDate(lastMonday.getDate() - 7);
+        const lastMondayStr = toDateString(lastMonday);
+        const lastSunday = new Date(now);
+        lastSunday.setDate(lastSunday.getDate() - 1);
+        const lastSundayStr = toDateString(lastSunday);
+
+        const [{ count: wkWorkouts }, { data: wkSessions }, { data: wkPRs }] = await Promise.all([
+          supabase.from("workout_sessions").select("id", { count: "exact", head: true }).eq("user_id", user.id).eq("status", "completed").eq("sex", userSex).gte("date", lastMondayStr).lte("date", lastSundayStr),
+          supabase.from("workout_sessions").select("id").eq("user_id", user.id).eq("status", "completed").eq("sex", userSex).gte("date", lastMondayStr).lte("date", lastSundayStr),
+          supabase.from("notifications").select("id", { count: "exact", head: true }).eq("user_id", user.id).eq("type", "new_pr").eq("sex", userSex).gte("created_at", lastMondayStr + "T00:00:00").lte("created_at", lastSundayStr + "T23:59:59"),
+        ]);
+        if (cancelled) return;
+        let wkVol = 0;
+        if (wkSessions && wkSessions.length > 0) {
+          const ids = wkSessions.map((s: any) => s.id);
+          const { data: logs } = await supabase.from("exercise_set_logs").select("weight, reps").in("workout_session_id", ids);
+          wkVol = (logs ?? []).reduce((s, l: any) => s + ((Number(l.weight) || 0) * (Number(l.reps) || 0)), 0);
+        }
+        if (cancelled) return;
+        setWeeklyRecap({ workouts: wkWorkouts ?? 0, volume: Math.round(wkVol), prs: (wkPRs as any)?.length ?? (wkPRs as any) ?? 0, streak: stats.streak });
+      }
+
+      // ── PR celebration (last 24 hours) ──
+      const yesterday24h = new Date(Date.now() - 86400000).toISOString();
+      const { data: prNotifs } = await supabase
+        .from("notifications")
+        .select("message, created_at")
+        .eq("user_id", user.id)
+        .eq("type", "new_pr")
+        .eq("sex", userSex)
+        .gte("created_at", yesterday24h)
+        .order("created_at", { ascending: false })
+        .limit(1);
+      if (cancelled) return;
+      if (prNotifs && prNotifs.length > 0) {
+        const msg = prNotifs[0].message ?? "";
+        const match = msg.match(/New PR.*?on (.+?)!/i) || msg.match(/(.+)/);
+        setRecentPR({ exercise: match?.[1] ?? "Exercise", detail: msg });
+      }
+
+      // ── Cycle phase (female only) ──
+      if (userSex === "female") {
+        const { data: cycleLog } = await supabase
+          .from("cycle_logs")
+          .select("period_start")
+          .eq("user_id", user.id)
+          .order("period_start", { ascending: false })
+          .limit(1);
+        if (cancelled) return;
+        if (cycleLog && cycleLog.length > 0) {
+          const start = new Date(cycleLog[0].period_start);
+          const daysSince = Math.floor((Date.now() - start.getTime()) / 86400000);
+          const cycleDay = (daysSince % 28) + 1;
+          let phase: string, tip: string;
+          if (cycleDay <= 5) { phase = "Menstrual"; tip = "Lighter sessions, focus on mobility"; }
+          else if (cycleDay <= 13) { phase = "Follicular"; tip = "Great window for intensity & PRs"; }
+          else if (cycleDay <= 16) { phase = "Ovulatory"; tip = "Peak strength — push hard today"; }
+          else { phase = "Luteal"; tip = "Steady effort, extra recovery needed"; }
+          setCyclePhase({ phase, day: cycleDay, tip });
+        }
+      }
+
+      // ── Contextual insight (pick the most interesting) ──
+      if (cancelled) return;
+      const insights: string[] = [];
+      if (stats.streak >= 7) insights.push(`${stats.streak}-day streak — keep the momentum going`);
+      else if (stats.streak >= 3) insights.push(`${stats.streak}-day streak — building consistency`);
+      if (stats.totalWorkouts > 0 && stats.totalWorkouts % 50 === 0) insights.push(`${stats.totalWorkouts} workouts completed — milestone!`);
+      if (stats.prCount > 0) insights.push(`${stats.prCount} personal records set so far`);
+      if (stats.recoveryPct !== null && stats.recoveryPct >= 95) insights.push("Fully recovered — optimal training window");
+      else if (stats.recoveryPct !== null && stats.recoveryPct < 40) insights.push("Recovery low — consider a lighter session");
+      if (stats.weeklyVolume > 0) insights.push(`${Math.round(stats.weeklyVolume).toLocaleString()} ${weightUnit} volume this week`);
+      if (insights.length > 0) {
+        setInsight(insights[Math.floor(Math.random() * insights.length)]);
+      }
+
+      // Hydration card
+      if (isEnabled("wellness")) {
+        const todayStart = new Date();
+        todayStart.setHours(0, 0, 0, 0);
+        const { data: waterData } = await supabase.from("water_logs").select("amount_ml")
+          .eq("user_id", user.id).gte("logged_at", todayStart.toISOString());
+        if (!cancelled) {
+          const total = (waterData ?? []).reduce((s: number, r: any) => s + r.amount_ml, 0);
+          setHydrationMl(total);
+        }
+      }
+
+      // Habits card
+      if (isEnabled("habits")) {
+        const todayDate = new Date().toISOString().slice(0, 10);
+        const [{ data: habitsData }, { data: compData }] = await Promise.all([
+          supabase.from("habits").select("id").eq("user_id", user.id).eq("archived", false),
+          supabase.from("habit_completions").select("habit_id").eq("user_id", user.id).eq("completed_date", todayDate),
+        ]);
+        if (!cancelled && habitsData && habitsData.length > 0) {
+          const completedIds = new Set((compData ?? []).map((c: any) => c.habit_id));
+          setHabitStats({ completed: habitsData.filter((h: any) => completedIds.has(h.id)).length, total: habitsData.length });
+        }
+      }
+    }
+    if (statsLoaded) loadDashboardCards();
+    return () => { cancelled = true; };
+  }, [user, userSex, statsLoaded, stats.streak, stats.totalWorkouts, stats.prCount, stats.recoveryPct, stats.weeklyVolume, weightUnit]);
 
   async function dismissNotification(id: string) {
     await supabase.from("notifications").update({ read: true }).eq("id", id);
@@ -536,10 +707,48 @@ export default function Dashboard() {
   const estMinutes = todayPlan ? todayPlan.sets * 3 : 0;
   const xpProgress = levelInfo.isMaxLevel ? 100 : Math.round(levelInfo.progress * 100);
 
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  const nudge = todayPlan?.completed
+    ? "Nice work today"
+    : todayPlan && !todayPlan.is_rest && todayPlan.count > 0
+      ? "Session planned for today"
+      : todayPlan?.is_rest
+        ? "Rest day — recover well"
+        : "No plan set for today";
+
+  // Smart card ordering — lower order = higher on page
+  const cardOrder = useMemo(() => {
+    let prOrder = 10, missedOrder = 11, cycleOrder = 12, recapOrder = 13, insightOrder = 14;
+    let workoutOrder = 20, levelOrder = 30, statsOrder = 40, attrOrder = 50;
+    let recoveryBodyOrder = 60, energyOrder = 70, hydrationOrder = 75, habitsOrder = 76;
+
+    // PR celebration always floats to top when present
+    if (recentPR) prOrder = 1;
+    // Missed workout is urgent
+    if (missedWorkout) missedOrder = 2;
+    // If recovery is low and today is a training day, push recovery card up
+    if (stats.recoveryPct !== null && stats.recoveryPct < 50 && todayPlan && !todayPlan.is_rest && !todayPlan.completed) {
+      recoveryBodyOrder = 3;
+    }
+    // Cycle phase is useful context before workout
+    if (cyclePhase) cycleOrder = 5;
+    // If haven't worked out today and plan exists, workout card is top priority
+    if (todayPlan && !todayPlan.completed && !todayPlan.is_rest && todayPlan.count > 0) {
+      workoutOrder = 6;
+    }
+    // If past noon and nutrition enabled but no food logged, push energy up
+    if (hour >= 12 && isEnabled("nutrition") && calorieSummary && !todayIntake) {
+      energyOrder = 7;
+    }
+
+    return { prOrder, missedOrder, cycleOrder, recapOrder, insightOrder, workoutOrder, levelOrder, statsOrder, attrOrder, recoveryBodyOrder, energyOrder, hydrationOrder, habitsOrder };
+  }, [recentPR, missedWorkout, stats.recoveryPct, todayPlan, cyclePhase, hour, isEnabled, calorieSummary, todayIntake]);
+
   return (
     <main className="min-h-screen bg-[#050914] text-white pb-24 md:pb-10 relative">
       <motion.div
-        className="relative z-10 max-w-xl mx-auto px-4 pt-6 space-y-4"
+        className="relative z-10 max-w-xl mx-auto px-4 pt-6 flex flex-col gap-4"
         variants={staggerContainer}
         initial="hidden"
         animate="visible"
@@ -549,9 +758,9 @@ export default function Dashboard() {
         <motion.div variants={staggerItem} className="flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold font-display text-[rgb(var(--accent-light-rgb))]">
-              {profile?.username ? `Hi, ${profile.username}` : "Dashboard"}
+              {profile?.username ? `${greeting}, ${profile.username}` : greeting}
             </h1>
-            <p className="text-[11px] font-mono text-white/30 mt-0.5">{today ?? "..."} {time ? `· ${time}` : ""}</p>
+            <p className="text-[11px] font-mono text-white/30 mt-0.5">{today ?? "..."} {time ? `· ${time}` : ""} · {nudge}</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -576,8 +785,185 @@ export default function Dashboard() {
           </div>
         </motion.div>
 
+        {/* ─── At-a-Glance Strip (auto-scroll marquee) ─── */}
+        {statsLoaded && (() => {
+          const pills = [
+            isEnabled("xp") && { label: `Lv.${level}`, sub: rank.name, color: "rgb(var(--accent-rgb))" },
+            { label: `${stats.streak}`, sub: "streak", color: "rgb(251,146,60)" },
+            isEnabled("recovery") && stats.recoveryPct !== null && { label: `${stats.recoveryPct}%`, sub: "recovery", color: stats.recoveryPct >= 80 ? "rgb(52,211,153)" : stats.recoveryPct >= 50 ? "rgb(251,146,60)" : "rgb(239,68,68)" },
+            isEnabled("nutrition") && calorieSummary && { label: `${Math.max(0, calorieSummary.calorieTarget - (todayIntake?.kcal ?? 0))}`, sub: "kcal left", color: "rgb(245,158,11)" },
+            isEnabled("progress") && stats.bodyWeight !== null && { label: `${formatWeight(stats.bodyWeight, weightUnit, 1)}`, sub: weightUnit, color: "rgb(139,92,246)" },
+          ].filter(Boolean) as { label: string; sub: string; color: string }[];
+          const renderPill = (pill: { label: string; sub: string; color: string }, i: number) => (
+            <div key={`${pill.sub}-${i}`} className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/[0.08] bg-white/[0.03]">
+              <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: pill.color }} />
+              <span className="text-xs font-bold font-mono text-white/80">{pill.label}</span>
+              <span className="text-[9px] font-mono text-white/25">{pill.sub}</span>
+            </div>
+          );
+          return (
+            <motion.div variants={staggerItem} ref={pillRef} onTouchStart={handlePillTouch} className="pill-marquee-wrap overflow-x-auto scrollbar-hide -mx-1 px-1 pb-1">
+              <div className="pill-marquee-track flex gap-2 w-max">
+                {pills.map((p, i) => renderPill(p, i))}
+                {pills.map((p, i) => renderPill(p, i + pills.length))}
+              </div>
+            </motion.div>
+          );
+        })()}
+
+        {/* ─── PR Celebration ─── */}
+        {recentPR && (
+          <motion.div variants={staggerItem} className="rounded-2xl border border-yellow-400/20 bg-yellow-400/[0.04] p-4" style={{ order: cardOrder.prOrder, boxShadow: "0 0 25px -5px rgba(250,204,21,0.15)" }}>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-yellow-400/15 border border-yellow-400/25 flex items-center justify-center">
+                <Trophy size={18} className="text-yellow-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[9px] font-mono tracking-widest text-yellow-400/60 mb-0.5">NEW PERSONAL RECORD</p>
+                <p className="text-sm font-semibold text-yellow-300/90 truncate">{recentPR.exercise}</p>
+              </div>
+              <button onClick={() => router.push("/progress")} className="shrink-0 px-3 py-1.5 rounded-lg bg-yellow-400/10 border border-yellow-400/20 text-[10px] font-mono text-yellow-400/80 hover:text-yellow-300 transition">
+                View
+              </button>
+            </div>
+          </motion.div>
+        )}
+
+        {/* ─── Missed Workout ─── */}
+        {missedWorkout && (
+          <motion.div variants={staggerItem} className="rounded-2xl border border-orange-400/15 bg-orange-400/[0.03] p-4" style={{ order: cardOrder.missedOrder }}>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-orange-400/10 border border-orange-400/20 flex items-center justify-center">
+                <AlertCircle size={18} className="text-orange-400/70" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-white/70">Yesterday was <span className="text-orange-300">{missedWorkout}</span></p>
+                <p className="text-[10px] font-mono text-white/25 mt-0.5">Missed session — reschedule or skip?</p>
+              </div>
+              <button onClick={() => router.push("/schedule")} className="shrink-0 px-3 py-1.5 rounded-lg bg-white/[0.06] border border-white/[0.08] text-[10px] font-mono text-white/50 hover:text-white/80 transition">
+                Schedule
+              </button>
+            </div>
+          </motion.div>
+        )}
+
+        {/* ─── Cycle Phase (female) ─── */}
+        {isEnabled("cycle") && cyclePhase && (
+          <motion.div variants={staggerItem} className="rounded-2xl border border-pink-400/15 bg-pink-400/[0.03] p-4" style={{ order: cardOrder.cycleOrder }}>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-pink-400/10 border border-pink-400/20 flex items-center justify-center">
+                <Droplets size={18} className="text-pink-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-semibold text-pink-300/90">{cyclePhase.phase} Phase</p>
+                  <span className="text-[9px] font-mono text-pink-400/40">Day {cyclePhase.day}</span>
+                </div>
+                <p className="text-[10px] font-mono text-white/30 mt-0.5">{cyclePhase.tip}</p>
+              </div>
+              <button onClick={() => router.push("/cycle")} className="shrink-0 px-3 py-1.5 rounded-lg bg-pink-400/10 border border-pink-400/20 text-[10px] font-mono text-pink-400/60 hover:text-pink-300 transition">
+                Log
+              </button>
+            </div>
+          </motion.div>
+        )}
+
+        {/* ─── Weekly Recap (Monday) ─── */}
+        {weeklyRecap && (
+          <motion.div variants={staggerItem} className="rounded-2xl border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.03] p-4" style={{ order: cardOrder.recapOrder, boxShadow: "0 0 20px -5px rgb(var(--accent-rgb) / 0.1)" }}>
+            <div className="flex items-center gap-2 mb-3">
+              <BarChart3 size={14} className="text-[rgb(var(--accent-rgb))]" />
+              <p className="text-[9px] font-mono tracking-widest text-[rgb(var(--accent-light-rgb)/0.4)]">LAST WEEK</p>
+            </div>
+            <div className="grid grid-cols-4 gap-2">
+              <div className="text-center">
+                <p className="text-xl font-bold font-mono text-white/90">{weeklyRecap.workouts}</p>
+                <p className="text-[8px] font-mono text-white/25">WORKOUTS</p>
+              </div>
+              <div className="text-center">
+                <p className="text-xl font-bold font-mono text-white/90">{Math.round(weeklyRecap.volume).toLocaleString()}</p>
+                <p className="text-[8px] font-mono text-white/25">VOL ({weightUnit})</p>
+              </div>
+              <div className="text-center">
+                <p className="text-xl font-bold font-mono text-yellow-400/90">{weeklyRecap.prs}</p>
+                <p className="text-[8px] font-mono text-white/25">PRs</p>
+              </div>
+              <div className="text-center">
+                <p className="text-xl font-bold font-mono text-orange-400/90">{weeklyRecap.streak}</p>
+                <p className="text-[8px] font-mono text-white/25">STREAK</p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* ─── Contextual Insight ─── */}
+        {insight && (
+          <motion.div variants={staggerItem} className="rounded-xl border border-[rgb(var(--accent-rgb)/0.1)] bg-[rgb(var(--accent-rgb)/0.03)] px-4 py-3 flex items-center gap-3" style={{ order: cardOrder.insightOrder }}>
+            <Sparkles size={14} className="text-[rgb(var(--accent-rgb))] shrink-0" />
+            <p className="text-[11px] font-mono text-white/50">{insight}</p>
+          </motion.div>
+        )}
+
+        {/* ─── Hydration Card ─── */}
+        {hydrationMl !== null && isEnabled("wellness") && (
+          <motion.div
+            variants={staggerItem}
+            className="rounded-xl border border-blue-400/10 bg-blue-400/[0.03] px-4 py-3 flex items-center gap-3 cursor-pointer"
+            style={{ order: cardOrder.hydrationOrder }}
+            onClick={() => router.push("/wellness")}
+          >
+            <Droplets size={16} className="text-blue-400/70 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between">
+                <p className="text-[11px] font-mono text-white/50">
+                  {(hydrationMl / 1000).toFixed(1)}L / 3L
+                </p>
+                <span className="text-[9px] font-mono text-white/25">{Math.min(100, Math.round((hydrationMl / 3000) * 100))}%</span>
+              </div>
+              <div className="h-1 rounded-full bg-white/[0.04] overflow-hidden mt-1">
+                <div className="h-full rounded-full bg-blue-400/40" style={{ width: `${Math.min(100, (hydrationMl / 3000) * 100)}%` }} />
+              </div>
+            </div>
+            <ChevronRight size={12} className="text-white/15 shrink-0" />
+          </motion.div>
+        )}
+
+        {/* ─── Habits Card ─── */}
+        {habitStats && isEnabled("habits") && (
+          <motion.div
+            variants={staggerItem}
+            className="rounded-xl border border-rose-400/10 bg-rose-400/[0.03] px-4 py-3 flex items-center gap-3 cursor-pointer"
+            style={{ order: cardOrder.habitsOrder }}
+            onClick={() => router.push("/habits")}
+          >
+            <Flame size={16} className="text-rose-400/70 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between">
+                <p className="text-[11px] font-mono text-white/50">
+                  {habitStats.completed}/{habitStats.total} habits
+                </p>
+                <span className="text-[9px] font-mono text-white/25">
+                  {habitStats.completed === habitStats.total ? "Perfect!" : `${Math.round((habitStats.completed / habitStats.total) * 100)}%`}
+                </span>
+              </div>
+              <div className="h-1 rounded-full bg-white/[0.04] overflow-hidden mt-1">
+                <div
+                  className="h-full rounded-full transition-all"
+                  style={{
+                    width: `${(habitStats.completed / habitStats.total) * 100}%`,
+                    background: habitStats.completed === habitStats.total
+                      ? "rgb(16 185 129 / 0.6)"
+                      : "rgb(244 63 94 / 0.4)",
+                  }}
+                />
+              </div>
+            </div>
+            <ChevronRight size={12} className="text-white/15 shrink-0" />
+          </motion.div>
+        )}
+
         {/* ─── Today's Workout Card ─── */}
-        <motion.div variants={staggerItem} className="rounded-2xl border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.03] overflow-hidden" style={{ boxShadow: "0 0 20px -5px rgb(var(--accent-rgb) / 0.1), inset 0 1px 0 rgb(var(--accent-rgb) / 0.05)" }}>
+        <motion.div variants={staggerItem} className="rounded-2xl border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.03] overflow-hidden" style={{ order: cardOrder.workoutOrder, boxShadow: "0 0 20px -5px rgb(var(--accent-rgb) / 0.1), inset 0 1px 0 rgb(var(--accent-rgb) / 0.05)" }}>
           <div className="p-4">
             <p className="text-[9px] font-mono tracking-widest text-[rgb(var(--accent-light-rgb)/0.4)] mb-2">TODAY&apos;S WORKOUT</p>
 
@@ -646,7 +1032,7 @@ export default function Dashboard() {
         </motion.div>
 
         {/* ─── Level & Rank ─── */}
-        <motion.div variants={staggerItem} className="rounded-2xl border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.03] p-4" style={{ boxShadow: "0 0 20px -5px rgb(var(--accent-rgb) / 0.1), inset 0 1px 0 rgb(var(--accent-rgb) / 0.05)" }}>
+        <motion.div variants={staggerItem} className="rounded-2xl border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.03] p-4" style={{ order: cardOrder.levelOrder, boxShadow: "0 0 20px -5px rgb(var(--accent-rgb) / 0.1), inset 0 1px 0 rgb(var(--accent-rgb) / 0.05)" }}>
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-xl bg-[rgb(var(--accent-rgb)/0.1)] border border-[rgb(var(--accent-rgb)/0.2)] flex items-center justify-center">
@@ -688,7 +1074,7 @@ export default function Dashboard() {
         </motion.div>
 
         {/* ─── Quick Stats Grid ─── */}
-        <motion.div variants={staggerItem} className="grid grid-cols-2 gap-2.5">
+        <motion.div variants={staggerItem} className="grid grid-cols-2 gap-2.5" style={{ order: cardOrder.statsOrder }}>
           {[
             { icon: <Flame size={16} />, label: "STREAK", value: statsLoaded ? `${stats.streak}` : "—", sub: "days", color: "text-orange-400", bg: "bg-orange-400/10", border: "border-orange-400/20" },
             { icon: <Activity size={16} />, label: "WORKOUTS", value: statsLoaded ? `${stats.totalWorkouts}` : "—", sub: "completed", color: "text-blue-400", bg: "bg-blue-400/10", border: "border-blue-400/20" },
@@ -707,7 +1093,7 @@ export default function Dashboard() {
         </motion.div>
 
         {/* ─── Attribute Rings ─── */}
-        <motion.div variants={staggerItem} className="rounded-2xl border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.03] p-4" style={{ boxShadow: "0 0 20px -5px rgb(var(--accent-rgb) / 0.1), inset 0 1px 0 rgb(var(--accent-rgb) / 0.05)" }}>
+        <motion.div variants={staggerItem} className="rounded-2xl border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.03] p-4" style={{ order: cardOrder.attrOrder, boxShadow: "0 0 20px -5px rgb(var(--accent-rgb) / 0.1), inset 0 1px 0 rgb(var(--accent-rgb) / 0.05)" }}>
           <p className="text-[9px] font-mono tracking-widest text-[rgb(var(--accent-light-rgb)/0.4)] mb-3">ATTRIBUTES</p>
           <div className="grid grid-cols-4 gap-3">
             {[
@@ -731,50 +1117,54 @@ export default function Dashboard() {
         </motion.div>
 
         {/* ─── Recovery & Body ─── */}
-        <motion.div variants={staggerItem} className="grid grid-cols-2 gap-2.5">
-          <div className="rounded-xl border border-[rgb(var(--accent-rgb)/0.12)] bg-white/[0.03] p-3" style={{ boxShadow: "0 0 15px -5px rgb(var(--accent-rgb) / 0.08)" }}>
-            <div className="flex items-center gap-1.5 mb-2">
-              <HeartPulse size={12} className="text-emerald-400" />
-              <p className="text-[8px] font-mono tracking-wider text-white/25">RECOVERY</p>
-            </div>
-            <p className="text-2xl font-bold font-mono text-white/90">{stats.recoveryPct ?? "—"}<span className="text-xs text-white/25">%</span></p>
-            <p className="text-[9px] font-mono text-white/20 mt-0.5">
-              {stats.recoveryPct !== null
-                ? stats.recoveryPct >= 80 ? "Ready to train" : stats.recoveryPct >= 50 ? "Partially recovered" : "Rest suggested"
-                : "No data"}
-            </p>
-          </div>
-          <div className="rounded-xl border border-[rgb(var(--accent-rgb)/0.12)] bg-white/[0.03] p-3" style={{ boxShadow: "0 0 15px -5px rgb(var(--accent-rgb) / 0.08)" }}>
-            <div className="flex items-center gap-1.5 mb-2">
-              <Dumbbell size={12} className="text-white/30" />
-              <p className="text-[8px] font-mono tracking-wider text-white/25">BODY WEIGHT</p>
-            </div>
-            <p className="text-2xl font-bold font-mono text-white/90">
-              {stats.bodyWeight !== null ? formatWeight(stats.bodyWeight, weightUnit, 1) : "—"}<span className="text-xs text-white/25"> {weightUnit}</span>
-            </p>
-            {stats.bodyWeightChange !== null ? (
-              <p className={`text-[9px] font-mono mt-0.5 ${stats.bodyWeightChange > 0 ? "text-orange-300/60" : stats.bodyWeightChange < 0 ? "text-emerald-300/60" : "text-white/20"}`}>
-                {stats.bodyWeightChange > 0 ? "+" : stats.bodyWeightChange < 0 ? "−" : ""}{formatWeight(Math.abs(stats.bodyWeightChange), weightUnit, 1)} {weightUnit} from previous
+        <motion.div variants={staggerItem} className="grid grid-cols-2 gap-2.5" style={{ order: cardOrder.recoveryBodyOrder }}>
+          {isEnabled("recovery") && (
+            <div className="rounded-xl border bg-white/[0.03] p-3" style={{ borderColor: `rgb(${MODULE_REGISTRY.recovery.colorRgb} / 0.15)`, boxShadow: `0 0 15px -5px rgb(${MODULE_REGISTRY.recovery.colorRgb} / 0.1)` }}>
+              <div className="flex items-center gap-1.5 mb-2">
+                <HeartPulse size={12} style={{ color: `rgb(${MODULE_REGISTRY.recovery.colorRgb})` }} />
+                <p className="text-[8px] font-mono tracking-wider text-white/25">RECOVERY</p>
+              </div>
+              <p className="text-2xl font-bold font-mono text-white/90">{stats.recoveryPct ?? "—"}<span className="text-xs text-white/25">%</span></p>
+              <p className="text-[9px] font-mono text-white/20 mt-0.5">
+                {stats.recoveryPct !== null
+                  ? stats.recoveryPct >= 80 ? "Ready to train" : stats.recoveryPct >= 50 ? "Partially recovered" : "Rest suggested"
+                  : "No data"}
               </p>
-            ) : (
-              <p className="text-[9px] font-mono text-white/20 mt-0.5">No trend data</p>
-            )}
-          </div>
+            </div>
+          )}
+          {isEnabled("progress") && (
+            <div className="rounded-xl border bg-white/[0.03] p-3" style={{ borderColor: `rgb(${MODULE_REGISTRY.progress.colorRgb} / 0.15)`, boxShadow: `0 0 15px -5px rgb(${MODULE_REGISTRY.progress.colorRgb} / 0.1)` }}>
+              <div className="flex items-center gap-1.5 mb-2">
+                <TrendingUp size={12} style={{ color: `rgb(${MODULE_REGISTRY.progress.colorRgb})` }} />
+                <p className="text-[8px] font-mono tracking-wider text-white/25">BODY WEIGHT</p>
+              </div>
+              <p className="text-2xl font-bold font-mono text-white/90">
+                {stats.bodyWeight !== null ? formatWeight(stats.bodyWeight, weightUnit, 1) : "—"}<span className="text-xs text-white/25"> {weightUnit}</span>
+              </p>
+              {stats.bodyWeightChange !== null ? (
+                <p className={`text-[9px] font-mono mt-0.5 ${stats.bodyWeightChange > 0 ? "text-orange-300/60" : stats.bodyWeightChange < 0 ? "text-emerald-300/60" : "text-white/20"}`}>
+                  {stats.bodyWeightChange > 0 ? "+" : stats.bodyWeightChange < 0 ? "−" : ""}{formatWeight(Math.abs(stats.bodyWeightChange), weightUnit, 1)} {weightUnit} from previous
+                </p>
+              ) : (
+                <p className="text-[9px] font-mono text-white/20 mt-0.5">No trend data</p>
+              )}
+            </div>
+          )}
         </motion.div>
 
         {/* ─── Energy Dashboard ─── */}
-        {calorieSummary && (() => {
+        {isEnabled("nutrition") && calorieSummary && (() => {
           const eaten = todayIntake?.kcal ?? 0;
           const target = calorieSummary.calorieTarget;
           const remaining = target - eaten;
           const pct = Math.min((eaten / target) * 100, 100);
           const over = eaten > target;
           return (
-            <motion.div variants={staggerItem} className="rounded-2xl border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.03] p-4" style={{ boxShadow: "0 0 20px -5px rgb(var(--accent-rgb) / 0.1), inset 0 1px 0 rgb(var(--accent-rgb) / 0.05)" }}>
+            <motion.div variants={staggerItem} className="rounded-2xl border bg-white/[0.03] p-4" style={{ order: cardOrder.energyOrder, borderColor: `rgb(${MODULE_REGISTRY.nutrition.colorRgb} / 0.15)`, boxShadow: `0 0 20px -5px rgb(${MODULE_REGISTRY.nutrition.colorRgb} / 0.1), inset 0 1px 0 rgb(${MODULE_REGISTRY.nutrition.colorRgb} / 0.05)` }}>
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <Flame size={14} className="text-[rgb(var(--accent-light-rgb))]" />
-                  <p className="text-[9px] font-mono tracking-widest text-[rgb(var(--accent-light-rgb)/0.4)]">ENERGY</p>
+                  <Flame size={14} style={{ color: `rgb(${MODULE_REGISTRY.nutrition.colorRgb})` }} />
+                  <p className="text-[9px] font-mono tracking-widest" style={{ color: `rgb(${MODULE_REGISTRY.nutrition.colorRgb} / 0.5)` }}>ENERGY</p>
                 </div>
                 <button onClick={() => setShowQuickLog(!showQuickLog)} className="flex items-center gap-1 text-[9px] font-mono text-[rgb(var(--accent-rgb)/0.6)] hover:text-[rgb(var(--accent-rgb))] transition">
                   <Plus size={10} /> Log Food
@@ -845,12 +1235,12 @@ export default function Dashboard() {
         })()}
 
         {/* ─── Quick Links ─── */}
-        <motion.div variants={staggerItem} className="grid grid-cols-3 gap-2.5">
+        <motion.div variants={staggerItem} className="grid grid-cols-3 gap-2.5" style={{ order: 80 }}>
           {[
-            { label: "Schedule", icon: <Calendar size={16} />, href: "/schedule" },
-            { label: "Progress", icon: <TrendingUp size={16} />, href: "/progress" },
-            { label: "Recovery", icon: <HeartPulse size={16} />, href: "/recovery" },
-          ].map((link) => (
+            { label: "Schedule", icon: <Calendar size={16} />, href: "/schedule", module: "gym" as const },
+            { label: "Progress", icon: <TrendingUp size={16} />, href: "/progress", module: "progress" as const },
+            { label: "Recovery", icon: <HeartPulse size={16} />, href: "/recovery", module: "recovery" as const },
+          ].filter((l) => isEnabled(l.module)).map((link) => (
             <button
               key={link.label}
               onClick={() => router.push(link.href)}
@@ -864,7 +1254,7 @@ export default function Dashboard() {
 
         {/* ─── Recent Notifications ─── */}
         {notifLoaded && notifications.length > 0 && (
-          <motion.div variants={staggerItem} className="rounded-2xl border border-[rgb(var(--accent-rgb)/0.12)] bg-white/[0.03] overflow-hidden" style={{ boxShadow: "0 0 15px -5px rgb(var(--accent-rgb) / 0.08)" }}>
+          <motion.div variants={staggerItem} className="rounded-2xl border border-[rgb(var(--accent-rgb)/0.12)] bg-white/[0.03] overflow-hidden" style={{ order: 90, boxShadow: "0 0 15px -5px rgb(var(--accent-rgb) / 0.08)" }}>
             <div className="flex items-center justify-between px-4 pt-3.5 pb-2">
               <p className="text-[9px] font-mono tracking-widest text-[rgb(var(--accent-light-rgb)/0.4)]">RECENT NOTIFICATIONS</p>
               <button onClick={() => router.push("/notifications")} className="text-[9px] font-mono text-[rgb(var(--accent-rgb)/0.5)] hover:text-[rgb(var(--accent-rgb))] transition">

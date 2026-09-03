@@ -684,7 +684,7 @@ export default function SchedulePage() {
         if (user) {
             const todaysMuscles = new Set((rows ?? []).map((r: any) => r.exercises?.body_segment).filter(Boolean));
             if (todaysMuscles.size > 0) {
-                const recoveryMap = await analyzeRecovery(user.id, userSex);
+                const { data: recoveryMap } = await analyzeRecovery(user.id, userSex);
                 const warnings: { segment: string; pct: number; status: string; lastTrained: string }[] = [];
                 for (const seg of todaysMuscles) {
                     const rd = recoveryMap[seg];

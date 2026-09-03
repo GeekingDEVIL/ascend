@@ -2,8 +2,32 @@
 
 html, body { overflow-x: hidden; max-width: 100vw; }
 
+@keyframes shimmer {
+  0% { opacity: 0.04; }
+  50% { opacity: 0.08; }
+  100% { opacity: 0.04; }
+}
+.shimmer { animation: shimmer 1.5s ease-in-out infinite; }
+
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 .scrollbar-hide::-webkit-scrollbar { display: none; }
+
+@keyframes pill-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.pill-marquee-track {
+  animation: pill-scroll 18s linear infinite;
+}
+.pill-marquee-wrap:hover .pill-marquee-track,
+.pill-marquee-wrap:active .pill-marquee-track {
+  animation-play-state: paused;
+}
+@media (pointer: coarse) {
+  .pill-marquee-wrap:active .pill-marquee-track {
+    animation-play-state: paused;
+  }
+}
 
 :root {
   --background: #ffffff;
@@ -202,4 +226,28 @@ button:active:not(:disabled), [role="button"]:active:not(:disabled) {
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   color: rgb(var(--accent-light-rgb));
+}
+
+@keyframes celebrate-sweep {
+  0% { transform: translateX(-100%); opacity: 0; }
+  30% { opacity: 0.6; }
+  100% { transform: translateX(200%); opacity: 0; }
+}
+@keyframes celebrate-glow {
+  0%, 100% { box-shadow: inset 0 0 12px rgb(var(--accent-rgb) / 0), 0 0 0 rgb(var(--accent-rgb) / 0); }
+  50% { box-shadow: inset 0 0 12px rgb(var(--accent-rgb) / 0.15), 0 0 20px rgb(var(--accent-rgb) / 0.1); }
+}
+.achievement-celebrate {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  animation: celebrate-glow 2s ease-in-out infinite;
+}
+.achievement-celebrate::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 35%, rgb(var(--accent-rgb) / 0.12) 50%, transparent 65%);
+  animation: celebrate-sweep 3s ease-in-out infinite;
 }

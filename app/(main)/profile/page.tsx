@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { User, LogOut, Plus, Trash2, Check, Download, AlertTriangle, Eye, EyeOff, Target, Dumbbell, Shield, Heart, AtSign, Globe, Camera, Pencil, X, Flame, Phone, Mail, Trophy, Award, HeartPulse, Sparkles, Bell, ChevronRight } from "lucide-react";
+import { User, LogOut, Plus, Trash2, Check, Download, AlertTriangle, Eye, EyeOff, Target, Dumbbell, Shield, Heart, AtSign, Globe, Camera, Pencil, X, Flame, Phone, Mail, Trophy, Award, HeartPulse, Sparkles, Bell, ChevronRight, Compass, Building2, Home, Briefcase } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../lib/AuthProvider";
@@ -22,6 +22,9 @@ import { rematerializeWeightTrend } from "../../lib/weightTrend";
 import SwipeNav from "../../components/ui/swipe-nav";
 import { getYouSections } from "../../lib/navPills";
 import { useModules } from "../../lib/useModules";
+import { computeLevel, getRank } from "../../lib/levelSystem";
+import { MODULE_REGISTRY, OPTIONAL_MODULES, type ModuleKey } from "../../lib/modules";
+import { ACHIEVEMENT_DEFS, RARITY_COLORS as ACH_RARITY_COLORS } from "../../lib/achievements";
 
 type ProfileData = {
     goal: string;
@@ -113,6 +116,13 @@ const EQUIPMENT_LIST = [
     "Lat Pulldown", "Cable Crossover",
 ];
 
+const GYM_PROFILES: { value: string; label: string; desc: string; equipment: string[] }[] = [
+    { value: "commercial_gym", label: "Commercial Gym", desc: "Full access", equipment: [...EQUIPMENT_LIST] },
+    { value: "home_gym", label: "Home Gym", desc: "Free weights + basics", equipment: ["Barbell", "Dumbbell", "Kettlebell", "Resistance Band", "Pull-up Bar", "Bench", "Squat Rack", "EZ Curl Bar"] },
+    { value: "small_gym", label: "Small Gym", desc: "Limited machines", equipment: ["Barbell", "Dumbbell", "Kettlebell", "Cable", "Machine", "Bench", "Squat Rack", "Pull-up Bar"] },
+    { value: "traveling", label: "Traveling", desc: "Bodyweight + bands", equipment: ["Resistance Band"] },
+];
+
 export default function ProfilePage() {
     const { profile, user, refreshProfile } = useAuth();
     const router = useRouter();
@@ -141,6 +151,7 @@ export default function ProfilePage() {
     const [latestWeight, setLatestWeight] = useState<number | null>(null);
     const [totalSessions, setTotalSessions] = useState(0);
     const [totalVolume, setTotalVolume] = useState(0);
+    const [totalXp, setTotalXp] = useState(0);
     const [theme, setTheme] = useState<"navy" | "oled">("navy");
     const [accent, setAccent] = useState<AccentKey>(DEFAULT_ACCENT);
     const [goals, setGoals] = useState<UserGoals>(DEFAULT_GOALS);
@@ -148,6 +159,8 @@ export default function ProfilePage() {
     const [weightInput, setWeightInput] = useState("");
     const [weightSaving, setWeightSaving] = useState(false);
     const [equipmentAccess, setEquipmentAccess] = useState<string[]>([]);
+    const [activeGymProfile, setActiveGymProfile] = useState<string | null>(null);
+    const [earnedAchievements, setEarnedAchievements] = useState<{ key: string; earned_at: string }[]>([]);
 
     useEffect(() => {
         const stored = localStorage.getItem("ascend_theme");
@@ -179,7 +192,7 @@ export default function ProfilePage() {
         const [{ data: p }, { data: bs }] = await Promise.all([
             supabase
                 .from("profiles")
-                .select("unit_preference, injury_notes, social_instagram, social_twitter, profile_visibility, avatar_color, equipment_access")
+                .select("unit_preference, injury_notes, social_instagram, social_twitter, profile_visibility, avatar_color, equipment_access, gym_type")
                 .eq("id", user.id)
                 .maybeSingle(),
             supabase
@@ -208,6 +221,7 @@ export default function ProfilePage() {
                 activity_level: (bs?.activity_level as ActivityLevel) ?? "moderate",
             });
             setEquipmentAccess(p.equipment_access ?? []);
+            setActiveGymProfile(p.gym_type ?? null);
         }
         const { data: g } = await supabase
             .from("user_goals")
@@ -256,9 +270,16 @@ export default function ProfilePage() {
         if (bw?.[0]?.weight != null) setWeightInput(String(kgToUnit(bw[0].weight, loadUnit)));
 
         // Summary stats
-        const { data: sessions } = await supabase.from("workout_sessions").select("total_volume").eq("user_id", user.id).eq("status", "completed").eq("sex", currentSex);
+        const [{ data: sessions }, { data: statsRow }] = await Promise.all([
+            supabase.from("workout_sessions").select("total_volume").eq("user_id", user.id).eq("status", "completed").eq("sex", currentSex),
+            supabase.from("user_stats").select("total_xp").eq("user_id", user.id).eq("sex", currentSex).maybeSingle(),
+        ]);
         setTotalSessions((sessions ?? []).length);
         setTotalVolume((sessions ?? []).reduce((s, r: any) => s + (Number(r.total_volume) || 0), 0));
+        setTotalXp(statsRow?.total_xp ?? 0);
+
+        const { data: achRows } = await supabase.from("achievements").select("achievement_key, earned_at").eq("user_id", user.id).order("earned_at", { ascending: false });
+        setEarnedAchievements((achRows ?? []).map((a: any) => ({ key: a.achievement_key, earned_at: a.earned_at })));
 
         setLoading(false);
     }, [user, hookSex]);
@@ -275,9 +296,11 @@ export default function ProfilePage() {
             supabase.from("profile_body_stats").select("height_cm, activity_level, goal, experience, training_frequency, workout_time_pref, date_of_birth").eq("user_id", user.id).eq("sex", currentSex).maybeSingle(),
             supabase.from("user_goals").select("id, goal_type, target_weight_kg, target_date, rate_per_week_kg, workouts_per_week, preferred_days, diet_preference, calorie_target_override, protein_target_g").eq("user_id", user.id).eq("sex", currentSex).eq("is_active", true).limit(1),
             supabase.from("body_weight_logs").select("weight").eq("user_id", user.id).eq("sex", currentSex).order("logged_at", { ascending: false }).limit(1),
-        ]).then(([{ data: sessions }, { data: bs }, { data: goalRows }, { data: bw }]) => {
+            supabase.from("user_stats").select("total_xp").eq("user_id", user.id).eq("sex", currentSex).maybeSingle(),
+        ]).then(([{ data: sessions }, { data: bs }, { data: goalRows }, { data: bw }, { data: xpRow }]) => {
             setTotalSessions((sessions ?? []).length);
             setTotalVolume((sessions ?? []).reduce((s, r: any) => s + (Number(r.total_volume) || 0), 0));
+            setTotalXp(xpRow?.total_xp ?? 0);
             if (bs) {
                 setData((prev) => ({
                     ...prev,
@@ -612,15 +635,36 @@ export default function ProfilePage() {
         setGoals((prev) => ({ ...prev, [field]: value }));
     }
 
+    async function switchGymProfile(profileValue: string) {
+        if (!user) return;
+        const preset = GYM_PROFILES.find((p) => p.value === profileValue);
+        if (!preset) return;
+        const isAlreadyActive = activeGymProfile === profileValue;
+        const nextProfile = isAlreadyActive ? null : profileValue;
+        const nextEquipment = isAlreadyActive ? [] : preset.equipment;
+        setActiveGymProfile(nextProfile);
+        setEquipmentAccess(nextEquipment);
+        broadcastEquipmentChange(nextEquipment, nextProfile);
+        await supabase.from("profiles").update({ equipment_access: nextEquipment, gym_type: nextProfile }).eq("id", user.id);
+    }
+
     async function toggleEquipment(item: string) {
         if (!user) return;
         const next = equipmentAccess.includes(item)
             ? equipmentAccess.filter((e) => e !== item)
             : [...equipmentAccess, item];
         setEquipmentAccess(next);
+        setActiveGymProfile(null);
         broadcastEquipmentChange(next, null);
-        await supabase.from("profiles").update({ equipment_access: next }).eq("id", user.id);
+        await supabase.from("profiles").update({ equipment_access: next, gym_type: null }).eq("id", user.id);
     }
+
+    const levelInfo = computeLevel(totalXp);
+    const rank = getRank(levelInfo.level);
+    const enabledOptional = enabledKeys.filter((k) => {
+        const mod = MODULE_REGISTRY[k];
+        return mod && !mod.core;
+    });
 
     const isMetric = data.unit_preference === "metric";
     const weightUnit = isMetric ? "KG" : "LBS";
@@ -674,17 +718,32 @@ export default function ProfilePage() {
             <motion.div className="relative z-10 max-w-xl mx-auto px-4 pt-6 space-y-5" variants={staggerContainer} initial="hidden" animate="visible">
                 {/* Header — tap to edit profile */}
                 <motion.button variants={staggerItem} onClick={openProfileModal} className="w-full flex items-center gap-4 text-left group">
-                    <div
-                        className="relative w-16 h-16 rounded-xl border-2 flex items-center justify-center text-2xl font-bold shrink-0 overflow-hidden"
-                        style={{ borderColor: data.avatar_color + "60", backgroundColor: data.avatar_color + "15", color: data.avatar_color }}
-                    >
-                        {profile?.avatar_url ? (
-                            <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
-                        ) : (
-                            (profile?.username?.[0] ?? "?").toUpperCase()
-                        )}
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition">
-                            <Pencil size={14} className="text-white" />
+                    <div className="relative w-[72px] h-[72px] shrink-0">
+                        {(() => {
+                            const pct = levelInfo.isMaxLevel ? 100 : Math.round(levelInfo.progress * 100);
+                            const r = 32;
+                            const circ = 2 * Math.PI * r;
+                            const offset = circ - (pct / 100) * circ;
+                            return (
+                                <svg viewBox="0 0 72 72" className="absolute inset-0 w-full h-full -rotate-90">
+                                    <circle cx="36" cy="36" r={r} fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="3" />
+                                    <circle cx="36" cy="36" r={r} fill="none" stroke="rgb(var(--accent-rgb))" strokeWidth="3" strokeLinecap="round"
+                                        strokeDasharray={circ} strokeDashoffset={offset} className="transition-all duration-700" />
+                                </svg>
+                            );
+                        })()}
+                        <div
+                            className="absolute inset-[5px] rounded-xl overflow-hidden flex items-center justify-center text-2xl font-bold"
+                            style={{ backgroundColor: data.avatar_color + "15", color: data.avatar_color }}
+                        >
+                            {profile?.avatar_url ? (
+                                <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                            ) : (
+                                (profile?.username?.[0] ?? "?").toUpperCase()
+                            )}
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition">
+                                <Pencil size={14} className="text-white" />
+                            </div>
                         </div>
                     </div>
                     <div className="flex-1 min-w-0">
@@ -692,8 +751,12 @@ export default function ProfilePage() {
                             <h1 className="text-xl font-bold text-white/90 truncate">{profile?.username ?? "Unknown"}</h1>
                             <Pencil size={10} className="shrink-0 text-white/15 group-hover:text-[rgb(var(--accent-light-rgb))] transition" />
                         </div>
-                        <p className="text-xs font-mono text-white/40 truncate">{user?.email}</p>
-                        <p className="text-[10px] font-mono text-white/25 mt-0.5">Member since {user?.created_at ? new Date(user.created_at).toLocaleDateString(undefined, { month: "long", year: "numeric" }) : "—"}</p>
+                        <p className="text-xs font-mono text-white/30 mt-0.5">
+                            <span className={rank.color}>{rank.name}</span>
+                            <span className="text-white/15"> · </span>
+                            <span className="text-white/25">Level {levelInfo.level}</span>
+                        </p>
+                        <p className="text-[10px] font-mono text-white/20 mt-0.5">Member since {user?.created_at ? new Date(user.created_at).toLocaleDateString(undefined, { month: "long", year: "numeric" }) : "—"}</p>
                     </div>
                     {(saving || saved) && (
                         <span className={`shrink-0 text-[9px] font-mono px-2 py-1 rounded-md border transition ${saved ? "border-emerald-400/30 text-emerald-300" : "border-white/10 text-white/30"}`}>
@@ -730,6 +793,35 @@ export default function ProfilePage() {
                     </div>
                 </motion.div>
 
+                {/* Achievement Showcase */}
+                {earnedAchievements.length > 0 && (
+                    <motion.div variants={staggerItem} className="glass-card p-4">
+                        <div className="flex items-center justify-between mb-3">
+                            <p className="text-[9px] font-mono tracking-widest text-white/25">ACHIEVEMENT SHOWCASE</p>
+                            <button onClick={() => router.push("/achievements")} className="text-[9px] font-mono text-[rgb(var(--accent-light-rgb)/0.5)] hover:text-[rgb(var(--accent-light-rgb))] transition">
+                                View all →
+                            </button>
+                        </div>
+                        <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+                            {earnedAchievements.slice(0, 5).map((ach) => {
+                                const def = ACHIEVEMENT_DEFS.find((d) => d.key === ach.key);
+                                if (!def) return null;
+                                const rc = ACH_RARITY_COLORS[def.rarity];
+                                return (
+                                    <div key={ach.key} className={`flex-shrink-0 w-20 rounded-xl border ${rc.border} ${rc.bg} p-2.5 text-center`} style={{ boxShadow: rc.glow || undefined }}>
+                                        <div className="text-2xl mb-1">{def.icon}</div>
+                                        <p className="text-[9px] font-bold text-white/80 truncate">{def.name}</p>
+                                        <span className={`text-[7px] font-mono ${rc.text}`}>{def.rarity}</span>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                        <p className="text-[8px] font-mono text-white/15 mt-2 text-center">
+                            {earnedAchievements.length} / {ACHIEVEMENT_DEFS.length} unlocked
+                        </p>
+                    </motion.div>
+                )}
+
                 {/* Quick Links */}
                 <motion.div variants={staggerItem} className="space-y-1">
                     {[
@@ -747,6 +839,49 @@ export default function ProfilePage() {
                             <ChevronRight size={14} className="text-white/15 shrink-0" />
                         </button>
                     ))}
+                </motion.div>
+
+                {/* Enabled Modules */}
+                {enabledOptional.length > 0 && (
+                    <motion.div variants={staggerItem} className="glass-card p-4">
+                        <p className="text-[9px] font-mono tracking-widest text-white/25 mb-3">ENABLED MODULES</p>
+                        <div className="flex flex-wrap gap-2">
+                            {enabledOptional.map((key) => {
+                                const mod = MODULE_REGISTRY[key];
+                                return (
+                                    <span
+                                        key={key}
+                                        className="px-2.5 py-1 rounded-lg text-[10px] font-mono font-medium border"
+                                        style={{
+                                            color: `rgb(${mod.colorRgb})`,
+                                            borderColor: `rgb(${mod.colorRgb} / 0.3)`,
+                                            backgroundColor: `rgb(${mod.colorRgb} / 0.08)`,
+                                        }}
+                                    >
+                                        {mod.name}
+                                    </span>
+                                );
+                            })}
+                        </div>
+                    </motion.div>
+                )}
+
+                {/* Discover Modules */}
+                <motion.div
+                    variants={staggerItem}
+                    className="glass-card glass-card-interactive p-4 flex items-center gap-3 cursor-pointer"
+                    onClick={() => router.push("/discover")}
+                >
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-teal-500/10">
+                        <Compass size={20} className="text-teal-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-white/90">Discover Modules</p>
+                        <p className="text-[10px] font-mono text-white/30 mt-0.5">
+                            {OPTIONAL_MODULES.length - enabledOptional.length} more available
+                        </p>
+                    </div>
+                    <ChevronRight size={16} className="text-white/20 shrink-0" />
                 </motion.div>
 
                 {/* Section Tabs */}
@@ -1075,10 +1210,41 @@ export default function ProfilePage() {
                             </div>
                         </div>
 
+                        {/* Gym Profile Presets */}
+                        <div className="glass-card p-4 space-y-3">
+                            <p className="text-[10px] font-mono tracking-widest text-white/25">GYM PROFILE</p>
+                            <p className="text-[9px] font-mono text-white/25">Quick-switch your equipment set. Tap a profile to auto-fill, or customize below.</p>
+                            <div className="grid grid-cols-2 gap-2">
+                                {GYM_PROFILES.map((gp) => {
+                                    const active = activeGymProfile === gp.value;
+                                    const Icon = gp.value === "commercial_gym" ? Building2 : gp.value === "home_gym" ? Home : gp.value === "small_gym" ? Dumbbell : Briefcase;
+                                    return (
+                                        <button key={gp.value} onClick={() => switchGymProfile(gp.value)}
+                                            className={`flex items-center gap-2.5 p-3 rounded-xl border transition text-left ${
+                                                active
+                                                    ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.08)]"
+                                                    : "border-white/[0.08] bg-white/[0.02] hover:border-white/15"
+                                            }`}>
+                                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${active ? "bg-[rgb(var(--accent-rgb)/0.15)]" : "bg-white/[0.04]"}`}>
+                                                <Icon size={14} className={active ? "text-[rgb(var(--accent-rgb))]" : "text-white/30"} />
+                                            </div>
+                                            <div className="min-w-0">
+                                                <p className={`text-[10px] font-semibold ${active ? "text-[rgb(var(--accent-light-rgb))]" : "text-white/60"}`}>{gp.label}</p>
+                                                <p className="text-[8px] font-mono text-white/20">{gp.desc}</p>
+                                            </div>
+                                            {active && <Check size={12} className="text-[rgb(var(--accent-rgb))] ml-auto shrink-0" />}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
                         {/* Equipment Access */}
                         <div className="glass-card p-4 space-y-3">
-                            <p className="text-[10px] font-mono tracking-widest text-white/25">EQUIPMENT ACCESS</p>
-                            <p className="text-[9px] font-mono text-white/25">Select the equipment you have available. Exercise suggestions will be filtered accordingly.</p>
+                            <div className="flex items-center justify-between">
+                                <p className="text-[10px] font-mono tracking-widest text-white/25">EQUIPMENT ACCESS</p>
+                                {activeGymProfile && <span className="text-[8px] font-mono text-[rgb(var(--accent-rgb)/0.5)]">via {GYM_PROFILES.find(g => g.value === activeGymProfile)?.label} preset</span>}
+                            </div>
                             <div className="flex flex-wrap gap-2">
                                 {EQUIPMENT_LIST.map((item) => {
                                     const selected = equipmentAccess.includes(item);
@@ -1094,7 +1260,7 @@ export default function ProfilePage() {
                                     );
                                 })}
                             </div>
-                            <p className="text-[8px] font-mono text-white/20">{equipmentAccess.length} items selected</p>
+                            <p className="text-[8px] font-mono text-white/20">{equipmentAccess.length} items selected{activeGymProfile ? " · editing clears preset" : ""}</p>
                         </div>
                     </div>
                 )}

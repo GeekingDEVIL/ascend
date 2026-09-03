@@ -20,8 +20,11 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#04050a] flex items-center justify-center text-white/40 text-sm font-mono">
-        Loading...
+      <div className="min-h-screen bg-[#04050a] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border border-white/10 flex items-center justify-center font-bold text-sm text-white/30 rounded shimmer">A</div>
+          <div className="h-1 w-24 rounded-full bg-white/[0.06] shimmer" />
+        </div>
       </div>
     );
   }
