@@ -854,7 +854,7 @@ export default function ProfilePage() {
     const RankIcon = RANK_ICONS[rank.name] ?? Shield;
 
     const profileCompletion = (() => {
-        const fields: { key: string; label: string; done: boolean; section: string }[] = [
+        const fields: { key: string; label: string; done: boolean; section: Section }[] = [
             { key: "height", label: "Height", done: !!data.height_cm, section: "stats" },
             { key: "dob", label: "Date of birth", done: !!data.date_of_birth, section: "stats" },
             { key: "sex", label: "Sex", done: !!data.sex, section: "stats" },
@@ -1904,7 +1904,7 @@ export default function ProfilePage() {
                                                 return (
                                                     <button key={s.key} onClick={() => setEditingSocial(isEditing ? null : s.key)}
                                                         className={`w-11 h-11 rounded-full flex items-center justify-center transition-all ${isEditing ? "ring-2 scale-110" : isActive ? "bg-white/[0.06]" : "bg-white/[0.03] hover:bg-white/[0.06]"}`}
-                                                        style={{ color: isActive || isEditing ? s.color : "rgba(255,255,255,0.15)", ringColor: isEditing ? s.color : undefined }}>
+                                                        style={{ color: isActive || isEditing ? s.color : "rgba(255,255,255,0.15)", outlineColor: isEditing ? s.color : undefined }}>
                                                         {!isActive && !isEditing && <div className="absolute w-2.5 h-2.5 rounded-full bg-white/10 -top-0.5 -right-0.5 flex items-center justify-center text-[6px] text-white/30 font-bold">+</div>}
                                                         {s.icon}
                                                     </button>
