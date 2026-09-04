@@ -128,46 +128,48 @@ html, body { overflow-x: hidden; max-width: 100vw; }
   --bg-elevated: #ffffff;
   --bg-sunken: #ebe7df;
 
-  --fg-rgb: 15 23 42;
+  --fg-rgb: 0 0 0;
 
   --text-primary: rgb(15 23 42);
-  --text-secondary: rgb(15 23 42 / 0.7);
-  --text-tertiary: rgb(15 23 42 / 0.5);
-  --text-muted: rgb(15 23 42 / 0.4);
-  --text-faint: rgb(15 23 42 / 0.25);
+  --text-secondary: rgb(15 23 42 / 0.75);
+  --text-tertiary: rgb(15 23 42 / 0.6);
+  --text-muted: rgb(15 23 42 / 0.5);
+  --text-faint: rgb(15 23 42 / 0.35);
 
-  --border: rgb(15 23 42 / 0.12);
-  --border-subtle: rgb(15 23 42 / 0.08);
+  --border: rgb(0 0 0 / 0.15);
+  --border-subtle: rgb(0 0 0 / 0.1);
 
-  --glass-bg: rgb(var(--fg-rgb) / 0.03);
-  --glass-bg-hover: rgb(var(--fg-rgb) / 0.05);
-  --glass-bg-active: rgb(var(--fg-rgb) / 0.08);
-  --glass-border: rgb(var(--fg-rgb) / 0.08);
-  --glass-border-hover: rgb(var(--fg-rgb) / 0.15);
+  --glass-bg: rgb(0 0 0 / 0.04);
+  --glass-bg-hover: rgb(0 0 0 / 0.07);
+  --glass-bg-active: rgb(0 0 0 / 0.10);
+  --glass-border: rgb(0 0 0 / 0.12);
+  --glass-border-hover: rgb(0 0 0 / 0.20);
 }
 
 /* ═══ Daylight: glass card overrides ═══ */
 :root[data-theme="daylight"] .glass-card {
-  background: rgba(255, 255, 255, 0.7);
-  border-color: rgb(15 23 42 / 0.08);
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgb(0 0 0 / 0.1);
   box-shadow:
-    0 1px 3px rgb(15 23 42 / 0.06),
-    0 4px 16px rgb(15 23 42 / 0.04);
+    0 1px 2px rgb(0 0 0 / 0.06),
+    0 4px 12px rgb(0 0 0 / 0.04),
+    inset 0 1px 0 rgb(255 255 255 / 0.8);
   backdrop-filter: blur(12px) saturate(1.2);
 }
 :root[data-theme="daylight"] .glass-card::before {
-  background: linear-gradient(to right, transparent, rgb(255 255 255 / 0.5), transparent);
+  background: none;
 }
 :root[data-theme="daylight"] .glass-card-interactive:hover {
-  background: rgba(255, 255, 255, 0.85);
-  border-color: rgb(15 23 42 / 0.12);
+  background: rgba(255, 255, 255, 0.92);
+  border-color: rgb(0 0 0 / 0.16);
   box-shadow:
-    0 2px 8px rgb(15 23 42 / 0.08),
-    0 8px 24px rgb(15 23 42 / 0.06);
+    0 2px 8px rgb(0 0 0 / 0.08),
+    0 8px 24px rgb(0 0 0 / 0.06),
+    inset 0 1px 0 rgb(255 255 255 / 0.9);
 }
 :root[data-theme="daylight"] .glass-input {
-  background: rgba(255, 255, 255, 0.6);
-  border-color: rgb(15 23 42 / 0.1);
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgb(0 0 0 / 0.12);
   color: rgb(15 23 42);
 }
 :root[data-theme="daylight"] .page-ambient::before {

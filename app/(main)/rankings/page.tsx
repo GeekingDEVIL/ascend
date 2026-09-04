@@ -179,7 +179,7 @@ export default function RankingsPage() {
               style={{ boxShadow: `0 0 40px -8px ${currentRank.glow}, inset 0 1px 0 rgb(var(--fg-rgb) / 0.06)` }}
             >
               <div className={`absolute inset-0 ${currentRank.bgClass} opacity-30`} />
-              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#050914]/80" />
+              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[var(--bg-primary)]" />
               <div className="relative px-5 pt-6 pb-5">
                 <div className="flex items-center gap-4">
                   <div className={`w-16 h-16 rounded-2xl border-2 ${currentRank.border} ${currentRank.bgClass} flex items-center justify-center`} style={{ boxShadow: `0 0 20px -4px ${currentRank.glow}` }}>

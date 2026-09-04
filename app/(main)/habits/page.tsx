@@ -389,7 +389,7 @@ function MonthCalendar({ habits, completionSet, skipSet }: { habits: Habit[]; co
               style={{
                 background: ratio === 1 ? "rgb(16 185 129 / 0.15)" :
                   ratio > 0 ? "rgb(251 191 36 / 0.1)" :
-                  skipped ? "rgb(59 130 246 / 0.08)" : "rgb(255 255 255 / 0.02)",
+                  skipped ? "rgb(59 130 246 / 0.08)" : "rgb(var(--fg-rgb) / 0.03)",
               }}
             >
               <span className={`${ratio === 1 ? "text-emerald-400" : ratio > 0 ? "text-amber-400/70" : "text-[rgb(var(--fg-rgb)/0.30)]"}`}>{day}</span>
@@ -402,7 +402,7 @@ function MonthCalendar({ habits, completionSet, skipSet }: { habits: Habit[]; co
                       style={{
                         background: completed.some((c) => c.id === h.id)
                           ? `rgb(${h.color_rgb})`
-                          : "rgb(255 255 255 / 0.1)",
+                          : "rgb(var(--fg-rgb) / 0.15)",
                       }}
                     />
                   ))}
@@ -429,7 +429,7 @@ function ConstellationSky({ habits, completionSet }: { habits: Habit[]; completi
   const connCount = stars.reduce((s, st) => s + st.connections.length, 0);
 
   return (
-    <div className="rounded-2xl border border-indigo-500/[0.08] overflow-hidden" style={{ background: "linear-gradient(180deg, #020617 0%, #0a0f1a 50%, #050914 100%)" }}>
+    <div className="rounded-2xl border border-indigo-500/[0.08] overflow-hidden" style={{ background: "linear-gradient(180deg, var(--bg-sunken) 0%, var(--bg-card) 50%, var(--bg-primary) 100%)" }}>
       {/* Header */}
       <div className="px-4 pt-4 pb-2 flex items-center justify-between">
         <div>
@@ -477,7 +477,7 @@ function ConstellationSky({ habits, completionSet }: { habits: Habit[]; completi
             const sy = ((i * 23 + 7) % 65);
             const size = (i % 3 === 0) ? 0.4 : 0.2;
             const opacity = 0.08 + (i % 5) * 0.04;
-            return <circle key={`bg-${i}`} cx={sx} cy={sy} r={size} fill={`rgb(255 255 255 / ${opacity})`} />;
+            return <circle key={`bg-${i}`} cx={sx} cy={sy} r={size} fill={`rgb(var(--fg-rgb) / ${opacity})`} />;
           })}
 
           {/* Connection lines with gradient */}

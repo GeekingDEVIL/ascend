@@ -796,7 +796,7 @@ export default function WorkoutPage() {
         // Background
         const bg = ctx.createLinearGradient(0, 0, 0, 1920);
         bg.addColorStop(0, "#0a1524");
-        bg.addColorStop(1, "#050914");
+        bg.addColorStop(1, getComputedStyle(document.documentElement).getPropertyValue('--bg-primary').trim() || "#050914");
         ctx.fillStyle = bg;
         ctx.fillRect(0, 0, 1080, 1920);
 

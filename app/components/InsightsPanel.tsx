@@ -62,7 +62,7 @@ export function PredictionVsRealityCard({ data }: { data: PredictionAccuracy }) 
         <LineChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: 4 }}>
           <XAxis dataKey="date" tick={{ fontSize: 7, fill: "rgb(var(--fg-rgb) / 0.15)" }} axisLine={false} tickLine={false} />
           <YAxis domain={["auto", "auto"]} tick={{ fontSize: 7, fill: "rgb(var(--fg-rgb) / 0.15)" }} axisLine={false} tickLine={false} width={30} />
-          <Tooltip contentStyle={{ background: "#0a0f1a", border: "1px solid rgb(var(--fg-rgb) / 0.1)", borderRadius: 6, fontSize: 10, fontFamily: "monospace" }} />
+          <Tooltip contentStyle={{ background: "var(--bg-elevated)", border: "1px solid rgb(var(--fg-rgb) / 0.1)", borderRadius: 6, fontSize: 10, fontFamily: "monospace" }} />
           <Line type="monotone" dataKey="predicted" stroke="rgb(var(--fg-rgb) / 0.2)" strokeDasharray="4 2" dot={false} name="Expected" />
           <Line type="monotone" dataKey="actual" stroke="rgb(34,211,238)" dot={false} strokeWidth={2} name="Actual" connectNulls />
         </LineChart>

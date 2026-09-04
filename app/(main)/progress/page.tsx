@@ -1366,7 +1366,7 @@ export default function ProgressPage() {
                                                                                         const isPR = payload.weight === maxWeight;
                                                                                         return (
                                                                                             <g key={`dot-${index}`}>
-                                                                                                <circle cx={cx} cy={cy} r={isPR ? 5 : 3} fill={isPR ? "rgb(var(--accent-light-rgb))" : "rgb(var(--accent-rgb))"} stroke={isPR ? "#050914" : "none"} strokeWidth={isPR ? 1.5 : 0} />
+                                                                                                <circle cx={cx} cy={cy} r={isPR ? 5 : 3} fill={isPR ? "rgb(var(--accent-light-rgb))" : "rgb(var(--accent-rgb))"} stroke={isPR ? "var(--bg-primary)" : "none"} strokeWidth={isPR ? 1.5 : 0} />
                                                                                                 {isPR && <text x={cx} y={cy - 12} textAnchor="middle" fontSize="9" fontFamily="monospace" fill="rgb(var(--accent-light-rgb))" fontWeight="bold">PR</text>}
                                                                                             </g>
                                                                                         );
@@ -1882,7 +1882,7 @@ export default function ProgressPage() {
                                                             <XAxis dataKey="date" tick={{ fontSize: 8, fill: "rgb(var(--fg-rgb) / 0.25)" }} axisLine={false} tickLine={false} interval={sparkData.length > 10 ? 1 : 0} />
                                                             <Tooltip
                                                                 cursor={{ fill: "rgb(var(--fg-rgb) / 0.04)" }}
-                                                                contentStyle={{ background: "#0a0f1a", border: "1px solid rgb(var(--fg-rgb) / 0.12)", borderRadius: 8, fontSize: 10, fontFamily: "monospace", padding: "6px 10px" }}
+                                                                contentStyle={{ background: "var(--bg-elevated)", border: "1px solid rgb(var(--fg-rgb) / 0.12)", borderRadius: 8, fontSize: 10, fontFamily: "monospace", padding: "6px 10px" }}
                                                                 labelStyle={{ color: "rgb(var(--fg-rgb) / 0.4)", marginBottom: 2 }}
                                                                 itemStyle={{ padding: 0 }}
                                                                 formatter={(v: any) => [`${v > 0 ? "+" : ""}${v} kcal`, v <= 0 ? "Under target" : "Over target"]}

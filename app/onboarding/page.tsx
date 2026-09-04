@@ -111,7 +111,7 @@ type OnboardingProfilePatch = {
 function Toggle({ active }: { active: boolean }) {
     return (
         <span className={`relative shrink-0 w-9 h-5 rounded-full transition ${active ? "bg-[rgb(var(--accent-rgb))]" : "bg-[rgb(var(--fg-rgb)/0.10)]"}`}>
-            <span className="absolute top-0.5 w-4 h-4 rounded-full bg-black transition-all" style={{ left: active ? "18px" : "2px" }} />
+            <span className="absolute top-0.5 w-4 h-4 rounded-full bg-[var(--bg-primary)] transition-all" style={{ left: active ? "18px" : "2px" }} />
         </span>
     );
 }

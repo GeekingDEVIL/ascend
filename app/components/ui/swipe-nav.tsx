@@ -98,7 +98,7 @@ export default function SwipeNav({ sections, sectionId }: SwipeNavProps & { sect
                 <span
                   className="text-[10px] font-mono tracking-[0.12em] uppercase whitespace-nowrap transition-colors duration-200"
                   style={{
-                    color: isActive ? `rgb(${s.colorRgb})` : "rgb(255 255 255 / 0.25)",
+                    color: isActive ? `rgb(${s.colorRgb})` : "rgb(var(--fg-rgb) / 0.4)",
                   }}
                 >
                   {s.label}

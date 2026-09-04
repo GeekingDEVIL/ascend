@@ -13,7 +13,8 @@ import { staggerContainer, staggerItem } from "../../lib/motion";
 import { GOAL_OPTIONS } from "../../lib/goals";
 import { updateUserStats } from "../../lib/updateUserStats";
 import { autoCompleteHabits } from "../../lib/habitAutoComplete";
-import { ACCENT_PRESETS, DEFAULT_ACCENT, getAccentPreset, applyAccent, type AccentKey } from "../../lib/theme";
+import { ACCENT_PRESETS, DEFAULT_ACCENT, getAccentPreset, applyAccent, type AccentKey, type ThemeMode } from "../../lib/theme";
+import { useTheme } from "../../lib/useTheme";
 import { getFullCalorieSummary, ageFromDOB, type GoalType, type Sex, type ActivityLevel, type DietPreference, type CalorieSummary } from "../../lib/calorieEngine";
 import { useSex, broadcastSexChange } from "../../lib/useSex";
 import { broadcastUnitChange } from "../../lib/useUnits";
@@ -149,6 +150,7 @@ export default function ProfilePage() {
     const router = useRouter();
     const { sex: hookSex } = useSex();
     const { enabledKeys } = useModules();
+    const { mode: themeMode, setTheme: setThemeMode } = useTheme();
     const [avatarUploading, setAvatarUploading] = useState(false);
     const [avatarError, setAvatarError] = useState<string | null>(null);
     const [cropSrc, setCropSrc] = useState<string | null>(null);
@@ -191,7 +193,6 @@ export default function ProfilePage() {
     const [totalSessions, setTotalSessions] = useState(0);
     const [totalVolume, setTotalVolume] = useState(0);
     const [totalXp, setTotalXp] = useState(0);
-    const [theme, setTheme] = useState<"navy" | "oled">("navy");
     const [accent, setAccent] = useState<AccentKey>(DEFAULT_ACCENT);
     const [goals, setGoals] = useState<UserGoals>(DEFAULT_GOALS);
     const [calorieSummary, setCalorieSummary] = useState<CalorieSummary | null>(null);
@@ -201,20 +202,9 @@ export default function ProfilePage() {
     const [activeGymProfile, setActiveGymProfile] = useState<string | null>(null);
 
     useEffect(() => {
-        const stored = localStorage.getItem("ascend_theme");
-        const initial = stored === "oled" ? "oled" : "navy";
-        setTheme(initial);
-        document.documentElement.style.setProperty("--bg-primary", initial === "oled" ? "#000000" : "#050914");
-
         const storedAccent = localStorage.getItem("ascend_accent") as AccentKey | null;
         setAccent(getAccentPreset(storedAccent).key);
     }, []);
-
-    function applyTheme(value: "navy" | "oled") {
-        setTheme(value);
-        document.documentElement.style.setProperty("--bg-primary", value === "oled" ? "#000000" : "#050914");
-        localStorage.setItem("ascend_theme", value);
-    }
 
     function selectAccent(key: AccentKey) {
         setAccent(key);
@@ -955,7 +945,7 @@ export default function ProfilePage() {
                                 );
                                 return <div className="absolute inset-0" style={{ background: BANNER_PRESETS.find(b => b.key === data.banner_preset)?.bg ?? BANNER_PRESETS[0].bg, opacity: 0.6 }} />;
                             })()}
-                            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#080d18]" />
+                            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[var(--bg-card)]" />
                         </div>
 
                         {/* Save indicator */}
@@ -1007,7 +997,7 @@ export default function ProfilePage() {
                                     })()}
                                     <div
                                         className="absolute inset-[8px] rounded-full overflow-hidden flex items-center justify-center text-2xl font-bold"
-                                        style={{ backgroundColor: profile?.avatar_url ? "#0a0f1a" : data.avatar_color + "15", color: data.avatar_color }}
+                                        style={{ backgroundColor: profile?.avatar_url ? "var(--bg-card)" : data.avatar_color + "15", color: data.avatar_color }}
                                     >
                                         {profile?.avatar_url ? (
                                             <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
@@ -1676,17 +1666,33 @@ export default function ProfilePage() {
 
                     <div className="glass-card p-4 space-y-4">
                         <p className="text-[10px] font-mono tracking-widest text-[rgb(var(--fg-rgb)/0.25)]">THEME</p>
-                        <div className="flex gap-2">
-                            <button onClick={() => applyTheme("navy")}
-                                className={`flex-1 text-center py-3 rounded-lg border transition ${theme === "navy" ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-[rgb(var(--fg-rgb)/0.10)] text-[rgb(var(--fg-rgb)/0.40)]"}`}>
-                                <p className="text-sm font-mono font-bold">NAVY DARK</p>
-                                <p className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">#050914</p>
-                            </button>
-                            <button onClick={() => applyTheme("oled")}
-                                className={`flex-1 text-center py-3 rounded-lg border transition ${theme === "oled" ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-[rgb(var(--fg-rgb)/0.10)] text-[rgb(var(--fg-rgb)/0.40)]"}`}>
-                                <p className="text-sm font-mono font-bold">OLED BLACK</p>
-                                <p className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">#000000</p>
-                            </button>
+                        <div className="grid grid-cols-4 gap-2">
+                            {([
+                                { key: "dark" as ThemeMode, label: "Dark", preview: "#050914" },
+                                { key: "oled" as ThemeMode, label: "OLED", preview: "#000000" },
+                                { key: "daylight" as ThemeMode, label: "Daylight", preview: "#f5f3ee" },
+                                { key: "auto" as ThemeMode, label: "Auto", preview: "linear-gradient(135deg, #050914 50%, #f5f3ee 50%)" },
+                            ]).map((t) => {
+                                const active = themeMode === t.key;
+                                return (
+                                    <button
+                                        key={t.key}
+                                        onClick={() => setThemeMode(t.key)}
+                                        className={`flex flex-col items-center gap-1.5 py-2.5 rounded-lg border transition ${
+                                            active
+                                                ? "border-[rgb(var(--accent-rgb)/0.5)] bg-[rgb(var(--accent-rgb)/0.08)]"
+                                                : "border-[rgb(var(--fg-rgb)/0.08)] hover:border-[rgb(var(--fg-rgb)/0.15)]"
+                                        }`}
+                                    >
+                                        <div
+                                            className="w-6 h-6 rounded-full border border-[rgb(var(--fg-rgb)/0.15)]"
+                                            style={{ background: t.preview }}
+                                        />
+                                        <span className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.50)]">{t.label}</span>
+                                        {active && <Check size={10} className="text-[rgb(var(--accent-rgb))]" />}
+                                    </button>
+                                );
+                            })}
                         </div>
                     </div>
 
@@ -1815,7 +1821,7 @@ export default function ProfilePage() {
                                     );
                                     return <div className="absolute inset-0" style={{ background: BANNER_PRESETS.find(b => b.key === data.banner_preset)?.bg ?? BANNER_PRESETS[0].bg, opacity: 0.7 }} />;
                                 })()}
-                                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#080d18]" />
+                                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[var(--bg-card)]" />
                             </div>
                             {/* Close button */}
                             <button onClick={() => { setShowProfileModal(false); setEditingSocial(null); }} className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full bg-black/40 backdrop-blur-sm border border-[rgb(var(--fg-rgb)/0.10)] flex items-center justify-center text-[rgb(var(--fg-rgb)/0.50)] hover:text-[rgb(var(--fg-rgb)/0.80)] transition">
@@ -1824,7 +1830,7 @@ export default function ProfilePage() {
                             {/* Avatar + name — flows below banner */}
                             <div className="flex flex-col items-center -mt-7 pb-2 relative z-[1]">
                                 <label className="relative w-14 h-14 rounded-full border-2 flex items-center justify-center text-lg font-bold cursor-pointer overflow-hidden group mb-1"
-                                    style={{ borderColor: data.avatar_color + "60", backgroundColor: profile?.avatar_url ? "#0a0f1a" : data.avatar_color + "15", color: data.avatar_color }}>
+                                    style={{ borderColor: data.avatar_color + "60", backgroundColor: profile?.avatar_url ? "var(--bg-card)" : data.avatar_color + "15", color: data.avatar_color }}>
                                     {profile?.avatar_url ? (
                                         <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
                                     ) : (

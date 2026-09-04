@@ -326,7 +326,7 @@ export default function LoginPage() {
               className="absolute inset-[-6px] rounded-lg bg-[rgb(var(--accent-rgb))]"
               style={{ animation: "breathe 4s ease-in-out infinite", filter: "blur(12px)" }}
             />
-            <div className="relative w-11 h-11 rounded-lg border border-[rgb(var(--fg-rgb)/0.12)] bg-black/90 flex items-center justify-center text-[var(--text-primary)] font-bold text-lg">
+            <div className="relative w-11 h-11 rounded-lg border border-[rgb(var(--fg-rgb)/0.12)] bg-[var(--bg-primary)] flex items-center justify-center text-[var(--text-primary)] font-bold text-lg">
               A
             </div>
           </div>
