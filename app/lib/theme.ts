@@ -1,3 +1,31 @@
+// ─── Theme Modes ────────────────────────────────────────────────────────────
+
+export type ThemeMode = "dark" | "oled" | "daylight" | "auto";
+
+const THEME_KEY = "ascend_theme";
+
+export function getStoredTheme(): ThemeMode {
+  if (typeof window === "undefined") return "dark";
+  return (localStorage.getItem(THEME_KEY) as ThemeMode) || "dark";
+}
+
+export function setStoredTheme(mode: ThemeMode) {
+  localStorage.setItem(THEME_KEY, mode);
+}
+
+export function resolveTheme(mode: ThemeMode): "dark" | "oled" | "daylight" {
+  if (mode !== "auto") return mode;
+  if (typeof window === "undefined") return "dark";
+  return window.matchMedia("(prefers-color-scheme: light)").matches ? "daylight" : "dark";
+}
+
+export function applyTheme(mode: ThemeMode) {
+  const resolved = resolveTheme(mode);
+  document.documentElement.setAttribute("data-theme", resolved);
+}
+
+// ─── Accent Colors ──────────────────────────────────────────────────────────
+
 export type AccentKey = "cyan" | "red" | "orange" | "violet" | "emerald" | "pink" | "blue" | "amber";
 
 export type AccentPreset = { key: AccentKey; label: string; rgb: string; lightRgb: string };

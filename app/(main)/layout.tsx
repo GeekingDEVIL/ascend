@@ -7,6 +7,7 @@ import MobileNav from "../components/MobileNav";
 import ActiveSessionBar from "../components/ActiveSessionBar";
 import { AuthProvider, useAuth } from "../lib/AuthProvider";
 import { applyAccent } from "../lib/theme";
+import { useTheme } from "../lib/useTheme";
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -20,10 +21,10 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#04050a] flex items-center justify-center">
+      <div className="min-h-screen bg-[var(--bg-sunken)] flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 border border-white/10 flex items-center justify-center font-bold text-sm text-white/30 rounded shimmer">A</div>
-          <div className="h-1 w-24 rounded-full bg-white/[0.06] shimmer" />
+          <div className="w-10 h-10 border border-[var(--border)] flex items-center justify-center font-bold text-sm text-[var(--text-muted)] rounded shimmer">A</div>
+          <div className="h-1 w-24 rounded-full bg-[var(--border-subtle)] shimmer" />
         </div>
       </div>
     );
@@ -33,6 +34,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 }
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
+  useTheme();
   useEffect(() => {
     applyAccent(localStorage.getItem("ascend_accent"));
   }, []);
