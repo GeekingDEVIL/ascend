@@ -54,7 +54,7 @@ export default function MobileNav() {
   const modeSymbol = isFemale ? "♀" : "♂";
 
   return (
-    <nav className="md:hidden fixed bottom-0 inset-x-0 z-50 bg-black/90 backdrop-blur-xl" style={{ borderTop: `1.5px solid ${modeColor}40` }}>
+    <nav className="md:hidden fixed bottom-0 inset-x-0 z-50 backdrop-blur-xl" style={{ borderTop: `1.5px solid ${modeColor}40`, background: "color-mix(in srgb, var(--bg-primary) 92%, transparent)" }}>
       <div className="absolute inset-x-0 top-0 h-8 pointer-events-none" style={{ background: `linear-gradient(to bottom, ${modeGlow}, transparent)` }} />
       <div className="flex items-center justify-around py-2 relative">
         {tabs.map((item) => {

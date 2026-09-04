@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Settings, Palette, Ruler, Droplets, Building2, Home, Briefcase, Plane, ChevronRight, Check, Compass, Zap, LogOut } from "lucide-react";
+import { Settings, Palette, Ruler, Droplets, Building2, Home, Briefcase, Plane, ChevronRight, Check, Compass, Zap, LogOut, Sun, Moon, Smartphone, Monitor } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../lib/AuthProvider";
-import { ACCENT_PRESETS, applyAccent, type AccentKey } from "../../lib/theme";
+import { ACCENT_PRESETS, applyAccent, type AccentKey, type ThemeMode } from "../../lib/theme";
+import { useTheme } from "../../lib/useTheme";
 import { broadcastUnitChange } from "../../lib/useUnits";
 import { broadcastEquipmentChange } from "../../lib/useEquipment";
 import { useModules } from "../../lib/useModules";
@@ -34,6 +35,7 @@ const WATER_GOALS = [
 export default function SetupPage() {
   const { user, profile } = useAuth();
   const { enabledKeys, toggleModule } = useModules();
+  const { mode: themeMode, setTheme } = useTheme();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -127,6 +129,47 @@ export default function SetupPage() {
               <Check size={14} /> Saved
             </motion.div>
           )}
+        </motion.div>
+
+        {/* Theme Mode */}
+        <motion.div variants={staggerItem} className="glass-card p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Monitor size={16} className="text-[rgb(var(--accent-rgb))]" />
+            <h2 className="text-xs font-mono uppercase tracking-widest text-[rgb(var(--fg-rgb)/0.50)]">Theme</h2>
+          </div>
+          <div className="grid grid-cols-4 gap-2">
+            {([
+              { key: "dark" as ThemeMode, label: "Dark", icon: Moon, preview: "#050914" },
+              { key: "oled" as ThemeMode, label: "OLED", icon: Moon, preview: "#000000" },
+              { key: "daylight" as ThemeMode, label: "Daylight", icon: Sun, preview: "#f5f3ee" },
+              { key: "auto" as ThemeMode, label: "Auto", icon: Smartphone, preview: "linear-gradient(135deg, #050914 50%, #f5f3ee 50%)" },
+            ]).map((t) => {
+              const Icon = t.icon;
+              const active = themeMode === t.key;
+              return (
+                <button
+                  key={t.key}
+                  onClick={() => setTheme(t.key)}
+                  className={`relative flex flex-col items-center gap-1.5 py-2.5 rounded-lg border transition ${
+                    active
+                      ? "border-[rgb(var(--accent-rgb)/0.5)] bg-[rgb(var(--accent-rgb)/0.08)]"
+                      : "border-[rgb(var(--fg-rgb)/0.05)] hover:border-[rgb(var(--fg-rgb)/0.10)]"
+                  }`}
+                >
+                  <div
+                    className="w-6 h-6 rounded-full border border-[rgb(var(--fg-rgb)/0.15)]"
+                    style={{ background: t.preview }}
+                  />
+                  <span className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.50)]">{t.label}</span>
+                  {active && (
+                    <div className="absolute top-1 right-1">
+                      <Check size={10} className="text-[rgb(var(--accent-rgb))]" />
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </motion.div>
 
         {/* Accent Theme */}

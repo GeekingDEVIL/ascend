@@ -55,7 +55,7 @@ export default function Sidebar() {
   }
 
   return (
-    <aside className="hidden md:flex flex-col w-64 border-r bg-black/80 backdrop-blur-xl h-screen sticky top-0 z-20 p-5 shrink-0 overflow-y-auto" style={{ borderColor: "rgb(var(--accent-rgb) / 0.1)" }}>
+    <aside className="hidden md:flex flex-col w-64 border-r backdrop-blur-xl h-screen sticky top-0 z-20 p-5 shrink-0 overflow-y-auto" style={{ borderColor: "rgb(var(--accent-rgb) / 0.1)", background: "color-mix(in srgb, var(--bg-primary) 92%, transparent)" }}>
       <div className="flex items-center gap-3 mb-6">
         <div className="w-10 h-10 border flex items-center justify-center font-bold text-sm" style={{ borderColor: "rgb(var(--accent-rgb) / 0.4)", color: "rgb(var(--accent-rgb))" }}>A</div>
         <div>
