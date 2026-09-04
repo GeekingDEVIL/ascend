@@ -37,26 +37,24 @@ function timeAgo(dateStr: string): string {
 
 function AnimatedPercent({ value, className }: { value: number; className?: string }) {
   const [display, setDisplay] = useState(0);
-  const animatingTo = useRef(-1);
   useEffect(() => {
-    if (value === animatingTo.current) return;
-    animatingTo.current = value;
+    if (value === 0) { setDisplay(0); return; }
     setDisplay(0);
+    let cancelled = false;
+    let raf: number;
     const timeout = setTimeout(() => {
-      if (animatingTo.current !== value) return;
       const duration = 1500;
       const start = performance.now();
-      let raf: number;
       function tick(now: number) {
+        if (cancelled) return;
         const t = Math.min((now - start) / duration, 1);
         const eased = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
         setDisplay(Math.round(value * eased));
         if (t < 1) raf = requestAnimationFrame(tick);
       }
       raf = requestAnimationFrame(tick);
-      return () => cancelAnimationFrame(raf);
     }, 500);
-    return () => clearTimeout(timeout);
+    return () => { cancelled = true; clearTimeout(timeout); cancelAnimationFrame(raf); };
   }, [value]);
   return <span className={className}>{display}%</span>;
 }

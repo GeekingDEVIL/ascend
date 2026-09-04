@@ -171,28 +171,24 @@ function triggerHaptic(style: "light" | "medium" | "heavy" | "success" = "light"
 
 function AnimatedPercent({ value }: { value: number }) {
   const [display, setDisplay] = useState(0);
-  const animatingTo = useRef(-1);
   useEffect(() => {
-    if (value === animatingTo.current) return;
-    animatingTo.current = value;
-    const from = 0;
-    const to = value;
+    if (value === 0) { setDisplay(0); return; }
     setDisplay(0);
+    let cancelled = false;
+    let raf: number;
     const timeout = setTimeout(() => {
-      if (animatingTo.current !== value) return;
       const duration = 1500;
       const start = performance.now();
-      let raf: number;
       function tick(now: number) {
+        if (cancelled) return;
         const t = Math.min((now - start) / duration, 1);
         const eased = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-        setDisplay(Math.round(from + (to - from) * eased));
+        setDisplay(Math.round(value * eased));
         if (t < 1) raf = requestAnimationFrame(tick);
       }
       raf = requestAnimationFrame(tick);
-      return () => cancelAnimationFrame(raf);
     }, 500);
-    return () => clearTimeout(timeout);
+    return () => { cancelled = true; clearTimeout(timeout); cancelAnimationFrame(raf); };
   }, [value]);
   return (
     <span className="text-2xl font-black font-mono text-white/80">
