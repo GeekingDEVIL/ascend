@@ -46,13 +46,13 @@ const LeaderboardCard = React.forwardRef<HTMLDivElement, LeaderboardCardProps>(
     return (
       <div
         ref={ref}
-        className={cn("rounded-2xl border border-white/[0.06] bg-white/[0.02] p-5", className)}
+        className={cn("rounded-2xl border border-[rgb(var(--fg-rgb)/0.06)] bg-[rgb(var(--fg-rgb)/0.02)] p-5", className)}
         {...props}
       >
         <div className="mb-5 flex items-start justify-between gap-4">
           <div className="space-y-0.5">
-            <h3 className="text-lg font-bold text-white/90">{title}</h3>
-            <p className="text-[10px] font-mono text-white/30">
+            <h3 className="text-lg font-bold text-[rgb(var(--fg-rgb)/0.90)]">{title}</h3>
+            <p className="text-[10px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">
               {fromLabel} – {toLabel}
             </p>
           </div>
@@ -68,7 +68,7 @@ const LeaderboardCard = React.forwardRef<HTMLDivElement, LeaderboardCardProps>(
                 }
                 setLocalRunId(e.target.value);
               }}
-              className="text-[10px] font-mono bg-white/[0.04] text-white/60 rounded-lg border border-white/[0.08] px-2.5 py-1.5 outline-none focus:border-[rgb(var(--accent-rgb)/0.3)]"
+              className="text-[10px] font-mono bg-[rgb(var(--fg-rgb)/0.04)] text-[rgb(var(--fg-rgb)/0.60)] rounded-lg border border-[rgb(var(--fg-rgb)/0.08)] px-2.5 py-1.5 outline-none focus:border-[rgb(var(--accent-rgb)/0.3)]"
             >
               {runOptions.map((option) => (
                 <option key={option.id} value={option.id}>{option.label}</option>

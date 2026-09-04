@@ -31,7 +31,7 @@ function MiniBarChart({ data, color }: { data: number[]; color: string }) {
             className="flex-1 rounded-sm transition-all duration-300"
             style={{
               height: `${h}%`,
-              backgroundColor: isLast ? color : "rgba(255,255,255,0.08)",
+              backgroundColor: isLast ? color : "rgb(var(--fg-rgb) / 0.08)",
               opacity: isLast ? 1 : 0.6 + (i / data.length) * 0.4,
             }}
           />
@@ -50,7 +50,7 @@ function RecoveryRing({ pct, size = 72 }: { pct: number; size?: number }) {
   return (
     <div className="relative" style={{ width: size, height: size }}>
       <svg viewBox={`0 0 ${size} ${size}`} className="w-full h-full -rotate-90">
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="4" />
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgb(var(--fg-rgb) / 0.04)" strokeWidth="4" />
         <circle
           cx={size / 2} cy={size / 2} r={r} fill="none"
           stroke={color} strokeWidth="4" strokeLinecap="round"
@@ -58,7 +58,7 @@ function RecoveryRing({ pct, size = 72 }: { pct: number; size?: number }) {
           className="transition-all duration-700"
         />
       </svg>
-      <span className="absolute inset-0 flex items-center justify-center text-sm font-mono font-bold text-white/80">
+      <span className="absolute inset-0 flex items-center justify-center text-sm font-mono font-bold text-[rgb(var(--fg-rgb)/0.80)]">
         {pct}%
       </span>
     </div>
@@ -83,14 +83,14 @@ function MuscleDistBar({ groups, total }: { groups: { key: string; count: number
         const pct = Math.round((g.count / total) * 100);
         return (
           <div key={g.key} className="flex items-center gap-2">
-            <span className="text-[9px] font-mono text-white/30 w-16 text-right shrink-0">{mg?.label ?? g.key}</span>
-            <div className="flex-1 h-2 rounded-full bg-white/[0.04] overflow-hidden">
+            <span className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.30)] w-16 text-right shrink-0">{mg?.label ?? g.key}</span>
+            <div className="flex-1 h-2 rounded-full bg-[rgb(var(--fg-rgb)/0.04)] overflow-hidden">
               <div
                 className="h-full rounded-full transition-all duration-500"
                 style={{ width: `${Math.max(pct, 3)}%`, backgroundColor: mg?.color ?? "rgb(var(--accent-rgb))" }}
               />
             </div>
-            <span className="text-[9px] font-mono text-white/20 w-7 shrink-0">{pct}%</span>
+            <span className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.20)] w-7 shrink-0">{pct}%</span>
           </div>
         );
       })}
@@ -250,14 +250,14 @@ export default function TrackHub() {
   const monthPct = Math.min(100, Math.round((stats.monthSessions / stats.monthTarget) * 100));
 
   return (
-    <main className="relative min-h-screen w-full bg-[#050914] text-white pb-24 md:pb-10 overflow-x-hidden">
+    <main className="relative min-h-screen w-full bg-[var(--bg-primary)] text-[var(--text-primary)] pb-24 md:pb-10 overflow-x-hidden">
       <motion.div
         className="relative z-10 w-full max-w-xl mx-auto px-4 pt-4 space-y-4"
         variants={staggerContainer}
         initial="hidden"
         animate="visible"
       >
-        <motion.h1 variants={staggerItem} className="text-xl font-bold font-display text-white/90">
+        <motion.h1 variants={staggerItem} className="text-xl font-bold font-display text-[rgb(var(--fg-rgb)/0.90)]">
           Track
         </motion.h1>
 
@@ -279,10 +279,10 @@ export default function TrackHub() {
             <MiniBarChart data={stats.weeklyVolumes} color="rgb(52 211 153)" />
           )}
           <div className="flex items-baseline gap-2 mt-2">
-            <p className="text-2xl font-bold font-mono text-white/90">
+            <p className="text-2xl font-bold font-mono text-[rgb(var(--fg-rgb)/0.90)]">
               {loaded ? Math.round(kgToUnit(stats.weeklyVolume, weightUnit)).toLocaleString() : "—"}
             </p>
-            <span className="text-xs font-mono text-white/25">{weightUnit} this week</span>
+            <span className="text-xs font-mono text-[rgb(var(--fg-rgb)/0.25)]">{weightUnit} this week</span>
           </div>
         </motion.div>
 
@@ -290,20 +290,20 @@ export default function TrackHub() {
         <motion.div variants={staggerItem} className="grid grid-cols-3 gap-2">
           <div className="glass-card p-3 text-center">
             <p className="text-[8px] font-mono tracking-widest text-yellow-400/60 mb-1.5">PRs</p>
-            <p className="text-2xl font-bold font-mono text-white/90">
+            <p className="text-2xl font-bold font-mono text-[rgb(var(--fg-rgb)/0.90)]">
               {loaded ? stats.prCount : "—"}
             </p>
-            <p className="text-[9px] font-mono text-white/20 mt-0.5">records</p>
+            <p className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.20)] mt-0.5">records</p>
           </div>
           <div className="glass-card p-3 text-center">
             <p className="text-[8px] font-mono tracking-widest text-[rgb(var(--accent-light-rgb)/0.4)] mb-1.5">WEIGHT</p>
-            <p className="text-2xl font-bold font-mono text-white/90">
+            <p className="text-2xl font-bold font-mono text-[rgb(var(--fg-rgb)/0.90)]">
               {loaded && stats.bodyWeight !== null ? formatWeight(stats.bodyWeight, weightUnit, 1) : "—"}
             </p>
             <p className={`text-[9px] font-mono mt-0.5 ${
               stats.bodyWeightChange !== null
-                ? stats.bodyWeightChange > 0 ? "text-orange-300/50" : stats.bodyWeightChange < 0 ? "text-emerald-300/50" : "text-white/20"
-                : "text-white/20"
+                ? stats.bodyWeightChange > 0 ? "text-orange-300/50" : stats.bodyWeightChange < 0 ? "text-emerald-300/50" : "text-[rgb(var(--fg-rgb)/0.20)]"
+                : "text-[rgb(var(--fg-rgb)/0.20)]"
             }`}>
               {loaded && stats.bodyWeightChange !== null
                 ? `${stats.bodyWeightChange > 0 ? "+" : stats.bodyWeightChange < 0 ? "−" : ""}${formatWeight(Math.abs(stats.bodyWeightChange), weightUnit, 1)}`
@@ -312,10 +312,10 @@ export default function TrackHub() {
           </div>
           <div className="glass-card p-3 text-center">
             <p className="text-[8px] font-mono tracking-widest text-violet-400/60 mb-1.5">THIS MONTH</p>
-            <p className="text-2xl font-bold font-mono text-white/90">
+            <p className="text-2xl font-bold font-mono text-[rgb(var(--fg-rgb)/0.90)]">
               {loaded ? stats.monthSessions : "—"}
             </p>
-            <p className="text-[9px] font-mono text-white/20 mt-0.5">sessions</p>
+            <p className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.20)] mt-0.5">sessions</p>
           </div>
         </motion.div>
 
@@ -324,9 +324,9 @@ export default function TrackHub() {
           <motion.div variants={staggerItem} className="glass-card p-4">
             <div className="flex items-center justify-between mb-2">
               <p className="text-[9px] font-mono tracking-widest text-violet-400/60">MONTHLY FREQUENCY</p>
-              <span className="text-[10px] font-mono text-white/25">{stats.monthSessions}/{stats.monthTarget} target</span>
+              <span className="text-[10px] font-mono text-[rgb(var(--fg-rgb)/0.25)]">{stats.monthSessions}/{stats.monthTarget} target</span>
             </div>
-            <div className="h-2 rounded-full bg-white/[0.04] overflow-hidden">
+            <div className="h-2 rounded-full bg-[rgb(var(--fg-rgb)/0.04)] overflow-hidden">
               <motion.div
                 className="h-full rounded-full"
                 style={{ backgroundColor: monthPct >= 100 ? "rgb(52 211 153)" : "rgb(var(--accent-rgb))" }}
@@ -346,11 +346,11 @@ export default function TrackHub() {
             {loaded && stats.recoveryPct !== null ? (
               <RecoveryRing pct={stats.recoveryPct} size={64} />
             ) : (
-              <div className="w-16 h-16 rounded-full border-4 border-white/[0.04] flex items-center justify-center">
-                <span className="text-sm font-mono text-white/20">—</span>
+              <div className="w-16 h-16 rounded-full border-4 border-[rgb(var(--fg-rgb)/0.04)] flex items-center justify-center">
+                <span className="text-sm font-mono text-[rgb(var(--fg-rgb)/0.20)]">—</span>
               </div>
             )}
-            <p className="text-[9px] font-mono text-white/20 mt-2 text-center">
+            <p className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.20)] mt-2 text-center">
               {loaded && stats.recoveryPct !== null
                 ? stats.recoveryPct >= 80 ? "Ready" : stats.recoveryPct >= 50 ? "Moderate" : "Rest"
                 : "No data"}
@@ -363,7 +363,7 @@ export default function TrackHub() {
             {loaded && stats.muscleGroups.length > 0 ? (
               <MuscleDistBar groups={stats.muscleGroups} total={stats.totalMuscleHits} />
             ) : (
-              <p className="text-[10px] font-mono text-white/15 text-center py-6">
+              <p className="text-[10px] font-mono text-[rgb(var(--fg-rgb)/0.15)] text-center py-6">
                 {loaded ? "Train to see distribution" : "Loading..."}
               </p>
             )}

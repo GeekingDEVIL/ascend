@@ -135,7 +135,7 @@ export default function RecoveryPage() {
   const overallStatus = avgRecovery !== null ? overallStatusLabel(avgRecovery) : null;
 
   return (
-    <main className="min-h-screen bg-[#050914] text-white pb-24 md:pb-10 relative">
+    <main className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] pb-24 md:pb-10 relative">
 
       <div className="relative z-10 max-w-xl mx-auto px-4 pt-6 space-y-5">
         <SwipeNav sections={getTrackSections(enabledKeys)} />
@@ -144,11 +144,11 @@ export default function RecoveryPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold font-display text-[rgb(var(--accent-light-rgb))]">Recovery</h1>
-            <p className="text-[11px] text-white/30 mt-0.5">Evidence-based per-muscle readiness</p>
+            <p className="text-[11px] text-[rgb(var(--fg-rgb)/0.30)] mt-0.5">Evidence-based per-muscle readiness</p>
           </div>
           {avgRecovery !== null && (
             <div className="text-right">
-              <p className="text-2xl font-bold font-mono text-white/90">{avgRecovery}%</p>
+              <p className="text-2xl font-bold font-mono text-[rgb(var(--fg-rgb)/0.90)]">{avgRecovery}%</p>
               <p className={`text-[9px] font-mono ${overallStatus!.color}`}>{overallStatus!.label}</p>
             </div>
           )}
@@ -160,9 +160,9 @@ export default function RecoveryPage() {
             <Droplets size={16} className="text-pink-400 shrink-0" />
             <div className="flex-1 text-left">
               <p className="text-[11px] font-mono text-pink-300">Cycle Tracking</p>
-              <p className="text-[9px] font-mono text-white/25">Log periods, symptoms & phase-aware recommendations</p>
+              <p className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.25)]">Log periods, symptoms & phase-aware recommendations</p>
             </div>
-            <ChevronLeft size={14} className="text-white/20 rotate-180" />
+            <ChevronLeft size={14} className="text-[rgb(var(--fg-rgb)/0.20)] rotate-180" />
           </button>
         )}
 
@@ -170,23 +170,23 @@ export default function RecoveryPage() {
           <CubeLoader message="Analyzing recovery…" />
         ) : rows.length === 0 ? (
           <div className="text-center py-16">
-            <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center">
-              <HeartPulse size={24} className="text-white/15" />
+            <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-[rgb(var(--fg-rgb)/0.03)] border border-[rgb(var(--fg-rgb)/0.06)] flex items-center justify-center">
+              <HeartPulse size={24} className="text-[rgb(var(--fg-rgb)/0.15)]" />
             </div>
             {diagnostics && diagnostics.totalLogs > 0 ? (
               <>
-                <p className="text-sm font-semibold text-white/25">Exercises Need Body Segments</p>
-                <p className="text-xs text-white/20 mt-1 max-w-xs mx-auto">
+                <p className="text-sm font-semibold text-[rgb(var(--fg-rgb)/0.25)]">Exercises Need Body Segments</p>
+                <p className="text-xs text-[rgb(var(--fg-rgb)/0.20)] mt-1 max-w-xs mx-auto">
                   Found {diagnostics.totalLogs} logged sets but none mapped to a muscle group.
                   {diagnostics.skippedNoSegment > 0 && ` ${diagnostics.skippedNoSegment} sets have exercises without a body segment assigned.`}
                   {diagnostics.skippedCardioFullBody > 0 && ` ${diagnostics.skippedCardioFullBody} sets are Cardio/Full Body (tracked separately).`}
                 </p>
-                <p className="text-[10px] text-white/15 mt-2">Make sure your exercises have a body segment (Chest, Back, Legs, etc.) in the exercise database.</p>
+                <p className="text-[10px] text-[rgb(var(--fg-rgb)/0.15)] mt-2">Make sure your exercises have a body segment (Chest, Back, Legs, etc.) in the exercise database.</p>
               </>
             ) : (
               <>
-                <p className="text-sm font-semibold text-white/25">No Training Data</p>
-                <p className="text-xs text-white/20 mt-1">Complete a few workouts to see per-muscle recovery here.</p>
+                <p className="text-sm font-semibold text-[rgb(var(--fg-rgb)/0.25)]">No Training Data</p>
+                <p className="text-xs text-[rgb(var(--fg-rgb)/0.20)] mt-1">Complete a few workouts to see per-muscle recovery here.</p>
               </>
             )}
           </div>
@@ -195,28 +195,28 @@ export default function RecoveryPage() {
             {/* Overview stats */}
             <div className="grid grid-cols-4 gap-1.5">
               <div className="glass-card p-3 text-center">
-                <p className="text-lg font-bold font-mono text-white/90">{rows.length}</p>
-                <p className="text-[8px] font-mono text-white/25 mt-0.5">MUSCLES</p>
+                <p className="text-lg font-bold font-mono text-[rgb(var(--fg-rgb)/0.90)]">{rows.length}</p>
+                <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.25)] mt-0.5">MUSCLES</p>
               </div>
               <div className="glass-card p-3 text-center">
                 <p className="text-lg font-bold font-mono text-emerald-300">{readyCount}</p>
-                <p className="text-[8px] font-mono text-white/25 mt-0.5">READY</p>
+                <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.25)] mt-0.5">READY</p>
               </div>
               <div className="glass-card p-3 text-center">
                 <p className="text-lg font-bold font-mono text-orange-400">{fatiguedCount}</p>
-                <p className="text-[8px] font-mono text-white/25 mt-0.5">FATIGUED</p>
+                <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.25)] mt-0.5">FATIGUED</p>
               </div>
               <div className="glass-card p-3 text-center">
-                <p className="text-lg font-bold font-mono text-white/90">{totalWeeklyVolume}</p>
-                <p className="text-[8px] font-mono text-white/25 mt-0.5">SETS/WK</p>
+                <p className="text-lg font-bold font-mono text-[rgb(var(--fg-rgb)/0.90)]">{totalWeeklyVolume}</p>
+                <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.25)] mt-0.5">SETS/WK</p>
               </div>
             </div>
 
             {/* Recovery heat map */}
             <div className="glass-card p-4">
               <div className="flex items-center justify-between mb-3">
-                <p className="text-[9px] font-mono tracking-widest text-white/20">READINESS MAP</p>
-                <div className="flex items-center gap-3 text-[8px] font-mono text-white/25">
+                <p className="text-[9px] font-mono tracking-widest text-[rgb(var(--fg-rgb)/0.20)]">READINESS MAP</p>
+                <div className="flex items-center gap-3 text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.25)]">
                   <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-400" />Ready</span>
                   <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-300" />Moderate</span>
                   <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-orange-400" />Fatigued</span>
@@ -227,8 +227,8 @@ export default function RecoveryPage() {
               <div className="space-y-1.5">
                 {rows.map((r) => (
                   <div key={r.segment} className="flex items-center gap-2">
-                    <span className="text-[10px] font-mono text-white/50 w-20 text-right shrink-0">{r.segment}</span>
-                    <div className="flex-1 h-3 rounded-full bg-white/[0.04] overflow-hidden">
+                    <span className="text-[10px] font-mono text-[rgb(var(--fg-rgb)/0.50)] w-20 text-right shrink-0">{r.segment}</span>
+                    <div className="flex-1 h-3 rounded-full bg-[rgb(var(--fg-rgb)/0.04)] overflow-hidden">
                       <motion.div
                         initial={{ width: 0 }}
                         animate={{ width: `${r.recoveryPct}%` }}
@@ -237,7 +237,7 @@ export default function RecoveryPage() {
                         style={{ opacity: 0.8 + (r.recoveryPct / 500) }}
                       />
                     </div>
-                    <span className="text-[10px] font-mono text-white/40 w-8 shrink-0">{r.recoveryPct}%</span>
+                    <span className="text-[10px] font-mono text-[rgb(var(--fg-rgb)/0.40)] w-8 shrink-0">{r.recoveryPct}%</span>
                   </div>
                 ))}
               </div>
@@ -260,7 +260,7 @@ export default function RecoveryPage() {
                   >
                     <button
                       onClick={() => setExpandedSegment(isExpanded ? null : r.segment)}
-                      className="w-full text-left p-4 hover:bg-white/[0.01] transition"
+                      className="w-full text-left p-4 hover:bg-[rgb(var(--fg-rgb)/0.01)] transition"
                     >
                       {/* Top row: name + status */}
                       <div className="flex items-center justify-between mb-2.5">
@@ -269,8 +269,8 @@ export default function RecoveryPage() {
                             <span className={config.color}>{config.icon}</span>
                           </div>
                           <div>
-                            <p className="text-sm font-bold text-white/90">{r.segment}</p>
-                            <p className="text-[10px] font-mono text-white/30">{timeAgo(r.hoursElapsed)} · {r.setsInSession} sets last session</p>
+                            <p className="text-sm font-bold text-[rgb(var(--fg-rgb)/0.90)]">{r.segment}</p>
+                            <p className="text-[10px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">{timeAgo(r.hoursElapsed)} · {r.setsInSession} sets last session</p>
                           </div>
                         </div>
                         <div className="text-right">
@@ -281,7 +281,7 @@ export default function RecoveryPage() {
 
                       {/* Recovery bar */}
                       <div className="flex items-center gap-3">
-                        <div className="flex-1 h-2.5 rounded-full bg-white/[0.06] overflow-hidden border border-white/[0.04]">
+                        <div className="flex-1 h-2.5 rounded-full bg-[rgb(var(--fg-rgb)/0.06)] overflow-hidden border border-[rgb(var(--fg-rgb)/0.04)]">
                           <motion.div
                             initial={{ width: 0 }}
                             animate={{ width: `${r.recoveryPct}%` }}
@@ -292,7 +292,7 @@ export default function RecoveryPage() {
                       </div>
 
                       {/* Quick stats row */}
-                      <div className="flex items-center gap-4 mt-2.5 text-[10px] font-mono text-white/30">
+                      <div className="flex items-center gap-4 mt-2.5 text-[10px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">
                         <span className="flex items-center gap-1"><Clock size={10} /> ~{r.estimatedFullRecoveryHours}h full recovery</span>
                         <span className="flex items-center gap-1"><Dumbbell size={10} /> {weekSets} sets/wk</span>
                         <span className={`${volumeStatus.color}`}>{volumeStatus.label}</span>
@@ -301,26 +301,26 @@ export default function RecoveryPage() {
 
                     {/* Expanded details */}
                     {isExpanded && (
-                      <div className="px-4 pb-4 pt-0 border-t border-white/[0.04] space-y-3">
+                      <div className="px-4 pb-4 pt-0 border-t border-[rgb(var(--fg-rgb)/0.04)] space-y-3">
                         {/* Science-based recommendation */}
-                        <div className="flex items-start gap-2 mt-3 rounded-lg bg-white/[0.02] border border-white/[0.06] p-3">
+                        <div className="flex items-start gap-2 mt-3 rounded-lg bg-[rgb(var(--fg-rgb)/0.02)] border border-[rgb(var(--fg-rgb)/0.06)] p-3">
                           <Activity size={14} className={`${config.color} mt-0.5 shrink-0`} />
-                          <p className="text-[11px] text-white/50 leading-relaxed">{r.recommendation}</p>
+                          <p className="text-[11px] text-[rgb(var(--fg-rgb)/0.50)] leading-relaxed">{r.recommendation}</p>
                         </div>
 
                         {/* Recovery factors */}
                         <div className="grid grid-cols-2 gap-2">
-                          <div className="rounded-lg bg-white/[0.02] border border-white/[0.06] p-2.5">
-                            <p className="text-[8px] font-mono text-white/25 mb-0.5">INTENSITY FACTOR</p>
-                            <p className="text-sm font-bold font-mono text-white/80">{r.intensityFactor}x</p>
-                            <p className="text-[9px] text-white/25 mt-0.5">
+                          <div className="rounded-lg bg-[rgb(var(--fg-rgb)/0.02)] border border-[rgb(var(--fg-rgb)/0.06)] p-2.5">
+                            <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.25)] mb-0.5">INTENSITY FACTOR</p>
+                            <p className="text-sm font-bold font-mono text-[rgb(var(--fg-rgb)/0.80)]">{r.intensityFactor}x</p>
+                            <p className="text-[9px] text-[rgb(var(--fg-rgb)/0.25)] mt-0.5">
                               {r.intensityFactor > 1.1 ? "High load — extended recovery" : r.intensityFactor < 0.9 ? "Light session — faster recovery" : "Moderate load"}
                             </p>
                           </div>
-                          <div className="rounded-lg bg-white/[0.02] border border-white/[0.06] p-2.5">
-                            <p className="text-[8px] font-mono text-white/25 mb-0.5">WEEKLY FREQUENCY</p>
-                            <p className="text-sm font-bold font-mono text-white/80">{r.frequencyThisWeek}x</p>
-                            <p className="text-[9px] text-white/25 mt-0.5">
+                          <div className="rounded-lg bg-[rgb(var(--fg-rgb)/0.02)] border border-[rgb(var(--fg-rgb)/0.06)] p-2.5">
+                            <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.25)] mb-0.5">WEEKLY FREQUENCY</p>
+                            <p className="text-sm font-bold font-mono text-[rgb(var(--fg-rgb)/0.80)]">{r.frequencyThisWeek}x</p>
+                            <p className="text-[9px] text-[rgb(var(--fg-rgb)/0.25)] mt-0.5">
                               {r.frequencyThisWeek >= 3 ? "High frequency" : r.frequencyThisWeek === 2 ? "Standard frequency" : "Low frequency"}
                             </p>
                           </div>
@@ -334,15 +334,15 @@ export default function RecoveryPage() {
                             {adaptive.trend === "stalling" && <><Minus size={12} className="text-amber-300" /><span className="text-amber-300">Performance stalling</span></>}
                             {adaptive.trend === "declining" && <><TrendingDown size={12} className="text-red-400" /><span className="text-red-400">Performance declining</span></>}
                             {adaptive.performanceChangePct !== null && (
-                              <span className="text-white/25">({adaptive.performanceChangePct > 0 ? "+" : ""}{Math.round(adaptive.performanceChangePct)}% e1RM)</span>
+                              <span className="text-[rgb(var(--fg-rgb)/0.25)]">({adaptive.performanceChangePct > 0 ? "+" : ""}{Math.round(adaptive.performanceChangePct)}% e1RM)</span>
                             )}
                           </div>
                         )}
 
                         {volumeStatus.tip && (
                           <div className="flex items-start gap-1.5">
-                            <AlertCircle size={12} className="text-white/20 mt-0.5 shrink-0" />
-                            <p className="text-[10px] text-white/30 leading-snug">{volumeStatus.tip}</p>
+                            <AlertCircle size={12} className="text-[rgb(var(--fg-rgb)/0.20)] mt-0.5 shrink-0" />
+                            <p className="text-[10px] text-[rgb(var(--fg-rgb)/0.30)] leading-snug">{volumeStatus.tip}</p>
                           </div>
                         )}
                       </div>
@@ -353,8 +353,8 @@ export default function RecoveryPage() {
             </motion.div>
 
             {/* Science footer */}
-            <div className="rounded-xl border border-white/[0.04] bg-white/[0.01] p-3.5">
-              <p className="text-[9px] font-mono text-white/20 leading-relaxed">
+            <div className="rounded-xl border border-[rgb(var(--fg-rgb)/0.04)] bg-[rgb(var(--fg-rgb)/0.01)] p-3.5">
+              <p className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.20)] leading-relaxed">
                 Recovery model based on ACSM position stand on resistance training (2009), NSCA Essentials of Strength Training & Conditioning (Haff & Triplett), Schoenfeld et al. (2016) meta-analysis on training volume, and Bishop et al. (2008) recovery review. Uses non-linear recovery curve accounting for muscle size, session volume, and estimated intensity.
               </p>
             </div>

@@ -69,11 +69,11 @@ function InfoTip({ term }: { term: string }) {
         <span className="relative inline-block ml-1">
             <button
                 onClick={(e) => { e.stopPropagation(); setOpen(!open); }}
-                className="inline-flex items-center justify-center w-3 h-3 rounded-full border border-white/15 text-[6px] font-mono text-white/25 hover:text-white/50 hover:border-white/30 transition"
+                className="inline-flex items-center justify-center w-3 h-3 rounded-full border border-[rgb(var(--fg-rgb)/0.15)] text-[6px] font-mono text-[rgb(var(--fg-rgb)/0.25)] hover:text-[rgb(var(--fg-rgb)/0.50)] hover:border-[rgb(var(--fg-rgb)/0.30)] transition"
             >i</button>
             {open && (
-                <span className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-1 w-52 p-2 rounded-md bg-[#0d1320] border border-white/15 text-[8px] font-mono text-white/50 leading-relaxed shadow-lg" onClick={(e) => e.stopPropagation()}>
-                    <strong className="text-white/70">{term}</strong> — {text}
+                <span className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-1 w-52 p-2 rounded-md bg-[var(--bg-elevated)] border border-[rgb(var(--fg-rgb)/0.15)] text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.50)] leading-relaxed shadow-lg" onClick={(e) => e.stopPropagation()}>
+                    <strong className="text-[rgb(var(--fg-rgb)/0.70)]">{term}</strong> — {text}
                 </span>
             )}
         </span>
@@ -182,8 +182,8 @@ function estimateE1RM(weight: number, reps: number): number {
 const CustomTooltip = ({ active, payload, label }: any) => {
     if (!active || !payload?.length) return null;
     return (
-        <div className="rounded-xl border border-white/[0.08] bg-[#080d18]/95 px-3 py-2 text-[10px] font-mono">
-            <p className="text-white/50 mb-1">{label}</p>
+        <div className="rounded-xl border border-[rgb(var(--fg-rgb)/0.08)] bg-[var(--bg-card)]/95 px-3 py-2 text-[10px] font-mono">
+            <p className="text-[rgb(var(--fg-rgb)/0.50)] mb-1">{label}</p>
             {payload.map((p: any, i: number) => (
                 <p key={i} style={{ color: p.color }}>
                     {p.name}: {typeof p.value === "number" ? p.value.toLocaleString() : p.value}
@@ -983,14 +983,14 @@ export default function ProgressPage() {
     ];
 
     return (
-        <main className="min-h-screen bg-[#050914] text-white pb-24 md:pb-10 relative">
+        <main className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] pb-24 md:pb-10 relative">
 
             <div className="relative z-10 max-w-xl mx-auto px-4 pt-6 space-y-5">
                 <SwipeNav sections={getTrackSections(enabledKeys)} />
 
                 <div>
                     <h1 className="text-xl font-bold font-display text-[rgb(var(--accent-light-rgb))]">Progress</h1>
-                    <p className="text-[11px] text-white/30 mt-0.5">Track your training journey</p>
+                    <p className="text-[11px] text-[rgb(var(--fg-rgb)/0.30)] mt-0.5">Track your training journey</p>
                 </div>
 
                 {/* Tabs */}
@@ -1009,11 +1009,11 @@ export default function ProgressPage() {
                             <motion.div key="history" className="space-y-5" variants={tabContent} initial="hidden" animate="visible" exit="exit">
                                 {sessions.length === 0 ? (
                                     <div className="text-center py-20">
-                                        <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center">
-                                            <Calendar size={28} className="text-white/15" />
+                                        <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-[rgb(var(--fg-rgb)/0.03)] border border-[rgb(var(--fg-rgb)/0.06)] flex items-center justify-center">
+                                            <Calendar size={28} className="text-[rgb(var(--fg-rgb)/0.15)]" />
                                         </div>
-                                        <p className="text-sm font-semibold text-white/25">NO WORKOUTS YET</p>
-                                        <p className="text-xs text-white/20 mt-1">Complete your first workout to see history here.</p>
+                                        <p className="text-sm font-semibold text-[rgb(var(--fg-rgb)/0.25)]">NO WORKOUTS YET</p>
+                                        <p className="text-xs text-[rgb(var(--fg-rgb)/0.20)] mt-1">Complete your first workout to see history here.</p>
                                     </div>
                                 ) : (
                                     <>
@@ -1031,7 +1031,7 @@ export default function ProgressPage() {
                                                             <button
                                                                 key={r}
                                                                 onClick={() => setActivityRange(r)}
-                                                                className={`text-[9px] font-mono px-2 py-1 rounded-md transition ${activityRange === r ? "bg-[rgb(var(--accent-rgb)/0.25)] text-[rgb(var(--accent-light-rgb))]" : "text-white/25 hover:text-white/50"}`}
+                                                                className={`text-[9px] font-mono px-2 py-1 rounded-md transition ${activityRange === r ? "bg-[rgb(var(--accent-rgb)/0.25)] text-[rgb(var(--accent-light-rgb))]" : "text-[rgb(var(--fg-rgb)/0.25)] hover:text-[rgb(var(--fg-rgb)/0.50)]"}`}
                                                             >
                                                                 {r}
                                                             </button>
@@ -1040,16 +1040,16 @@ export default function ProgressPage() {
                                                 </div>
                                                 <div className="grid grid-cols-3 gap-4">
                                                     <div>
-                                                        <p className="text-3xl font-bold font-mono text-white/95 leading-none">{rangeWorkoutCount}</p>
-                                                        <p className="text-[9px] font-mono text-white/30 mt-1.5">Workouts</p>
+                                                        <p className="text-3xl font-bold font-mono text-[rgb(var(--fg-rgb)/0.95)] leading-none">{rangeWorkoutCount}</p>
+                                                        <p className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.30)] mt-1.5">Workouts</p>
                                                     </div>
                                                     <div>
-                                                        <p className="text-3xl font-bold font-mono text-white/95 leading-none">{rangeHours.toFixed(1)}</p>
-                                                        <p className="text-[9px] font-mono text-white/30 mt-1.5">Hours</p>
+                                                        <p className="text-3xl font-bold font-mono text-[rgb(var(--fg-rgb)/0.95)] leading-none">{rangeHours.toFixed(1)}</p>
+                                                        <p className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.30)] mt-1.5">Hours</p>
                                                     </div>
                                                     <div>
                                                         <p className="text-3xl font-bold font-mono text-[rgb(var(--accent-light-rgb))] leading-none">{(() => { const v = kgToUnit(rangeVolume, weightUnit); return v >= 1000 ? `${(v / 1000).toFixed(1)}k` : Math.round(v); })()}</p>
-                                                        <p className="text-[9px] font-mono text-white/30 mt-1.5">Volume ({weightUnit})</p>
+                                                        <p className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.30)] mt-1.5">Volume ({weightUnit})</p>
                                                     </div>
                                                 </div>
                                             </div>
@@ -1058,17 +1058,17 @@ export default function ProgressPage() {
                                         {/* Calendar */}
                                         <div className="glass-card rounded-2xl p-4">
                                             <div className="flex items-center justify-between mb-4">
-                                                <button onClick={() => setCalendarMonthOffset((o) => o - 1)} className="w-7 h-7 rounded-lg border border-white/[0.06] flex items-center justify-center text-white/40 hover:text-white/70 hover:border-white/[0.12] transition">
+                                                <button onClick={() => setCalendarMonthOffset((o) => o - 1)} className="w-7 h-7 rounded-lg border border-[rgb(var(--fg-rgb)/0.06)] flex items-center justify-center text-[rgb(var(--fg-rgb)/0.40)] hover:text-[rgb(var(--fg-rgb)/0.70)] hover:border-[rgb(var(--fg-rgb)/0.12)] transition">
                                                     <ChevronRight size={14} className="rotate-180" />
                                                 </button>
-                                                <p className="text-sm font-bold text-white/85 tracking-wide">{calendarBase.toLocaleDateString(undefined, { month: "long", year: "numeric" })}</p>
-                                                <button onClick={() => setCalendarMonthOffset((o) => o + 1)} disabled={calendarMonthOffset >= 0} className="w-7 h-7 rounded-lg border border-white/[0.06] flex items-center justify-center text-white/40 hover:text-white/70 hover:border-white/[0.12] disabled:opacity-20 transition">
+                                                <p className="text-sm font-bold text-[rgb(var(--fg-rgb)/0.85)] tracking-wide">{calendarBase.toLocaleDateString(undefined, { month: "long", year: "numeric" })}</p>
+                                                <button onClick={() => setCalendarMonthOffset((o) => o + 1)} disabled={calendarMonthOffset >= 0} className="w-7 h-7 rounded-lg border border-[rgb(var(--fg-rgb)/0.06)] flex items-center justify-center text-[rgb(var(--fg-rgb)/0.40)] hover:text-[rgb(var(--fg-rgb)/0.70)] hover:border-[rgb(var(--fg-rgb)/0.12)] disabled:opacity-20 transition">
                                                     <ChevronRight size={14} />
                                                 </button>
                                             </div>
                                             <div className="grid grid-cols-7 gap-1 text-center mb-2">
                                                 {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
-                                                    <p key={i} className="text-[9px] font-mono text-white/20 py-1">{d}</p>
+                                                    <p key={i} className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.20)] py-1">{d}</p>
                                                 ))}
                                             </div>
                                             <div className="grid grid-cols-7 gap-1">
@@ -1083,8 +1083,8 @@ export default function ProgressPage() {
                                                                 className={`w-full h-full flex items-center justify-center rounded-lg text-[11px] font-mono transition-all ${
                                                                     hasWorkout
                                                                         ? "bg-[rgb(var(--accent-rgb)/0.25)] text-[rgb(var(--accent-light-rgb))] font-bold border border-[rgb(var(--accent-rgb)/0.3)]"
-                                                                        : "text-white/25"
-                                                                } ${isToday ? "ring-1 ring-white/30" : ""}`}
+                                                                        : "text-[rgb(var(--fg-rgb)/0.25)]"
+                                                                } ${isToday ? "ring-1 ring-[rgb(var(--fg-rgb)/0.30)]" : ""}`}
                                                                 style={hasWorkout ? { boxShadow: "0 0 8px -2px rgb(var(--accent-rgb) / 0.4)" } : undefined}
                                                             >
                                                                 {day}
@@ -1099,7 +1099,7 @@ export default function ProgressPage() {
                                                     return d.getFullYear() === calendarYear && d.getMonth() === calendarMonth;
                                                 });
                                                 return (
-                                                    <div className="flex items-center gap-4 mt-3 pt-3 border-t border-white/[0.04] text-[10px] font-mono text-white/30">
+                                                    <div className="flex items-center gap-4 mt-3 pt-3 border-t border-[rgb(var(--fg-rgb)/0.04)] text-[10px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">
                                                         <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded bg-[rgb(var(--accent-rgb)/0.3)] border border-[rgb(var(--accent-rgb)/0.4)]" /> {monthSessions.length} sessions</span>
                                                         <span>{monthSessions.length > 0 ? `${Math.round(kgToUnit(monthSessions.reduce((s, r) => s + (Number(r.total_volume) || 0), 0), weightUnit)).toLocaleString()} ${weightUnit} total` : "No workouts"}</span>
                                                     </div>
@@ -1116,9 +1116,9 @@ export default function ProgressPage() {
                                             return (
                                                 <div className="glass-card rounded-2xl p-4">
                                                     <div className="flex items-center justify-between mb-4">
-                                                        <p className="text-[9px] font-mono tracking-[0.2em] text-white/20">WEEKLY VOLUME</p>
+                                                        <p className="text-[9px] font-mono tracking-[0.2em] text-[rgb(var(--fg-rgb)/0.20)]">WEEKLY VOLUME</p>
                                                         <div className="flex items-center gap-2">
-                                                            <span className="text-sm font-bold font-mono text-[rgb(var(--accent-light-rgb))]">{Math.round(kgToUnit(latest.volume, weightUnit)).toLocaleString()}<span className="text-[9px] text-white/25 ml-0.5">{weightUnit}</span></span>
+                                                            <span className="text-sm font-bold font-mono text-[rgb(var(--accent-light-rgb))]">{Math.round(kgToUnit(latest.volume, weightUnit)).toLocaleString()}<span className="text-[9px] text-[rgb(var(--fg-rgb)/0.25)] ml-0.5">{weightUnit}</span></span>
                                                             {volChange !== 0 && (
                                                                 <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded-md ${volChange > 0 ? "text-emerald-300 bg-emerald-400/10" : "text-orange-300 bg-orange-400/10"}`}>
                                                                     {volChange > 0 ? "+" : ""}{volChange}%
@@ -1133,10 +1133,10 @@ export default function ProgressPage() {
                                                             return (
                                                                 <div key={i} className="flex-1 flex flex-col items-center">
                                                                     <div
-                                                                        className={`w-full rounded-md transition-all ${isCurrent ? "bg-gradient-to-t from-[rgb(var(--accent-rgb))] to-[rgb(var(--accent-light-rgb))]" : "bg-white/[0.06]"}`}
+                                                                        className={`w-full rounded-md transition-all ${isCurrent ? "bg-gradient-to-t from-[rgb(var(--accent-rgb))] to-[rgb(var(--accent-light-rgb))]" : "bg-[rgb(var(--fg-rgb)/0.06)]"}`}
                                                                         style={{ height: `${pct}%`, ...(isCurrent ? { boxShadow: "0 0 12px -3px rgb(var(--accent-rgb) / 0.5)" } : {}) }}
                                                                     />
-                                                                    <p className={`text-[7px] font-mono mt-1.5 ${isCurrent ? "text-[rgb(var(--accent-light-rgb)/0.6)]" : "text-white/15"}`}>
+                                                                    <p className={`text-[7px] font-mono mt-1.5 ${isCurrent ? "text-[rgb(var(--accent-light-rgb)/0.6)]" : "text-[rgb(var(--fg-rgb)/0.15)]"}`}>
                                                                         {w.week.slice(5)}
                                                                     </p>
                                                                 </div>
@@ -1150,11 +1150,11 @@ export default function ProgressPage() {
                                         {/* Monthly Insights */}
                                         {monthlyInsights && (
                                             <div className="glass-card rounded-2xl p-4">
-                                                <p className="text-[9px] font-mono tracking-[0.2em] text-white/20 mb-3">MONTHLY INSIGHTS</p>
+                                                <p className="text-[9px] font-mono tracking-[0.2em] text-[rgb(var(--fg-rgb)/0.20)] mb-3">MONTHLY INSIGHTS</p>
                                                 <div className="grid grid-cols-3 gap-3 mb-4">
                                                     <div className="text-center">
-                                                        <p className="text-2xl font-bold font-mono text-white/90">{monthlyInsights.current.workouts}</p>
-                                                        <p className="text-[9px] font-mono text-white/30">Workouts</p>
+                                                        <p className="text-2xl font-bold font-mono text-[rgb(var(--fg-rgb)/0.90)]">{monthlyInsights.current.workouts}</p>
+                                                        <p className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">Workouts</p>
                                                         {monthlyInsights.frequencyChange !== null && (
                                                             <p className={`text-[9px] font-mono mt-0.5 ${monthlyInsights.frequencyChange >= 0 ? "text-emerald-400" : "text-red-400"}`}>
                                                                 {monthlyInsights.frequencyChange >= 0 ? "+" : ""}{monthlyInsights.frequencyChange}%
@@ -1163,7 +1163,7 @@ export default function ProgressPage() {
                                                     </div>
                                                     <div className="text-center">
                                                         <p className="text-2xl font-bold font-mono text-[rgb(var(--accent-light-rgb))]">{(() => { const v = kgToUnit(monthlyInsights.current.totalVolume, weightUnit); return v >= 1000 ? `${(v / 1000).toFixed(1)}k` : Math.round(v); })()}</p>
-                                                        <p className="text-[9px] font-mono text-white/30">Volume ({weightUnit})</p>
+                                                        <p className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">Volume ({weightUnit})</p>
                                                         {monthlyInsights.volumeChange !== null && (
                                                             <p className={`text-[9px] font-mono mt-0.5 ${monthlyInsights.volumeChange >= 0 ? "text-emerald-400" : "text-red-400"}`}>
                                                                 {monthlyInsights.volumeChange >= 0 ? "+" : ""}{monthlyInsights.volumeChange}%
@@ -1171,11 +1171,11 @@ export default function ProgressPage() {
                                                         )}
                                                     </div>
                                                     <div className="text-center">
-                                                        <p className="text-2xl font-bold font-mono text-white/90">{monthlyInsights.current.prsHit}</p>
-                                                        <p className="text-[9px] font-mono text-white/30">PRs Hit</p>
+                                                        <p className="text-2xl font-bold font-mono text-[rgb(var(--fg-rgb)/0.90)]">{monthlyInsights.current.prsHit}</p>
+                                                        <p className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">PRs Hit</p>
                                                     </div>
                                                 </div>
-                                                <div className="flex items-center gap-3 text-[9px] font-mono text-white/25 border-t border-white/[0.04] pt-3">
+                                                <div className="flex items-center gap-3 text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.25)] border-t border-[rgb(var(--fg-rgb)/0.04)] pt-3">
                                                     <span className="flex items-center gap-1"><Flame size={10} className="text-orange-400" /> {monthlyInsights.streak} month streak</span>
                                                     {monthlyInsights.current.uniqueExercises > 0 && (
                                                         <span>{monthlyInsights.current.uniqueExercises} exercises</span>
@@ -1203,19 +1203,19 @@ export default function ProgressPage() {
                                                                     <p className="text-xs font-bold font-mono" style={{ color: p.color }}>{p.workouts}</p>
                                                                 </div>
                                                             </div>
-                                                            <p className="text-[8px] font-mono text-white/30">{p.label.slice(0, 3).toUpperCase()}</p>
+                                                            <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">{p.label.slice(0, 3).toUpperCase()}</p>
                                                         </div>
                                                     ))}
                                                 </div>
                                                 {phasePerformance.recommendation && (
-                                                    <p className="text-[10px] text-white/40 leading-relaxed">{phasePerformance.recommendation}</p>
+                                                    <p className="text-[10px] text-[rgb(var(--fg-rgb)/0.40)] leading-relaxed">{phasePerformance.recommendation}</p>
                                                 )}
                                             </div>
                                         )}
 
                                         {/* Session List — grouped by date */}
                                         <div>
-                                            <p className="text-[9px] font-mono tracking-[0.2em] text-white/20 mb-3">WORKOUT LOG</p>
+                                            <p className="text-[9px] font-mono tracking-[0.2em] text-[rgb(var(--fg-rgb)/0.20)] mb-3">WORKOUT LOG</p>
                                             {(() => {
                                                 const now = new Date();
                                                 const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -1245,25 +1245,25 @@ export default function ProgressPage() {
                                                     <div className="space-y-4">
                                                         {groups.map((group) => (
                                                             <div key={group.label}>
-                                                                <p className="text-[8px] font-mono tracking-widest text-white/15 mb-2">{group.label.toUpperCase()}</p>
+                                                                <p className="text-[8px] font-mono tracking-widest text-[rgb(var(--fg-rgb)/0.15)] mb-2">{group.label.toUpperCase()}</p>
                                                                 <div className="space-y-1.5">
                                                                     {group.items.map((s) => (
-                                                                        <div key={s.id} className="group flex items-center gap-3 rounded-xl border border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.04] hover:border-white/[0.1] px-3.5 py-3 transition-all">
+                                                                        <div key={s.id} className="group flex items-center gap-3 rounded-xl border border-[rgb(var(--fg-rgb)/0.06)] bg-[rgb(var(--fg-rgb)/0.02)] hover:bg-[rgb(var(--fg-rgb)/0.04)] hover:border-[rgb(var(--fg-rgb)/0.1)] px-3.5 py-3 transition-all">
                                                                             <div className="w-10 h-10 rounded-xl bg-[rgb(var(--accent-rgb)/0.1)] border border-[rgb(var(--accent-rgb)/0.15)] flex items-center justify-center shrink-0" style={{ boxShadow: "0 0 10px -4px rgb(var(--accent-rgb) / 0.3)" }}>
                                                                                 <Dumbbell size={15} className="text-[rgb(var(--accent-light-rgb))]" />
                                                                             </div>
                                                                             <div className="flex-1 min-w-0">
-                                                                                <p className="text-[13px] font-bold text-white/90 truncate">{s.title || "Workout"}</p>
+                                                                                <p className="text-[13px] font-bold text-[rgb(var(--fg-rgb)/0.90)] truncate">{s.title || "Workout"}</p>
                                                                                 <div className="flex items-center gap-2 mt-0.5">
-                                                                                    <span className="text-[10px] font-mono text-white/25">{formatDate(s.date)}</span>
-                                                                                    <span className="w-0.5 h-0.5 rounded-full bg-white/15" />
-                                                                                    <span className="text-[10px] font-mono text-white/25">{formatDuration(s.duration_seconds || 0)}</span>
+                                                                                    <span className="text-[10px] font-mono text-[rgb(var(--fg-rgb)/0.25)]">{formatDate(s.date)}</span>
+                                                                                    <span className="w-0.5 h-0.5 rounded-full bg-[rgb(var(--fg-rgb)/0.15)]" />
+                                                                                    <span className="text-[10px] font-mono text-[rgb(var(--fg-rgb)/0.25)]">{formatDuration(s.duration_seconds || 0)}</span>
                                                                                 </div>
                                                                             </div>
                                                                             <div className="flex items-center gap-2.5 shrink-0">
                                                                                 <div className="text-right">
-                                                                                    <p className="text-[11px] font-mono text-white/60">{s.total_sets} sets</p>
-                                                                                    <p className="text-[10px] font-mono text-white/25">{Math.round(kgToUnit(Number(s.total_volume) || 0, weightUnit)).toLocaleString()} {weightUnit}</p>
+                                                                                    <p className="text-[11px] font-mono text-[rgb(var(--fg-rgb)/0.60)]">{s.total_sets} sets</p>
+                                                                                    <p className="text-[10px] font-mono text-[rgb(var(--fg-rgb)/0.25)]">{Math.round(kgToUnit(Number(s.total_volume) || 0, weightUnit)).toLocaleString()} {weightUnit}</p>
                                                                                 </div>
                                                                                 <div className="px-2 py-1 rounded-lg bg-[rgb(var(--accent-rgb)/0.1)] border border-[rgb(var(--accent-rgb)/0.15)]">
                                                                                     <p className="text-[10px] font-mono font-bold text-[rgb(var(--accent-light-rgb))]">+{s.xp_earned}</p>
@@ -1288,12 +1288,12 @@ export default function ProgressPage() {
                             <motion.div key="strength" className="space-y-4" variants={tabContent} initial="hidden" animate="visible" exit="exit">
                                 {/* PR Board */}
                                 <div>
-                                    <p className="text-[10px] font-mono tracking-widest text-white/25 mb-3">PERSONAL RECORDS</p>
+                                    <p className="text-[10px] font-mono tracking-widest text-[rgb(var(--fg-rgb)/0.25)] mb-3">PERSONAL RECORDS</p>
                                     {prs.length === 0 ? (
                                         <div className="text-center py-12">
-                                            <Trophy size={32} className="mx-auto mb-3 text-white/15" />
-                                            <p className="text-sm font-semibold text-white/25">NO PRs YET</p>
-                                            <p className="text-xs text-white/20 mt-1">Log workouts with weight to see PRs here.</p>
+                                            <Trophy size={32} className="mx-auto mb-3 text-[rgb(var(--fg-rgb)/0.15)]" />
+                                            <p className="text-sm font-semibold text-[rgb(var(--fg-rgb)/0.25)]">NO PRs YET</p>
+                                            <p className="text-xs text-[rgb(var(--fg-rgb)/0.20)] mt-1">Log workouts with weight to see PRs here.</p>
                                         </div>
                                     ) : (
                                         <div className="space-y-1.5">
@@ -1303,19 +1303,19 @@ export default function ProgressPage() {
                                                     <div key={pr.exercise_id}>
                                                         <button
                                                             onClick={() => isSelected ? setSelectedExercise(null) : loadStrengthHistory(pr.exercise_id)}
-                                                            className={`w-full flex items-center gap-3 rounded-lg border px-4 py-3 text-left transition ${isSelected ? "border-[rgb(var(--accent-rgb)/0.3)] bg-[rgb(var(--accent-rgb))]/[0.05]" : "border-white/[0.06] bg-white/[0.02] hover:border-white/[0.12]"
+                                                            className={`w-full flex items-center gap-3 rounded-lg border px-4 py-3 text-left transition ${isSelected ? "border-[rgb(var(--accent-rgb)/0.3)] bg-[rgb(var(--accent-rgb))]/[0.05]" : "border-[rgb(var(--fg-rgb)/0.06)] bg-[rgb(var(--fg-rgb)/0.02)] hover:border-[rgb(var(--fg-rgb)/0.12)]"
                                                                 }`}
                                                         >
                                                             <div className="flex-1 min-w-0">
-                                                                <p className="text-sm font-bold text-white/90 truncate">{pr.exercise_name}</p>
-                                                                <p className="text-[10px] font-mono text-white/30">{pr.body_segment} · {formatDate(pr.date)}</p>
+                                                                <p className="text-sm font-bold text-[rgb(var(--fg-rgb)/0.90)] truncate">{pr.exercise_name}</p>
+                                                                <p className="text-[10px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">{pr.body_segment} · {formatDate(pr.date)}</p>
                                                             </div>
                                                             <div className="flex items-center gap-3 shrink-0">
                                                                 <div className="text-right">
-                                                                    <p className="text-sm font-bold font-mono text-white/90">{Math.round(kgToUnit(pr.best_weight, weightUnit) * 10) / 10}<span className="text-[10px] text-white/40">{weightUnit}</span> × {pr.best_reps_at_weight}</p>
+                                                                    <p className="text-sm font-bold font-mono text-[rgb(var(--fg-rgb)/0.90)]">{Math.round(kgToUnit(pr.best_weight, weightUnit) * 10) / 10}<span className="text-[10px] text-[rgb(var(--fg-rgb)/0.40)]">{weightUnit}</span> × {pr.best_reps_at_weight}</p>
                                                                     <p className="text-[9px] font-mono text-[rgb(var(--accent-light-rgb)/0.6)]">e1RM: {Math.round(kgToUnit(pr.estimated_1rm, weightUnit) * 10) / 10}{weightUnit}</p>
                                                                 </div>
-                                                                {isSelected ? <ChevronDown size={14} className="text-[rgb(var(--accent-light-rgb))]" /> : <ChevronRight size={14} className="text-white/25" />}
+                                                                {isSelected ? <ChevronDown size={14} className="text-[rgb(var(--accent-light-rgb))]" /> : <ChevronRight size={14} className="text-[rgb(var(--fg-rgb)/0.25)]" />}
                                                             </div>
                                                         </button>
 
@@ -1323,40 +1323,40 @@ export default function ProgressPage() {
                                                             <div className="rounded-b-lg border border-t-0 border-[rgb(var(--accent-rgb)/0.2)] bg-[rgb(var(--accent-rgb))]/[0.02] p-4">
                                                                 <div className="flex items-center justify-between mb-3">
                                                                     <div>
-                                                                        <p className="text-[8px] font-mono text-white/30 mb-0.5">GOAL</p>
+                                                                        <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.30)] mb-0.5">GOAL</p>
                                                                         {editingGoal ? (
                                                                             <div className="flex items-center gap-1.5">
                                                                                 <input
                                                                                     type="number" min="0" autoFocus onWheel={(e) => (e.target as HTMLElement).blur()}
                                                                                     value={goalInput} onChange={(e) => setGoalInput(e.target.value)}
                                                                                     onKeyDown={(e) => e.key === "Enter" && saveGoal(pr.exercise_id)}
-                                                                                    className="w-16 h-7 rounded bg-white/[0.06] border border-white/10 text-center text-xs font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)]"
+                                                                                    className="w-16 h-7 rounded bg-[rgb(var(--fg-rgb)/0.06)] border border-[rgb(var(--fg-rgb)/0.10)] text-center text-xs font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)]"
                                                                                 />
                                                                                 <button onClick={() => saveGoal(pr.exercise_id)} className="text-[9px] font-mono text-[rgb(var(--accent-light-rgb))] px-1.5">SET</button>
                                                                             </div>
                                                                         ) : (
                                                                             <button onClick={() => { setEditingGoal(true); setGoalInput(goals[pr.exercise_id] ? String(goals[pr.exercise_id]) : ""); }} className="flex items-center gap-1.5">
-                                                                                <Trophy size={12} className="text-white/25" />
-                                                                                <span className="text-sm font-bold font-mono text-white/80">{goals[pr.exercise_id] ? `${Math.round(kgToUnit(goals[pr.exercise_id], weightUnit) * 10) / 10}${weightUnit}` : "— —"}</span>
+                                                                                <Trophy size={12} className="text-[rgb(var(--fg-rgb)/0.25)]" />
+                                                                                <span className="text-sm font-bold font-mono text-[rgb(var(--fg-rgb)/0.80)]">{goals[pr.exercise_id] ? `${Math.round(kgToUnit(goals[pr.exercise_id], weightUnit) * 10) / 10}${weightUnit}` : "— —"}</span>
                                                                             </button>
                                                                         )}
                                                                     </div>
                                                                     <div className="text-right">
-                                                                        <p className="text-[8px] font-mono text-white/30 mb-0.5">CURRENT MAX</p>
-                                                                        <p className="text-lg font-bold font-mono text-[rgb(var(--accent-light-rgb))]">{Math.round(kgToUnit(pr.best_weight, weightUnit) * 10) / 10}<span className="text-xs text-white/40">{weightUnit}</span></p>
+                                                                        <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.30)] mb-0.5">CURRENT MAX</p>
+                                                                        <p className="text-lg font-bold font-mono text-[rgb(var(--accent-light-rgb))]">{Math.round(kgToUnit(pr.best_weight, weightUnit) * 10) / 10}<span className="text-xs text-[rgb(var(--fg-rgb)/0.40)]">{weightUnit}</span></p>
                                                                     </div>
                                                                 </div>
                                                                 {strengthLoading ? (
-                                                                    <p className="text-xs text-white/40 text-center py-4">Loading chart...</p>
+                                                                    <p className="text-xs text-[rgb(var(--fg-rgb)/0.40)] text-center py-4">Loading chart...</p>
                                                                 ) : strengthHistory.length < 2 ? (
-                                                                    <p className="text-xs text-white/30 text-center py-4">Need at least 2 sessions to show a trend.</p>
+                                                                    <p className="text-xs text-[rgb(var(--fg-rgb)/0.30)] text-center py-4">Need at least 2 sessions to show a trend.</p>
                                                                 ) : (
                                                                     <div className="h-48">
                                                                         <ResponsiveContainer width="100%" height="100%">
                                                                             <LineChart data={displayStrengthHistory}>
-                                                                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-                                                                                <XAxis dataKey="date" tick={{ fontSize: 9, fill: "rgba(255,255,255,0.3)" }} />
-                                                                                <YAxis tick={{ fontSize: 9, fill: "rgba(255,255,255,0.3)" }} domain={["auto", "auto"]} />
+                                                                                <CartesianGrid strokeDasharray="3 3" stroke="rgb(var(--fg-rgb) / 0.04)" />
+                                                                                <XAxis dataKey="date" tick={{ fontSize: 9, fill: "rgb(var(--fg-rgb) / 0.3)" }} />
+                                                                                <YAxis tick={{ fontSize: 9, fill: "rgb(var(--fg-rgb) / 0.3)" }} domain={["auto", "auto"]} />
                                                                                 <Tooltip content={<CustomTooltip />} />
                                                                                 <Line
                                                                                     type="monotone" dataKey="weight" stroke="rgb(var(--accent-rgb))" strokeWidth={2} name={`Weight (${weightUnit})`}
@@ -1390,8 +1390,8 @@ export default function ProgressPage() {
                                 {strengthBenchmark && (
                                     <div className="glass-card rounded-2xl p-4">
                                         <div className="flex items-center justify-between mb-3">
-                                            <p className="text-[9px] font-mono tracking-[0.2em] text-white/20">STRENGTH BENCHMARK</p>
-                                            <p className="text-[9px] font-mono text-white/20">{strengthBenchmark.period}</p>
+                                            <p className="text-[9px] font-mono tracking-[0.2em] text-[rgb(var(--fg-rgb)/0.20)]">STRENGTH BENCHMARK</p>
+                                            <p className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.20)]">{strengthBenchmark.period}</p>
                                         </div>
                                         <div className="flex items-center gap-3 mb-4">
                                             <div className="flex items-center gap-1.5 text-[10px] font-mono">
@@ -1399,8 +1399,8 @@ export default function ProgressPage() {
                                                 <span className="text-emerald-400">{strengthBenchmark.totalUp} up</span>
                                             </div>
                                             <div className="flex items-center gap-1.5 text-[10px] font-mono">
-                                                <span className="w-2 h-2 rounded-full bg-white/20" />
-                                                <span className="text-white/30">{strengthBenchmark.totalStable} stable</span>
+                                                <span className="w-2 h-2 rounded-full bg-[rgb(var(--fg-rgb)/0.20)]" />
+                                                <span className="text-[rgb(var(--fg-rgb)/0.30)]">{strengthBenchmark.totalStable} stable</span>
                                             </div>
                                             <div className="flex items-center gap-1.5 text-[10px] font-mono">
                                                 <span className="w-2 h-2 rounded-full bg-red-400" />
@@ -1409,15 +1409,15 @@ export default function ProgressPage() {
                                         </div>
                                         <div className="space-y-1.5">
                                             {strengthBenchmark.exercises.slice(0, 8).map((ex) => (
-                                                <div key={ex.exerciseId} className="flex items-center gap-3 rounded-lg border border-white/[0.04] bg-white/[0.01] px-3 py-2">
-                                                    <div className={`w-1.5 h-8 rounded-full ${ex.trend === "up" ? "bg-emerald-400" : ex.trend === "down" ? "bg-red-400" : "bg-white/15"}`} />
+                                                <div key={ex.exerciseId} className="flex items-center gap-3 rounded-lg border border-[rgb(var(--fg-rgb)/0.04)] bg-[rgb(var(--fg-rgb)/0.01)] px-3 py-2">
+                                                    <div className={`w-1.5 h-8 rounded-full ${ex.trend === "up" ? "bg-emerald-400" : ex.trend === "down" ? "bg-red-400" : "bg-[rgb(var(--fg-rgb)/0.15)]"}`} />
                                                     <div className="flex-1 min-w-0">
-                                                        <p className="text-[11px] font-bold text-white/80 truncate">{ex.exerciseName}</p>
-                                                        <p className="text-[9px] font-mono text-white/25">{ex.bodySegment}</p>
+                                                        <p className="text-[11px] font-bold text-[rgb(var(--fg-rgb)/0.80)] truncate">{ex.exerciseName}</p>
+                                                        <p className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.25)]">{ex.bodySegment}</p>
                                                     </div>
                                                     <div className="text-right shrink-0">
-                                                        <p className="text-[11px] font-bold font-mono text-white/80">{Math.round(kgToUnit(ex.currentE1rm, weightUnit))}<span className="text-[9px] text-white/30">{weightUnit}</span></p>
-                                                        <p className={`text-[9px] font-mono ${ex.changePercent > 0 ? "text-emerald-400" : ex.changePercent < 0 ? "text-red-400" : "text-white/25"}`}>
+                                                        <p className="text-[11px] font-bold font-mono text-[rgb(var(--fg-rgb)/0.80)]">{Math.round(kgToUnit(ex.currentE1rm, weightUnit))}<span className="text-[9px] text-[rgb(var(--fg-rgb)/0.30)]">{weightUnit}</span></p>
+                                                        <p className={`text-[9px] font-mono ${ex.changePercent > 0 ? "text-emerald-400" : ex.changePercent < 0 ? "text-red-400" : "text-[rgb(var(--fg-rgb)/0.25)]"}`}>
                                                             {ex.changePercent > 0 ? "+" : ""}{ex.changePercent}%
                                                         </p>
                                                     </div>
@@ -1425,7 +1425,7 @@ export default function ProgressPage() {
                                             ))}
                                         </div>
                                         {strengthBenchmark.strongestGain && (
-                                            <p className="text-[10px] text-white/30 mt-3 border-t border-white/[0.04] pt-3">
+                                            <p className="text-[10px] text-[rgb(var(--fg-rgb)/0.30)] mt-3 border-t border-[rgb(var(--fg-rgb)/0.04)] pt-3">
                                                 Biggest gain: <span className="text-emerald-400 font-bold">{strengthBenchmark.strongestGain.exerciseName}</span> +{strengthBenchmark.strongestGain.changePercent}%
                                             </p>
                                         )}
@@ -1439,7 +1439,7 @@ export default function ProgressPage() {
                             <motion.div key="body" className="space-y-4" variants={tabContent} initial="hidden" animate="visible" exit="exit">
                                 {/* Measurements */}
                                 <div className="glass-card p-4">
-                                    <p className="text-[10px] font-mono tracking-widest text-white/25 mb-4">MEASUREMENTS</p>
+                                    <p className="text-[10px] font-mono tracking-widest text-[rgb(var(--fg-rgb)/0.25)] mb-4">MEASUREMENTS</p>
                                     <div className="flex items-end justify-between gap-2 h-28 mb-3">
                                         {MEASUREMENT_TYPES.map((m) => {
                                             const val = measurements[m.type];
@@ -1447,7 +1447,7 @@ export default function ProgressPage() {
                                             const heightPct = val ? Math.max(12, (val / maxVal) * 100) : 8;
                                             return (
                                                 <div key={m.type} className="flex-1 flex flex-col items-center justify-end h-full">
-                                                    <div className={`w-full max-w-8 rounded-t ${val ? m.bar : "bg-white/[0.06]"}`} style={{ height: `${heightPct}%` }} />
+                                                    <div className={`w-full max-w-8 rounded-t ${val ? m.bar : "bg-[rgb(var(--fg-rgb)/0.06)]"}`} style={{ height: `${heightPct}%` }} />
                                                 </div>
                                             );
                                         })}
@@ -1462,15 +1462,15 @@ export default function ProgressPage() {
                                                     +
                                                 </button>
                                                 <p className={`text-[8px] font-mono ${m.color} text-center leading-tight`}>{m.type.toUpperCase()}</p>
-                                                {measurements[m.type] != null && <p className="text-[8px] font-mono text-white/30">{measurements[m.type]}cm</p>}
+                                                {measurements[m.type] != null && <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">{measurements[m.type]}cm</p>}
                                             </div>
                                         ))}
                                     </div>
                                 </div>
 
                                 {/* Log weight */}
-                                <div className="rounded-lg border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.02] p-4" style={{ boxShadow: "inset 0 1px 0 rgb(var(--accent-rgb) / 0.06)" }}>
-                                    <p className="text-[10px] font-mono tracking-widest text-white/25 mb-3">LOG BODY WEIGHT</p>
+                                <div className="rounded-lg border border-[rgb(var(--accent-rgb)/0.15)] bg-[rgb(var(--fg-rgb)/0.02)] p-4" style={{ boxShadow: "inset 0 1px 0 rgb(var(--accent-rgb) / 0.06)" }}>
+                                    <p className="text-[10px] font-mono tracking-widest text-[rgb(var(--fg-rgb)/0.25)] mb-3">LOG BODY WEIGHT</p>
 
                                     {/* Context selector */}
                                     <div className="flex flex-wrap gap-1.5 mb-3">
@@ -1478,7 +1478,7 @@ export default function ProgressPage() {
                                             <button
                                                 key={ctx.value}
                                                 onClick={() => setWeightContext(ctx.value)}
-                                                className={`text-[9px] font-mono px-2.5 py-1.5 rounded-md border transition ${weightContext === ctx.value ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/[0.08] text-white/30 hover:text-white/50"}`}
+                                                className={`text-[9px] font-mono px-2.5 py-1.5 rounded-md border transition ${weightContext === ctx.value ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-[rgb(var(--fg-rgb)/0.08)] text-[rgb(var(--fg-rgb)/0.30)] hover:text-[rgb(var(--fg-rgb)/0.50)]"}`}
                                             >
                                                 {ctx.label}
                                             </button>
@@ -1495,9 +1495,9 @@ export default function ProgressPage() {
                                             value={newWeight}
                                             onChange={(e) => setNewWeight(e.target.value)}
                                             placeholder="—"
-                                            className="flex-1 min-w-0 h-12 rounded-lg bg-white/[0.04] border border-white/[0.08] text-center text-xl font-bold font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition"
+                                            className="flex-1 min-w-0 h-12 rounded-lg bg-[rgb(var(--fg-rgb)/0.04)] border border-[rgb(var(--fg-rgb)/0.08)] text-center text-xl font-bold font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition"
                                         />
-                                        <span className="shrink-0 text-[10px] font-mono px-3 py-3 text-white/40">{weightUnit.toUpperCase()}</span>
+                                        <span className="shrink-0 text-[10px] font-mono px-3 py-3 text-[rgb(var(--fg-rgb)/0.40)]">{weightUnit.toUpperCase()}</span>
                                         <button
                                             onClick={logBodyWeight}
                                             disabled={!newWeight}
@@ -1512,13 +1512,13 @@ export default function ProgressPage() {
                                 </div>
 
                                 {/* Weight trend chart */}
-                                <div className="rounded-lg border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.02] p-4" style={{ boxShadow: "inset 0 1px 0 rgb(var(--accent-rgb) / 0.06)" }}>
+                                <div className="rounded-lg border border-[rgb(var(--accent-rgb)/0.15)] bg-[rgb(var(--fg-rgb)/0.02)] p-4" style={{ boxShadow: "inset 0 1px 0 rgb(var(--accent-rgb) / 0.06)" }}>
                                     <div className="flex items-center justify-between mb-3">
-                                        <p className="text-[10px] font-mono tracking-widest text-white/25">WEIGHT TREND</p>
+                                        <p className="text-[10px] font-mono tracking-widest text-[rgb(var(--fg-rgb)/0.25)]">WEIGHT TREND</p>
                                         {bodyWeightData.some((d) => d.ema) && (
                                             <div className="flex items-center gap-3">
-                                                <span className="flex items-center gap-1.5 text-[8px] font-mono text-white/25">
-                                                    <span className="w-3 h-0.5 rounded-full bg-white/20 inline-block" /> RAW
+                                                <span className="flex items-center gap-1.5 text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.25)]">
+                                                    <span className="w-3 h-0.5 rounded-full bg-[rgb(var(--fg-rgb)/0.20)] inline-block" /> RAW
                                                 </span>
                                                 <span className="flex items-center gap-1.5 text-[8px] font-mono text-cyan-300/60">
                                                     <span className="w-3 h-0.5 rounded-full bg-cyan-400 inline-block" /> TREND
@@ -1527,8 +1527,8 @@ export default function ProgressPage() {
                                         )}
                                     </div>
                                     {bodyWeightData.length < 2 ? (
-                                        <div className="h-40 flex items-center justify-center border border-dashed border-white/10 rounded-lg">
-                                            <p className="text-xs font-mono text-white/30 text-center px-4">
+                                        <div className="h-40 flex items-center justify-center border border-dashed border-[rgb(var(--fg-rgb)/0.10)] rounded-lg">
+                                            <p className="text-xs font-mono text-[rgb(var(--fg-rgb)/0.30)] text-center px-4">
                                                 {bodyWeightData.length === 0 ? "No weight logs yet. Log your morning weight to start tracking." : "Need at least 2 entries to show a trend."}
                                             </p>
                                         </div>
@@ -1536,11 +1536,11 @@ export default function ProgressPage() {
                                         <div className="h-56">
                                             <ResponsiveContainer width="100%" height="100%">
                                                 <LineChart data={displayBodyWeightData}>
-                                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-                                                    <XAxis dataKey="date" tick={{ fontSize: 9, fill: "rgba(255,255,255,0.3)" }} />
-                                                    <YAxis tick={{ fontSize: 9, fill: "rgba(255,255,255,0.3)" }} domain={["auto", "auto"]} />
+                                                    <CartesianGrid strokeDasharray="3 3" stroke="rgb(var(--fg-rgb) / 0.04)" />
+                                                    <XAxis dataKey="date" tick={{ fontSize: 9, fill: "rgb(var(--fg-rgb) / 0.3)" }} />
+                                                    <YAxis tick={{ fontSize: 9, fill: "rgb(var(--fg-rgb) / 0.3)" }} domain={["auto", "auto"]} />
                                                     <Tooltip content={<CustomTooltip />} />
-                                                    <Line type="monotone" dataKey="weight" stroke="rgba(255,255,255,0.2)" strokeWidth={1} dot={{ r: 2.5, fill: "rgba(255,255,255,0.15)", strokeWidth: 0 }} name={`Raw (${weightUnit})`} activeDot={{ r: 4, fill: "rgba(255,255,255,0.4)" }} />
+                                                    <Line type="monotone" dataKey="weight" stroke="rgb(var(--fg-rgb) / 0.2)" strokeWidth={1} dot={{ r: 2.5, fill: "rgb(var(--fg-rgb) / 0.15)", strokeWidth: 0 }} name={`Raw (${weightUnit})`} activeDot={{ r: 4, fill: "rgb(var(--fg-rgb) / 0.4)" }} />
                                                     {bodyWeightData.some((d) => d.ema) && (
                                                         <Line type="monotone" dataKey="ema" stroke="#22d3ee" strokeWidth={2.5} dot={false} name={`Trend (${weightUnit})`} connectNulls />
                                                     )}
@@ -1549,7 +1549,7 @@ export default function ProgressPage() {
                                         </div>
                                     )}
                                     {bodyWeightData.length >= 2 && !bodyWeightData.some((d) => d.ema) && (
-                                        <p className="text-[9px] font-mono text-white/20 mt-2 text-center">Log morning weigh-ins to see the EMA<InfoTip term="EMA" /> trend line</p>
+                                        <p className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.20)] mt-2 text-center">Log morning weigh-ins to see the EMA<InfoTip term="EMA" /> trend line</p>
                                     )}
                                 </div>
 
@@ -1575,25 +1575,25 @@ export default function ProgressPage() {
                                     return (
                                         <div className="grid grid-cols-3 gap-2">
                                             <div className="glass-card p-3 text-center">
-                                                <p className="text-[8px] font-mono text-white/30">CURRENT</p>
-                                                <p className="text-lg font-bold font-mono text-white/90">{latest.weight} <span className="text-xs text-white/30">{unitLabel}</span></p>
+                                                <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">CURRENT</p>
+                                                <p className="text-lg font-bold font-mono text-[rgb(var(--fg-rgb)/0.90)]">{latest.weight} <span className="text-xs text-[rgb(var(--fg-rgb)/0.30)]">{unitLabel}</span></p>
                                             </div>
                                             <div className="glass-card p-3 text-center">
-                                                <p className="text-[8px] font-mono text-white/30">{trendEnd !== null ? "TREND" : "LOWEST"}</p>
+                                                <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">{trendEnd !== null ? "TREND" : "LOWEST"}</p>
                                                 {trendEnd !== null ? (
-                                                    <p className="text-lg font-bold font-mono text-cyan-300">{trendEnd} <span className="text-xs text-white/30">{unitLabel}</span></p>
+                                                    <p className="text-lg font-bold font-mono text-cyan-300">{trendEnd} <span className="text-xs text-[rgb(var(--fg-rgb)/0.30)]">{unitLabel}</span></p>
                                                 ) : (
-                                                    <p className="text-lg font-bold font-mono text-emerald-300">{Math.min(...displayBodyWeightData.map((d) => d.weight))} <span className="text-xs text-white/30">{unitLabel}</span></p>
+                                                    <p className="text-lg font-bold font-mono text-emerald-300">{Math.min(...displayBodyWeightData.map((d) => d.weight))} <span className="text-xs text-[rgb(var(--fg-rgb)/0.30)]">{unitLabel}</span></p>
                                                 )}
                                             </div>
                                             <div className="glass-card p-3 text-center">
-                                                <p className="text-[8px] font-mono text-white/30">{weeklyRate !== null ? "/WEEK" : "CHANGE"}</p>
+                                                <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">{weeklyRate !== null ? "/WEEK" : "CHANGE"}</p>
                                                 {weeklyRate !== null ? (
-                                                    <p className={`text-lg font-bold font-mono ${weeklyRate > 0 ? "text-orange-300" : weeklyRate < 0 ? "text-emerald-300" : "text-white/50"}`}>{weeklyRate > 0 ? "+" : ""}{weeklyRate} <span className="text-xs text-white/30">{unitLabel}</span></p>
+                                                    <p className={`text-lg font-bold font-mono ${weeklyRate > 0 ? "text-orange-300" : weeklyRate < 0 ? "text-emerald-300" : "text-[rgb(var(--fg-rgb)/0.50)]"}`}>{weeklyRate > 0 ? "+" : ""}{weeklyRate} <span className="text-xs text-[rgb(var(--fg-rgb)/0.30)]">{unitLabel}</span></p>
                                                 ) : displayBodyWeightData.length >= 2 ? (() => {
                                                     const change = Math.round((latest.weight - displayBodyWeightData[0].weight) * 10) / 10;
-                                                    return <p className={`text-lg font-bold font-mono ${change > 0 ? "text-orange-300" : change < 0 ? "text-emerald-300" : "text-white/50"}`}>{change > 0 ? "+" : ""}{change} <span className="text-xs text-white/30">{unitLabel}</span></p>;
-                                                })() : <p className="text-lg font-bold font-mono text-white/30">—</p>}
+                                                    return <p className={`text-lg font-bold font-mono ${change > 0 ? "text-orange-300" : change < 0 ? "text-emerald-300" : "text-[rgb(var(--fg-rgb)/0.50)]"}`}>{change > 0 ? "+" : ""}{change} <span className="text-xs text-[rgb(var(--fg-rgb)/0.30)]">{unitLabel}</span></p>;
+                                                })() : <p className="text-lg font-bold font-mono text-[rgb(var(--fg-rgb)/0.30)]">—</p>}
                                             </div>
                                         </div>
                                     );
@@ -1608,10 +1608,10 @@ export default function ProgressPage() {
                                 <div className="flex items-center justify-between">
                                     <button
                                         onClick={() => { const d = new Date(intakeDate); d.setDate(d.getDate() - 1); setIntakeDate(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`); }}
-                                        className="text-[10px] font-mono px-3 py-2 rounded-lg border border-white/[0.08] text-white/40 hover:text-white/70 transition"
+                                        className="text-[10px] font-mono px-3 py-2 rounded-lg border border-[rgb(var(--fg-rgb)/0.08)] text-[rgb(var(--fg-rgb)/0.40)] hover:text-[rgb(var(--fg-rgb)/0.70)] transition"
                                     >‹</button>
                                     <div className="text-center">
-                                        <p className="text-sm font-bold font-mono text-white/80">
+                                        <p className="text-sm font-bold font-mono text-[rgb(var(--fg-rgb)/0.80)]">
                                             {new Date(intakeDate + "T12:00:00").toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}
                                         </p>
                                         {intakeDate !== (() => { const _d = new Date(); return `${_d.getFullYear()}-${String(_d.getMonth() + 1).padStart(2, "0")}-${String(_d.getDate()).padStart(2, "0")}`; })() && (
@@ -1621,25 +1621,25 @@ export default function ProgressPage() {
                                     <button
                                         onClick={() => { const d = new Date(intakeDate); d.setDate(d.getDate() + 1); setIntakeDate(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`); }}
                                         disabled={intakeDate >= (() => { const _d = new Date(); return `${_d.getFullYear()}-${String(_d.getMonth() + 1).padStart(2, "0")}-${String(_d.getDate()).padStart(2, "0")}`; })()}
-                                        className="text-[10px] font-mono px-3 py-2 rounded-lg border border-white/[0.08] text-white/40 hover:text-white/70 disabled:opacity-20 transition"
+                                        className="text-[10px] font-mono px-3 py-2 rounded-lg border border-[rgb(var(--fg-rgb)/0.08)] text-[rgb(var(--fg-rgb)/0.40)] hover:text-[rgb(var(--fg-rgb)/0.70)] disabled:opacity-20 transition"
                                     >›</button>
                                 </div>
 
                                 {intakeLoading && (
                                     <div className="space-y-4 animate-pulse">
                                         <div className="glass-card p-4 space-y-3">
-                                            <div className="h-3 w-28 rounded bg-white/[0.06]" />
-                                            <div className="h-8 w-24 mx-auto rounded bg-white/[0.06]" />
-                                            <div className="h-3 rounded-full bg-white/[0.04]" />
+                                            <div className="h-3 w-28 rounded bg-[rgb(var(--fg-rgb)/0.06)]" />
+                                            <div className="h-8 w-24 mx-auto rounded bg-[rgb(var(--fg-rgb)/0.06)]" />
+                                            <div className="h-3 rounded-full bg-[rgb(var(--fg-rgb)/0.04)]" />
                                             <div className="grid grid-cols-3 gap-2">
-                                                <div className="h-10 rounded-md bg-white/[0.04]" />
-                                                <div className="h-10 rounded-md bg-white/[0.04]" />
-                                                <div className="h-10 rounded-md bg-white/[0.04]" />
+                                                <div className="h-10 rounded-md bg-[rgb(var(--fg-rgb)/0.04)]" />
+                                                <div className="h-10 rounded-md bg-[rgb(var(--fg-rgb)/0.04)]" />
+                                                <div className="h-10 rounded-md bg-[rgb(var(--fg-rgb)/0.04)]" />
                                             </div>
                                         </div>
                                         <div className="glass-card p-4 space-y-3">
-                                            <div className="h-3 w-20 rounded bg-white/[0.06]" />
-                                            <div className="h-24 rounded-md bg-white/[0.04]" />
+                                            <div className="h-3 w-20 rounded bg-[rgb(var(--fg-rgb)/0.06)]" />
+                                            <div className="h-24 rounded-md bg-[rgb(var(--fg-rgb)/0.04)]" />
                                         </div>
                                     </div>
                                 )}
@@ -1671,11 +1671,11 @@ export default function ProgressPage() {
                                     const macroTargets = ledgerCalorieSummary?.macros;
 
                                     return (
-                                        <div className="rounded-lg border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.02] p-4" style={{ boxShadow: "inset 0 1px 0 rgb(var(--accent-rgb) / 0.06)" }}>
+                                        <div className="rounded-lg border border-[rgb(var(--accent-rgb)/0.15)] bg-[rgb(var(--fg-rgb)/0.02)] p-4" style={{ boxShadow: "inset 0 1px 0 rgb(var(--accent-rgb) / 0.06)" }}>
                                             <div className="flex items-center justify-between mb-3">
-                                                <p className="text-[10px] font-mono tracking-widest text-white/25">{isToday ? "TODAY'S PROGRESS" : "DAILY TOTALS"}</p>
+                                                <p className="text-[10px] font-mono tracking-widest text-[rgb(var(--fg-rgb)/0.25)]">{isToday ? "TODAY'S PROGRESS" : "DAILY TOTALS"}</p>
                                                 {intakeAdherence !== null && (
-                                                    <p className="text-[9px] font-mono text-white/30">30D ADHERENCE: <span className={intakeAdherence >= 80 ? "text-emerald-300" : intakeAdherence >= 50 ? "text-amber-300" : "text-red-300"}>{intakeAdherence}%</span></p>
+                                                    <p className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">30D ADHERENCE: <span className={intakeAdherence >= 80 ? "text-emerald-300" : intakeAdherence >= 50 ? "text-amber-300" : "text-red-300"}>{intakeAdherence}%</span></p>
                                                 )}
                                             </div>
 
@@ -1699,7 +1699,7 @@ export default function ProgressPage() {
                                             {/* Progress bar with meal segments */}
                                             {target > 0 && (
                                                 <div className="mb-3">
-                                                    <div className="h-3 rounded-full bg-white/[0.06] overflow-hidden flex">
+                                                    <div className="h-3 rounded-full bg-[rgb(var(--fg-rgb)/0.06)] overflow-hidden flex">
                                                         {mealTotals.map((m) => (
                                                             <div
                                                                 key={m.slot}
@@ -1713,11 +1713,11 @@ export default function ProgressPage() {
                                                             {mealTotals.map((m) => (
                                                                 <div key={m.slot} className="flex items-center gap-1">
                                                                     <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: mealColors[m.slot], opacity: 0.7 }} />
-                                                                    <span className="text-[7px] font-mono text-white/25 capitalize">{m.slot} {m.kcal}</span>
+                                                                    <span className="text-[7px] font-mono text-[rgb(var(--fg-rgb)/0.25)] capitalize">{m.slot} {m.kcal}</span>
                                                                 </div>
                                                             ))}
                                                         </div>
-                                                        <span className="text-[7px] font-mono text-white/20">{totals.kcal} / {target}</span>
+                                                        <span className="text-[7px] font-mono text-[rgb(var(--fg-rgb)/0.20)]">{totals.kcal} / {target}</span>
                                                     </div>
                                                 </div>
                                             )}
@@ -1733,11 +1733,11 @@ export default function ProgressPage() {
                                                         const mpct = m.target > 0 ? Math.min((m.current / m.target) * 100, 100) : 0;
                                                         return (
                                                             <div key={m.label} className="text-center">
-                                                                <p className="text-[7px] font-mono text-white/30 mb-0.5">{m.label}</p>
-                                                                <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+                                                                <p className="text-[7px] font-mono text-[rgb(var(--fg-rgb)/0.30)] mb-0.5">{m.label}</p>
+                                                                <div className="h-1.5 rounded-full bg-[rgb(var(--fg-rgb)/0.06)] overflow-hidden">
                                                                     <div className="h-full rounded-full transition-all duration-500" style={{ width: `${mpct}%`, backgroundColor: m.color, opacity: 0.6 }} />
                                                                 </div>
-                                                                <p className="text-[8px] font-mono mt-0.5" style={{ color: m.color }}>{Math.round(m.current)}<span className="text-white/20">/{m.target}g</span></p>
+                                                                <p className="text-[8px] font-mono mt-0.5" style={{ color: m.color }}>{Math.round(m.current)}<span className="text-[rgb(var(--fg-rgb)/0.20)]">/{m.target}g</span></p>
                                                             </div>
                                                         );
                                                     })}
@@ -1748,19 +1748,19 @@ export default function ProgressPage() {
                                             {!target && (
                                                 <div className="grid grid-cols-4 gap-2">
                                                     <div className="text-center">
-                                                        <p className="text-[8px] font-mono text-white/30">KCAL</p>
+                                                        <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">KCAL</p>
                                                         <p className="text-lg font-bold font-mono text-[rgb(var(--accent-light-rgb))]">{totals.kcal}</p>
                                                     </div>
                                                     <div className="text-center">
-                                                        <p className="text-[8px] font-mono text-white/30">PROTEIN</p>
+                                                        <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">PROTEIN</p>
                                                         <p className="text-lg font-bold font-mono text-rose-300">{Math.round(totals.protein)}g</p>
                                                     </div>
                                                     <div className="text-center">
-                                                        <p className="text-[8px] font-mono text-white/30">CARBS</p>
+                                                        <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">CARBS</p>
                                                         <p className="text-lg font-bold font-mono text-amber-300">{Math.round(totals.carbs)}g</p>
                                                     </div>
                                                     <div className="text-center">
-                                                        <p className="text-[8px] font-mono text-white/30">FAT</p>
+                                                        <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">FAT</p>
                                                         <p className="text-lg font-bold font-mono text-blue-300">{Math.round(totals.fat)}g</p>
                                                     </div>
                                                 </div>
@@ -1809,23 +1809,23 @@ export default function ProgressPage() {
                                     }
 
                                     return (
-                                        <div className="rounded-lg border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.02] p-4" style={{ boxShadow: "inset 0 1px 0 rgb(var(--accent-rgb) / 0.06)" }}>
-                                            <p className="text-[10px] font-mono tracking-widest text-white/25 mb-3">WEEKLY TREND</p>
+                                        <div className="rounded-lg border border-[rgb(var(--accent-rgb)/0.15)] bg-[rgb(var(--fg-rgb)/0.02)] p-4" style={{ boxShadow: "inset 0 1px 0 rgb(var(--accent-rgb) / 0.06)" }}>
+                                            <p className="text-[10px] font-mono tracking-widest text-[rgb(var(--fg-rgb)/0.25)] mb-3">WEEKLY TREND</p>
 
                                             <div className="grid grid-cols-2 gap-3 mb-3">
-                                                <div className="rounded-md bg-white/[0.03] border border-white/[0.04] p-2.5 text-center">
-                                                    <p className="text-[8px] font-mono text-white/30 mb-1">AVG VS TARGET</p>
+                                                <div className="rounded-md bg-[rgb(var(--fg-rgb)/0.03)] border border-[rgb(var(--fg-rgb)/0.04)] p-2.5 text-center">
+                                                    <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.30)] mb-1">AVG VS TARGET</p>
                                                     <p className={`text-sm font-bold font-mono ${avgGood ? "text-emerald-300" : "text-amber-300"}`}>
                                                         {avg === 0 ? "On target" : `${absAvg} ${avg < 0 ? "under" : "over"}`}
                                                     </p>
-                                                    <p className="text-[7px] font-mono text-white/20">kcal/day</p>
+                                                    <p className="text-[7px] font-mono text-[rgb(var(--fg-rgb)/0.20)]">kcal/day</p>
                                                 </div>
-                                                <div className="rounded-md bg-white/[0.03] border border-white/[0.04] p-2.5 text-center">
-                                                    <p className="text-[8px] font-mono text-white/30 mb-1">WEEKLY PACE</p>
+                                                <div className="rounded-md bg-[rgb(var(--fg-rgb)/0.03)] border border-[rgb(var(--fg-rgb)/0.04)] p-2.5 text-center">
+                                                    <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.30)] mb-1">WEEKLY PACE</p>
                                                     <p className={`text-sm font-bold font-mono ${weightGood ? "text-emerald-300" : "text-amber-300"}`}>
                                                         ~{avgPerWeek} {weightUnit}/{weightDelta < 0 ? "lost" : "gained"}
                                                     </p>
-                                                    <p className="text-[7px] font-mono text-white/20">per week</p>
+                                                    <p className="text-[7px] font-mono text-[rgb(var(--fg-rgb)/0.20)]">per week</p>
                                                 </div>
                                             </div>
 
@@ -1833,9 +1833,9 @@ export default function ProgressPage() {
                                             {streakDots.length > 0 && (
                                                 <div className="mb-3 flex items-center justify-between">
                                                     <div className="flex items-center gap-1">
-                                                        <p className="text-[8px] font-mono text-white/30 mr-1">STREAK</p>
+                                                        <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.30)] mr-1">STREAK</p>
                                                         {streakDots.map((d, i) => (
-                                                            <div key={i} className={`w-2 h-2 rounded-full ${d.hit ? "bg-emerald-400/70" : "bg-white/10"}`} title={d.date} />
+                                                            <div key={i} className={`w-2 h-2 rounded-full ${d.hit ? "bg-emerald-400/70" : "bg-[rgb(var(--fg-rgb)/0.10)]"}`} title={d.date} />
                                                         ))}
                                                     </div>
                                                     {currentStreak > 0 && (
@@ -1846,21 +1846,21 @@ export default function ProgressPage() {
 
                                             {/* Sparkline */}
                                             {sparkData.length >= 3 && (
-                                                <div className="mb-3 rounded-md bg-white/[0.02] border border-white/[0.04] p-3">
+                                                <div className="mb-3 rounded-md bg-[rgb(var(--fg-rgb)/0.02)] border border-[rgb(var(--fg-rgb)/0.04)] p-3">
                                                     <div className="flex items-center justify-between mb-2">
-                                                        <p className="text-[8px] font-mono text-white/25">DAILY NET (last {sparkData.length}d)</p>
+                                                        <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.25)]">DAILY NET (last {sparkData.length}d)</p>
                                                         <div className="flex items-center gap-2.5">
-                                                            <span className="flex items-center gap-1 text-[7px] font-mono text-white/25">
+                                                            <span className="flex items-center gap-1 text-[7px] font-mono text-[rgb(var(--fg-rgb)/0.25)]">
                                                                 <span className="w-1.5 h-1.5 rounded-[2px]" style={{ background: "rgb(110, 231, 183)" }} /> Under
                                                             </span>
-                                                            <span className="flex items-center gap-1 text-[7px] font-mono text-white/25">
+                                                            <span className="flex items-center gap-1 text-[7px] font-mono text-[rgb(var(--fg-rgb)/0.25)]">
                                                                 <span className="w-1.5 h-1.5 rounded-[2px]" style={{ background: "rgb(252, 211, 77)" }} /> Over
                                                             </span>
                                                         </div>
                                                     </div>
                                                     <ResponsiveContainer width="100%" height={110}>
                                                         <BarChart data={sparkData} margin={{ top: 16, right: 4, bottom: 0, left: 4 }} barCategoryGap="28%">
-                                                            <ReferenceLine y={0} stroke="rgba(255,255,255,0.1)" />
+                                                            <ReferenceLine y={0} stroke="rgb(var(--fg-rgb) / 0.1)" />
                                                             <Bar dataKey="net" radius={[3, 3, 3, 3]} isAnimationActive={false} maxBarSize={22}>
                                                                 {sparkData.map((d, i) => (
                                                                     <Cell key={i} fill={d.net <= 0 ? "rgb(110, 231, 183)" : "rgb(252, 211, 77)"} fillOpacity={0.7} />
@@ -1872,18 +1872,18 @@ export default function ProgressPage() {
                                                                         const label = Math.abs(value) >= 1000 ? `${value > 0 ? "+" : ""}${(value / 1000).toFixed(1)}k` : `${value > 0 ? "+" : ""}${value}`;
                                                                         const ty = value <= 0 ? y + height + 10 : y - 4;
                                                                         return (
-                                                                            <text x={x + width / 2} y={ty} textAnchor="middle" fontSize={8} fontFamily="monospace" fill="rgba(255,255,255,0.45)">
+                                                                            <text x={x + width / 2} y={ty} textAnchor="middle" fontSize={8} fontFamily="monospace" fill="rgb(var(--fg-rgb) / 0.45)">
                                                                                 {label}
                                                                             </text>
                                                                         );
                                                                     }}
                                                                 />
                                                             </Bar>
-                                                            <XAxis dataKey="date" tick={{ fontSize: 8, fill: "rgba(255,255,255,0.25)" }} axisLine={false} tickLine={false} interval={sparkData.length > 10 ? 1 : 0} />
+                                                            <XAxis dataKey="date" tick={{ fontSize: 8, fill: "rgb(var(--fg-rgb) / 0.25)" }} axisLine={false} tickLine={false} interval={sparkData.length > 10 ? 1 : 0} />
                                                             <Tooltip
-                                                                cursor={{ fill: "rgba(255,255,255,0.04)" }}
-                                                                contentStyle={{ background: "#0a0f1a", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 8, fontSize: 10, fontFamily: "monospace", padding: "6px 10px" }}
-                                                                labelStyle={{ color: "rgba(255,255,255,0.4)", marginBottom: 2 }}
+                                                                cursor={{ fill: "rgb(var(--fg-rgb) / 0.04)" }}
+                                                                contentStyle={{ background: "#0a0f1a", border: "1px solid rgb(var(--fg-rgb) / 0.12)", borderRadius: 8, fontSize: 10, fontFamily: "monospace", padding: "6px 10px" }}
+                                                                labelStyle={{ color: "rgb(var(--fg-rgb) / 0.4)", marginBottom: 2 }}
                                                                 itemStyle={{ padding: 0 }}
                                                                 formatter={(v: any) => [`${v > 0 ? "+" : ""}${v} kcal`, v <= 0 ? "Under target" : "Over target"]}
                                                             />
@@ -1893,22 +1893,22 @@ export default function ProgressPage() {
                                             )}
 
                                             {hasTarget && projectedKg !== null && (
-                                                <div className="rounded-md bg-white/[0.03] border border-white/[0.06] p-3 mt-2">
+                                                <div className="rounded-md bg-[rgb(var(--fg-rgb)/0.03)] border border-[rgb(var(--fg-rgb)/0.06)] p-3 mt-2">
                                                     <div className="flex items-center justify-between">
                                                         <div>
-                                                            <p className="text-[8px] font-mono text-white/30">PROJECTED AT TARGET DATE</p>
-                                                            <p className="text-[8px] font-mono text-white/20 mt-0.5">
+                                                            <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">PROJECTED AT TARGET DATE</p>
+                                                            <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.20)] mt-0.5">
                                                                 {new Date(ledgerGoal!.targetDate! + "T12:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })} ({daysLeft}d left)
                                                             </p>
                                                         </div>
                                                         <div className="text-right">
-                                                            <p className="text-lg font-bold font-mono text-[rgb(var(--accent-light-rgb))]">{Math.round(kgToUnit(projectedKg, weightUnit) * 10) / 10} <span className="text-xs text-white/30">{weightUnit}</span></p>
-                                                            <p className="text-[8px] font-mono text-white/20">target: {Math.round(kgToUnit(Number(ledgerGoal!.targetWeightKg!), weightUnit) * 10) / 10} {weightUnit}</p>
+                                                            <p className="text-lg font-bold font-mono text-[rgb(var(--accent-light-rgb))]">{Math.round(kgToUnit(projectedKg, weightUnit) * 10) / 10} <span className="text-xs text-[rgb(var(--fg-rgb)/0.30)]">{weightUnit}</span></p>
+                                                            <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.20)]">target: {Math.round(kgToUnit(Number(ledgerGoal!.targetWeightKg!), weightUnit) * 10) / 10} {weightUnit}</p>
                                                         </div>
                                                     </div>
                                                 </div>
                                             )}
-                                            <p className="text-[8px] font-mono text-white/20 mt-3 text-center leading-relaxed">{contextParts.join(" — ")}.</p>
+                                            <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.20)] mt-3 text-center leading-relaxed">{contextParts.join(" — ")}.</p>
                                         </div>
                                     );
                                 })()}
@@ -1918,27 +1918,27 @@ export default function ProgressPage() {
                                     <div className={`rounded-lg border p-4 ${feasibility.feasible ? "border-emerald-400/20 bg-emerald-400/[0.03]" : "border-amber-400/20 bg-amber-400/[0.03]"}`}>
                                         <div className="flex items-center gap-2 mb-2">
                                             <div className={`w-2 h-2 rounded-full ${feasibility.feasible ? "bg-emerald-400" : "bg-amber-400"}`} />
-                                            <p className="text-[10px] font-mono tracking-widest text-white/30">{feasibility.feasible ? "ON TRACK" : "ADJUST NEEDED"}</p>
+                                            <p className="text-[10px] font-mono tracking-widest text-[rgb(var(--fg-rgb)/0.30)]">{feasibility.feasible ? "ON TRACK" : "ADJUST NEEDED"}</p>
                                         </div>
-                                        <p className="text-xs font-mono text-white/60 mb-2">{feasibility.reason}</p>
+                                        <p className="text-xs font-mono text-[rgb(var(--fg-rgb)/0.60)] mb-2">{feasibility.reason}</p>
                                         {!feasibility.feasible && feasibility.suggestedDate && (
-                                            <div className="rounded-md bg-white/[0.04] border border-white/[0.06] p-2 mt-1">
-                                                <p className="text-[8px] font-mono text-white/30">SUGGESTED TARGET DATE</p>
+                                            <div className="rounded-md bg-[rgb(var(--fg-rgb)/0.04)] border border-[rgb(var(--fg-rgb)/0.06)] p-2 mt-1">
+                                                <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">SUGGESTED TARGET DATE</p>
                                                 <p className="text-sm font-bold font-mono text-[rgb(var(--accent-light-rgb))]">
                                                     {new Date(feasibility.suggestedDate + "T12:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
                                                 </p>
-                                                <p className="text-[8px] font-mono text-white/20 mt-0.5">at {Math.round(kgToUnit(feasibility.safeRateKgWeek, weightUnit) * 100) / 100} {weightUnit}/week safe rate</p>
+                                                <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.20)] mt-0.5">at {Math.round(kgToUnit(feasibility.safeRateKgWeek, weightUnit) * 100) / 100} {weightUnit}/week safe rate</p>
                                             </div>
                                         )}
                                         {feasibility.feasible && feasibility.requiredRateKgWeek > 0 && (
-                                            <p className="text-[8px] font-mono text-white/20">Required rate: {Math.round(kgToUnit(feasibility.requiredRateKgWeek, weightUnit) * 100) / 100} {weightUnit}/week · Safe max: {Math.round(kgToUnit(feasibility.safeRateKgWeek, weightUnit) * 100) / 100} {weightUnit}/week</p>
+                                            <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.20)]">Required rate: {Math.round(kgToUnit(feasibility.requiredRateKgWeek, weightUnit) * 100) / 100} {weightUnit}/week · Safe max: {Math.round(kgToUnit(feasibility.safeRateKgWeek, weightUnit) * 100) / 100} {weightUnit}/week</p>
                                         )}
                                         {feasibility.violations.length > 0 && (
                                             <div className="mt-2 space-y-1">
                                                 {feasibility.violations.map((v, i) => (
-                                                    <div key={i} className="text-[8px] font-mono text-white/25 flex gap-2">
+                                                    <div key={i} className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.25)] flex gap-2">
                                                         <span className="text-amber-300/50 shrink-0">⚠</span>
-                                                        <span><span className="text-white/40">{v.rule}:</span> {v.detail}</span>
+                                                        <span><span className="text-[rgb(var(--fg-rgb)/0.40)]">{v.rule}:</span> {v.detail}</span>
                                                     </div>
                                                 ))}
                                             </div>
@@ -1950,7 +1950,7 @@ export default function ProgressPage() {
                                 {ledgerCalorieSummary && (
                                     <div className="glass-card p-4">
                                         <div className="flex items-center justify-between mb-3">
-                                            <p className="text-[10px] font-mono tracking-widest text-white/25">ADAPTIVE MODE</p>
+                                            <p className="text-[10px] font-mono tracking-widest text-[rgb(var(--fg-rgb)/0.25)]">ADAPTIVE MODE</p>
                                             <button
                                                 onClick={async () => {
                                                     if (!user) return;
@@ -1958,48 +1958,48 @@ export default function ProgressPage() {
                                                     setAdaptiveMode(next);
                                                     await supabase.from("user_goals").update({ adaptive_mode: next, updated_at: new Date().toISOString() }).eq("user_id", user.id).eq("sex", userSex).eq("is_active", true);
                                                 }}
-                                                className={`relative w-10 h-5 rounded-full transition-colors ${adaptiveMode ? "bg-[rgb(var(--accent-rgb))]" : "bg-white/10"}`}
+                                                className={`relative w-10 h-5 rounded-full transition-colors ${adaptiveMode ? "bg-[rgb(var(--accent-rgb))]" : "bg-[rgb(var(--fg-rgb)/0.10)]"}`}
                                             >
                                                 <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${adaptiveMode ? "translate-x-5" : "translate-x-0.5"}`} />
                                             </button>
                                         </div>
                                         <div className="grid grid-cols-2 gap-3">
-                                            <div className="rounded-md bg-white/[0.03] border border-white/[0.06] p-3 text-center">
-                                                <p className="text-[8px] font-mono text-white/30">CALCULATED TDEE<InfoTip term="TDEE" /></p>
-                                                <p className="text-lg font-bold font-mono text-white/60">{ledgerCalorieSummary.tdee}</p>
-                                                <p className="text-[7px] font-mono text-white/15">from profile</p>
+                                            <div className="rounded-md bg-[rgb(var(--fg-rgb)/0.03)] border border-[rgb(var(--fg-rgb)/0.06)] p-3 text-center">
+                                                <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">CALCULATED TDEE<InfoTip term="TDEE" /></p>
+                                                <p className="text-lg font-bold font-mono text-[rgb(var(--fg-rgb)/0.60)]">{ledgerCalorieSummary.tdee}</p>
+                                                <p className="text-[7px] font-mono text-[rgb(var(--fg-rgb)/0.15)]">from profile</p>
                                             </div>
-                                            <div className={`rounded-md border p-3 text-center ${tdeeEstimate ? "bg-[rgb(var(--accent-rgb)/0.05)] border-[rgb(var(--accent-rgb)/0.2)]" : "bg-white/[0.03] border-white/[0.06]"}`}>
-                                                <p className="text-[8px] font-mono text-white/30">OBSERVED TDEE<InfoTip term="TDEE" /></p>
+                                            <div className={`rounded-md border p-3 text-center ${tdeeEstimate ? "bg-[rgb(var(--accent-rgb)/0.05)] border-[rgb(var(--accent-rgb)/0.2)]" : "bg-[rgb(var(--fg-rgb)/0.03)] border-[rgb(var(--fg-rgb)/0.06)]"}`}>
+                                                <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">OBSERVED TDEE<InfoTip term="TDEE" /></p>
                                                 {tdeeEstimate ? (
                                                     <>
                                                         <p className="text-lg font-bold font-mono text-[rgb(var(--accent-light-rgb))]">{tdeeEstimate.value}</p>
-                                                        <p className="text-[7px] font-mono text-white/15">{tdeeEstimate.windowDays}d data · {tdeeEstimate.method}</p>
+                                                        <p className="text-[7px] font-mono text-[rgb(var(--fg-rgb)/0.15)]">{tdeeEstimate.windowDays}d data · {tdeeEstimate.method}</p>
                                                     </>
                                                 ) : (
                                                     <>
-                                                        <p className="text-lg font-bold font-mono text-white/20">—</p>
-                                                        <p className="text-[7px] font-mono text-white/15">need 14+ days</p>
+                                                        <p className="text-lg font-bold font-mono text-[rgb(var(--fg-rgb)/0.20)]">—</p>
+                                                        <p className="text-[7px] font-mono text-[rgb(var(--fg-rgb)/0.15)]">need 14+ days</p>
                                                     </>
                                                 )}
                                             </div>
                                         </div>
                                         {adaptiveMode && tdeeEstimate && (
-                                            <div className="mt-3 rounded-md bg-white/[0.03] border border-white/[0.06] p-2 text-center">
-                                                <p className="text-[8px] font-mono text-white/30">BLENDED TDEE<InfoTip term="TDEE" /></p>
+                                            <div className="mt-3 rounded-md bg-[rgb(var(--fg-rgb)/0.03)] border border-[rgb(var(--fg-rgb)/0.06)] p-2 text-center">
+                                                <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">BLENDED TDEE<InfoTip term="TDEE" /></p>
                                                 <p className="text-sm font-bold font-mono text-[rgb(var(--accent-light-rgb))]">
-                                                    {blendTdee(ledgerCalorieSummary.tdee, tdeeEstimate)} <span className="text-xs text-white/20">kcal</span>
+                                                    {blendTdee(ledgerCalorieSummary.tdee, tdeeEstimate)} <span className="text-xs text-[rgb(var(--fg-rgb)/0.20)]">kcal</span>
                                                 </p>
-                                                <p className="text-[7px] font-mono text-white/15">weighted blend · observed confidence ramps over 28 days</p>
+                                                <p className="text-[7px] font-mono text-[rgb(var(--fg-rgb)/0.15)]">weighted blend · observed confidence ramps over 28 days</p>
                                             </div>
                                         )}
                                         {adaptiveMode && !tdeeEstimate && (
-                                            <p className="text-[8px] font-mono text-white/20 mt-2 text-center">Log intake and morning weights for 14+ days to enable adaptive estimation.</p>
+                                            <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.20)] mt-2 text-center">Log intake and morning weights for 14+ days to enable adaptive estimation.</p>
                                         )}
                                         {energyReceipt && (
                                             <button
                                                 onClick={() => setShowReceipt(true)}
-                                                className="w-full mt-3 text-[9px] font-mono py-2 rounded-lg border border-white/[0.08] text-white/25 hover:text-white/50 hover:border-white/[0.15] transition"
+                                                className="w-full mt-3 text-[9px] font-mono py-2 rounded-lg border border-[rgb(var(--fg-rgb)/0.08)] text-[rgb(var(--fg-rgb)/0.25)] hover:text-[rgb(var(--fg-rgb)/0.50)] hover:border-[rgb(var(--fg-rgb)/0.15)] transition"
                                             >
                                                 Show the receipt
                                             </button>
@@ -2009,7 +2009,7 @@ export default function ProgressPage() {
 
                                 {/* Add entry form */}
                                 <div className="glass-card p-4 space-y-3">
-                                    <p className="text-[10px] font-mono tracking-widest text-white/25">LOG FOOD</p>
+                                    <p className="text-[10px] font-mono tracking-widest text-[rgb(var(--fg-rgb)/0.25)]">LOG FOOD</p>
 
                                     {/* Meal slot */}
                                     <div className="flex flex-wrap gap-1.5">
@@ -2017,7 +2017,7 @@ export default function ProgressPage() {
                                             <button
                                                 key={s.value}
                                                 onClick={() => setIntakeMealSlot(s.value)}
-                                                className={`text-[9px] font-mono px-2.5 py-1.5 rounded-md border transition ${intakeMealSlot === s.value ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/[0.08] text-white/30 hover:text-white/50"}`}
+                                                className={`text-[9px] font-mono px-2.5 py-1.5 rounded-md border transition ${intakeMealSlot === s.value ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-[rgb(var(--fg-rgb)/0.08)] text-[rgb(var(--fg-rgb)/0.30)] hover:text-[rgb(var(--fg-rgb)/0.50)]"}`}
                                             >
                                                 {s.label}
                                             </button>
@@ -2030,26 +2030,26 @@ export default function ProgressPage() {
                                         value={intakeLabel}
                                         onChange={(e) => setIntakeLabel(e.target.value)}
                                         placeholder="What did you eat? (optional)"
-                                        className="w-full h-10 rounded-lg bg-white/[0.04] border border-white/[0.08] px-3 text-sm font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition placeholder:text-white/20"
+                                        className="w-full h-10 rounded-lg bg-[rgb(var(--fg-rgb)/0.04)] border border-[rgb(var(--fg-rgb)/0.08)] px-3 text-sm font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition placeholder:text-[rgb(var(--fg-rgb)/0.20)]"
                                     />
 
                                     {/* Macros grid */}
                                     <div className="grid grid-cols-4 gap-2">
                                         <div>
-                                            <label className="text-[8px] font-mono text-white/30 block mb-1">KCAL *</label>
-                                            <input type="number" min="0" inputMode="numeric" onWheel={(e) => (e.target as HTMLElement).blur()} value={intakeKcal} onChange={(e) => setIntakeKcal(e.target.value)} placeholder="—" className="w-full h-10 rounded-lg bg-white/[0.04] border border-white/[0.08] text-center text-sm font-bold font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition placeholder:text-white/15" />
+                                            <label className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.30)] block mb-1">KCAL *</label>
+                                            <input type="number" min="0" inputMode="numeric" onWheel={(e) => (e.target as HTMLElement).blur()} value={intakeKcal} onChange={(e) => setIntakeKcal(e.target.value)} placeholder="—" className="w-full h-10 rounded-lg bg-[rgb(var(--fg-rgb)/0.04)] border border-[rgb(var(--fg-rgb)/0.08)] text-center text-sm font-bold font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition placeholder:text-[rgb(var(--fg-rgb)/0.15)]" />
                                         </div>
                                         <div>
                                             <label className="text-[8px] font-mono text-rose-300/50 block mb-1">PROT (g)</label>
-                                            <input type="number" min="0" inputMode="decimal" onWheel={(e) => (e.target as HTMLElement).blur()} value={intakeProtein} onChange={(e) => setIntakeProtein(e.target.value)} placeholder="—" className="w-full h-10 rounded-lg bg-white/[0.04] border border-white/[0.08] text-center text-sm font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition placeholder:text-white/15" />
+                                            <input type="number" min="0" inputMode="decimal" onWheel={(e) => (e.target as HTMLElement).blur()} value={intakeProtein} onChange={(e) => setIntakeProtein(e.target.value)} placeholder="—" className="w-full h-10 rounded-lg bg-[rgb(var(--fg-rgb)/0.04)] border border-[rgb(var(--fg-rgb)/0.08)] text-center text-sm font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition placeholder:text-[rgb(var(--fg-rgb)/0.15)]" />
                                         </div>
                                         <div>
                                             <label className="text-[8px] font-mono text-amber-300/50 block mb-1">CARBS (g)</label>
-                                            <input type="number" min="0" inputMode="decimal" onWheel={(e) => (e.target as HTMLElement).blur()} value={intakeCarbs} onChange={(e) => setIntakeCarbs(e.target.value)} placeholder="—" className="w-full h-10 rounded-lg bg-white/[0.04] border border-white/[0.08] text-center text-sm font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition placeholder:text-white/15" />
+                                            <input type="number" min="0" inputMode="decimal" onWheel={(e) => (e.target as HTMLElement).blur()} value={intakeCarbs} onChange={(e) => setIntakeCarbs(e.target.value)} placeholder="—" className="w-full h-10 rounded-lg bg-[rgb(var(--fg-rgb)/0.04)] border border-[rgb(var(--fg-rgb)/0.08)] text-center text-sm font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition placeholder:text-[rgb(var(--fg-rgb)/0.15)]" />
                                         </div>
                                         <div>
                                             <label className="text-[8px] font-mono text-blue-300/50 block mb-1">FAT (g)</label>
-                                            <input type="number" min="0" inputMode="decimal" onWheel={(e) => (e.target as HTMLElement).blur()} value={intakeFat} onChange={(e) => setIntakeFat(e.target.value)} placeholder="—" className="w-full h-10 rounded-lg bg-white/[0.04] border border-white/[0.08] text-center text-sm font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition placeholder:text-white/15" />
+                                            <input type="number" min="0" inputMode="decimal" onWheel={(e) => (e.target as HTMLElement).blur()} value={intakeFat} onChange={(e) => setIntakeFat(e.target.value)} placeholder="—" className="w-full h-10 rounded-lg bg-[rgb(var(--fg-rgb)/0.04)] border border-[rgb(var(--fg-rgb)/0.08)] text-center text-sm font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition placeholder:text-[rgb(var(--fg-rgb)/0.15)]" />
                                         </div>
                                     </div>
 
@@ -2108,7 +2108,7 @@ export default function ProgressPage() {
                                 {/* My Foods — quick relog */}
                                 {myFoods.length > 0 && (
                                     <div className="glass-card p-4">
-                                        <p className="text-[10px] font-mono tracking-widest text-white/25 mb-2">MY FOODS</p>
+                                        <p className="text-[10px] font-mono tracking-widest text-[rgb(var(--fg-rgb)/0.25)] mb-2">MY FOODS</p>
                                         <div className="flex flex-wrap gap-1.5">
                                             {myFoods.map((food) => (
                                                 <button
@@ -2130,9 +2130,9 @@ export default function ProgressPage() {
                                                         await supabase.from("my_foods").update({ use_count: food.use_count + 1, last_used_at: new Date().toISOString() }).eq("id", food.id);
                                                         await loadIntake(intakeDate, true);
                                                     }}
-                                                    className="text-[9px] font-mono px-2.5 py-1.5 rounded-md border border-white/[0.08] text-white/40 hover:text-white/70 hover:border-[rgb(var(--accent-rgb)/0.3)] hover:bg-[rgb(var(--accent-rgb)/0.05)] transition"
+                                                    className="text-[9px] font-mono px-2.5 py-1.5 rounded-md border border-[rgb(var(--fg-rgb)/0.08)] text-[rgb(var(--fg-rgb)/0.40)] hover:text-[rgb(var(--fg-rgb)/0.70)] hover:border-[rgb(var(--accent-rgb)/0.3)] hover:bg-[rgb(var(--accent-rgb)/0.05)] transition"
                                                 >
-                                                    {food.label} <span className="text-white/20 ml-1">{food.kcal}</span>
+                                                    {food.label} <span className="text-[rgb(var(--fg-rgb)/0.20)] ml-1">{food.kcal}</span>
                                                 </button>
                                             ))}
                                         </div>
@@ -2142,13 +2142,13 @@ export default function ProgressPage() {
                                 {/* Entries list */}
                                 {intakeEntries.length > 0 && (
                                     <div className="glass-card p-4 space-y-2">
-                                        <p className="text-[10px] font-mono tracking-widest text-white/25 mb-2">ENTRIES</p>
+                                        <p className="text-[10px] font-mono tracking-widest text-[rgb(var(--fg-rgb)/0.25)] mb-2">ENTRIES</p>
                                         {intakeEntries.map((entry) => (
-                                            <div key={entry.id} className="flex items-center justify-between py-2 border-b border-white/[0.04] last:border-0">
+                                            <div key={entry.id} className="flex items-center justify-between py-2 border-b border-[rgb(var(--fg-rgb)/0.04)] last:border-0">
                                                 <div className="flex-1 min-w-0">
                                                     <div className="flex items-center gap-2">
-                                                        <span className="text-[8px] font-mono px-1.5 py-0.5 rounded bg-white/[0.06] text-white/30 uppercase">{entry.meal_slot}</span>
-                                                        {entry.label && <span className="text-xs font-mono text-white/60 truncate">{entry.label}</span>}
+                                                        <span className="text-[8px] font-mono px-1.5 py-0.5 rounded bg-[rgb(var(--fg-rgb)/0.06)] text-[rgb(var(--fg-rgb)/0.30)] uppercase">{entry.meal_slot}</span>
+                                                        {entry.label && <span className="text-xs font-mono text-[rgb(var(--fg-rgb)/0.60)] truncate">{entry.label}</span>}
                                                     </div>
                                                     <div className="flex items-center gap-3 mt-1">
                                                         <span className="text-xs font-bold font-mono text-[rgb(var(--accent-light-rgb))]">{entry.kcal} kcal</span>
@@ -2164,7 +2164,7 @@ export default function ProgressPage() {
                                                         await rematerializeDailyIntake(user.id, intakeDate, userSex);
                                                         await loadIntake(intakeDate, true);
                                                     }}
-                                                    className="shrink-0 p-2 text-white/20 hover:text-red-400 transition"
+                                                    className="shrink-0 p-2 text-[rgb(var(--fg-rgb)/0.20)] hover:text-red-400 transition"
                                                 >
                                                     <Trash2 size={13} />
                                                 </button>
@@ -2174,17 +2174,17 @@ export default function ProgressPage() {
                                 )}
 
                                 {intakeEntries.length === 0 && (
-                                    <div className="rounded-lg border border-dashed border-white/10 p-8 text-center">
-                                        <Flame size={20} className="mx-auto text-white/15 mb-2" />
-                                        <p className="text-xs font-mono text-white/30">No entries for this day.</p>
-                                        <p className="text-[9px] font-mono text-white/15 mt-1">Log your meals to track daily intake and build adherence.</p>
+                                    <div className="rounded-lg border border-dashed border-[rgb(var(--fg-rgb)/0.10)] p-8 text-center">
+                                        <Flame size={20} className="mx-auto text-[rgb(var(--fg-rgb)/0.15)] mb-2" />
+                                        <p className="text-xs font-mono text-[rgb(var(--fg-rgb)/0.30)]">No entries for this day.</p>
+                                        <p className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.15)] mt-1">Log your meals to track daily intake and build adherence.</p>
                                     </div>
                                 )}
 
                                 {/* ── INSIGHTS ── */}
                                 {(insightBudget || insightPrediction || insightAnomaly || insightAdaptation || insightLeanMass || insightRecovery || insightRecomp || insightPatterns.length > 0 || insightScenario || insightDietBreak || insightCycle || insightExercise) && (
                                     <div className="space-y-3 mt-4">
-                                        <p className="text-[10px] font-mono tracking-widest text-white/25">INSIGHTS</p>
+                                        <p className="text-[10px] font-mono tracking-widest text-[rgb(var(--fg-rgb)/0.25)]">INSIGHTS</p>
                                         {insightPatterns.length > 0 && <PatternWarningsCard warnings={insightPatterns} />}
                                         {insightDietBreak && <DietBreakCard onStart={handleStartDietBreak} suggestion={insightDietBreak} />}
                                         {insightBudget && <WeeklyBudgetCard data={insightBudget} />}

@@ -140,7 +140,7 @@ function StreakFlame({ streak, size = 20 }: { streak: number; size?: number }) {
           transition={{ duration: 0.7, repeat: Infinity, ease: "easeInOut" }}
         />
       </motion.svg>
-      <span className="absolute text-[8px] font-black text-white drop-shadow-lg" style={{ bottom: size * 0.25 }}>
+      <span className="absolute text-[8px] font-black text-[var(--text-primary)] drop-shadow-lg" style={{ bottom: size * 0.25 }}>
         {streak}
       </span>
     </div>
@@ -191,7 +191,7 @@ function AnimatedPercent({ value }: { value: number }) {
     return () => { cancelled = true; clearTimeout(timeout); cancelAnimationFrame(raf); };
   }, [value]);
   return (
-    <span className="text-2xl font-black font-mono text-white/80">
+    <span className="text-2xl font-black font-mono text-[rgb(var(--fg-rgb)/0.80)]">
       {display}%
     </span>
   );
@@ -285,7 +285,7 @@ function DailyRings({ habits, completionSet, today }: { habits: Habit[]; complet
   }));
 
   return (
-    <div className="rounded-2xl border border-white/[0.06] bg-gradient-to-b from-white/[0.03] to-transparent relative overflow-hidden">
+    <div className="rounded-2xl border border-[rgb(var(--fg-rgb)/0.06)] bg-gradient-to-b from-[rgb(var(--fg-rgb)/0.03)] to-transparent relative overflow-hidden">
       <AnimatePresence>
         {allDone && (
           <motion.div className="absolute inset-0 pointer-events-none z-0"
@@ -327,13 +327,13 @@ function DailyRings({ habits, completionSet, today }: { habits: Habit[]; complet
               <div key={h.id} className="flex items-center gap-2">
                 <div className="w-2.5 h-2.5 rounded-full shrink-0"
                   style={{ background: done ? c.from : `${c.from}33`, boxShadow: done ? `0 0 6px ${c.from}40` : "none" }} />
-                <span className={`text-[11px] truncate ${done ? "text-white/60 line-through" : "text-white/40"}`}>{h.name}</span>
+                <span className={`text-[11px] truncate ${done ? "text-[rgb(var(--fg-rgb)/0.60)] line-through" : "text-[rgb(var(--fg-rgb)/0.40)]"}`}>{h.name}</span>
                 {done && <Check size={10} className="text-emerald-400/60 shrink-0 ml-auto" />}
               </div>
             );
           })}
           {scheduled.length > 6 && (
-            <p className="text-[9px] font-mono text-white/15">+{scheduled.length - 6} more</p>
+            <p className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.15)]">+{scheduled.length - 6} more</p>
           )}
         </div>
       </div>
@@ -359,15 +359,15 @@ function MonthCalendar({ habits, completionSet, skipSet }: { habits: Habit[]; co
   while (cells.length % 7 !== 0) cells.push(null);
 
   return (
-    <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
+    <div className="rounded-xl border border-[rgb(var(--fg-rgb)/0.06)] bg-[rgb(var(--fg-rgb)/0.02)] p-4">
       <div className="flex items-center justify-between mb-3">
-        <button onClick={() => setMonthOffset((p) => p - 1)} className="p-1 text-white/30 hover:text-white/60"><ChevronLeft size={16} /></button>
-        <p className="text-xs font-mono font-bold text-white/60">{monthName} {year}</p>
-        <button onClick={() => monthOffset < 0 ? setMonthOffset((p) => p + 1) : null} className={`p-1 ${monthOffset < 0 ? "text-white/30 hover:text-white/60" : "text-white/10"}`}><ChevronRight size={16} /></button>
+        <button onClick={() => setMonthOffset((p) => p - 1)} className="p-1 text-[rgb(var(--fg-rgb)/0.30)] hover:text-[rgb(var(--fg-rgb)/0.60)]"><ChevronLeft size={16} /></button>
+        <p className="text-xs font-mono font-bold text-[rgb(var(--fg-rgb)/0.60)]">{monthName} {year}</p>
+        <button onClick={() => monthOffset < 0 ? setMonthOffset((p) => p + 1) : null} className={`p-1 ${monthOffset < 0 ? "text-[rgb(var(--fg-rgb)/0.30)] hover:text-[rgb(var(--fg-rgb)/0.60)]" : "text-[rgb(var(--fg-rgb)/0.10)]"}`}><ChevronRight size={16} /></button>
       </div>
       <div className="grid grid-cols-7 gap-1">
         {DAY_NAMES.map((d, i) => (
-          <div key={i} className="text-center text-[8px] font-mono text-white/20 pb-1">{d}</div>
+          <div key={i} className="text-center text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.20)] pb-1">{d}</div>
         ))}
         {cells.map((day, i) => {
           if (day === null) return <div key={i} />;
@@ -392,7 +392,7 @@ function MonthCalendar({ habits, completionSet, skipSet }: { habits: Habit[]; co
                   skipped ? "rgb(59 130 246 / 0.08)" : "rgb(255 255 255 / 0.02)",
               }}
             >
-              <span className={`${ratio === 1 ? "text-emerald-400" : ratio > 0 ? "text-amber-400/70" : "text-white/30"}`}>{day}</span>
+              <span className={`${ratio === 1 ? "text-emerald-400" : ratio > 0 ? "text-amber-400/70" : "text-[rgb(var(--fg-rgb)/0.30)]"}`}>{day}</span>
               {scheduled.length > 0 && !isFuture && (
                 <div className="flex gap-[2px]">
                   {scheduled.slice(0, 4).map((h) => (
@@ -434,7 +434,7 @@ function ConstellationSky({ habits, completionSet }: { habits: Habit[]; completi
       <div className="px-4 pt-4 pb-2 flex items-center justify-between">
         <div>
           <p className="text-[9px] font-mono tracking-widest text-indigo-300/30">YOUR CONSTELLATION</p>
-          <p className="text-[10px] text-white/20 mt-0.5">{stars.length} star{stars.length !== 1 ? "s" : ""} · {connCount} link{connCount !== 1 ? "s" : ""}</p>
+          <p className="text-[10px] text-[rgb(var(--fg-rgb)/0.20)] mt-0.5">{stars.length} star{stars.length !== 1 ? "s" : ""} · {connCount} link{connCount !== 1 ? "s" : ""}</p>
         </div>
         <div className="text-right">
           <p className="text-[9px] font-mono text-indigo-300/25">Luminosity</p>
@@ -540,7 +540,7 @@ function ConstellationSky({ habits, completionSet }: { habits: Habit[]; completi
         <AnimatePresence>
           {hoveredStar !== null && stars[hoveredStar] && (
             <motion.div
-              className="absolute z-10 px-2.5 py-1.5 rounded-lg border border-white/10 backdrop-blur-xl"
+              className="absolute z-10 px-2.5 py-1.5 rounded-lg border border-[rgb(var(--fg-rgb)/0.10)] backdrop-blur-xl"
               style={{
                 left: `${stars[hoveredStar].x * 100}%`,
                 top: `${stars[hoveredStar].y * 100 - 12}%`,
@@ -548,8 +548,8 @@ function ConstellationSky({ habits, completionSet }: { habits: Habit[]; completi
                 background: `linear-gradient(135deg, rgb(${stars[hoveredStar].color} / 0.15), rgb(${stars[hoveredStar].color} / 0.05))`,
               }}
               initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
-              <p className="text-[10px] font-bold text-white/80">{stars[hoveredStar].habitName}</p>
-              <p className="text-[8px] font-mono text-white/30">{Math.round(stars[hoveredStar].brightness * 100)}% brightness</p>
+              <p className="text-[10px] font-bold text-[rgb(var(--fg-rgb)/0.80)]">{stars[hoveredStar].habitName}</p>
+              <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">{Math.round(stars[hoveredStar].brightness * 100)}% brightness</p>
             </motion.div>
           )}
         </AnimatePresence>
@@ -564,7 +564,7 @@ function ConstellationSky({ habits, completionSet }: { habits: Habit[]; completi
               background: `rgb(${star.color})`,
               boxShadow: `0 0 4px rgb(${star.color} / 0.4)`,
             }} />
-            <span className={`text-[9px] font-mono transition ${hoveredStar === i ? "text-white/60" : "text-white/20"}`}>
+            <span className={`text-[9px] font-mono transition ${hoveredStar === i ? "text-[rgb(var(--fg-rgb)/0.60)]" : "text-[rgb(var(--fg-rgb)/0.20)]"}`}>
               {star.habitName}
             </span>
           </div>
@@ -588,10 +588,10 @@ function LootDropToast({ drop, onClose }: { drop: LootDrop; onClose: () => void 
     >
       <span className="text-2xl">{drop.icon}</span>
       <div>
-        <p className="text-xs font-bold text-white/90">{drop.label}</p>
-        <p className="text-[9px] font-mono text-white/40">{drop.rarity.toUpperCase()} DROP</p>
+        <p className="text-xs font-bold text-[rgb(var(--fg-rgb)/0.90)]">{drop.label}</p>
+        <p className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.40)]">{drop.rarity.toUpperCase()} DROP</p>
       </div>
-      <Gift size={14} className="text-white/20" />
+      <Gift size={14} className="text-[rgb(var(--fg-rgb)/0.20)]" />
     </motion.div>
   );
 }
@@ -621,12 +621,12 @@ function UndoToast({ message, onUndo, onClose }: { message: string; onUndo: () =
   useEffect(() => { const t = setTimeout(onClose, 5000); return () => clearTimeout(t); }, [onClose]);
   return (
     <motion.div
-      className="fixed bottom-28 left-1/2 z-50 -translate-x-1/2 rounded-lg border border-white/10 bg-white/[0.08] backdrop-blur-xl px-4 py-2.5 flex items-center gap-3"
+      className="fixed bottom-28 left-1/2 z-50 -translate-x-1/2 rounded-lg border border-[rgb(var(--fg-rgb)/0.10)] bg-[rgb(var(--fg-rgb)/0.08)] backdrop-blur-xl px-4 py-2.5 flex items-center gap-3"
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 10 }}
     >
-      <p className="text-xs text-white/70">{message}</p>
+      <p className="text-xs text-[rgb(var(--fg-rgb)/0.70)]">{message}</p>
       <button onClick={onUndo} className="text-xs font-bold text-[rgb(var(--accent-light-rgb))] hover:underline">UNDO</button>
     </motion.div>
   );
@@ -946,7 +946,7 @@ export default function HabitsPage() {
   // ─── Render ─────────────────────────────────────────────────────────────
 
   return (
-    <main className="min-h-screen bg-[#050914] text-white pb-24 md:pb-10 relative">
+    <main className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] pb-24 md:pb-10 relative">
       <div className="relative z-10 max-w-xl mx-auto px-4 pt-6 space-y-4">
         <SwipeNav sections={getTrackSections(enabledKeys)} />
 
@@ -955,9 +955,9 @@ export default function HabitsPage() {
           <div>
             <h1 className="text-xl font-bold font-display text-[rgb(var(--accent-light-rgb))]">Habits</h1>
             <div className="flex items-center gap-2 mt-0.5">
-              <p className="text-[11px] text-white/30">Momentum</p>
+              <p className="text-[11px] text-[rgb(var(--fg-rgb)/0.30)]">Momentum</p>
               <div className="flex items-center gap-1">
-                <div className="w-16 h-1.5 rounded-full bg-white/[0.04] overflow-hidden">
+                <div className="w-16 h-1.5 rounded-full bg-[rgb(var(--fg-rgb)/0.04)] overflow-hidden">
                   <motion.div className="h-full rounded-full" style={{ background: `rgb(${aura.color})` }}
                     initial={{ width: 0 }} animate={{ width: `${avgMomentum}%` }} transition={{ duration: 1 }} />
                 </div>
@@ -989,11 +989,11 @@ export default function HabitsPage() {
 
             {/* View tabs */}
             {habits.length > 0 && (
-              <div className="flex gap-1 bg-white/[0.03] rounded-lg p-0.5">
+              <div className="flex gap-1 bg-[rgb(var(--fg-rgb)/0.03)] rounded-lg p-0.5">
                 {(["today", "calendar", "constellation"] as const).map((v) => (
                   <button key={v} onClick={() => setView(v)}
                     className={`flex-1 py-1.5 rounded-md text-[10px] font-mono transition ${
-                      view === v ? "bg-white/[0.08] text-white/80" : "text-white/30 hover:text-white/50"
+                      view === v ? "bg-[rgb(var(--fg-rgb)/0.08)] text-[rgb(var(--fg-rgb)/0.80)]" : "text-[rgb(var(--fg-rgb)/0.30)] hover:text-[rgb(var(--fg-rgb)/0.50)]"
                     }`}>
                     {v === "today" ? "Today" : v === "calendar" ? "Calendar" : "Stars"}
                   </button>
@@ -1012,8 +1012,8 @@ export default function HabitsPage() {
                   {dailyQuests.map((q) => {
                     const done = q.check(habits, completionSet, today);
                     return (
-                      <div key={q.id} className={`flex items-center gap-2 text-[11px] ${done ? "text-amber-400/60 line-through" : "text-white/50"}`}>
-                        {done ? <Check size={12} className="text-amber-400" /> : <Target size={12} className="text-white/20" />}
+                      <div key={q.id} className={`flex items-center gap-2 text-[11px] ${done ? "text-amber-400/60 line-through" : "text-[rgb(var(--fg-rgb)/0.50)]"}`}>
+                        {done ? <Check size={12} className="text-amber-400" /> : <Target size={12} className="text-[rgb(var(--fg-rgb)/0.20)]" />}
                         <span className="flex-1">{q.description}</span>
                         <span className="text-[9px] font-mono text-amber-400/40">+{q.xp_reward}</span>
                       </div>
@@ -1035,12 +1035,12 @@ export default function HabitsPage() {
                 <div key={routineKey}>
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-1.5">
-                      <RoutineIcon size={11} className="text-white/20" />
-                      <p className="text-[9px] font-mono tracking-widest text-white/20">{routineLabel.toUpperCase()}</p>
+                      <RoutineIcon size={11} className="text-[rgb(var(--fg-rgb)/0.20)]" />
+                      <p className="text-[9px] font-mono tracking-widest text-[rgb(var(--fg-rgb)/0.20)]">{routineLabel.toUpperCase()}</p>
                     </div>
                     {manualUndone.length > 1 && (
                       <button onClick={() => manualUndone.forEach((h) => toggleHabit(h))}
-                        className="text-[9px] font-mono px-2 py-1 rounded-md bg-white/[0.04] border border-white/[0.06] text-white/30 hover:text-white/50 transition active:scale-95">
+                        className="text-[9px] font-mono px-2 py-1 rounded-md bg-[rgb(var(--fg-rgb)/0.04)] border border-[rgb(var(--fg-rgb)/0.06)] text-[rgb(var(--fg-rgb)/0.30)] hover:text-[rgb(var(--fg-rgb)/0.50)] transition active:scale-95">
                         Complete all
                       </button>
                     )}
@@ -1115,7 +1115,7 @@ export default function HabitsPage() {
                                     : "bg-emerald-500/10 border border-emerald-500/20"
                                   : done
                                     ? "bg-emerald-500/20 border border-emerald-500/30"
-                                    : "bg-white/[0.03] border border-white/10"
+                                    : "bg-[rgb(var(--fg-rgb)/0.03)] border border-[rgb(var(--fg-rgb)/0.10)]"
                               }`}
                             >
                               {isNeg ? (
@@ -1127,7 +1127,7 @@ export default function HabitsPage() {
 
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
-                                <p className={`text-sm font-bold truncate ${done && !isNeg ? "text-white/50 line-through" : isNeg && done ? "text-red-400/70" : "text-white/80"}`}>
+                                <p className={`text-sm font-bold truncate ${done && !isNeg ? "text-[rgb(var(--fg-rgb)/0.50)] line-through" : isNeg && done ? "text-red-400/70" : "text-[rgb(var(--fg-rgb)/0.80)]"}`}>
                                   {habit.name}
                                 </p>
                                 <span className="relative">
@@ -1164,19 +1164,19 @@ export default function HabitsPage() {
                                 ) : skipped ? (
                                   <span className="text-[8px] font-mono text-blue-400/50">Skipped today</span>
                                 ) : isNeg ? (
-                                  <span className="text-[8px] font-mono text-white/15">{done ? "Slipped — tap to undo" : "Holding strong"}</span>
+                                  <span className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.15)]">{done ? "Slipped — tap to undo" : "Holding strong"}</span>
                                 ) : !done && (
-                                  <span className="text-[8px] font-mono text-white/15">Tap to complete</span>
+                                  <span className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.15)]">Tap to complete</span>
                                 )}
                                 {contract && (
                                   <span className="text-[8px] font-mono px-1 py-0.5 rounded bg-purple-500/10 border border-purple-500/20 text-purple-400/60">
                                     📜 {contract.duration_days}d
                                   </span>
                                 )}
-                                <span className="text-[8px] font-mono text-white/10">{getScheduleLabel(habit)}</span>
+                                <span className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.10)]">{getScheduleLabel(habit)}</span>
                               </div>
                               {/* Momentum bar */}
-                              <div className="mt-1.5 h-1 rounded-full bg-white/[0.04] overflow-hidden">
+                              <div className="mt-1.5 h-1 rounded-full bg-[rgb(var(--fg-rgb)/0.04)] overflow-hidden">
                                 <motion.div className="h-full rounded-full" style={{
                                   background: momentum >= 80 ? "rgb(16 185 129 / 0.6)" : momentum >= 50 ? "rgb(251 191 36 / 0.5)" : "rgb(239 68 68 / 0.4)",
                                 }} initial={{ width: 0 }} animate={{ width: `${momentum}%` }} transition={{ duration: 0.6 }} />
@@ -1187,12 +1187,12 @@ export default function HabitsPage() {
                             <div className="flex flex-col gap-1 items-center">
                               {!isAuto && !done && !skipped && (
                                 <button onClick={(e) => { e.stopPropagation(); setSkipModal(habit); }}
-                                  className="p-1 text-white/10 hover:text-blue-400/50 transition" title="Skip with reason">
+                                  className="p-1 text-[rgb(var(--fg-rgb)/0.10)] hover:text-blue-400/50 transition" title="Skip with reason">
                                   <SkipForward size={12} />
                                 </button>
                               )}
                               <button onClick={(e) => { e.stopPropagation(); setDetailHabit(habit); }}
-                                className="p-1 text-white/10 hover:text-white/40 transition" title="Details">
+                                className="p-1 text-[rgb(var(--fg-rgb)/0.10)] hover:text-[rgb(var(--fg-rgb)/0.40)] transition" title="Details">
                                 <Calendar size={12} />
                               </button>
                             </div>
@@ -1214,13 +1214,13 @@ export default function HabitsPage() {
             {/* Smart Insights */}
             {view === "today" && (insights.length > 0 || correlationInsights.length > 0) && (
               <div className="space-y-2">
-                <p className="text-[9px] font-mono tracking-widest text-white/20">INSIGHTS</p>
+                <p className="text-[9px] font-mono tracking-widest text-[rgb(var(--fg-rgb)/0.20)]">INSIGHTS</p>
                 {[...insights, ...correlationInsights].map((insight, i) => (
-                  <div key={i} className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3 flex items-start gap-2.5">
+                  <div key={i} className="rounded-lg border border-[rgb(var(--fg-rgb)/0.06)] bg-[rgb(var(--fg-rgb)/0.02)] p-3 flex items-start gap-2.5">
                     <span className="text-base">{insight.icon}</span>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-bold" style={{ color: `rgb(${insight.color})` }}>{insight.title}</p>
-                      <p className="text-[10px] text-white/40 mt-0.5">{insight.body}</p>
+                      <p className="text-[10px] text-[rgb(var(--fg-rgb)/0.40)] mt-0.5">{insight.body}</p>
                     </div>
                   </div>
                 ))}
@@ -1231,23 +1231,23 @@ export default function HabitsPage() {
             <AnimatePresence>
               {showAdd && (
                 <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
-                  className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 space-y-3 overflow-hidden">
-                  <p className="text-[9px] font-mono tracking-widest text-white/25">NEW HABIT</p>
+                  className="rounded-xl border border-[rgb(var(--fg-rgb)/0.06)] bg-[rgb(var(--fg-rgb)/0.02)] p-4 space-y-3 overflow-hidden">
+                  <p className="text-[9px] font-mono tracking-widest text-[rgb(var(--fg-rgb)/0.25)]">NEW HABIT</p>
                   <input type="text" value={newName} onChange={(e) => setNewName(e.target.value)}
                     placeholder="Habit name…" maxLength={50} onKeyDown={(e) => e.key === "Enter" && addHabit()}
-                    className="w-full bg-white/[0.04] border border-white/10 rounded-lg px-3 py-2 text-sm text-white/80 placeholder:text-white/20 outline-none focus:border-white/20" />
+                    className="w-full bg-[rgb(var(--fg-rgb)/0.04)] border border-[rgb(var(--fg-rgb)/0.10)] rounded-lg px-3 py-2 text-sm text-[rgb(var(--fg-rgb)/0.80)] placeholder:text-[rgb(var(--fg-rgb)/0.20)] outline-none focus:border-[rgb(var(--fg-rgb)/0.20)]" />
 
                   {/* Type toggle */}
                   <div className="flex gap-1.5">
                     <button onClick={() => setNewIsNegative(false)}
                       className={`flex-1 py-1.5 rounded-lg text-[10px] font-mono flex items-center justify-center gap-1 transition ${
-                        !newIsNegative ? "border bg-emerald-500/10 border-emerald-500/20 text-emerald-400" : "border border-white/[0.06] text-white/25"
+                        !newIsNegative ? "border bg-emerald-500/10 border-emerald-500/20 text-emerald-400" : "border border-[rgb(var(--fg-rgb)/0.06)] text-[rgb(var(--fg-rgb)/0.25)]"
                       }`}>
                       <Check size={10} /> Build
                     </button>
                     <button onClick={() => setNewIsNegative(true)}
                       className={`flex-1 py-1.5 rounded-lg text-[10px] font-mono flex items-center justify-center gap-1 transition ${
-                        newIsNegative ? "border bg-red-500/10 border-red-500/20 text-red-400" : "border border-white/[0.06] text-white/25"
+                        newIsNegative ? "border bg-red-500/10 border-red-500/20 text-red-400" : "border border-[rgb(var(--fg-rgb)/0.06)] text-[rgb(var(--fg-rgb)/0.25)]"
                       }`}>
                       <Ban size={10} /> Break
                     </button>
@@ -1258,19 +1258,19 @@ export default function HabitsPage() {
                     {HABIT_ICONS.map((icon) => (
                       <button key={icon} onClick={() => setNewIcon(icon)}
                         className={`w-8 h-8 rounded-lg flex items-center justify-center text-base transition ${
-                          newIcon === icon ? "bg-white/10 border border-white/20" : "bg-white/[0.02] border border-transparent hover:bg-white/[0.05]"
+                          newIcon === icon ? "bg-[rgb(var(--fg-rgb)/0.10)] border border-[rgb(var(--fg-rgb)/0.20)]" : "bg-[rgb(var(--fg-rgb)/0.02)] border border-transparent hover:bg-[rgb(var(--fg-rgb)/0.05)]"
                         }`}>{icon}</button>
                     ))}
                   </div>
 
                   {/* Difficulty */}
                   <div>
-                    <p className="text-[8px] font-mono text-white/20 mb-1.5">DIFFICULTY</p>
+                    <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.20)] mb-1.5">DIFFICULTY</p>
                     <div className="flex gap-1.5">
                       {DIFFICULTIES.map((d) => (
                         <button key={d.key} onClick={() => setNewDifficulty(d.key as "easy" | "medium" | "hard")}
                           className={`flex-1 py-1.5 rounded-lg text-[10px] font-mono text-center transition ${
-                            newDifficulty === d.key ? `border bg-[rgb(${d.color}/0.15)] border-[rgb(${d.color}/0.3)] text-white/80` : "border border-white/[0.06] text-white/25"
+                            newDifficulty === d.key ? `border bg-[rgb(${d.color}/0.15)] border-[rgb(${d.color}/0.3)] text-[rgb(var(--fg-rgb)/0.80)]` : "border border-[rgb(var(--fg-rgb)/0.06)] text-[rgb(var(--fg-rgb)/0.25)]"
                           }`}>{d.label} (+{d.xp})</button>
                       ))}
                     </div>
@@ -1278,12 +1278,12 @@ export default function HabitsPage() {
 
                   {/* Schedule */}
                   <div>
-                    <p className="text-[8px] font-mono text-white/20 mb-1.5">SCHEDULE</p>
+                    <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.20)] mb-1.5">SCHEDULE</p>
                     <div className="flex gap-1 flex-wrap">
                       {FREQUENCIES.map((f) => (
                         <button key={f.key} onClick={() => setNewFrequency(f.key)}
                           className={`px-2 py-1.5 rounded-lg text-[10px] font-mono transition ${
-                            newFrequency === f.key ? "border bg-white/[0.08] border-white/20 text-white/80" : "border border-white/[0.06] text-white/25"
+                            newFrequency === f.key ? "border bg-[rgb(var(--fg-rgb)/0.08)] border-[rgb(var(--fg-rgb)/0.20)] text-[rgb(var(--fg-rgb)/0.80)]" : "border border-[rgb(var(--fg-rgb)/0.06)] text-[rgb(var(--fg-rgb)/0.25)]"
                           }`}>{f.label}</button>
                       ))}
                     </div>
@@ -1292,7 +1292,7 @@ export default function HabitsPage() {
                         {DAY_NAMES.map((d, i) => (
                           <button key={i} onClick={() => setNewCustomDays((prev) => prev.includes(i) ? prev.filter((x) => x !== i) : [...prev, i])}
                             className={`w-8 h-8 rounded-lg text-[10px] font-mono transition ${
-                              newCustomDays.includes(i) ? "bg-[rgb(var(--accent-rgb)/0.2)] border border-[rgb(var(--accent-rgb)/0.3)] text-white/80" : "border border-white/[0.06] text-white/25"
+                              newCustomDays.includes(i) ? "bg-[rgb(var(--accent-rgb)/0.2)] border border-[rgb(var(--accent-rgb)/0.3)] text-[rgb(var(--fg-rgb)/0.80)]" : "border border-[rgb(var(--fg-rgb)/0.06)] text-[rgb(var(--fg-rgb)/0.25)]"
                             }`}>{d}</button>
                         ))}
                       </div>
@@ -1302,7 +1302,7 @@ export default function HabitsPage() {
                         {[2, 3, 4, 5, 6].map((n) => (
                           <button key={n} onClick={() => setNewFreqPerWeek(n)}
                             className={`w-8 h-8 rounded-lg text-[10px] font-mono transition ${
-                              newFreqPerWeek === n ? "bg-[rgb(var(--accent-rgb)/0.2)] border border-[rgb(var(--accent-rgb)/0.3)] text-white/80" : "border border-white/[0.06] text-white/25"
+                              newFreqPerWeek === n ? "bg-[rgb(var(--accent-rgb)/0.2)] border border-[rgb(var(--accent-rgb)/0.3)] text-[rgb(var(--fg-rgb)/0.80)]" : "border border-[rgb(var(--fg-rgb)/0.06)] text-[rgb(var(--fg-rgb)/0.25)]"
                             }`}>{n}x</button>
                         ))}
                       </div>
@@ -1311,14 +1311,14 @@ export default function HabitsPage() {
 
                   {/* Routine */}
                   <div>
-                    <p className="text-[8px] font-mono text-white/20 mb-1.5">ROUTINE</p>
+                    <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.20)] mb-1.5">ROUTINE</p>
                     <div className="flex gap-1.5">
                       {ROUTINES.map((r) => {
                         const Icon = r.icon;
                         return (
                           <button key={r.key} onClick={() => setNewRoutine(r.key as "morning" | "evening" | "anytime")}
                             className={`flex-1 py-1.5 rounded-lg text-[10px] font-mono flex items-center justify-center gap-1 transition ${
-                              newRoutine === r.key ? "border bg-white/[0.08] border-white/20 text-white/80" : "border border-white/[0.06] text-white/25"
+                              newRoutine === r.key ? "border bg-[rgb(var(--fg-rgb)/0.08)] border-[rgb(var(--fg-rgb)/0.20)] text-[rgb(var(--fg-rgb)/0.80)]" : "border border-[rgb(var(--fg-rgb)/0.06)] text-[rgb(var(--fg-rgb)/0.25)]"
                             }`}><Icon size={10} /> {r.label}</button>
                         );
                       })}
@@ -1328,18 +1328,18 @@ export default function HabitsPage() {
                   {/* Auto-complete */}
                   {!newIsNegative && (
                     <div>
-                      <p className="text-[8px] font-mono text-white/20 mb-1.5">AUTO-COMPLETE <span className="text-white/10">(optional)</span></p>
+                      <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.20)] mb-1.5">AUTO-COMPLETE <span className="text-[rgb(var(--fg-rgb)/0.10)]">(optional)</span></p>
                       <div className="flex gap-1.5">
                         <button onClick={() => setNewAutoSource(null)}
                           className={`px-2.5 py-1.5 rounded-lg text-[10px] font-mono transition ${
-                            newAutoSource === null ? "border bg-white/[0.08] border-white/20 text-white/80" : "border border-white/[0.06] text-white/25"
+                            newAutoSource === null ? "border bg-[rgb(var(--fg-rgb)/0.08)] border-[rgb(var(--fg-rgb)/0.20)] text-[rgb(var(--fg-rgb)/0.80)]" : "border border-[rgb(var(--fg-rgb)/0.06)] text-[rgb(var(--fg-rgb)/0.25)]"
                           }`}>Manual</button>
                         {AUTO_SOURCES.map((a) => {
                           const Icon = a.icon;
                           return (
                             <button key={a.key} onClick={() => setNewAutoSource(a.key)}
                               className={`flex-1 py-1.5 rounded-lg text-[10px] font-mono flex items-center justify-center gap-1 transition ${
-                                newAutoSource === a.key ? "border bg-cyan-500/[0.08] border-cyan-500/20 text-cyan-400/80" : "border border-white/[0.06] text-white/25"
+                                newAutoSource === a.key ? "border bg-cyan-500/[0.08] border-cyan-500/20 text-cyan-400/80" : "border border-[rgb(var(--fg-rgb)/0.06)] text-[rgb(var(--fg-rgb)/0.25)]"
                               }`}><Icon size={10} /> {a.label}</button>
                           );
                         })}
@@ -1349,11 +1349,11 @@ export default function HabitsPage() {
 
                   <div className="flex gap-2">
                     <button onClick={() => addHabit()} disabled={!newName.trim()}
-                      className="flex-1 py-2 rounded-lg text-sm font-mono font-bold bg-[rgb(var(--accent-rgb)/0.2)] border border-[rgb(var(--accent-rgb)/0.3)] text-white/80 active:scale-95 transition disabled:opacity-30">
+                      className="flex-1 py-2 rounded-lg text-sm font-mono font-bold bg-[rgb(var(--accent-rgb)/0.2)] border border-[rgb(var(--accent-rgb)/0.3)] text-[rgb(var(--fg-rgb)/0.80)] active:scale-95 transition disabled:opacity-30">
                       Add Habit
                     </button>
                     <button onClick={resetAddForm}
-                      className="px-4 py-2 rounded-lg text-sm font-mono text-white/30 border border-white/10 active:scale-95 transition">
+                      className="px-4 py-2 rounded-lg text-sm font-mono text-[rgb(var(--fg-rgb)/0.30)] border border-[rgb(var(--fg-rgb)/0.10)] active:scale-95 transition">
                       Cancel
                     </button>
                   </div>
@@ -1362,7 +1362,7 @@ export default function HabitsPage() {
             </AnimatePresence>
 
             <button onClick={() => setShowAdd(!showAdd)}
-              className="w-full py-3 rounded-xl border border-dashed border-white/10 text-white/30 hover:text-white/50 hover:border-white/20 flex items-center justify-center gap-2 transition active:scale-[0.98]">
+              className="w-full py-3 rounded-xl border border-dashed border-[rgb(var(--fg-rgb)/0.10)] text-[rgb(var(--fg-rgb)/0.30)] hover:text-[rgb(var(--fg-rgb)/0.50)] hover:border-[rgb(var(--fg-rgb)/0.20)] flex items-center justify-center gap-2 transition active:scale-[0.98]">
               <Plus size={16} /> Add habit
             </button>
 
@@ -1382,14 +1382,14 @@ export default function HabitsPage() {
             {habits.length === 0 && !showAdd && (
               <div className="space-y-4">
                 <div className="text-center py-6">
-                  <Flame size={32} className="mx-auto mb-3 text-white/15" />
-                  <p className="text-sm font-semibold text-white/25">NO HABITS YET</p>
-                  <p className="text-xs text-white/20 mt-1">Add your first habit to start building streaks</p>
+                  <Flame size={32} className="mx-auto mb-3 text-[rgb(var(--fg-rgb)/0.15)]" />
+                  <p className="text-sm font-semibold text-[rgb(var(--fg-rgb)/0.25)]">NO HABITS YET</p>
+                  <p className="text-xs text-[rgb(var(--fg-rgb)/0.20)] mt-1">Add your first habit to start building streaks</p>
                 </div>
 
                 {/* How it works */}
-                <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 space-y-3">
-                  <p className="text-[9px] font-mono tracking-widest text-white/25">HOW IT WORKS</p>
+                <div className="rounded-xl border border-[rgb(var(--fg-rgb)/0.06)] bg-[rgb(var(--fg-rgb)/0.02)] p-4 space-y-3">
+                  <p className="text-[9px] font-mono tracking-widest text-[rgb(var(--fg-rgb)/0.25)]">HOW IT WORKS</p>
                   {[
                     { icon: "✅", title: "Complete daily", body: "Tap or swipe right to mark a habit done. Build streaks for bonus XP." },
                     { icon: "📊", title: "Momentum over streaks", body: "Missing one day doesn't reset everything. Your momentum score uses a weighted average — consistency matters more than perfection." },
@@ -1401,16 +1401,16 @@ export default function HabitsPage() {
                     <div key={item.title} className="flex gap-2.5">
                       <span className="text-sm shrink-0 mt-0.5">{item.icon}</span>
                       <div>
-                        <p className="text-[11px] font-bold text-white/50">{item.title}</p>
-                        <p className="text-[10px] text-white/25 leading-relaxed">{item.body}</p>
+                        <p className="text-[11px] font-bold text-[rgb(var(--fg-rgb)/0.50)]">{item.title}</p>
+                        <p className="text-[10px] text-[rgb(var(--fg-rgb)/0.25)] leading-relaxed">{item.body}</p>
                       </div>
                     </div>
                   ))}
                 </div>
-                <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
+                <div className="rounded-xl border border-[rgb(var(--fg-rgb)/0.06)] bg-[rgb(var(--fg-rgb)/0.02)] p-4">
                   <div className="flex items-center gap-2 mb-3">
                     <Sparkles size={12} className="text-amber-400/50" />
-                    <p className="text-[9px] font-mono tracking-widest text-white/25">SUGGESTED HABITS</p>
+                    <p className="text-[9px] font-mono tracking-widest text-[rgb(var(--fg-rgb)/0.25)]">SUGGESTED HABITS</p>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     {SUGGESTED_HABITS.map((s) => {
@@ -1418,10 +1418,10 @@ export default function HabitsPage() {
                       return (
                         <button key={s.name}
                           onClick={() => addHabit(s.name, s.icon, s.difficulty as "easy" | "medium" | "hard", s.auto_source, s.is_negative)}
-                          className="flex items-center gap-2 p-2.5 rounded-lg border border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.04] text-left transition active:scale-95">
+                          className="flex items-center gap-2 p-2.5 rounded-lg border border-[rgb(var(--fg-rgb)/0.06)] bg-[rgb(var(--fg-rgb)/0.02)] hover:bg-[rgb(var(--fg-rgb)/0.04)] text-left transition active:scale-95">
                           <span className="text-base">{s.icon}</span>
                           <div className="min-w-0">
-                            <p className="text-[11px] font-bold text-white/60 truncate">{s.name}</p>
+                            <p className="text-[11px] font-bold text-[rgb(var(--fg-rgb)/0.60)] truncate">{s.name}</p>
                             <div className="flex items-center gap-1.5">
                               <p className="text-[8px] font-mono" style={{ color: `rgb(${diff.color} / 0.6)` }}>+{diff.xp} XP</p>
                               {s.auto_source && <span className="flex items-center gap-0.5 text-[7px] font-mono text-cyan-400/40"><Link size={7} />Auto</span>}
@@ -1444,19 +1444,19 @@ export default function HabitsPage() {
         {skipModal && (
           <motion.div className="fixed inset-0 z-50 flex items-end justify-center" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <div className="absolute inset-0 bg-black/60" onClick={() => setSkipModal(null)} />
-            <motion.div className="relative w-full max-w-md bg-[#0a0f1a] border-t border-white/10 rounded-t-2xl p-5 space-y-3"
+            <motion.div className="relative w-full max-w-md bg-[var(--bg-elevated)] border-t border-[rgb(var(--fg-rgb)/0.10)] rounded-t-2xl p-5 space-y-3"
               initial={{ y: 200 }} animate={{ y: 0 }} exit={{ y: 200 }}>
               <div className="flex items-center justify-between">
-                <p className="text-sm font-bold text-white/80">Skip "{skipModal.name}"</p>
-                <button onClick={() => setSkipModal(null)} className="text-white/30"><X size={18} /></button>
+                <p className="text-sm font-bold text-[rgb(var(--fg-rgb)/0.80)]">Skip "{skipModal.name}"</p>
+                <button onClick={() => setSkipModal(null)} className="text-[rgb(var(--fg-rgb)/0.30)]"><X size={18} /></button>
               </div>
-              <p className="text-[11px] text-white/40">Your momentum won't be affected.</p>
+              <p className="text-[11px] text-[rgb(var(--fg-rgb)/0.40)]">Your momentum won't be affected.</p>
               <div className="grid grid-cols-2 gap-2">
                 {SKIP_REASONS.map((r) => (
                   <button key={r.key} onClick={() => skipHabit(skipModal, r.key)}
-                    className="flex items-center gap-2 p-3 rounded-lg border border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.04] transition active:scale-95">
+                    className="flex items-center gap-2 p-3 rounded-lg border border-[rgb(var(--fg-rgb)/0.06)] bg-[rgb(var(--fg-rgb)/0.02)] hover:bg-[rgb(var(--fg-rgb)/0.04)] transition active:scale-95">
                     <span>{r.icon}</span>
-                    <span className="text-xs text-white/60">{r.label}</span>
+                    <span className="text-xs text-[rgb(var(--fg-rgb)/0.60)]">{r.label}</span>
                   </button>
                 ))}
               </div>
@@ -1470,17 +1470,17 @@ export default function HabitsPage() {
         {detailHabit && (
           <motion.div className="fixed inset-0 z-50 flex items-end justify-center" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <div className="absolute inset-0 bg-black/60" onClick={() => setDetailHabit(null)} />
-            <motion.div className="relative w-full max-w-md bg-[#0a0f1a] border-t border-white/10 rounded-t-2xl p-5 space-y-4 max-h-[80vh] overflow-y-auto"
+            <motion.div className="relative w-full max-w-md bg-[var(--bg-elevated)] border-t border-[rgb(var(--fg-rgb)/0.10)] rounded-t-2xl p-5 space-y-4 max-h-[80vh] overflow-y-auto"
               initial={{ y: 300 }} animate={{ y: 0 }} exit={{ y: 300 }}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="text-xl">{detailHabit.icon}</span>
                   <div>
-                    <p className="text-sm font-bold text-white/90">{detailHabit.name}</p>
-                    <p className="text-[9px] font-mono text-white/30">{getScheduleLabel(detailHabit)} · {detailHabit.is_negative ? "Break habit" : "Build habit"}</p>
+                    <p className="text-sm font-bold text-[rgb(var(--fg-rgb)/0.90)]">{detailHabit.name}</p>
+                    <p className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">{getScheduleLabel(detailHabit)} · {detailHabit.is_negative ? "Break habit" : "Build habit"}</p>
                   </div>
                 </div>
-                <button onClick={() => setDetailHabit(null)} className="text-white/30"><X size={18} /></button>
+                <button onClick={() => setDetailHabit(null)} className="text-[rgb(var(--fg-rgb)/0.30)]"><X size={18} /></button>
               </div>
 
               {/* Stats grid */}
@@ -1493,10 +1493,10 @@ export default function HabitsPage() {
                   { label: "Prestige", value: `P${detailHabit.prestige_level}`, icon: "⭐" },
                   { label: "XP/day", value: `${Math.round(detailHabit.xp_reward * getPrestigeMultiplier(detailHabit.prestige_level))}`, icon: "⚡" },
                 ].map((s) => (
-                  <div key={s.label} className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-2.5 text-center">
+                  <div key={s.label} className="rounded-lg border border-[rgb(var(--fg-rgb)/0.06)] bg-[rgb(var(--fg-rgb)/0.02)] p-2.5 text-center">
                     <p className="text-base">{s.icon}</p>
-                    <p className="text-sm font-bold font-mono text-white/80 mt-0.5">{s.value}</p>
-                    <p className="text-[8px] font-mono text-white/25">{s.label}</p>
+                    <p className="text-sm font-bold font-mono text-[rgb(var(--fg-rgb)/0.80)] mt-0.5">{s.value}</p>
+                    <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.25)]">{s.label}</p>
                   </div>
                 ))}
               </div>
@@ -1504,7 +1504,7 @@ export default function HabitsPage() {
               {/* Contract */}
               {!contracts.find((c) => c.habit_id === detailHabit.id) && (
                 <div>
-                  <p className="text-[9px] font-mono text-white/25 mb-2">START A CONTRACT</p>
+                  <p className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.25)] mb-2">START A CONTRACT</p>
                   <div className="flex gap-2">
                     <button onClick={() => startContract(detailHabit, 21)}
                       className="flex-1 py-2.5 rounded-lg border border-purple-500/20 bg-purple-500/[0.05] text-[11px] font-mono text-purple-400/70 hover:bg-purple-500/[0.1] transition">
@@ -1529,7 +1529,7 @@ export default function HabitsPage() {
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-[10px] font-bold text-orange-400/80">Streak broken!</p>
-                          <p className="text-[9px] font-mono text-white/30">Sacrifice {cost} XP to revive your {bestStreak}-day streak</p>
+                          <p className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">Sacrifice {cost} XP to revive your {bestStreak}-day streak</p>
                         </div>
                         <button onClick={async () => {
                           if (!user) return;
@@ -1552,9 +1552,9 @@ export default function HabitsPage() {
               })()}
 
               {/* Actions */}
-              <div className="flex gap-2 pt-2 border-t border-white/[0.06]">
+              <div className="flex gap-2 pt-2 border-t border-[rgb(var(--fg-rgb)/0.06)]">
                 <button onClick={() => { setEditHabit(detailHabit); setDetailHabit(null); }}
-                  className="flex-1 py-2 rounded-lg border border-white/10 text-xs font-mono text-white/50 flex items-center justify-center gap-1.5 hover:bg-white/[0.04] transition">
+                  className="flex-1 py-2 rounded-lg border border-[rgb(var(--fg-rgb)/0.10)] text-xs font-mono text-[rgb(var(--fg-rgb)/0.50)] flex items-center justify-center gap-1.5 hover:bg-[rgb(var(--fg-rgb)/0.04)] transition">
                   <Edit3 size={12} /> Edit
                 </button>
                 <button onClick={() => deleteHabit(detailHabit.id)}
@@ -1572,16 +1572,16 @@ export default function HabitsPage() {
         {editHabit && (
           <motion.div className="fixed inset-0 z-50 flex items-end justify-center" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <div className="absolute inset-0 bg-black/60" onClick={() => setEditHabit(null)} />
-            <motion.div className="relative w-full max-w-md bg-[#0a0f1a] border-t border-white/10 rounded-t-2xl p-5 space-y-3"
+            <motion.div className="relative w-full max-w-md bg-[var(--bg-elevated)] border-t border-[rgb(var(--fg-rgb)/0.10)] rounded-t-2xl p-5 space-y-3"
               initial={{ y: 300 }} animate={{ y: 0 }} exit={{ y: 300 }}>
-              <p className="text-[9px] font-mono tracking-widest text-white/25">EDIT HABIT</p>
+              <p className="text-[9px] font-mono tracking-widest text-[rgb(var(--fg-rgb)/0.25)]">EDIT HABIT</p>
               <input type="text" value={editHabit.name} onChange={(e) => setEditHabit({ ...editHabit, name: e.target.value })}
-                className="w-full bg-white/[0.04] border border-white/10 rounded-lg px-3 py-2 text-sm text-white/80 outline-none focus:border-white/20" />
+                className="w-full bg-[rgb(var(--fg-rgb)/0.04)] border border-[rgb(var(--fg-rgb)/0.10)] rounded-lg px-3 py-2 text-sm text-[rgb(var(--fg-rgb)/0.80)] outline-none focus:border-[rgb(var(--fg-rgb)/0.20)]" />
               <div className="flex gap-1.5 flex-wrap">
                 {HABIT_ICONS.map((icon) => (
                   <button key={icon} onClick={() => setEditHabit({ ...editHabit, icon })}
                     className={`w-8 h-8 rounded-lg flex items-center justify-center text-base transition ${
-                      editHabit.icon === icon ? "bg-white/10 border border-white/20" : "bg-white/[0.02] border border-transparent"
+                      editHabit.icon === icon ? "bg-[rgb(var(--fg-rgb)/0.10)] border border-[rgb(var(--fg-rgb)/0.20)]" : "bg-[rgb(var(--fg-rgb)/0.02)] border border-transparent"
                     }`}>{icon}</button>
                 ))}
               </div>
@@ -1591,18 +1591,18 @@ export default function HabitsPage() {
                   return (
                     <button key={r.key} onClick={() => setEditHabit({ ...editHabit, routine: r.key as "morning" | "evening" | "anytime" })}
                       className={`flex-1 py-1.5 rounded-lg text-[10px] font-mono flex items-center justify-center gap-1 transition ${
-                        editHabit.routine === r.key ? "border bg-white/[0.08] border-white/20 text-white/80" : "border border-white/[0.06] text-white/25"
+                        editHabit.routine === r.key ? "border bg-[rgb(var(--fg-rgb)/0.08)] border-[rgb(var(--fg-rgb)/0.20)] text-[rgb(var(--fg-rgb)/0.80)]" : "border border-[rgb(var(--fg-rgb)/0.06)] text-[rgb(var(--fg-rgb)/0.25)]"
                       }`}><Icon size={10} /> {r.label}</button>
                   );
                 })}
               </div>
               <div className="flex gap-2">
                 <button onClick={() => updateHabit(editHabit)}
-                  className="flex-1 py-2 rounded-lg text-sm font-mono font-bold bg-[rgb(var(--accent-rgb)/0.2)] border border-[rgb(var(--accent-rgb)/0.3)] text-white/80 active:scale-95 transition">
+                  className="flex-1 py-2 rounded-lg text-sm font-mono font-bold bg-[rgb(var(--accent-rgb)/0.2)] border border-[rgb(var(--accent-rgb)/0.3)] text-[rgb(var(--fg-rgb)/0.80)] active:scale-95 transition">
                   Save
                 </button>
                 <button onClick={() => setEditHabit(null)}
-                  className="px-4 py-2 rounded-lg text-sm font-mono text-white/30 border border-white/10 active:scale-95 transition">
+                  className="px-4 py-2 rounded-lg text-sm font-mono text-[rgb(var(--fg-rgb)/0.30)] border border-[rgb(var(--fg-rgb)/0.10)] active:scale-95 transition">
                   Cancel
                 </button>
               </div>

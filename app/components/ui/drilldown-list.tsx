@@ -38,14 +38,14 @@ export default function DrilldownList({ items, accentRgb }: DrilldownListProps) 
           className="w-full glass-card glass-card-interactive flex items-center gap-3 px-4 py-3 text-left group"
         >
           {item.icon && (
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-white/[0.04] border border-white/[0.06]">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-[rgb(var(--fg-rgb)/0.04)] border border-[rgb(var(--fg-rgb)/0.06)]">
               {item.icon}
             </div>
           )}
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <p className="text-[13px] font-medium text-white/85 truncate">
+              <p className="text-[13px] font-medium text-[rgb(var(--fg-rgb)/0.85)] truncate">
                 {item.label}
               </p>
               {item.badge && (
@@ -62,12 +62,12 @@ export default function DrilldownList({ items, accentRgb }: DrilldownListProps) 
               )}
             </div>
             {item.subtitle && (
-              <p className="text-[10px] font-mono text-white/30 mt-0.5 truncate">
+              <p className="text-[10px] font-mono text-[rgb(var(--fg-rgb)/0.30)] mt-0.5 truncate">
                 {item.subtitle}
               </p>
             )}
             {item.progress && (
-              <div className="mt-2 h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+              <div className="mt-2 h-1.5 rounded-full bg-[rgb(var(--fg-rgb)/0.06)] overflow-hidden">
                 <div
                   className="h-full rounded-full transition-all"
                   style={{
@@ -81,7 +81,7 @@ export default function DrilldownList({ items, accentRgb }: DrilldownListProps) 
 
           <ChevronRight
             size={14}
-            className="text-white/15 group-hover:text-white/30 transition shrink-0"
+            className="text-[rgb(var(--fg-rgb)/0.15)] group-hover:text-[rgb(var(--fg-rgb)/0.30)] transition shrink-0"
           />
         </motion.button>
       ))}

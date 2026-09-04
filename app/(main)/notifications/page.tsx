@@ -20,7 +20,7 @@ const TYPE_META: Record<string, { icon: (size: number) => React.ReactNode; bg: s
   streak_milestone: { icon: (s) => <Flame size={s} className="text-orange-300" />, bg: "bg-orange-400/10 border-orange-400/20", label: "Streaks", chipActive: "border-orange-400/40 bg-orange-400/10 text-orange-300" },
   achievement: { icon: (s) => <Award size={s} className="text-emerald-300" />, bg: "bg-emerald-400/10 border-emerald-400/20", label: "Achievements", chipActive: "border-emerald-400/40 bg-emerald-400/10 text-emerald-300" },
 };
-const DEFAULT_TYPE_META = { icon: (s: number) => <Bell size={s} className="text-white/40" />, bg: "bg-white/[0.04] border-white/[0.08]", label: "Other", chipActive: "border-white/30 bg-white/10 text-white/70" };
+const DEFAULT_TYPE_META = { icon: (s: number) => <Bell size={s} className="text-[rgb(var(--fg-rgb)/0.40)]" />, bg: "bg-[rgb(var(--fg-rgb)/0.04)] border-[rgb(var(--fg-rgb)/0.08)]", label: "Other", chipActive: "border-[rgb(var(--fg-rgb)/0.30)] bg-[rgb(var(--fg-rgb)/0.10)] text-[rgb(var(--fg-rgb)/0.70)]" };
 
 function NotifIcon({ type }: { type: string }) {
   const m = TYPE_META[type] ?? DEFAULT_TYPE_META;
@@ -120,7 +120,7 @@ export default function NotificationsPage() {
   });
 
   return (
-    <main className="min-h-screen bg-[#050914] text-white pb-24 md:pb-10 relative">
+    <main className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] pb-24 md:pb-10 relative">
 
       <div className="relative z-10 max-w-xl mx-auto px-4 pt-6 space-y-4">
         <SwipeNav sections={getYouSections(enabledKeys)} />
@@ -128,13 +128,13 @@ export default function NotificationsPage() {
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div>
             <h1 className="text-xl font-bold font-display text-[rgb(var(--accent-light-rgb))]">Notifications</h1>
-            <p className="text-[11px] text-white/30 mt-0.5">
+            <p className="text-[11px] text-[rgb(var(--fg-rgb)/0.30)] mt-0.5">
               {unreadCount > 0 ? `${unreadCount} unread` : "All caught up"}
             </p>
           </div>
           <div className="flex items-center gap-2">
             {unreadCount > 0 && (
-              <button onClick={dismissAll} className="text-[10px] font-mono px-3 py-1.5 rounded-xl border border-white/[0.06] text-white/30 hover:text-white/60 hover:bg-white/[0.03] transition">
+              <button onClick={dismissAll} className="text-[10px] font-mono px-3 py-1.5 rounded-xl border border-[rgb(var(--fg-rgb)/0.06)] text-[rgb(var(--fg-rgb)/0.30)] hover:text-[rgb(var(--fg-rgb)/0.60)] hover:bg-[rgb(var(--fg-rgb)/0.03)] transition">
                 Mark All Read
               </button>
             )}
@@ -148,14 +148,14 @@ export default function NotificationsPage() {
 
         <div className="space-y-2">
           <div className="flex gap-2">
-            <button onClick={() => setFilter("all")} className={`text-[10px] font-mono px-3 py-1.5 rounded-lg border transition ${filter === "all" ? "border-[rgb(var(--accent-rgb)/0.2)] bg-[rgb(var(--accent-rgb)/0.08)] text-[rgb(var(--accent-rgb))]" : "border-white/[0.06] text-white/30 hover:text-white/60"}`}>
+            <button onClick={() => setFilter("all")} className={`text-[10px] font-mono px-3 py-1.5 rounded-lg border transition ${filter === "all" ? "border-[rgb(var(--accent-rgb)/0.2)] bg-[rgb(var(--accent-rgb)/0.08)] text-[rgb(var(--accent-rgb))]" : "border-[rgb(var(--fg-rgb)/0.06)] text-[rgb(var(--fg-rgb)/0.30)] hover:text-[rgb(var(--fg-rgb)/0.60)]"}`}>
               ALL
             </button>
-            <button onClick={() => setFilter("unread")} className={`text-[10px] font-mono px-3 py-1.5 rounded-lg border transition ${filter === "unread" ? "border-[rgb(var(--accent-rgb)/0.2)] bg-[rgb(var(--accent-rgb)/0.08)] text-[rgb(var(--accent-rgb))]" : "border-white/[0.06] text-white/30 hover:text-white/60"}`}>
+            <button onClick={() => setFilter("unread")} className={`text-[10px] font-mono px-3 py-1.5 rounded-lg border transition ${filter === "unread" ? "border-[rgb(var(--accent-rgb)/0.2)] bg-[rgb(var(--accent-rgb)/0.08)] text-[rgb(var(--accent-rgb))]" : "border-[rgb(var(--fg-rgb)/0.06)] text-[rgb(var(--fg-rgb)/0.30)] hover:text-[rgb(var(--fg-rgb)/0.60)]"}`}>
               UNREAD {unreadCount > 0 && `(${unreadCount})`}
             </button>
             {typeFilter !== "all" && (
-              <button onClick={() => setTypeFilter("all")} className="text-[10px] font-mono px-3 py-1.5 rounded-lg border border-white/[0.06] text-white/25 hover:text-white/60 transition ml-auto">
+              <button onClick={() => setTypeFilter("all")} className="text-[10px] font-mono px-3 py-1.5 rounded-lg border border-[rgb(var(--fg-rgb)/0.06)] text-[rgb(var(--fg-rgb)/0.25)] hover:text-[rgb(var(--fg-rgb)/0.60)] transition ml-auto">
                 Clear type ✕
               </button>
             )}
@@ -169,7 +169,7 @@ export default function NotificationsPage() {
                   <button
                     key={t}
                     onClick={() => setTypeFilter(active ? "all" : t)}
-                    className={`flex items-center gap-1.5 text-[9px] font-mono px-2.5 py-1 rounded-full border transition ${active ? m.chipActive : "border-white/[0.06] text-white/30 hover:text-white/55 hover:border-white/15"}`}
+                    className={`flex items-center gap-1.5 text-[9px] font-mono px-2.5 py-1 rounded-full border transition ${active ? m.chipActive : "border-[rgb(var(--fg-rgb)/0.06)] text-[rgb(var(--fg-rgb)/0.30)] hover:text-[rgb(var(--fg-rgb)/0.55)] hover:border-[rgb(var(--fg-rgb)/0.15)]"}`}
                   >
                     {m.icon(10)} {m.label} <span className="opacity-60">{typeCounts[t]}</span>
                   </button>
@@ -184,10 +184,10 @@ export default function NotificationsPage() {
         ) : visible.length === 0 ? (
           <div className="text-center py-16">
             <div className="w-14 h-14 mx-auto mb-4 rounded-2xl glass-card flex items-center justify-center">
-              <Bell size={24} className="text-white/15" />
+              <Bell size={24} className="text-[rgb(var(--fg-rgb)/0.15)]" />
             </div>
-            <p className="text-sm font-semibold text-white/30">All Caught Up</p>
-            <p className="text-xs text-white/20 mt-1">
+            <p className="text-sm font-semibold text-[rgb(var(--fg-rgb)/0.30)]">All Caught Up</p>
+            <p className="text-xs text-[rgb(var(--fg-rgb)/0.20)] mt-1">
               {notifications.length > 0 ? "No notifications match this filter." : filter === "unread" ? "No unread notifications." : "Complete a workout to see alerts."}
             </p>
           </div>
@@ -195,24 +195,24 @@ export default function NotificationsPage() {
           <div className="space-y-5">
             {grouped.map((group) => (
               <div key={group.label}>
-                <p className="text-[9px] font-mono tracking-widest text-white/20 mb-2">{group.label.toUpperCase()}</p>
+                <p className="text-[9px] font-mono tracking-widest text-[rgb(var(--fg-rgb)/0.20)] mb-2">{group.label.toUpperCase()}</p>
                 <motion.div className="space-y-1.5" variants={staggerContainer} initial="hidden" animate="visible">
                   {group.items.map((n) => (
                     <motion.div
                       variants={staggerItem}
                       key={n.id}
-                      className={`flex items-center gap-3 rounded-xl border border-white/[0.06] px-3.5 py-3 transition ${n.read ? "bg-white/[0.01] opacity-50" : "bg-white/[0.03]"}`}
+                      className={`flex items-center gap-3 rounded-xl border border-[rgb(var(--fg-rgb)/0.06)] px-3.5 py-3 transition ${n.read ? "bg-[rgb(var(--fg-rgb)/0.01)] opacity-50" : "bg-[rgb(var(--fg-rgb)/0.03)]"}`}
                     >
                       <NotifIcon type={n.type} />
                       <div className="flex-1 min-w-0">
-                        <p className={`text-[12px] font-semibold ${n.read ? "text-white/50" : "text-white/90"}`}>{n.title}</p>
-                        {n.message && <p className="text-[11px] text-white/35 mt-0.5 truncate">{n.message}</p>}
-                        <p className="text-[9px] font-mono text-white/20 mt-1">{timeAgo(n.created_at)}</p>
+                        <p className={`text-[12px] font-semibold ${n.read ? "text-[rgb(var(--fg-rgb)/0.50)]" : "text-[rgb(var(--fg-rgb)/0.90)]"}`}>{n.title}</p>
+                        {n.message && <p className="text-[11px] text-[rgb(var(--fg-rgb)/0.35)] mt-0.5 truncate">{n.message}</p>}
+                        <p className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.20)] mt-1">{timeAgo(n.created_at)}</p>
                       </div>
                       {!n.read && (
                         <div className="flex items-center gap-2 shrink-0">
                           <div className="w-2 h-2 rounded-full bg-[rgb(var(--accent-rgb))]" />
-                          <button onClick={() => dismiss(n.id)} className="text-white/20 hover:text-white/50 transition">
+                          <button onClick={() => dismiss(n.id)} className="text-[rgb(var(--fg-rgb)/0.20)] hover:text-[rgb(var(--fg-rgb)/0.50)] transition">
                             <X size={14} />
                           </button>
                         </div>

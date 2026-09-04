@@ -50,7 +50,7 @@ function Chip({ active, children, onClick, size = "sm" }: { active: boolean; chi
       className={`shrink-0 rounded-md border transition ${
         size === "xs" ? "px-2 py-1 text-[10px]" : "px-3 py-1.5 text-xs"
       } font-mono ${
-        active ? "border-[rgb(var(--accent-rgb)/0.6)] bg-[rgb(var(--accent-rgb)/0.15)] text-[rgb(var(--accent-light-rgb))]" : "border-white/10 bg-white/[0.03] text-white/50 hover:text-white/80"
+        active ? "border-[rgb(var(--accent-rgb)/0.6)] bg-[rgb(var(--accent-rgb)/0.15)] text-[rgb(var(--accent-light-rgb))]" : "border-[rgb(var(--fg-rgb)/0.10)] bg-[rgb(var(--fg-rgb)/0.03)] text-[rgb(var(--fg-rgb)/0.50)] hover:text-[rgb(var(--fg-rgb)/0.80)]"
       }`}
     >
       {children}
@@ -61,7 +61,7 @@ function Chip({ active, children, onClick, size = "sm" }: { active: boolean; chi
 function Tag({ children, variant = "default" }: { children: React.ReactNode; variant?: "default" | "muted" | "accent" | "owned" | "unowned" }) {
   const classes: Record<string, string> = {
     default: "bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))] border-[rgb(var(--accent-rgb)/0.2)]",
-    muted: "bg-white/5 text-white/40 border-white/10",
+    muted: "bg-[rgb(var(--fg-rgb)/0.05)] text-[rgb(var(--fg-rgb)/0.40)] border-[rgb(var(--fg-rgb)/0.10)]",
     accent: "bg-emerald-400/10 text-emerald-300 border-emerald-400/20",
     owned: "bg-emerald-400/10 text-emerald-300/80 border-emerald-400/20",
     unowned: "bg-orange-400/5 text-orange-300/40 border-orange-400/10",
@@ -294,16 +294,16 @@ export default function AddExerciseModal({
       <div className="pointer-events-none fixed top-[10%] left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[rgb(var(--accent-rgb)/0.1)] rounded-full blur-[130px]" />
 
       <div
-        className="relative w-full md:max-w-xl h-[90vh] md:h-[85vh] rounded-t-2xl md:rounded-md border border-[rgb(var(--accent-rgb)/0.25)] bg-[#0a1120]/95 backdrop-blur-2xl flex flex-col overflow-hidden"
-        style={{ boxShadow: "0 0 60px -12px rgb(var(--accent-rgb) / 0.3), inset 0 1px 0 rgba(255,255,255,0.06)" }}
+        className="relative w-full md:max-w-xl h-[90vh] md:h-[85vh] rounded-t-2xl md:rounded-md border border-[rgb(var(--accent-rgb)/0.25)] bg-[var(--bg-elevated)]/95 backdrop-blur-2xl flex flex-col overflow-hidden"
+        style={{ boxShadow: "0 0 60px -12px rgb(var(--accent-rgb) / 0.3), inset 0 1px 0 rgb(var(--fg-rgb) / 0.06)" }}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-[rgb(var(--accent-rgb)/0.1)] shrink-0">
           <div>
-            <p className="font-bold text-white/90">Add Exercise</p>
-            <p className="text-[10px] font-mono text-white/30 mt-0.5">{filtered.length} results</p>
+            <p className="font-bold text-[rgb(var(--fg-rgb)/0.90)]">Add Exercise</p>
+            <p className="text-[10px] font-mono text-[rgb(var(--fg-rgb)/0.30)] mt-0.5">{filtered.length} results</p>
           </div>
-          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-md border border-white/10 text-white/40 hover:text-white/80 hover:border-white/20 transition">
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-md border border-[rgb(var(--fg-rgb)/0.10)] text-[rgb(var(--fg-rgb)/0.40)] hover:text-[rgb(var(--fg-rgb)/0.80)] hover:border-[rgb(var(--fg-rgb)/0.20)] transition">
             <X size={16} />
           </button>
         </div>
@@ -320,10 +320,10 @@ export default function AddExerciseModal({
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search by name, muscle, equipment..."
-                className="w-full rounded-md bg-white/[0.04] border border-[rgb(var(--accent-rgb)/0.2)] pl-11 pr-4 py-2.5 text-sm focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.5)] transition"
+                className="w-full rounded-md bg-[rgb(var(--fg-rgb)/0.04)] border border-[rgb(var(--accent-rgb)/0.2)] pl-11 pr-4 py-2.5 text-sm focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.5)] transition"
               />
               {query && (
-                <button onClick={() => setQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60">
+                <button onClick={() => setQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-[rgb(var(--fg-rgb)/0.30)] hover:text-[rgb(var(--fg-rgb)/0.60)]">
                   <X size={14} />
                 </button>
               )}
@@ -331,7 +331,7 @@ export default function AddExerciseModal({
             <button
               onClick={() => setShowFilters(v => !v)}
               className={`shrink-0 flex items-center gap-1.5 rounded-md border px-3 text-xs font-mono transition ${
-                activeFilterCount > 0 || showFilters ? "border-[rgb(var(--accent-rgb)/0.5)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/10 text-white/50 hover:text-white/80"
+                activeFilterCount > 0 || showFilters ? "border-[rgb(var(--accent-rgb)/0.5)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-[rgb(var(--fg-rgb)/0.10)] text-[rgb(var(--fg-rgb)/0.50)] hover:text-[rgb(var(--fg-rgb)/0.80)]"
               }`}
             >
               <SlidersHorizontal size={14} />
@@ -396,7 +396,7 @@ export default function AddExerciseModal({
 
               {/* Clear filters */}
               {activeFilterCount > 0 && (
-                <button onClick={clearFilters} className="text-[10px] font-mono text-white/30 hover:text-white/60 transition underline underline-offset-2">
+                <button onClick={clearFilters} className="text-[10px] font-mono text-[rgb(var(--fg-rgb)/0.30)] hover:text-[rgb(var(--fg-rgb)/0.60)] transition underline underline-offset-2">
                   Clear all filters
                 </button>
               )}
@@ -406,18 +406,18 @@ export default function AddExerciseModal({
           {/* Sort bar */}
           {!query && (
             <div className="flex items-center gap-1.5 pt-0.5 pb-1">
-              <p className="text-[9px] font-mono text-white/20 mr-1">SORT</p>
-              <button onClick={() => setSortBy("name")} className={`flex items-center gap-1 text-[10px] font-mono px-2 py-1 rounded border transition ${sortBy === "name" ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/[0.06] text-white/30 hover:text-white/60"}`}>
+              <p className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.20)] mr-1">SORT</p>
+              <button onClick={() => setSortBy("name")} className={`flex items-center gap-1 text-[10px] font-mono px-2 py-1 rounded border transition ${sortBy === "name" ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-[rgb(var(--fg-rgb)/0.06)] text-[rgb(var(--fg-rgb)/0.30)] hover:text-[rgb(var(--fg-rgb)/0.60)]"}`}>
                 A–Z
               </button>
-              <button onClick={() => setSortBy("recent")} className={`flex items-center gap-1 text-[10px] font-mono px-2 py-1 rounded border transition ${sortBy === "recent" ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/[0.06] text-white/30 hover:text-white/60"}`}>
+              <button onClick={() => setSortBy("recent")} className={`flex items-center gap-1 text-[10px] font-mono px-2 py-1 rounded border transition ${sortBy === "recent" ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-[rgb(var(--fg-rgb)/0.06)] text-[rgb(var(--fg-rgb)/0.30)] hover:text-[rgb(var(--fg-rgb)/0.60)]"}`}>
                 <Clock size={10} /> Recent
               </button>
-              <button onClick={() => setSortBy("popular")} className={`flex items-center gap-1 text-[10px] font-mono px-2 py-1 rounded border transition ${sortBy === "popular" ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-white/[0.06] text-white/30 hover:text-white/60"}`}>
+              <button onClick={() => setSortBy("popular")} className={`flex items-center gap-1 text-[10px] font-mono px-2 py-1 rounded border transition ${sortBy === "popular" ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-[rgb(var(--fg-rgb)/0.06)] text-[rgb(var(--fg-rgb)/0.30)] hover:text-[rgb(var(--fg-rgb)/0.60)]"}`}>
                 <Flame size={10} /> Popular
               </button>
               {hasEquipmentProfile && (
-                <button onClick={() => setSortBy("equipment")} className={`flex items-center gap-1 text-[10px] font-mono px-2 py-1 rounded border transition ${sortBy === "equipment" ? "border-emerald-400/40 bg-emerald-400/10 text-emerald-300" : "border-white/[0.06] text-white/30 hover:text-white/60"}`}>
+                <button onClick={() => setSortBy("equipment")} className={`flex items-center gap-1 text-[10px] font-mono px-2 py-1 rounded border transition ${sortBy === "equipment" ? "border-emerald-400/40 bg-emerald-400/10 text-emerald-300" : "border-[rgb(var(--fg-rgb)/0.06)] text-[rgb(var(--fg-rgb)/0.30)] hover:text-[rgb(var(--fg-rgb)/0.60)]"}`}>
                   <Dumbbell size={10} /> My Gear
                 </button>
               )}
@@ -429,10 +429,10 @@ export default function AddExerciseModal({
         <div className="flex-1 overflow-y-auto custom-scroll px-5 py-4 pb-24 space-y-2">
           {/* Create Custom Exercise form */}
           {showCreateForm && (
-            <div className="rounded-md border border-[rgb(var(--accent-rgb)/0.3)] bg-white/[0.03] p-4 mb-3">
+            <div className="rounded-md border border-[rgb(var(--accent-rgb)/0.3)] bg-[rgb(var(--fg-rgb)/0.03)] p-4 mb-3">
               <div className="flex items-center justify-between mb-3">
-                <p className="text-xs font-bold text-white/80">Create Custom Exercise</p>
-                <button onClick={() => { setShowCreateForm(false); setCreateError(""); }} className="text-white/30 hover:text-white/60 transition">
+                <p className="text-xs font-bold text-[rgb(var(--fg-rgb)/0.80)]">Create Custom Exercise</p>
+                <button onClick={() => { setShowCreateForm(false); setCreateError(""); }} className="text-[rgb(var(--fg-rgb)/0.30)] hover:text-[rgb(var(--fg-rgb)/0.60)] transition">
                   <X size={14} />
                 </button>
               </div>
@@ -444,7 +444,7 @@ export default function AddExerciseModal({
                     value={newName}
                     onChange={(e) => setNewName(e.target.value)}
                     placeholder="e.g. Landmine Press"
-                    className="w-full rounded-md bg-white/[0.04] border border-white/10 px-3 py-2 text-sm focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.5)] transition"
+                    className="w-full rounded-md bg-[rgb(var(--fg-rgb)/0.04)] border border-[rgb(var(--fg-rgb)/0.10)] px-3 py-2 text-sm focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.5)] transition"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-2.5">
@@ -453,7 +453,7 @@ export default function AddExerciseModal({
                     <select
                       value={newSegment}
                       onChange={(e) => setNewSegment(e.target.value)}
-                      className="w-full rounded-md bg-white/[0.04] border border-white/10 px-3 py-2 text-sm focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.5)] transition"
+                      className="w-full rounded-md bg-[rgb(var(--fg-rgb)/0.04)] border border-[rgb(var(--fg-rgb)/0.10)] px-3 py-2 text-sm focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.5)] transition"
                     >
                       {BODY_SEGMENTS.filter(s => s !== "All").map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
@@ -463,7 +463,7 @@ export default function AddExerciseModal({
                     <select
                       value={newMuscle}
                       onChange={(e) => setNewMuscle(e.target.value)}
-                      className="w-full rounded-md bg-white/[0.04] border border-white/10 px-3 py-2 text-sm focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.5)] transition"
+                      className="w-full rounded-md bg-[rgb(var(--fg-rgb)/0.04)] border border-[rgb(var(--fg-rgb)/0.10)] px-3 py-2 text-sm focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.5)] transition"
                     >
                       {(PRIMARY_MUSCLES[newSegment] || []).map(m => <option key={m} value={m}>{m}</option>)}
                       {!PRIMARY_MUSCLES[newSegment] && <option value={newSegment}>{newSegment}</option>}
@@ -474,7 +474,7 @@ export default function AddExerciseModal({
                     <select
                       value={newEquipment}
                       onChange={(e) => setNewEquipment(e.target.value)}
-                      className="w-full rounded-md bg-white/[0.04] border border-white/10 px-3 py-2 text-sm focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.5)] transition"
+                      className="w-full rounded-md bg-[rgb(var(--fg-rgb)/0.04)] border border-[rgb(var(--fg-rgb)/0.10)] px-3 py-2 text-sm focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.5)] transition"
                     >
                       {EQUIPMENT.filter(e => e !== "All").map(eq => <option key={eq} value={eq}>{eq}</option>)}
                     </select>
@@ -484,7 +484,7 @@ export default function AddExerciseModal({
                     <select
                       value={newCategory}
                       onChange={(e) => setNewCategory(e.target.value)}
-                      className="w-full rounded-md bg-white/[0.04] border border-white/10 px-3 py-2 text-sm focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.5)] transition"
+                      className="w-full rounded-md bg-[rgb(var(--fg-rgb)/0.04)] border border-[rgb(var(--fg-rgb)/0.10)] px-3 py-2 text-sm focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.5)] transition"
                     >
                       <option value="Compound">Compound</option>
                       <option value="Isolation">Isolation</option>
@@ -496,7 +496,7 @@ export default function AddExerciseModal({
                     <select
                       value={newDifficulty}
                       onChange={(e) => setNewDifficulty(e.target.value)}
-                      className="w-full rounded-md bg-white/[0.04] border border-white/10 px-3 py-2 text-sm focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.5)] transition"
+                      className="w-full rounded-md bg-[rgb(var(--fg-rgb)/0.04)] border border-[rgb(var(--fg-rgb)/0.10)] px-3 py-2 text-sm focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.5)] transition"
                     >
                       <option value="Beginner">Beginner</option>
                       <option value="Intermediate">Intermediate</option>
@@ -521,17 +521,17 @@ export default function AddExerciseModal({
           {!showCreateForm && !loading && (
             <button
               onClick={() => setShowCreateForm(true)}
-              className="w-full flex items-center justify-center gap-2 rounded-md border border-dashed border-[rgb(var(--accent-rgb)/0.25)] bg-white/[0.02] px-4 py-3 text-xs font-mono text-[rgb(var(--accent-light-rgb)/0.6)] hover:border-[rgb(var(--accent-rgb)/0.5)] hover:text-[rgb(var(--accent-light-rgb))] hover:bg-white/[0.04] transition mb-3"
+              className="w-full flex items-center justify-center gap-2 rounded-md border border-dashed border-[rgb(var(--accent-rgb)/0.25)] bg-[rgb(var(--fg-rgb)/0.02)] px-4 py-3 text-xs font-mono text-[rgb(var(--accent-light-rgb)/0.6)] hover:border-[rgb(var(--accent-rgb)/0.5)] hover:text-[rgb(var(--accent-light-rgb))] hover:bg-[rgb(var(--fg-rgb)/0.04)] transition mb-3"
             >
               <Plus size={14} />
               {filtered.length === 0 && query.trim() ? `Can't find it? Create "${query.trim()}"` : "Can't find it? Create your own"}
             </button>
           )}
 
-          {loading && <p className="text-center text-white/40 text-sm py-10">Loading...</p>}
+          {loading && <p className="text-center text-[rgb(var(--fg-rgb)/0.40)] text-sm py-10">Loading...</p>}
           {!loading && filtered.length === 0 && !showCreateForm && (
             <div className="text-center py-10">
-              <p className="text-white/40 text-sm mb-2">No exercises match your filters.</p>
+              <p className="text-[rgb(var(--fg-rgb)/0.40)] text-sm mb-2">No exercises match your filters.</p>
               {activeFilterCount > 0 && (
                 <button onClick={clearFilters} className="text-xs font-mono text-[rgb(var(--accent-light-rgb))] hover:underline">Clear filters</button>
               )}
@@ -544,18 +544,18 @@ export default function AddExerciseModal({
             return (
               <div key={ex.id} className={`flex items-center justify-between gap-3 rounded-md border px-4 py-3.5 transition ${
                 alreadyInDay
-                  ? "border-white/[0.06] bg-white/[0.01]"
-                  : "border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.03] hover:border-[rgb(var(--accent-rgb)/0.35)] hover:bg-white/[0.05]"
+                  ? "border-[rgb(var(--fg-rgb)/0.06)] bg-[rgb(var(--fg-rgb)/0.01)]"
+                  : "border-[rgb(var(--accent-rgb)/0.15)] bg-[rgb(var(--fg-rgb)/0.03)] hover:border-[rgb(var(--accent-rgb)/0.35)] hover:bg-[rgb(var(--fg-rgb)/0.05)]"
               }`}>
                 <div className="flex items-center gap-3 min-w-0">
                   {ex.image_url ? (
-                    <img src={ex.image_url} alt="" className="w-12 h-12 rounded-md object-cover shrink-0 border border-white/10" />
+                    <img src={ex.image_url} alt="" className="w-12 h-12 rounded-md object-cover shrink-0 border border-[rgb(var(--fg-rgb)/0.10)]" />
                   ) : (
-                    <div className="w-12 h-12 rounded-md shrink-0 bg-white/5 border border-white/10" />
+                    <div className="w-12 h-12 rounded-md shrink-0 bg-[rgb(var(--fg-rgb)/0.05)] border border-[rgb(var(--fg-rgb)/0.10)]" />
                   )}
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5 mb-1">
-                      <p className="font-bold text-sm text-white/90 truncate">{ex.name}</p>
+                      <p className="font-bold text-sm text-[rgb(var(--fg-rgb)/0.90)] truncate">{ex.name}</p>
                       {isFav && <Star size={11} className="text-yellow-300 shrink-0" fill="currentColor" />}
                       {ex.created_by && <Tag variant="accent">CUSTOM</Tag>}
                     </div>
@@ -571,7 +571,7 @@ export default function AddExerciseModal({
                   onClick={() => !alreadyInDay && handleAdd(ex)}
                   disabled={alreadyInDay}
                   className={`shrink-0 rounded-md text-xs font-bold px-4 py-2.5 transition ${
-                    alreadyInDay ? "bg-white/5 text-white/30 border border-white/10 cursor-not-allowed" : "bg-[rgb(var(--accent-rgb))] text-black hover:bg-[rgb(var(--accent-light-rgb))]"
+                    alreadyInDay ? "bg-[rgb(var(--fg-rgb)/0.05)] text-[rgb(var(--fg-rgb)/0.30)] border border-[rgb(var(--fg-rgb)/0.10)] cursor-not-allowed" : "bg-[rgb(var(--accent-rgb))] text-black hover:bg-[rgb(var(--accent-light-rgb))]"
                   }`}
                   style={!alreadyInDay ? { boxShadow: "0 0 16px -3px rgb(var(--accent-rgb) / 0.6)" } : undefined}
                 >

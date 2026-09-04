@@ -157,23 +157,23 @@ export default function MusclePickerModal({ onClose }: { onClose: () => void }) 
         .custom-scroll::-webkit-scrollbar-thumb { background: rgb(var(--accent-rgb) / 0.25); border-radius: 999px; }
       `}</style>
             <div
-                className="relative w-full h-full md:h-[85vh] md:max-w-2xl md:rounded-md border border-[rgb(var(--accent-rgb)/0.25)] bg-[#0a1120] md:bg-[#0a1120]/95 backdrop-blur-2xl flex flex-col overflow-hidden"
+                className="relative w-full h-full md:h-[85vh] md:max-w-2xl md:rounded-md border border-[rgb(var(--accent-rgb)/0.25)] bg-[var(--bg-elevated)] md:bg-[var(--bg-elevated)]/95 backdrop-blur-2xl flex flex-col overflow-hidden"
                 style={{ boxShadow: "0 0 70px -12px rgb(var(--accent-rgb) / 0.3)" }}
             >
                 {/* Header */}
                 <div className="flex items-center justify-between px-5 py-4 border-b border-[rgb(var(--accent-rgb)/0.1)] shrink-0">
                     <div className="flex items-center gap-2 min-w-0">
                         {selectedMuscle && (
-                            <button onClick={() => { setSelectedMuscle(null); setHoveredMuscle(null); }} className="shrink-0 text-white/50 hover:text-white/80 transition">
+                            <button onClick={() => { setSelectedMuscle(null); setHoveredMuscle(null); }} className="shrink-0 text-[rgb(var(--fg-rgb)/0.50)] hover:text-[rgb(var(--fg-rgb)/0.80)] transition">
                                 <ChevronLeft size={20} />
                             </button>
                         )}
                         <div className="min-w-0">
                             <p className="text-[10px] font-mono tracking-widest text-[rgb(var(--accent-light-rgb)/0.6)]">MUSCLE MAP</p>
-                            <h2 className="text-lg font-bold text-white/95 truncate">{selectedMuscle || hoveredMuscle || "Tap a muscle group"}</h2>
+                            <h2 className="text-lg font-bold text-[rgb(var(--fg-rgb)/0.95)] truncate">{selectedMuscle || hoveredMuscle || "Tap a muscle group"}</h2>
                         </div>
                     </div>
-                    <button onClick={onClose} className="shrink-0 w-8 h-8 flex items-center justify-center rounded-md border border-white/10 text-white/40 hover:text-white/80 hover:border-white/20 transition">
+                    <button onClick={onClose} className="shrink-0 w-8 h-8 flex items-center justify-center rounded-md border border-[rgb(var(--fg-rgb)/0.10)] text-[rgb(var(--fg-rgb)/0.40)] hover:text-[rgb(var(--fg-rgb)/0.80)] hover:border-[rgb(var(--fg-rgb)/0.20)] transition">
                         <X size={16} />
                     </button>
                 </div>
@@ -203,7 +203,7 @@ export default function MusclePickerModal({ onClose }: { onClose: () => void }) 
                         >
                             <RotateCcw size={13} /> {view === "front" ? "SHOW BACK" : "SHOW FRONT"}
                         </button>
-                        <p className="text-[10px] font-mono text-white/25 mt-2">Swipe or tap to flip · Tap a muscle group to browse exercises</p>
+                        <p className="text-[10px] font-mono text-[rgb(var(--fg-rgb)/0.25)] mt-2">Swipe or tap to flip · Tap a muscle group to browse exercises</p>
                     </div>
                 )}
 
@@ -217,54 +217,54 @@ export default function MusclePickerModal({ onClose }: { onClose: () => void }) 
                                     className={`shrink-0 rounded-md border px-2 py-1 text-[10px] font-mono transition ${
                                         myEquipmentOn
                                             ? "border-[rgb(var(--accent-rgb)/0.6)] bg-[rgb(var(--accent-rgb)/0.15)] text-[rgb(var(--accent-light-rgb))]"
-                                            : "border-white/10 bg-white/[0.03] text-white/50 hover:text-white/80"
+                                            : "border-[rgb(var(--fg-rgb)/0.10)] bg-[rgb(var(--fg-rgb)/0.03)] text-[rgb(var(--fg-rgb)/0.50)] hover:text-[rgb(var(--fg-rgb)/0.80)]"
                                     }`}
                                 >
                                     {myEquipmentOn ? "✓ " : ""}MY EQUIPMENT
                                 </button>
-                                <span className="text-[9px] font-mono text-white/25">{filteredExercises.length} exercises</span>
+                                <span className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.25)]">{filteredExercises.length} exercises</span>
                             </div>
                         )}
-                        {loadingResults && <p className="text-center text-white/40 text-sm py-10">Loading...</p>}
-                        {!loadingResults && filteredExercises.length === 0 && <p className="text-center text-white/40 text-sm py-10">No exercises found for this muscle yet.</p>}
+                        {loadingResults && <p className="text-center text-[rgb(var(--fg-rgb)/0.40)] text-sm py-10">Loading...</p>}
+                        {!loadingResults && filteredExercises.length === 0 && <p className="text-center text-[rgb(var(--fg-rgb)/0.40)] text-sm py-10">No exercises found for this muscle yet.</p>}
                         <div className="grid grid-cols-2 gap-3">
                             {filteredExercises.map((ex) => {
                                 const isFav = favorites.has(ex.id);
                                 const isExpanded = expandedId === ex.id;
                                 return (
-                                    <div key={ex.id} className={`rounded-md border overflow-hidden transition ${isExpanded ? "col-span-2 border-[rgb(var(--accent-rgb)/0.4)]" : "border-[rgb(var(--accent-rgb)/0.15)]"} bg-white/[0.03]`}>
+                                    <div key={ex.id} className={`rounded-md border overflow-hidden transition ${isExpanded ? "col-span-2 border-[rgb(var(--accent-rgb)/0.4)]" : "border-[rgb(var(--accent-rgb)/0.15)]"} bg-[rgb(var(--fg-rgb)/0.03)]`}>
                                         <div role="button" tabIndex={0} onClick={() => setExpandedId(isExpanded ? null : ex.id)} className="w-full text-left cursor-pointer">
-                                            <div className="relative aspect-square bg-white/5">
+                                            <div className="relative aspect-square bg-[rgb(var(--fg-rgb)/0.05)]">
                                                 {ex.image_url ? (
                                                     <img src={ex.image_url} alt={ex.name} className="w-full h-full object-cover" />
                                                 ) : (
-                                                    <div className="w-full h-full flex items-center justify-center text-white/20 text-[10px] font-mono">NO IMAGE</div>
+                                                    <div className="w-full h-full flex items-center justify-center text-[rgb(var(--fg-rgb)/0.20)] text-[10px] font-mono">NO IMAGE</div>
                                                 )}
                                                 <button
                                                     onClick={(e) => { e.stopPropagation(); toggleFavorite(ex.id); }}
                                                     className="absolute top-1.5 right-1.5 w-7 h-7 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center"
                                                 >
-                                                    <Star size={14} className={isFav ? "fill-yellow-400 text-yellow-400" : "text-white/70"} />
+                                                    <Star size={14} className={isFav ? "fill-yellow-400 text-yellow-400" : "text-[rgb(var(--fg-rgb)/0.70)]"} />
                                                 </button>
                                             </div>
                                             <div className="p-2.5">
-                                                <p className="text-xs font-bold text-white/90 leading-tight">{ex.name}</p>
-                                                <p className="text-[9px] font-mono text-white/40 mt-1">{ex.equipment} · {ex.difficulty}</p>
+                                                <p className="text-xs font-bold text-[rgb(var(--fg-rgb)/0.90)] leading-tight">{ex.name}</p>
+                                                <p className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.40)] mt-1">{ex.equipment} · {ex.difficulty}</p>
                                             </div>
                                         </div>
                                         {isExpanded && (
-                                            <div className="px-3 pb-3 pt-1 border-t border-white/5 space-y-2">
+                                            <div className="px-3 pb-3 pt-1 border-t border-[rgb(var(--fg-rgb)/0.05)] space-y-2">
                                                 {ex.secondary_muscles?.length > 0 && (
                                                     <div className="flex flex-wrap gap-1.5">
                                                         {ex.secondary_muscles.map((m) => (
-                                                            <span key={m} className="text-[9px] font-mono px-2 py-0.5 rounded border bg-white/5 text-white/50 border-white/10">{m}</span>
+                                                            <span key={m} className="text-[9px] font-mono px-2 py-0.5 rounded border bg-[rgb(var(--fg-rgb)/0.05)] text-[rgb(var(--fg-rgb)/0.50)] border-[rgb(var(--fg-rgb)/0.10)]">{m}</span>
                                                         ))}
                                                     </div>
                                                 )}
                                                 {ex.instructions ? (
-                                                    <p className="text-[11px] text-white/60 whitespace-pre-line leading-relaxed">{ex.instructions}</p>
+                                                    <p className="text-[11px] text-[rgb(var(--fg-rgb)/0.60)] whitespace-pre-line leading-relaxed">{ex.instructions}</p>
                                                 ) : (
-                                                    <p className="text-[10px] font-mono text-white/20 italic">No instructions available.</p>
+                                                    <p className="text-[10px] font-mono text-[rgb(var(--fg-rgb)/0.20)] italic">No instructions available.</p>
                                                 )}
                                             </div>
                                         )}

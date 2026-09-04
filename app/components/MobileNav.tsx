@@ -60,7 +60,7 @@ export default function MobileNav() {
         {tabs.map((item) => {
           const active = item.match.includes(pathname);
           return (
-            <Link key={item.label} href={item.href} className={`flex flex-col items-center gap-1 px-3 py-1.5 ${active ? "text-[rgb(var(--accent-rgb))]" : "text-white/40"}`}>
+            <Link key={item.label} href={item.href} className={`flex flex-col items-center gap-1 px-3 py-1.5 ${active ? "text-[rgb(var(--accent-rgb))]" : "text-[rgb(var(--fg-rgb)/0.40)]"}`}>
               <TabIcon icon={item.icon} active={active} />
               <span className="text-[9px] font-mono tracking-wide">{item.label}</span>
             </Link>

@@ -119,7 +119,7 @@ function Typewriter({
   }, [charIdx, deleting, display, idx, texts, speed, deleteSpeed, delay]);
 
   return (
-    <span className="text-white/50 font-mono text-[10px] tracking-[0.25em]">
+    <span className="text-[rgb(var(--fg-rgb)/0.50)] font-mono text-[10px] tracking-[0.25em]">
       {display}
       <span className="animate-pulse text-[rgb(var(--accent-rgb))]">|</span>
     </span>
@@ -240,22 +240,22 @@ export default function LoginPage() {
   }
 
   const inputCls =
-    "w-full rounded-xl bg-white/[0.03] border border-white/[0.06] px-4 py-3 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.25)] focus:shadow-[0_0_20px_rgb(var(--accent-rgb)/0.06)] transition-all duration-200";
+    "w-full rounded-xl bg-[rgb(var(--fg-rgb)/0.03)] border border-[rgb(var(--fg-rgb)/0.06)] px-4 py-3 text-sm text-[var(--text-primary)] placeholder:text-[rgb(var(--fg-rgb)/0.20)] focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.25)] focus:shadow-[0_0_20px_rgb(var(--accent-rgb)/0.06)] transition-all duration-200";
 
   if (submitted) {
     return (
-      <main className="relative min-h-screen text-white overflow-hidden">
+      <main className="relative min-h-screen text-[var(--text-primary)] overflow-hidden">
         <AsciiCanvas src="/ascii-bg.jpeg" />
         <div className="fixed inset-0 bg-gradient-to-t from-black/60 via-black/25 to-black/30 z-[1]" />
         <div className="relative z-10 min-h-screen flex items-center justify-center p-6">
           <div
             className="relative w-full max-w-md rounded-3xl p-8 text-center overflow-hidden"
             style={{
-              background: "rgba(255,255,255,0.015)",
+              background: "rgb(var(--fg-rgb) / 0.015)",
               backdropFilter: "blur(10px) saturate(1.5) brightness(1.15)",
               WebkitBackdropFilter: "blur(10px) saturate(1.5) brightness(1.15)",
-              border: "1px solid rgba(255,255,255,0.1)",
-              boxShadow: `inset 0 0.5px 0 rgba(255,255,255,0.12), inset 0 -0.5px 0 rgba(255,255,255,0.04), 0 8px 32px rgba(0,0,0,0.25), 0 0 0 0.5px rgba(255,255,255,0.06)`,
+              border: "1px solid rgb(var(--fg-rgb) / 0.1)",
+              boxShadow: `inset 0 0.5px 0 rgb(var(--fg-rgb) / 0.12), inset 0 -0.5px 0 rgb(var(--fg-rgb) / 0.04), 0 8px 32px rgba(0,0,0,0.25), 0 0 0 0.5px rgb(var(--fg-rgb) / 0.06)`,
               animation: "fadeSlideUp 0.5s ease-out",
             }}
           >
@@ -264,12 +264,12 @@ export default function LoginPage() {
               <div className="w-12 h-12 mx-auto mb-4 rounded-lg border border-[rgb(var(--accent-rgb)/0.3)] flex items-center justify-center text-[rgb(var(--accent-rgb))] font-bold">
                 A
               </div>
-              <h1 className="text-xl font-bold text-white mb-2">
+              <h1 className="text-xl font-bold text-[var(--text-primary)] mb-2">
                 Check Your Email
               </h1>
-              <p className="text-white/50 text-sm mb-6">
+              <p className="text-[rgb(var(--fg-rgb)/0.50)] text-sm mb-6">
                 We sent a confirmation link to{" "}
-                <span className="text-white font-medium">{email}</span>
+                <span className="text-[var(--text-primary)] font-medium">{email}</span>
               </p>
               <button
                 onClick={() => {
@@ -289,7 +289,7 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="relative min-h-screen text-white overflow-hidden">
+    <main className="relative min-h-screen text-[var(--text-primary)] overflow-hidden">
       <AsciiCanvas src="/ascii-bg.jpeg" />
 
       <div className="fixed inset-0 bg-gradient-to-t from-black/40 via-black/10 to-black/20 z-[1]" />
@@ -307,7 +307,7 @@ export default function LoginPage() {
       <style>{`
         @keyframes fadeSlideUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes breathe { 0%, 100% { opacity: 0.08; } 50% { opacity: 0.15; } }
-        @keyframes pulse-glow { 0%, 100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); } 50% { box-shadow: 0 0 25px 0 rgba(255,255,255,0.12); } }
+        @keyframes pulse-glow { 0%, 100% { box-shadow: 0 0 0 0 rgb(var(--fg-rgb) / 0); } 50% { box-shadow: 0 0 25px 0 rgb(var(--fg-rgb) / 0.12); } }
         @keyframes flash { 0% { opacity: 0.25; } 100% { opacity: 0; } }
         @keyframes card-exit { 0% { opacity: 1; transform: scale(1) translateY(0); } 100% { opacity: 0; transform: scale(0.96) translateY(-20px); } }
         input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display: none; }
@@ -326,12 +326,12 @@ export default function LoginPage() {
               className="absolute inset-[-6px] rounded-lg bg-[rgb(var(--accent-rgb))]"
               style={{ animation: "breathe 4s ease-in-out infinite", filter: "blur(12px)" }}
             />
-            <div className="relative w-11 h-11 rounded-lg border border-white/[0.12] bg-black/90 flex items-center justify-center text-white font-bold text-lg">
+            <div className="relative w-11 h-11 rounded-lg border border-[rgb(var(--fg-rgb)/0.12)] bg-black/90 flex items-center justify-center text-[var(--text-primary)] font-bold text-lg">
               A
             </div>
           </div>
           <span
-            className={`${orbitron.className} text-[11px] tracking-[0.35em] text-white/40 mb-2`}
+            className={`${orbitron.className} text-[11px] tracking-[0.35em] text-[rgb(var(--fg-rgb)/0.40)] mb-2`}
           >
             ASCEND
           </span>
@@ -345,11 +345,11 @@ export default function LoginPage() {
               ref={cardRef}
               className="relative rounded-3xl p-6 md:p-8 overflow-hidden"
               style={{
-                background: "rgba(255,255,255,0.015)",
+                background: "rgb(var(--fg-rgb) / 0.015)",
                 backdropFilter: "blur(10px) saturate(1.5) brightness(1.15)",
                 WebkitBackdropFilter: "blur(10px) saturate(1.5) brightness(1.15)",
-                border: "1px solid rgba(255,255,255,0.1)",
-                boxShadow: `inset 0 0.5px 0 rgba(255,255,255,0.12), inset 0 -0.5px 0 rgba(255,255,255,0.04), 0 8px 32px rgba(0,0,0,0.25), 0 0 0 0.5px rgba(255,255,255,0.06)`,
+                border: "1px solid rgb(var(--fg-rgb) / 0.1)",
+                boxShadow: `inset 0 0.5px 0 rgb(var(--fg-rgb) / 0.12), inset 0 -0.5px 0 rgb(var(--fg-rgb) / 0.04), 0 8px 32px rgba(0,0,0,0.25), 0 0 0 0.5px rgb(var(--fg-rgb) / 0.06)`,
                 animation: authSuccess
                   ? "card-exit 0.8s ease-in forwards"
                   : mounted
@@ -365,12 +365,12 @@ export default function LoginPage() {
                 {/* Content */}
                 <div className="relative">
                   <h1
-                    className="text-2xl font-bold text-white mb-1 font-mono tracking-tight"
+                    className="text-2xl font-bold text-[var(--text-primary)] mb-1 font-mono tracking-tight"
                     aria-label={heading}
                   >
                     {scrambledHeading}
                   </h1>
-                  <p className="text-white/40 text-sm mb-6">{subtitle}</p>
+                  <p className="text-[rgb(var(--fg-rgb)/0.40)] text-sm mb-6">{subtitle}</p>
 
                   <form
                     onSubmit={isSignIn ? handleSignIn : handleSignUp}
@@ -387,7 +387,7 @@ export default function LoginPage() {
                       }}
                     >
                       <div className="pb-3">
-                        <label className="text-xs text-white/50 font-medium mb-1.5 block">
+                        <label className="text-xs text-[rgb(var(--fg-rgb)/0.50)] font-medium mb-1.5 block">
                           Username
                         </label>
                         <input
@@ -402,7 +402,7 @@ export default function LoginPage() {
                     </div>
 
                     <div>
-                      <label className="text-xs text-white/50 font-medium mb-1.5 block">
+                      <label className="text-xs text-[rgb(var(--fg-rgb)/0.50)] font-medium mb-1.5 block">
                         Email
                       </label>
                       <input
@@ -417,7 +417,7 @@ export default function LoginPage() {
                     </div>
 
                     <div>
-                      <label className="text-xs text-white/50 font-medium mb-1.5 block">
+                      <label className="text-xs text-[rgb(var(--fg-rgb)/0.50)] font-medium mb-1.5 block">
                         Password
                       </label>
                       <div className="relative">
@@ -440,7 +440,7 @@ export default function LoginPage() {
                         <button
                           type="button"
                           onClick={() => setShowPassword((v) => !v)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-[rgb(var(--fg-rgb)/0.30)] hover:text-[rgb(var(--fg-rgb)/0.60)] transition"
                         >
                           {showPassword ? (
                             <EyeOff size={16} />
@@ -462,7 +462,7 @@ export default function LoginPage() {
                                   background:
                                     i < strength
                                       ? STR_COLORS[strength - 1]
-                                      : "rgba(255,255,255,0.06)",
+                                      : "rgb(var(--fg-rgb) / 0.06)",
                                 }}
                               />
                             ))}
@@ -488,7 +488,7 @@ export default function LoginPage() {
                     <button
                       type="submit"
                       disabled={loading}
-                      className="w-full flex items-center justify-center gap-2 rounded-xl bg-white text-black font-semibold text-sm py-3.5 hover:bg-white/90 active:scale-[0.97] transition-colors disabled:opacity-50 mt-1"
+                      className="w-full flex items-center justify-center gap-2 rounded-xl bg-white text-black font-semibold text-sm py-3.5 hover:bg-[rgb(var(--fg-rgb)/0.90)] active:scale-[0.97] transition-colors disabled:opacity-50 mt-1"
                       style={{
                         animation:
                           !loading && mounted
@@ -509,11 +509,11 @@ export default function LoginPage() {
 
                   {/* Divider */}
                   <div className="flex items-center gap-3 my-5">
-                    <span className="h-px flex-1 bg-white/[0.08]" />
-                    <span className="text-white/25 text-[11px] font-mono tracking-wider">
+                    <span className="h-px flex-1 bg-[rgb(var(--fg-rgb)/0.08)]" />
+                    <span className="text-[rgb(var(--fg-rgb)/0.25)] text-[11px] font-mono tracking-wider">
                       OR
                     </span>
-                    <span className="h-px flex-1 bg-white/[0.08]" />
+                    <span className="h-px flex-1 bg-[rgb(var(--fg-rgb)/0.08)]" />
                   </div>
 
                   {/* Social buttons */}
@@ -521,7 +521,7 @@ export default function LoginPage() {
                     <button
                       type="button"
                       onClick={handleGoogle}
-                      className="flex items-center justify-center gap-2 rounded-xl bg-white/[0.05] border border-white/[0.08] py-3 text-sm text-white/70 hover:bg-white/[0.1] hover:border-white/[0.15] hover:text-white active:scale-[0.97] transition-all"
+                      className="flex items-center justify-center gap-2 rounded-xl bg-[rgb(var(--fg-rgb)/0.05)] border border-[rgb(var(--fg-rgb)/0.08)] py-3 text-sm text-[rgb(var(--fg-rgb)/0.70)] hover:bg-[rgb(var(--fg-rgb)/0.1)] hover:border-[rgb(var(--fg-rgb)/0.15)] hover:text-[var(--text-primary)] active:scale-[0.97] transition-all"
                     >
                       <GoogleIcon />
                       <span className="hidden sm:inline">Google</span>
@@ -529,7 +529,7 @@ export default function LoginPage() {
                     <button
                       type="button"
                       onClick={handleApple}
-                      className="flex items-center justify-center gap-2 rounded-xl bg-white/[0.05] border border-white/[0.08] py-3 text-sm text-white/70 hover:bg-white/[0.1] hover:border-white/[0.15] hover:text-white active:scale-[0.97] transition-all"
+                      className="flex items-center justify-center gap-2 rounded-xl bg-[rgb(var(--fg-rgb)/0.05)] border border-[rgb(var(--fg-rgb)/0.08)] py-3 text-sm text-[rgb(var(--fg-rgb)/0.70)] hover:bg-[rgb(var(--fg-rgb)/0.1)] hover:border-[rgb(var(--fg-rgb)/0.15)] hover:text-[var(--text-primary)] active:scale-[0.97] transition-all"
                     >
                       <AppleIcon />
                       <span className="hidden sm:inline">Apple</span>
@@ -537,7 +537,7 @@ export default function LoginPage() {
                   </div>
 
                   {/* Toggle */}
-                  <p className="text-center text-white/35 text-sm mt-5">
+                  <p className="text-center text-[rgb(var(--fg-rgb)/0.35)] text-sm mt-5">
                     {isSignIn
                       ? "Don't have an account?"
                       : "Already have an account?"}{" "}

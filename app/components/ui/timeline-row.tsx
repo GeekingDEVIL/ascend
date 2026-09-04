@@ -33,7 +33,7 @@ export default function TimelineRow({
       transition={{ type: "spring", stiffness: 300, damping: 25 }}
     >
       <div className="px-3 py-3">
-        <span className="font-data text-[10px] text-white/30">{timestamp}</span>
+        <span className="font-data text-[10px] text-[rgb(var(--fg-rgb)/0.30)]">{timestamp}</span>
         <div className="mt-1">{children}</div>
       </div>
     </motion.div>

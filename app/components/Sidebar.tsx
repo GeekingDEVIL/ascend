@@ -37,7 +37,7 @@ export default function Sidebar() {
         className={`flex items-center gap-3 px-3 py-2.5 rounded text-sm font-mono transition ${
           active
             ? `border-l-2 ${isCycle ? "text-pink-400" : "text-[rgb(var(--accent-rgb))]"}`
-            : "text-white/50 hover:text-white/80"
+            : "text-[rgb(var(--fg-rgb)/0.50)] hover:text-[rgb(var(--fg-rgb)/0.80)]"
         }`}
         style={
           active
@@ -59,8 +59,8 @@ export default function Sidebar() {
       <div className="flex items-center gap-3 mb-6">
         <div className="w-10 h-10 border flex items-center justify-center font-bold text-sm" style={{ borderColor: "rgb(var(--accent-rgb) / 0.4)", color: "rgb(var(--accent-rgb))" }}>A</div>
         <div>
-          <p className="font-bold text-white leading-tight">ASCEND</p>
-          <p className="text-[9px] tracking-widest text-white/40">YOUR TRAINING SYSTEM</p>
+          <p className="font-bold text-[var(--text-primary)] leading-tight">ASCEND</p>
+          <p className="text-[9px] tracking-widest text-[rgb(var(--fg-rgb)/0.40)]">YOUR TRAINING SYSTEM</p>
         </div>
       </div>
 
@@ -75,7 +75,7 @@ export default function Sidebar() {
       <nav className="flex-1 space-y-4">
         {sections.map((section) => (
           <div key={section.label}>
-            <p className="text-[8px] font-mono tracking-[0.2em] text-white/20 mb-1.5 px-3">{section.label}</p>
+            <p className="text-[8px] font-mono tracking-[0.2em] text-[rgb(var(--fg-rgb)/0.20)] mb-1.5 px-3">{section.label}</p>
             <div className="space-y-0.5">
               {section.items.map((item) => (
                 <NavLink key={item.label} item={item} />
@@ -85,9 +85,9 @@ export default function Sidebar() {
         ))}
       </nav>
 
-      <div className="pt-4 border-t text-xs font-mono text-white/40 mt-3" style={{ borderColor: "rgb(var(--accent-rgb) / 0.1)" }}>
+      <div className="pt-4 border-t text-xs font-mono text-[rgb(var(--fg-rgb)/0.40)] mt-3" style={{ borderColor: "rgb(var(--accent-rgb) / 0.1)" }}>
         <p>PROTOCOL</p>
-        <p className="text-white font-bold text-sm">PHASE 01</p>
+        <p className="text-[var(--text-primary)] font-bold text-sm">PHASE 01</p>
         <p className="text-[10px] mt-1">ASCEND / 1.1.0</p>
       </div>
     </aside>

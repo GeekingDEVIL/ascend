@@ -50,8 +50,8 @@ export default function SubNavPills({ pills, activeKey, onSelect, accentRgb }: S
             whileTap={{ scale: 0.95 }}
             className={`relative flex items-center gap-1.5 px-3.5 py-2 rounded-full text-[10px] font-mono tracking-wide whitespace-nowrap shrink-0 transition-colors ${
               active
-                ? "text-white"
-                : "text-white/35 hover:text-white/60"
+                ? "text-[var(--text-primary)]"
+                : "text-[rgb(var(--fg-rgb)/0.35)] hover:text-[rgb(var(--fg-rgb)/0.60)]"
             }`}
           >
             {active && (
