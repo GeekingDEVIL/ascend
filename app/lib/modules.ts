@@ -69,7 +69,7 @@ export const MODULE_REGISTRY: Record<ModuleKey, ModuleDef> = {
     colorRgb: "245 158 11",
     domain: "track",
     core: false,
-    phase: 0,
+    phase: 4,
   },
   cycle: {
     key: "cycle",
@@ -105,12 +105,12 @@ export const MODULE_REGISTRY: Record<ModuleKey, ModuleDef> = {
   social: {
     key: "social",
     name: "Social",
-    description: "Friends, activity feed, challenges, workout sharing",
+    description: "Leaderboard, rankings, friend activity feed",
     icon: Users,
     colorRgb: "59 130 246",
     domain: "social",
     core: false,
-    phase: 2,
+    phase: 0,
   },
   running: {
     key: "running",
@@ -145,22 +145,22 @@ export const MODULE_REGISTRY: Record<ModuleKey, ModuleDef> = {
   wellness: {
     key: "wellness",
     name: "Wellness",
-    description: "Sleep, mood, habits, hydration, readiness score",
+    description: "Water tracking, hydration goals, readiness score",
     icon: GlassWater,
     colorRgb: "16 185 129",
     domain: "track",
     core: false,
-    phase: 1,
+    phase: 0,
   },
   habits: {
     key: "habits",
     name: "Habits",
-    description: "Daily habit streaks, hydration tracking, custom goals",
+    description: "Daily habit streaks, constellation sky, XP rewards, auto-complete",
     icon: Flame,
     colorRgb: "244 63 94",
     domain: "lifestyle",
     core: false,
-    phase: 1,
+    phase: 0,
   },
   guilds: {
     key: "guilds",
@@ -200,7 +200,7 @@ export const MODULE_REGISTRY: Record<ModuleKey, ModuleDef> = {
     colorRgb: "249 115 22",
     domain: "gamification",
     core: false,
-    phase: 2,
+    phase: 0,
   },
   cosmetics: {
     key: "cosmetics",
@@ -289,5 +289,5 @@ export const CORE_MODULES = ALL_MODULES.filter((m) => m.core);
 export const OPTIONAL_MODULES = ALL_MODULES.filter((m) => !m.core);
 
 export const DEFAULT_ENABLED: ModuleKey[] = [
-  "gym", "progress", "xp", "nutrition", "recovery",
+  "gym", "progress", "xp", "recovery", "wellness", "habits", "social",
 ];

@@ -26,8 +26,7 @@ export function useModules() {
       const stored = localStorage.getItem(MODULES_KEY);
       if (stored) {
         try {
-          const parsed = JSON.parse(stored) as ModuleKey[];
-          return Array.from(new Set([...defaults, ...parsed]));
+          return JSON.parse(stored) as ModuleKey[];
         } catch { /* fall through */ }
       }
     }
@@ -44,9 +43,8 @@ export function useModules() {
       .then(({ data }) => {
         if (data && data.length > 0) {
           const dbKeys = data.map((r) => r.module_key as ModuleKey);
-          const merged = Array.from(new Set([...DEFAULT_ENABLED.filter(k => !CORE_MODULES.some(m => m.key === k)), ...dbKeys]));
-          setOptionalKeys(merged);
-          localStorage.setItem(MODULES_KEY, JSON.stringify(merged));
+          setOptionalKeys(dbKeys);
+          localStorage.setItem(MODULES_KEY, JSON.stringify(dbKeys));
         }
         setLoaded(true);
       });
