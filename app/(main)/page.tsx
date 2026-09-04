@@ -35,6 +35,32 @@ function timeAgo(dateStr: string): string {
   return `${days}d ago`;
 }
 
+function AnimatedPercent({ value, className }: { value: number; className?: string }) {
+  const [display, setDisplay] = useState(0);
+  const animatingTo = useRef(-1);
+  useEffect(() => {
+    if (value === animatingTo.current) return;
+    animatingTo.current = value;
+    setDisplay(0);
+    const timeout = setTimeout(() => {
+      if (animatingTo.current !== value) return;
+      const duration = 1500;
+      const start = performance.now();
+      let raf: number;
+      function tick(now: number) {
+        const t = Math.min((now - start) / duration, 1);
+        const eased = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+        setDisplay(Math.round(value * eased));
+        if (t < 1) raf = requestAnimationFrame(tick);
+      }
+      raf = requestAnimationFrame(tick);
+      return () => cancelAnimationFrame(raf);
+    }, 500);
+    return () => clearTimeout(timeout);
+  }, [value]);
+  return <span className={className}>{display}%</span>;
+}
+
 export default function Dashboard() {
   const router = useRouter();
   const { profile, user } = useAuth();
@@ -90,7 +116,7 @@ export default function Dashboard() {
   const [recentPR, setRecentPR] = useState<{ exercise: string; detail: string } | null>(null);
   const [cyclePhase, setCyclePhase] = useState<{ phase: string; day: number; tip: string } | null>(null);
   const [hydrationMl, setHydrationMl] = useState<number | null>(null);
-  const [habitStats, setHabitStats] = useState<{ completed: number; total: number } | null>(null);
+  const [habitStats, setHabitStats] = useState<{ completed: number; total: number; habits: { id: string; name: string; icon: string; done: boolean }[] } | null>(null);
   const [pendingHabits, setPendingHabits] = useState<{ id: string; name: string; icon: string }[]>([]);
 
   useEffect(() => {
@@ -661,7 +687,8 @@ export default function Dashboard() {
         if (!cancelled && habitsData && habitsData.length > 0) {
           const completedIds = new Set((compData ?? []).map((c: any) => c.habit_id));
           const pending = habitsData.filter((h: any) => !completedIds.has(h.id) && !h.auto_source);
-          setHabitStats({ completed: habitsData.filter((h: any) => completedIds.has(h.id)).length, total: habitsData.length });
+          const allHabits = habitsData.map((h: any) => ({ id: h.id, name: h.name, icon: h.icon, done: completedIds.has(h.id) }));
+          setHabitStats({ completed: allHabits.filter((h) => h.done).length, total: habitsData.length, habits: allHabits });
           setPendingHabits(pending.slice(0, 3));
         }
       }
@@ -670,13 +697,24 @@ export default function Dashboard() {
     return () => { cancelled = true; };
   }, [user, userSex, statsLoaded, stats.streak, stats.totalWorkouts, stats.prCount, stats.recoveryPct, stats.weeklyVolume, weightUnit]);
 
+  function triggerHaptic(style: "light" | "medium" = "light") {
+    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+      navigator.vibrate(style === "medium" ? [20] : [10]);
+    }
+  }
+
   async function quickCompleteHabit(habitId: string) {
     if (!user) return;
+    triggerHaptic("medium");
     const now = new Date();
     const todayDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
     await supabase.from("habit_completions").insert({ habit_id: habitId, user_id: user.id, completed_date: todayDate });
     setPendingHabits((prev) => prev.filter((h) => h.id !== habitId));
-    setHabitStats((prev) => prev ? { ...prev, completed: prev.completed + 1 } : prev);
+    setHabitStats((prev) => prev ? {
+      ...prev,
+      completed: prev.completed + 1,
+      habits: prev.habits.map((h) => h.id === habitId ? { ...h, done: true } : h),
+    } : prev);
   }
 
   async function dismissNotification(id: string) {
@@ -941,53 +979,152 @@ export default function Dashboard() {
           </motion.div>
         )}
 
-        {/* ─── Habits Card ─── */}
-        {habitStats && isEnabled("habits") && (
-          <motion.div
-            variants={staggerItem}
-            className="rounded-xl border border-rose-400/10 bg-rose-400/[0.03] px-4 py-3 space-y-2"
-            style={{ order: cardOrder.habitsOrder }}
-          >
-            <div className="flex items-center gap-3 cursor-pointer" onClick={() => router.push("/habits")}>
-              <Flame size={16} className="text-rose-400/70 shrink-0" />
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between">
-                  <p className="text-[11px] font-mono text-white/50">
-                    {habitStats.completed}/{habitStats.total} habits
-                  </p>
-                  <span className="text-[9px] font-mono text-white/25">
-                    {habitStats.completed === habitStats.total ? "Perfect!" : `${Math.round((habitStats.completed / habitStats.total) * 100)}%`}
-                  </span>
+        {/* ─── Habits Card with Segment Ring ─── */}
+        {habitStats && isEnabled("habits") && (() => {
+          const HABIT_RING_COLORS = [
+            { from: "#ef4444", to: "#f87171" },
+            { from: "#10b981", to: "#34d399" },
+            { from: "#3b82f6", to: "#60a5fa" },
+            { from: "#f59e0b", to: "#fbbf24" },
+            { from: "#a855f7", to: "#c084fc" },
+            { from: "#ec4899", to: "#f472b6" },
+            { from: "#06b6d4", to: "#22d3ee" },
+            { from: "#f97316", to: "#fb923c" },
+          ];
+          const pct = habitStats.total > 0 ? Math.round((habitStats.completed / habitStats.total) * 100) : 0;
+          const svgSize = 100;
+          const ctr = svgSize / 2;
+          const sw = 8;
+          const r = (svgSize / 2) - (sw / 2) - 1;
+          const n = habitStats.habits.length;
+          const gapDeg = n <= 3 ? 8 : n <= 6 ? 6 : 4;
+          const segDeg = (360 - gapDeg * n) / n;
+          function hubArc(sDeg: number, eDeg: number) {
+            const s2 = (sDeg - 90) * Math.PI / 180;
+            const e2 = (eDeg - 90) * Math.PI / 180;
+            const x1 = ctr + r * Math.cos(s2), y1 = ctr + r * Math.sin(s2);
+            const x2 = ctr + r * Math.cos(e2), y2 = ctr + r * Math.sin(e2);
+            return `M ${x1} ${y1} A ${r} ${r} 0 ${(eDeg - sDeg) > 180 ? 1 : 0} 1 ${x2} ${y2}`;
+          }
+
+          return (
+            <motion.div
+              variants={staggerItem}
+              className="rounded-2xl border border-rose-400/10 overflow-hidden cursor-pointer"
+              style={{ order: cardOrder.habitsOrder, background: "linear-gradient(135deg, rgb(244 63 94 / 0.04), rgb(168 85 247 / 0.02))" }}
+              onClick={() => router.push("/habits")}
+            >
+              <div className="p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Flame size={14} className="text-rose-400/60" />
+                    <p className="text-[9px] font-mono tracking-widest text-rose-300/40">DAILY HABITS</p>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] font-mono text-white/30">
+                      {habitStats.completed === habitStats.total && habitStats.total > 0 ? "Perfect Day!" : `${pct}%`}
+                    </span>
+                    <ChevronRight size={12} className="text-white/15" />
+                  </div>
                 </div>
-                <div className="h-1 rounded-full bg-white/[0.04] overflow-hidden mt-1">
-                  <div
-                    className="h-full rounded-full transition-all"
-                    style={{
-                      width: `${(habitStats.completed / habitStats.total) * 100}%`,
-                      background: habitStats.completed === habitStats.total
-                        ? "rgb(16 185 129 / 0.6)"
-                        : "rgb(244 63 94 / 0.4)",
-                    }}
-                  />
+
+                <div className="flex items-center gap-4">
+                  {/* Mini segment ring */}
+                  <div className="relative shrink-0" style={{ width: svgSize, height: svgSize }}>
+                    <svg width={svgSize} height={svgSize} viewBox={`0 0 ${svgSize} ${svgSize}`}>
+                      <defs>
+                        {habitStats.habits.map((_, i) => {
+                          const c = HABIT_RING_COLORS[i % HABIT_RING_COLORS.length];
+                          return (
+                            <linearGradient key={`hsg-${i}`} id={`hsg-${i}`} x1="0%" y1="0%" x2="100%" y2="100%">
+                              <stop offset="0%" stopColor={c.from} />
+                              <stop offset="100%" stopColor={c.to} />
+                            </linearGradient>
+                          );
+                        })}
+                        <filter id="hub-glow">
+                          <feGaussianBlur stdDeviation="3" result="blur" />
+                          <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+                        </filter>
+                      </defs>
+                      {habitStats.habits.map((h, i) => {
+                        const startDeg = i * (segDeg + gapDeg);
+                        const endDeg = startDeg + segDeg;
+                        const d = hubArc(startDeg, endDeg);
+                        const c = HABIT_RING_COLORS[i % HABIT_RING_COLORS.length];
+                        return (
+                          <g key={h.id}>
+                            <path d={d} fill="none" stroke={`${c.from}20`} strokeWidth={sw} strokeLinecap="round" />
+                            {h.done && (
+                              <>
+                                <motion.path d={d} fill="none" stroke={`${c.from}40`} strokeWidth={sw + 4} strokeLinecap="round"
+                                  filter="url(#hub-glow)" pathLength={1}
+                                  initial={{ pathLength: 0, opacity: 0 }}
+                                  animate={{ pathLength: 1, opacity: 0.6 }}
+                                  transition={{ duration: 0.6, delay: 0.15 + i * 0.08, ease: [0.34, 1.56, 0.64, 1] }} />
+                                <motion.path d={d} fill="none" stroke={`url(#hsg-${i})`} strokeWidth={sw} strokeLinecap="round"
+                                  pathLength={1}
+                                  initial={{ pathLength: 0 }}
+                                  animate={{ pathLength: 1 }}
+                                  transition={{ duration: 0.5, delay: 0.1 + i * 0.08, ease: [0.34, 1.56, 0.64, 1] }} />
+                              </>
+                            )}
+                          </g>
+                        );
+                      })}
+                    </svg>
+                    {/* Center percentage */}
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.5 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 0.4, delay: 0.3, ease: [0.34, 1.56, 0.64, 1] }}>
+                        <AnimatedPercent value={pct} className="text-lg font-bold font-mono text-white/70" />
+                      </motion.div>
+                    </div>
+                  </div>
+
+                  {/* Habit list with colored dots */}
+                  <div className="flex-1 min-w-0 space-y-1">
+                    {habitStats.habits.slice(0, 4).map((h, i) => {
+                      const c = HABIT_RING_COLORS[i % HABIT_RING_COLORS.length];
+                      return (
+                        <div key={h.id} className="flex items-center gap-2">
+                          <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{
+                            background: h.done ? c.from : `${c.from}33`,
+                            boxShadow: h.done ? `0 0 4px ${c.from}` : "none",
+                          }} />
+                          <span className={`text-[10px] font-mono truncate ${h.done ? "text-white/50 line-through" : "text-white/35"}`}>
+                            {h.icon} {h.name}
+                          </span>
+                          {h.done && <span className="text-[8px] text-emerald-400/50 ml-auto shrink-0">✓</span>}
+                        </div>
+                      );
+                    })}
+                    {habitStats.habits.length > 4 && (
+                      <p className="text-[9px] font-mono text-white/15">+{habitStats.habits.length - 4} more</p>
+                    )}
+                  </div>
                 </div>
               </div>
-              <ChevronRight size={12} className="text-white/15 shrink-0" />
-            </div>
-            {pendingHabits.length > 0 && (
-              <div className="flex gap-1.5 flex-wrap">
-                {pendingHabits.map((h) => (
-                  <button
-                    key={h.id}
-                    onClick={() => quickCompleteHabit(h.id)}
-                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.06] text-[10px] font-mono text-white/40 hover:text-white/60 transition active:scale-95"
-                  >
-                    <span>{h.icon}</span> {h.name}
-                  </button>
-                ))}
-              </div>
-            )}
-          </motion.div>
-        )}
+
+              {/* Quick complete strip */}
+              {pendingHabits.length > 0 && (
+                <div className="border-t border-white/[0.04] px-4 py-2 flex gap-1.5 flex-wrap" onClick={(e) => e.stopPropagation()}>
+                  {pendingHabits.map((h) => (
+                    <button
+                      key={h.id}
+                      onClick={() => quickCompleteHabit(h.id)}
+                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.06] text-[10px] font-mono text-white/40 hover:text-white/60 transition active:scale-95"
+                    >
+                      <span>{h.icon}</span> {h.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </motion.div>
+          );
+        })()}
 
         {/* ─── Today's Workout Card ─── */}
         <motion.div variants={staggerItem} className="rounded-2xl border border-[rgb(var(--accent-rgb)/0.15)] bg-white/[0.03] overflow-hidden" style={{ order: cardOrder.workoutOrder, boxShadow: "0 0 20px -5px rgb(var(--accent-rgb) / 0.1), inset 0 1px 0 rgb(var(--accent-rgb) / 0.05)" }}>
