@@ -57,8 +57,8 @@ export default function OnboardingTooltip({ id, message, position = "bottom", de
           }`}
         >
           <div className="relative bg-[rgb(var(--accent-rgb)/0.15)] border border-[rgb(var(--accent-rgb)/0.25)] backdrop-blur-md rounded-lg px-3 py-2 flex items-center gap-2 shadow-lg whitespace-nowrap">
-            <p className="text-[10px] font-mono text-[rgb(var(--fg-rgb)/0.70)]">{message}</p>
-            <button onClick={handleDismiss} className="text-[rgb(var(--fg-rgb)/0.30)] hover:text-[rgb(var(--fg-rgb)/0.60)] transition shrink-0">
+            <p className="text-[10px] font-mono text-[var(--fg-70)]">{message}</p>
+            <button onClick={handleDismiss} className="text-[var(--fg-30)] hover:text-[var(--fg-60)] transition shrink-0">
               <X size={12} />
             </button>
             <div

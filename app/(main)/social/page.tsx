@@ -129,7 +129,7 @@ export default function SocialHub() {
         initial="hidden"
         animate="visible"
       >
-        <motion.h1 variants={staggerItem} className="text-xl font-bold font-display text-[rgb(var(--fg-rgb)/0.90)]">
+        <motion.h1 variants={staggerItem} className="text-xl font-bold font-display text-[var(--fg-90)]">
           Social
         </motion.h1>
 
@@ -149,33 +149,33 @@ export default function SocialHub() {
               return (
                 <div className="relative w-16 h-16 shrink-0">
                   <svg viewBox="0 0 64 64" className="w-full h-full -rotate-90">
-                    <circle cx="32" cy="32" r={r} fill="none" stroke="rgb(var(--fg-rgb) / 0.04)" strokeWidth="4" />
+                    <circle cx="32" cy="32" r={r} fill="none" stroke="var(--fg-04)" strokeWidth="4" />
                     <circle cx="32" cy="32" r={r} fill="none" stroke="rgb(var(--accent-rgb))" strokeWidth="4" strokeLinecap="round"
                       strokeDasharray={circ} strokeDashoffset={offset} className="transition-all duration-700" />
                   </svg>
                   <span className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-base font-bold font-mono text-[rgb(var(--fg-rgb)/0.90)]">{loaded ? levelInfo.level : "—"}</span>
-                    <span className="text-[6px] font-mono text-[rgb(var(--fg-rgb)/0.25)]">LVL</span>
+                    <span className="text-base font-bold font-mono text-[var(--fg-90)]">{loaded ? levelInfo.level : "—"}</span>
+                    <span className="text-[6px] font-mono text-[var(--fg-25)]">LVL</span>
                   </span>
                 </div>
               );
             })()}
             <div className="flex-1 min-w-0">
               <div className="flex items-baseline gap-2">
-                <p className="text-xl font-bold font-mono text-[rgb(var(--fg-rgb)/0.90)]">
+                <p className="text-xl font-bold font-mono text-[var(--fg-90)]">
                   {loaded ? totalXp.toLocaleString() : "—"}
                 </p>
-                <span className="text-xs font-mono text-[rgb(var(--fg-rgb)/0.25)]">XP</span>
+                <span className="text-xs font-mono text-[var(--fg-25)]">XP</span>
               </div>
-              <p className="text-[10px] font-mono text-[rgb(var(--fg-rgb)/0.30)] mt-0.5">
+              <p className="text-[10px] font-mono text-[var(--fg-30)] mt-0.5">
                 <span className={rank.color}>{rank.name}</span>
-                <span className="text-[rgb(var(--fg-rgb)/0.15)]"> · {levelInfo.isMaxLevel ? "MAX" : `${levelInfo.xpIntoCurrentLevel}/${levelInfo.xpNeededForNext}`}</span>
+                <span className="text-[var(--fg-15)]"> · {levelInfo.isMaxLevel ? "MAX" : `${levelInfo.xpIntoCurrentLevel}/${levelInfo.xpNeededForNext}`}</span>
               </p>
             </div>
             {userRank !== null && (
               <div className="text-right shrink-0">
                 <p className="text-lg font-bold font-mono text-[rgb(var(--accent-rgb))]">#{userRank}</p>
-                <p className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.20)]">of {totalUsers}</p>
+                <p className="text-[9px] font-mono text-[var(--fg-20)]">of {totalUsers}</p>
               </div>
             )}
           </div>
@@ -184,16 +184,16 @@ export default function SocialHub() {
         {/* Stats row */}
         <motion.div variants={staggerItem} className="grid grid-cols-3 gap-2">
           <div className="glass-card p-3 text-center">
-            <p className="text-xl font-bold font-mono text-[rgb(var(--fg-rgb)/0.90)]">{loaded ? totalWorkouts : "—"}</p>
-            <p className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.25)] mt-0.5">Workouts</p>
+            <p className="text-xl font-bold font-mono text-[var(--fg-90)]">{loaded ? totalWorkouts : "—"}</p>
+            <p className="text-[9px] font-mono text-[var(--fg-25)] mt-0.5">Workouts</p>
           </div>
           <div className="glass-card p-3 text-center">
-            <p className="text-xl font-bold font-mono text-[rgb(var(--fg-rgb)/0.90)]">{loaded ? streak : "—"}</p>
-            <p className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.25)] mt-0.5">Streak</p>
+            <p className="text-xl font-bold font-mono text-[var(--fg-90)]">{loaded ? streak : "—"}</p>
+            <p className="text-[9px] font-mono text-[var(--fg-25)] mt-0.5">Streak</p>
           </div>
           <div className="glass-card p-3 text-center">
-            <p className="text-xl font-bold font-mono text-[rgb(var(--fg-rgb)/0.90)]">{loaded ? levelInfo.level : "—"}</p>
-            <p className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.25)] mt-0.5">Level</p>
+            <p className="text-xl font-bold font-mono text-[var(--fg-90)]">{loaded ? levelInfo.level : "—"}</p>
+            <p className="text-[9px] font-mono text-[var(--fg-25)] mt-0.5">Level</p>
           </div>
         </motion.div>
 
@@ -229,16 +229,16 @@ export default function SocialHub() {
                       {RankIcon ? (
                         <RankIcon size={14} className={rankColor} />
                       ) : (
-                        <span className="text-[10px] font-mono text-[rgb(var(--fg-rgb)/0.25)]">{i + 1}</span>
+                        <span className="text-[10px] font-mono text-[var(--fg-25)]">{i + 1}</span>
                       )}
                     </span>
                     <div className="flex-1 min-w-0">
-                      <p className={`text-sm truncate ${isMe ? "text-[var(--text-primary)] font-medium" : "text-[rgb(var(--fg-rgb)/0.60)]"}`}>
+                      <p className={`text-sm truncate ${isMe ? "text-[var(--text-primary)] font-medium" : "text-[var(--fg-60)]"}`}>
                         {isMe ? "You" : entry.display_name}
                       </p>
                     </div>
                     <span className={`text-[9px] font-mono ${entryRank.color} shrink-0`}>{entryRank.name}</span>
-                    <span className="text-xs font-mono text-[rgb(var(--fg-rgb)/0.30)] w-14 text-right shrink-0">
+                    <span className="text-xs font-mono text-[var(--fg-30)] w-14 text-right shrink-0">
                       {entry.total_xp.toLocaleString()}
                     </span>
                   </div>
@@ -246,7 +246,7 @@ export default function SocialHub() {
               })}
             </div>
           ) : (
-            <p className="text-xs text-[rgb(var(--fg-rgb)/0.20)] text-center py-4">
+            <p className="text-xs text-[var(--fg-20)] text-center py-4">
               {loaded ? "No rankings yet" : "Loading..."}
             </p>
           )}
@@ -268,12 +268,12 @@ export default function SocialHub() {
               {achievements.slice(0, 4).map((a) => (
                 <div key={a.id} className="flex items-center gap-2.5 py-1.5 px-1">
                   <Award size={13} className="text-amber-400/50 shrink-0" />
-                  <span className="text-xs text-[rgb(var(--fg-rgb)/0.60)] flex-1 truncate">{a.message}</span>
+                  <span className="text-xs text-[var(--fg-60)] flex-1 truncate">{a.message}</span>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-xs text-[rgb(var(--fg-rgb)/0.20)] text-center py-4">
+            <p className="text-xs text-[var(--fg-20)] text-center py-4">
               {loaded ? "Complete workouts to unlock achievements" : "Loading..."}
             </p>
           )}

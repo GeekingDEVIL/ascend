@@ -110,7 +110,7 @@ type OnboardingProfilePatch = {
 
 function Toggle({ active }: { active: boolean }) {
     return (
-        <span className={`relative shrink-0 w-9 h-5 rounded-full transition ${active ? "bg-[rgb(var(--accent-rgb))]" : "bg-[rgb(var(--fg-rgb)/0.10)]"}`}>
+        <span className={`relative shrink-0 w-9 h-5 rounded-full transition ${active ? "bg-[rgb(var(--accent-rgb))]" : "bg-[var(--fg-10)]"}`}>
             <span className="absolute top-0.5 w-4 h-4 rounded-full bg-[var(--bg-primary)] transition-all" style={{ left: active ? "18px" : "2px" }} />
         </span>
     );
@@ -295,7 +295,7 @@ export default function OnboardingPage() {
             <div className="flex items-start justify-between mb-1">
                 <p className="text-[10px] font-mono tracking-[0.2em] text-[rgb(var(--accent-light-rgb)/0.6)]">STEP {n} OF {TOTAL_STEPS}</p>
                 {skippable && (
-                    <button onClick={handleNext} disabled={saving} className="text-[10px] font-mono text-[rgb(var(--fg-rgb)/0.30)] hover:text-[rgb(var(--fg-rgb)/0.60)] transition">
+                    <button onClick={handleNext} disabled={saving} className="text-[10px] font-mono text-[var(--fg-30)] hover:text-[var(--fg-60)] transition">
                         SKIP
                     </button>
                 )}
@@ -310,7 +310,7 @@ export default function OnboardingPage() {
             <div className="relative w-full max-w-md mx-auto px-6 pt-8 pb-8 flex-1 flex flex-col">
                 <div className="flex items-center gap-1 mb-6 shrink-0">
                     {Array.from({ length: TOTAL_STEPS }, (_, i) => i + 1).map((s) => (
-                        <span key={s} className={`h-1 flex-1 rounded-full transition ${s <= step ? "bg-[rgb(var(--accent-rgb))]" : "bg-[rgb(var(--fg-rgb)/0.10)]"}`} />
+                        <span key={s} className={`h-1 flex-1 rounded-full transition ${s <= step ? "bg-[rgb(var(--accent-rgb))]" : "bg-[var(--fg-10)]"}`} />
                     ))}
                 </div>
 
@@ -321,8 +321,8 @@ export default function OnboardingPage() {
                                 <Sparkles size={22} className="text-[rgb(var(--accent-light-rgb))]" />
                             </div>
                             <p className="text-[10px] font-mono tracking-[0.2em] text-[rgb(var(--accent-light-rgb)/0.6)] mb-1">STEP 1 OF {TOTAL_STEPS}</p>
-                            <h2 className="text-2xl font-bold text-[rgb(var(--fg-rgb)/0.95)] mb-1">Welcome to ASCEND</h2>
-                            <p className="text-sm text-[rgb(var(--fg-rgb)/0.40)] mb-6">What's your main training goal?</p>
+                            <h2 className="text-2xl font-bold text-[var(--fg-95)] mb-1">Welcome to ASCEND</h2>
+                            <p className="text-sm text-[var(--fg-40)] mb-6">What's your main training goal?</p>
                             <CustomSelect options={GOAL_OPTIONS} value={goal} onChange={setGoal} placeholder="Select a goal..." searchable={false} />
                         </div>
                     )}
@@ -330,12 +330,12 @@ export default function OnboardingPage() {
                     {step === 2 && (
                         <div>
                             <p className="text-[10px] font-mono tracking-[0.2em] text-[rgb(var(--accent-light-rgb)/0.6)] mb-1">STEP 2 OF {TOTAL_STEPS}</p>
-                            <h2 className="text-2xl font-bold text-[rgb(var(--fg-rgb)/0.95)] mb-1">Experience level</h2>
-                            <p className="text-sm text-[rgb(var(--fg-rgb)/0.40)] mb-6">This shapes your training volume recommendations.</p>
+                            <h2 className="text-2xl font-bold text-[var(--fg-95)] mb-1">Experience level</h2>
+                            <p className="text-sm text-[var(--fg-40)] mb-6">This shapes your training volume recommendations.</p>
                             <div className="flex gap-2">
                                 {EXPERIENCE_LEVELS.map((lvl) => (
                                     <button key={lvl} onClick={() => setExperience(lvl)}
-                                        className={`flex-1 text-[10px] font-mono py-3 rounded-lg border transition ${experience === lvl ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-[rgb(var(--fg-rgb)/0.10)] text-[rgb(var(--fg-rgb)/0.40)] hover:text-[rgb(var(--fg-rgb)/0.70)]"}`}>
+                                        className={`flex-1 text-[10px] font-mono py-3 rounded-lg border transition ${experience === lvl ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-[var(--fg-10)] text-[var(--fg-40)] hover:text-[var(--fg-70)]"}`}>
                                         {lvl.toUpperCase()}
                                     </button>
                                 ))}
@@ -346,32 +346,32 @@ export default function OnboardingPage() {
                     {step === 3 && (
                         <div>
                             <StepHeader n={3} skippable />
-                            <h2 className="text-2xl font-bold text-[rgb(var(--fg-rgb)/0.95)] mb-1">Choose your profile mode</h2>
-                            <p className="text-sm text-[rgb(var(--fg-rgb)/0.40)] mb-6">This tailors your entire experience — recovery, nutrition, plans, leaderboards, and recommendations. You can switch anytime in Settings.</p>
+                            <h2 className="text-2xl font-bold text-[var(--fg-95)] mb-1">Choose your profile mode</h2>
+                            <p className="text-sm text-[var(--fg-40)] mb-6">This tailors your entire experience — recovery, nutrition, plans, leaderboards, and recommendations. You can switch anytime in Settings.</p>
                             <div className="space-y-2">
                                 {[
                                     { value: "Male", symbol: "♂", color: "border-blue-500/30 bg-blue-500/5", activeColor: "border-blue-500/50 bg-blue-500/10 text-blue-400", desc: "Male physiology calibration" },
                                     { value: "Female", symbol: "♀", color: "border-pink-500/30 bg-pink-500/5", activeColor: "border-pink-500/50 bg-pink-500/10 text-pink-400", desc: "Female physiology calibration + cycle tracking" },
                                 ].map((opt) => (
                                     <button key={opt.value} onClick={() => setGender(opt.value)}
-                                        className={`w-full flex items-center gap-4 py-4 px-4 rounded-xl border transition ${gender === opt.value ? opt.activeColor : "border-[rgb(var(--fg-rgb)/0.10)] text-[rgb(var(--fg-rgb)/0.40)] hover:text-[rgb(var(--fg-rgb)/0.70)]"}`}>
+                                        className={`w-full flex items-center gap-4 py-4 px-4 rounded-xl border transition ${gender === opt.value ? opt.activeColor : "border-[var(--fg-10)] text-[var(--fg-40)] hover:text-[var(--fg-70)]"}`}>
                                         <span className="text-3xl">{opt.symbol}</span>
                                         <div className="text-left">
                                             <p className="text-sm font-mono font-bold">{opt.value}</p>
-                                            <p className="text-[10px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">{opt.desc}</p>
+                                            <p className="text-[10px] font-mono text-[var(--fg-30)]">{opt.desc}</p>
                                         </div>
                                     </button>
                                 ))}
                                 <div className="flex gap-2 mt-2">
                                     {["Other", "Prefer not to say"].map((g) => (
                                         <button key={g} onClick={() => setGender(g)}
-                                            className={`flex-1 text-[11px] font-mono py-2.5 rounded-lg border transition ${gender === g ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-[rgb(var(--fg-rgb)/0.10)] text-[rgb(var(--fg-rgb)/0.40)] hover:text-[rgb(var(--fg-rgb)/0.70)]"}`}>
+                                            className={`flex-1 text-[11px] font-mono py-2.5 rounded-lg border transition ${gender === g ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-[var(--fg-10)] text-[var(--fg-40)] hover:text-[var(--fg-70)]"}`}>
                                             {g}
                                         </button>
                                     ))}
                                 </div>
                                 {(gender === "Other" || gender === "Prefer not to say") && (
-                                    <p className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.25)] mt-1 text-center">Defaults to male calibration. You can switch to female mode anytime in Settings.</p>
+                                    <p className="text-[9px] font-mono text-[var(--fg-25)] mt-1 text-center">Defaults to male calibration. You can switch to female mode anytime in Settings.</p>
                                 )}
                             </div>
                         </div>
@@ -380,12 +380,12 @@ export default function OnboardingPage() {
                     {step === 4 && (
                         <div>
                             <StepHeader n={4} skippable />
-                            <h2 className="text-2xl font-bold text-[rgb(var(--fg-rgb)/0.95)] mb-1">What's your major challenge at the gym?</h2>
-                            <p className="text-sm text-[rgb(var(--fg-rgb)/0.40)] mb-6">Helps us know what to help you with most.</p>
+                            <h2 className="text-2xl font-bold text-[var(--fg-95)] mb-1">What's your major challenge at the gym?</h2>
+                            <p className="text-sm text-[var(--fg-40)] mb-6">Helps us know what to help you with most.</p>
                             <div className="space-y-2">
                                 {CHALLENGE_OPTIONS.map((c) => (
                                     <button key={c.value} onClick={() => setChallenge(c.value)}
-                                        className={`w-full text-left text-sm font-mono py-3 px-3.5 rounded-lg border transition ${challenge === c.value ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-[rgb(var(--fg-rgb)/0.10)] text-[rgb(var(--fg-rgb)/0.70)] hover:text-[rgb(var(--fg-rgb)/0.90)] hover:border-[rgb(var(--fg-rgb)/0.20)]"}`}>
+                                        className={`w-full text-left text-sm font-mono py-3 px-3.5 rounded-lg border transition ${challenge === c.value ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-[var(--fg-10)] text-[var(--fg-70)] hover:text-[var(--fg-90)] hover:border-[var(--fg-20)]"}`}>
                                         {c.label}
                                     </button>
                                 ))}
@@ -393,7 +393,7 @@ export default function OnboardingPage() {
                             {challenge && (
                                 <div className="mt-3 flex items-start gap-2.5 rounded-lg border border-[rgb(var(--accent-rgb)/0.2)] bg-[rgb(var(--accent-rgb)/0.06)] px-3.5 py-3">
                                     <span className="text-base leading-none">💪</span>
-                                    <p className="text-xs text-[rgb(var(--fg-rgb)/0.60)]">{CHALLENGE_MICROCOPY[challenge]}</p>
+                                    <p className="text-xs text-[var(--fg-60)]">{CHALLENGE_MICROCOPY[challenge]}</p>
                                 </div>
                             )}
                         </div>
@@ -402,40 +402,40 @@ export default function OnboardingPage() {
                     {step === 5 && (
                         <div>
                             <p className="text-[10px] font-mono tracking-[0.2em] text-[rgb(var(--accent-light-rgb)/0.6)] mb-1">STEP 5 OF {TOTAL_STEPS}</p>
-                            <h2 className="text-2xl font-bold text-[rgb(var(--fg-rgb)/0.95)] mb-1">Body stats</h2>
-                            <p className="text-sm text-[rgb(var(--fg-rgb)/0.40)] mb-6">Used for BMI, volume calibration, and progress tracking.</p>
+                            <h2 className="text-2xl font-bold text-[var(--fg-95)] mb-1">Body stats</h2>
+                            <p className="text-sm text-[var(--fg-40)] mb-6">Used for BMI, volume calibration, and progress tracking.</p>
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
-                                    <label className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.30)] mb-1 block">DATE OF BIRTH</label>
+                                    <label className="text-[9px] font-mono text-[var(--fg-30)] mb-1 block">DATE OF BIRTH</label>
                                     <input type="date" value={dob} onChange={(e) => setDob(e.target.value)}
-                                        className="w-full h-11 rounded-lg bg-[rgb(var(--fg-rgb)/0.04)] border border-[rgb(var(--fg-rgb)/0.08)] text-center text-sm font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition" />
+                                        className="w-full h-11 rounded-lg bg-[var(--fg-04)] border border-[var(--fg-08)] text-center text-sm font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition" />
                                 </div>
                                 <div>
-                                    <label className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.30)] mb-1 block">HEIGHT (CM)</label>
+                                    <label className="text-[9px] font-mono text-[var(--fg-30)] mb-1 block">HEIGHT (CM)</label>
                                     <input type="number" min="0" onWheel={(e) => (e.target as HTMLElement).blur()} value={heightCm} onChange={(e) => setHeightCm(e.target.value)} placeholder="—"
-                                        className="w-full h-11 rounded-lg bg-[rgb(var(--fg-rgb)/0.04)] border border-[rgb(var(--fg-rgb)/0.08)] text-center text-base font-bold font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition" />
+                                        className="w-full h-11 rounded-lg bg-[var(--fg-04)] border border-[var(--fg-08)] text-center text-base font-bold font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition" />
                                 </div>
                                 <div className="col-span-2">
-                                    <label className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.30)] mb-1 block">CURRENT WEIGHT (KG)</label>
+                                    <label className="text-[9px] font-mono text-[var(--fg-30)] mb-1 block">CURRENT WEIGHT (KG)</label>
                                     <input type="number" min="0" onWheel={(e) => (e.target as HTMLElement).blur()} value={weightKg} onChange={(e) => setWeightKg(e.target.value)} placeholder="—"
-                                        className="w-full h-11 rounded-lg bg-[rgb(var(--fg-rgb)/0.04)] border border-[rgb(var(--fg-rgb)/0.08)] text-center text-base font-bold font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition" />
+                                        className="w-full h-11 rounded-lg bg-[var(--fg-04)] border border-[var(--fg-08)] text-center text-base font-bold font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition" />
                                 </div>
                             </div>
-                            <p className="text-[10px] text-[rgb(var(--fg-rgb)/0.25)] mt-2">You can fine-tune units and target weight later in Profile.</p>
+                            <p className="text-[10px] text-[var(--fg-25)] mt-2">You can fine-tune units and target weight later in Profile.</p>
                         </div>
                     )}
 
                     {step === 6 && (
                         <div>
                             <p className="text-[10px] font-mono tracking-[0.2em] text-[rgb(var(--accent-light-rgb)/0.6)] mb-1">STEP 6 OF {TOTAL_STEPS}</p>
-                            <h2 className="text-2xl font-bold text-[rgb(var(--fg-rgb)/0.95)] mb-1">How active are you?</h2>
-                            <p className="text-sm text-[rgb(var(--fg-rgb)/0.40)] mb-6">Outside of your gym sessions, how active is your lifestyle?</p>
+                            <h2 className="text-2xl font-bold text-[var(--fg-95)] mb-1">How active are you?</h2>
+                            <p className="text-sm text-[var(--fg-40)] mb-6">Outside of your gym sessions, how active is your lifestyle?</p>
                             <div className="space-y-2">
                                 {ONBOARD_ACTIVITY_OPTIONS.map((opt) => (
                                     <button key={opt.value} onClick={() => setActivityLevel(opt.value)}
-                                        className={`w-full flex items-center justify-between text-left px-3.5 py-3 rounded-lg border transition ${activityLevel === opt.value ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)]" : "border-[rgb(var(--fg-rgb)/0.10)] hover:border-[rgb(var(--fg-rgb)/0.20)]"}`}>
-                                        <span className={`text-sm font-mono ${activityLevel === opt.value ? "text-[rgb(var(--accent-light-rgb))]" : "text-[rgb(var(--fg-rgb)/0.70)]"}`}>{opt.label}</span>
-                                        <span className="text-[10px] font-mono text-[rgb(var(--fg-rgb)/0.25)]">{opt.desc}</span>
+                                        className={`w-full flex items-center justify-between text-left px-3.5 py-3 rounded-lg border transition ${activityLevel === opt.value ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)]" : "border-[var(--fg-10)] hover:border-[var(--fg-20)]"}`}>
+                                        <span className={`text-sm font-mono ${activityLevel === opt.value ? "text-[rgb(var(--accent-light-rgb))]" : "text-[var(--fg-70)]"}`}>{opt.label}</span>
+                                        <span className="text-[10px] font-mono text-[var(--fg-25)]">{opt.desc}</span>
                                     </button>
                                 ))}
                             </div>
@@ -445,14 +445,14 @@ export default function OnboardingPage() {
                     {step === 7 && (
                         <div>
                             <p className="text-[10px] font-mono tracking-[0.2em] text-[rgb(var(--accent-light-rgb)/0.6)] mb-1">STEP 7 OF {TOTAL_STEPS}</p>
-                            <h2 className="text-2xl font-bold text-[rgb(var(--fg-rgb)/0.95)] mb-1">What's your primary goal?</h2>
-                            <p className="text-sm text-[rgb(var(--fg-rgb)/0.40)] mb-6">This drives your calorie and macro recommendations.</p>
+                            <h2 className="text-2xl font-bold text-[var(--fg-95)] mb-1">What's your primary goal?</h2>
+                            <p className="text-sm text-[var(--fg-40)] mb-6">This drives your calorie and macro recommendations.</p>
                             <div className="space-y-2">
                                 {ONBOARD_GOAL_TYPE_OPTIONS.map((opt) => (
                                     <button key={opt.value} onClick={() => setGoalType(opt.value)}
-                                        className={`w-full text-left px-3.5 py-3 rounded-lg border transition ${goalType === opt.value ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)]" : "border-[rgb(var(--fg-rgb)/0.10)] hover:border-[rgb(var(--fg-rgb)/0.20)]"}`}>
-                                        <span className={`block text-sm font-bold ${goalType === opt.value ? "text-[rgb(var(--fg-rgb)/0.95)]" : "text-[rgb(var(--fg-rgb)/0.80)]"}`}>{opt.label}</span>
-                                        <span className="block text-[11px] text-[rgb(var(--fg-rgb)/0.40)]">{opt.desc}</span>
+                                        className={`w-full text-left px-3.5 py-3 rounded-lg border transition ${goalType === opt.value ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)]" : "border-[var(--fg-10)] hover:border-[var(--fg-20)]"}`}>
+                                        <span className={`block text-sm font-bold ${goalType === opt.value ? "text-[var(--fg-95)]" : "text-[var(--fg-80)]"}`}>{opt.label}</span>
+                                        <span className="block text-[11px] text-[var(--fg-40)]">{opt.desc}</span>
                                     </button>
                                 ))}
                             </div>
@@ -462,31 +462,31 @@ export default function OnboardingPage() {
                     {step === 8 && (
                         <div>
                             <StepHeader n={8} skippable />
-                            <h2 className="text-2xl font-bold text-[rgb(var(--fg-rgb)/0.95)] mb-1">Nutrition preferences</h2>
-                            <p className="text-sm text-[rgb(var(--fg-rgb)/0.40)] mb-6">Fine-tune your calorie and macro targets.</p>
+                            <h2 className="text-2xl font-bold text-[var(--fg-95)] mb-1">Nutrition preferences</h2>
+                            <p className="text-sm text-[var(--fg-40)] mb-6">Fine-tune your calorie and macro targets.</p>
 
                             {(goalType === "lose_weight" || goalType === "gain_muscle") && (
                                 <div className="space-y-3 mb-5">
                                     <div>
-                                        <label className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.30)] mb-1 block">TARGET WEIGHT (KG)</label>
+                                        <label className="text-[9px] font-mono text-[var(--fg-30)] mb-1 block">TARGET WEIGHT (KG)</label>
                                         <input type="number" min="0" onWheel={(e) => (e.target as HTMLElement).blur()} value={targetWeight} onChange={(e) => setTargetWeight(e.target.value)} placeholder="Optional"
-                                            className="w-full h-11 rounded-lg bg-[rgb(var(--fg-rgb)/0.04)] border border-[rgb(var(--fg-rgb)/0.08)] text-center text-base font-bold font-mono placeholder:text-[rgb(var(--fg-rgb)/0.15)] focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition" />
+                                            className="w-full h-11 rounded-lg bg-[var(--fg-04)] border border-[var(--fg-08)] text-center text-base font-bold font-mono placeholder:text-[var(--fg-15)] focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition" />
                                     </div>
                                     <div>
-                                        <label className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.30)] mb-1 block">RATE (KG/WEEK)</label>
+                                        <label className="text-[9px] font-mono text-[var(--fg-30)] mb-1 block">RATE (KG/WEEK)</label>
                                         <input type="number" min="0.1" max="1.5" step="0.1" onWheel={(e) => (e.target as HTMLElement).blur()} value={ratePerWeek} onChange={(e) => setRatePerWeek(e.target.value)}
-                                            className="w-full h-11 rounded-lg bg-[rgb(var(--fg-rgb)/0.04)] border border-[rgb(var(--fg-rgb)/0.08)] text-center text-base font-bold font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition" />
-                                        <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.20)] mt-1">{goalType === "lose_weight" ? "0.5 kg/week is safe and sustainable" : "0.25 kg/week minimizes fat gain"}</p>
+                                            className="w-full h-11 rounded-lg bg-[var(--fg-04)] border border-[var(--fg-08)] text-center text-base font-bold font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition" />
+                                        <p className="text-[8px] font-mono text-[var(--fg-20)] mt-1">{goalType === "lose_weight" ? "0.5 kg/week is safe and sustainable" : "0.25 kg/week minimizes fat gain"}</p>
                                     </div>
                                 </div>
                             )}
 
                             <div>
-                                <label className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.30)] mb-1.5 block">DIET STYLE</label>
+                                <label className="text-[9px] font-mono text-[var(--fg-30)] mb-1.5 block">DIET STYLE</label>
                                 <div className="grid grid-cols-2 gap-2">
                                     {ONBOARD_DIET_OPTIONS.map((opt) => (
                                         <button key={opt.value} onClick={() => setDietPref(opt.value)}
-                                            className={`text-sm font-mono py-3 rounded-lg border transition ${dietPref === opt.value ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-[rgb(var(--fg-rgb)/0.10)] text-[rgb(var(--fg-rgb)/0.40)] hover:text-[rgb(var(--fg-rgb)/0.70)]"}`}>
+                                            className={`text-sm font-mono py-3 rounded-lg border transition ${dietPref === opt.value ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-[var(--fg-10)] text-[var(--fg-40)] hover:text-[var(--fg-70)]"}`}>
                                             {opt.label}
                                         </button>
                                     ))}
@@ -494,19 +494,19 @@ export default function OnboardingPage() {
                             </div>
 
                             <div className="mt-5">
-                                <label className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.30)] mb-1.5 block">PREFERRED TRAINING DAYS</label>
+                                <label className="text-[9px] font-mono text-[var(--fg-30)] mb-1.5 block">PREFERRED TRAINING DAYS</label>
                                 <div className="flex gap-1.5">
                                     {DAYS_OF_WEEK.map((day) => {
                                         const sel = preferredDays.includes(day);
                                         return (
                                             <button key={day} onClick={() => setPreferredDays((prev) => sel ? prev.filter((d) => d !== day) : [...prev, day])}
-                                                className={`flex-1 text-[10px] font-mono py-2.5 rounded-lg border transition ${sel ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-[rgb(var(--fg-rgb)/0.10)] text-[rgb(var(--fg-rgb)/0.30)] hover:text-[rgb(var(--fg-rgb)/0.60)]"}`}>
+                                                className={`flex-1 text-[10px] font-mono py-2.5 rounded-lg border transition ${sel ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-[var(--fg-10)] text-[var(--fg-30)] hover:text-[var(--fg-60)]"}`}>
                                                 {day}
                                             </button>
                                         );
                                     })}
                                 </div>
-                                <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.20)] mt-1">{preferredDays.length} days selected — editable later in Goals</p>
+                                <p className="text-[8px] font-mono text-[var(--fg-20)] mt-1">{preferredDays.length} days selected — editable later in Goals</p>
                             </div>
                         </div>
                     )}
@@ -514,21 +514,21 @@ export default function OnboardingPage() {
                     {step === 9 && (
                         <div>
                             <StepHeader n={9} skippable />
-                            <h2 className="text-2xl font-bold text-[rgb(var(--fg-rgb)/0.95)] mb-1">Choose a balanced or focused plan</h2>
-                            <p className="text-sm text-[rgb(var(--fg-rgb)/0.40)] mb-6">This shapes exercise selection in your templates.</p>
+                            <h2 className="text-2xl font-bold text-[var(--fg-95)] mb-1">Choose a balanced or focused plan</h2>
+                            <p className="text-sm text-[var(--fg-40)] mb-6">This shapes exercise selection in your templates.</p>
                             <div className="space-y-2">
                                 {FOCUS_OPTIONS.map((f) => {
                                     const Icon = f.icon;
                                     const active = focus === f.value;
                                     return (
                                         <button key={f.value} onClick={() => setFocus(f.value)}
-                                            className={`w-full flex items-center gap-3 text-left px-3.5 py-3 rounded-lg border transition ${active ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)]" : "border-[rgb(var(--fg-rgb)/0.10)] hover:border-[rgb(var(--fg-rgb)/0.20)]"}`}>
-                                            <span className={`w-9 h-9 shrink-0 rounded-lg flex items-center justify-center ${active ? "bg-[rgb(var(--accent-rgb)/0.15)] text-[rgb(var(--accent-light-rgb))]" : "bg-[rgb(var(--fg-rgb)/0.05)] text-[rgb(var(--fg-rgb)/0.40)]"}`}>
+                                            className={`w-full flex items-center gap-3 text-left px-3.5 py-3 rounded-lg border transition ${active ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)]" : "border-[var(--fg-10)] hover:border-[var(--fg-20)]"}`}>
+                                            <span className={`w-9 h-9 shrink-0 rounded-lg flex items-center justify-center ${active ? "bg-[rgb(var(--accent-rgb)/0.15)] text-[rgb(var(--accent-light-rgb))]" : "bg-[var(--fg-05)] text-[var(--fg-40)]"}`}>
                                                 <Icon size={17} />
                                             </span>
                                             <span className="min-w-0">
-                                                <span className={`block text-sm font-bold ${active ? "text-[rgb(var(--fg-rgb)/0.95)]" : "text-[rgb(var(--fg-rgb)/0.80)]"}`}>{f.label}</span>
-                                                <span className={`block text-[11px] truncate ${f.recommended ? "text-[rgb(var(--accent-light-rgb)/0.7)]" : "text-[rgb(var(--fg-rgb)/0.40)]"}`}>{f.desc}</span>
+                                                <span className={`block text-sm font-bold ${active ? "text-[var(--fg-95)]" : "text-[var(--fg-80)]"}`}>{f.label}</span>
+                                                <span className={`block text-[11px] truncate ${f.recommended ? "text-[rgb(var(--accent-light-rgb)/0.7)]" : "text-[var(--fg-40)]"}`}>{f.desc}</span>
                                             </span>
                                         </button>
                                     );
@@ -540,21 +540,21 @@ export default function OnboardingPage() {
                     {step === 10 && (
                         <div>
                             <p className="text-[10px] font-mono tracking-[0.2em] text-[rgb(var(--accent-light-rgb)/0.6)] mb-1">STEP 10 OF {TOTAL_STEPS}</p>
-                            <h2 className="text-2xl font-bold text-[rgb(var(--fg-rgb)/0.95)] mb-1">Where do you train?</h2>
-                            <p className="text-sm text-[rgb(var(--fg-rgb)/0.40)] mb-6">This tailors which equipment we'll suggest.</p>
+                            <h2 className="text-2xl font-bold text-[var(--fg-95)] mb-1">Where do you train?</h2>
+                            <p className="text-sm text-[var(--fg-40)] mb-6">This tailors which equipment we'll suggest.</p>
                             <div className="space-y-2">
                                 {GYM_TYPES.map((g) => {
                                     const Icon = g.icon;
                                     const active = gymType === g.value;
                                     return (
                                         <button key={g.value} onClick={() => setGymType(g.value)}
-                                            className={`w-full flex items-center gap-3 text-left px-3.5 py-3 rounded-lg border transition ${active ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)]" : "border-[rgb(var(--fg-rgb)/0.10)] hover:border-[rgb(var(--fg-rgb)/0.20)]"}`}>
-                                            <span className={`w-9 h-9 shrink-0 rounded-lg flex items-center justify-center ${active ? "bg-[rgb(var(--accent-rgb)/0.15)] text-[rgb(var(--accent-light-rgb))]" : "bg-[rgb(var(--fg-rgb)/0.05)] text-[rgb(var(--fg-rgb)/0.40)]"}`}>
+                                            className={`w-full flex items-center gap-3 text-left px-3.5 py-3 rounded-lg border transition ${active ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)]" : "border-[var(--fg-10)] hover:border-[var(--fg-20)]"}`}>
+                                            <span className={`w-9 h-9 shrink-0 rounded-lg flex items-center justify-center ${active ? "bg-[rgb(var(--accent-rgb)/0.15)] text-[rgb(var(--accent-light-rgb))]" : "bg-[var(--fg-05)] text-[var(--fg-40)]"}`}>
                                                 <Icon size={17} />
                                             </span>
                                             <span className="min-w-0">
-                                                <span className={`block text-sm font-bold ${active ? "text-[rgb(var(--fg-rgb)/0.95)]" : "text-[rgb(var(--fg-rgb)/0.80)]"}`}>{g.label}</span>
-                                                <span className="block text-[11px] text-[rgb(var(--fg-rgb)/0.40)] truncate">{g.desc}</span>
+                                                <span className={`block text-sm font-bold ${active ? "text-[var(--fg-95)]" : "text-[var(--fg-80)]"}`}>{g.label}</span>
+                                                <span className="block text-[11px] text-[var(--fg-40)] truncate">{g.desc}</span>
                                             </span>
                                         </button>
                                     );
@@ -566,9 +566,9 @@ export default function OnboardingPage() {
                     {step === 11 && (
                         <div>
                             <StepHeader n={11} skippable />
-                            <h2 className="text-2xl font-bold text-[rgb(var(--fg-rgb)/0.95)] mb-1">What equipment do you have access to?</h2>
+                            <h2 className="text-2xl font-bold text-[var(--fg-95)] mb-1">What equipment do you have access to?</h2>
                             <div className="flex items-center justify-between mb-4">
-                                <p className="text-sm text-[rgb(var(--fg-rgb)/0.40)]">Toggle what you have. Editable later in Settings.</p>
+                                <p className="text-sm text-[var(--fg-40)]">Toggle what you have. Editable later in Settings.</p>
                                 <button
                                     onClick={() => setEquipment((prev) => (prev.length === ALL_EQUIPMENT.length ? [] : ALL_EQUIPMENT))}
                                     className="shrink-0 text-[10px] font-mono text-[rgb(var(--accent-light-rgb)/0.7)] hover:text-[rgb(var(--accent-light-rgb))] transition ml-3">
@@ -585,11 +585,11 @@ export default function OnboardingPage() {
                                                 const active = equipment.includes(item.value);
                                                 return (
                                                     <button key={item.value} onClick={() => toggleEquipment(item.value)}
-                                                        className={`w-full flex items-center gap-3 text-left px-3 py-2.5 rounded-lg border transition ${active ? "border-[rgb(var(--accent-rgb)/0.3)] bg-[rgb(var(--accent-rgb)/0.06)]" : "border-[rgb(var(--fg-rgb)/0.10)] bg-[rgb(var(--fg-rgb)/0.02)]"}`}>
-                                                        <span className={`w-8 h-8 shrink-0 rounded-md flex items-center justify-center ${active ? "bg-[rgb(var(--accent-rgb)/0.15)] text-[rgb(var(--accent-light-rgb))]" : "bg-[rgb(var(--fg-rgb)/0.05)] text-[rgb(var(--fg-rgb)/0.40)]"}`}>
+                                                        className={`w-full flex items-center gap-3 text-left px-3 py-2.5 rounded-lg border transition ${active ? "border-[rgb(var(--accent-rgb)/0.3)] bg-[rgb(var(--accent-rgb)/0.06)]" : "border-[var(--fg-10)] bg-[var(--fg-02)]"}`}>
+                                                        <span className={`w-8 h-8 shrink-0 rounded-md flex items-center justify-center ${active ? "bg-[rgb(var(--accent-rgb)/0.15)] text-[rgb(var(--accent-light-rgb))]" : "bg-[var(--fg-05)] text-[var(--fg-40)]"}`}>
                                                             <Icon size={15} />
                                                         </span>
-                                                        <span className={`flex-1 text-sm font-mono ${active ? "text-[rgb(var(--fg-rgb)/0.90)]" : "text-[rgb(var(--fg-rgb)/0.60)]"}`}>{item.value}</span>
+                                                        <span className={`flex-1 text-sm font-mono ${active ? "text-[var(--fg-90)]" : "text-[var(--fg-60)]"}`}>{item.value}</span>
                                                         <Toggle active={active} />
                                                     </button>
                                                 );
@@ -604,11 +604,11 @@ export default function OnboardingPage() {
                     {step === 12 && (
                         <div>
                             <p className="text-[10px] font-mono tracking-[0.2em] text-[rgb(var(--accent-light-rgb)/0.6)] mb-1">STEP 12 OF {TOTAL_STEPS}</p>
-                            <h2 className="text-2xl font-bold text-[rgb(var(--fg-rgb)/0.95)] mb-1">Training frequency</h2>
-                            <p className="text-sm text-[rgb(var(--fg-rgb)/0.40)] mb-6">How many days a week do you want to train?</p>
-                            <label className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.30)] mb-1 block">DAYS PER WEEK: {frequency}</label>
+                            <h2 className="text-2xl font-bold text-[var(--fg-95)] mb-1">Training frequency</h2>
+                            <p className="text-sm text-[var(--fg-40)] mb-6">How many days a week do you want to train?</p>
+                            <label className="text-[9px] font-mono text-[var(--fg-30)] mb-1 block">DAYS PER WEEK: {frequency}</label>
                             <input type="range" min="1" max="7" value={frequency} onChange={(e) => setFrequency(Number(e.target.value))} className="w-full accent-[rgb(var(--accent-rgb))]" />
-                            <div className="flex justify-between text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.20)] mt-0.5">
+                            <div className="flex justify-between text-[8px] font-mono text-[var(--fg-20)] mt-0.5">
                                 <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span>
                             </div>
                         </div>
@@ -617,12 +617,12 @@ export default function OnboardingPage() {
                     {step === 13 && (
                         <div>
                             <p className="text-[10px] font-mono tracking-[0.2em] text-[rgb(var(--accent-light-rgb)/0.6)] mb-1">STEP 13 OF {TOTAL_STEPS}</p>
-                            <h2 className="text-2xl font-bold text-[rgb(var(--fg-rgb)/0.95)] mb-1">Session length</h2>
-                            <p className="text-sm text-[rgb(var(--fg-rgb)/0.40)] mb-6">How long do you usually train for?</p>
+                            <h2 className="text-2xl font-bold text-[var(--fg-95)] mb-1">Session length</h2>
+                            <p className="text-sm text-[var(--fg-40)] mb-6">How long do you usually train for?</p>
                             <div className="grid grid-cols-2 gap-2">
                                 {DURATION_OPTIONS.map((d) => (
                                     <button key={d} onClick={() => setDuration(d)}
-                                        className={`text-sm font-mono py-3 rounded-lg border transition ${duration === d ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-[rgb(var(--fg-rgb)/0.10)] text-[rgb(var(--fg-rgb)/0.40)] hover:text-[rgb(var(--fg-rgb)/0.70)]"}`}>
+                                        className={`text-sm font-mono py-3 rounded-lg border transition ${duration === d ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-[var(--fg-10)] text-[var(--fg-40)] hover:text-[var(--fg-70)]"}`}>
                                         {d} min
                                     </button>
                                 ))}
@@ -636,8 +636,8 @@ export default function OnboardingPage() {
                                 <BarChart3 size={26} className="text-[rgb(var(--accent-light-rgb))]" />
                             </div>
                             <p className="text-[10px] font-mono tracking-[0.2em] text-[rgb(var(--accent-light-rgb)/0.6)] mb-1">STEP 14 OF {TOTAL_STEPS}</p>
-                            <h2 className="text-2xl font-bold text-[rgb(var(--fg-rgb)/0.95)] mb-2">Your training adapts as you go</h2>
-                            <p className="text-sm text-[rgb(var(--fg-rgb)/0.40)] max-w-xs mx-auto">ASCEND tracks your volume, recovery, and PRs after every session, and adjusts recommendations automatically — no manual reprogramming needed.</p>
+                            <h2 className="text-2xl font-bold text-[var(--fg-95)] mb-2">Your training adapts as you go</h2>
+                            <p className="text-sm text-[var(--fg-40)] max-w-xs mx-auto">ASCEND tracks your volume, recovery, and PRs after every session, and adjusts recommendations automatically — no manual reprogramming needed.</p>
                         </div>
                     )}
 
@@ -647,25 +647,25 @@ export default function OnboardingPage() {
                                 <Sparkles size={22} className="text-[rgb(var(--accent-light-rgb))]" />
                             </div>
                             <p className="text-[10px] font-mono tracking-[0.2em] text-[rgb(var(--accent-light-rgb)/0.6)] mb-1">STEP {TOTAL_STEPS} OF {TOTAL_STEPS}</p>
-                            <h2 className="text-2xl font-bold text-[rgb(var(--fg-rgb)/0.95)] mb-1">Your Personalized Plan</h2>
-                            <p className="text-sm text-[rgb(var(--fg-rgb)/0.40)] mb-6">Ready to set your weekly schedule.</p>
+                            <h2 className="text-2xl font-bold text-[var(--fg-95)] mb-1">Your Personalized Plan</h2>
+                            <p className="text-sm text-[var(--fg-40)] mb-6">Ready to set your weekly schedule.</p>
 
                             <div className="grid grid-cols-2 gap-2.5 mb-2">
-                                <div className="rounded-lg border border-[rgb(var(--fg-rgb)/0.10)] bg-[rgb(var(--fg-rgb)/0.03)] p-3">
-                                    <span className="flex items-center gap-1.5 text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.30)] mb-1"><Target size={11} /> GOAL</span>
-                                    <p className="text-sm font-bold text-[rgb(var(--fg-rgb)/0.90)] truncate">{goal || "—"}</p>
+                                <div className="rounded-lg border border-[var(--fg-10)] bg-[var(--fg-03)] p-3">
+                                    <span className="flex items-center gap-1.5 text-[9px] font-mono text-[var(--fg-30)] mb-1"><Target size={11} /> GOAL</span>
+                                    <p className="text-sm font-bold text-[var(--fg-90)] truncate">{goal || "—"}</p>
                                 </div>
-                                <div className="rounded-lg border border-[rgb(var(--fg-rgb)/0.10)] bg-[rgb(var(--fg-rgb)/0.03)] p-3">
-                                    <span className="flex items-center gap-1.5 text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.30)] mb-1"><BarChart3 size={11} /> LEVEL</span>
-                                    <p className="text-sm font-bold text-[rgb(var(--fg-rgb)/0.90)] capitalize truncate">{experience}</p>
+                                <div className="rounded-lg border border-[var(--fg-10)] bg-[var(--fg-03)] p-3">
+                                    <span className="flex items-center gap-1.5 text-[9px] font-mono text-[var(--fg-30)] mb-1"><BarChart3 size={11} /> LEVEL</span>
+                                    <p className="text-sm font-bold text-[var(--fg-90)] capitalize truncate">{experience}</p>
                                 </div>
-                                <div className="rounded-lg border border-[rgb(var(--fg-rgb)/0.10)] bg-[rgb(var(--fg-rgb)/0.03)] p-3">
-                                    <span className="flex items-center gap-1.5 text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.30)] mb-1"><Boxes size={11} /> EQUIPMENT</span>
-                                    <p className="text-sm font-bold text-[rgb(var(--fg-rgb)/0.90)] truncate">{equipment.length > 0 ? `${equipment.length} selected` : "None"}</p>
+                                <div className="rounded-lg border border-[var(--fg-10)] bg-[var(--fg-03)] p-3">
+                                    <span className="flex items-center gap-1.5 text-[9px] font-mono text-[var(--fg-30)] mb-1"><Boxes size={11} /> EQUIPMENT</span>
+                                    <p className="text-sm font-bold text-[var(--fg-90)] truncate">{equipment.length > 0 ? `${equipment.length} selected` : "None"}</p>
                                 </div>
-                                <div className="rounded-lg border border-[rgb(var(--fg-rgb)/0.10)] bg-[rgb(var(--fg-rgb)/0.03)] p-3">
-                                    <span className="flex items-center gap-1.5 text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.30)] mb-1"><Dumbbell size={11} /> FREQUENCY</span>
-                                    <p className="text-sm font-bold text-[rgb(var(--fg-rgb)/0.90)] truncate">{frequency}x / week</p>
+                                <div className="rounded-lg border border-[var(--fg-10)] bg-[var(--fg-03)] p-3">
+                                    <span className="flex items-center gap-1.5 text-[9px] font-mono text-[var(--fg-30)] mb-1"><Dumbbell size={11} /> FREQUENCY</span>
+                                    <p className="text-sm font-bold text-[var(--fg-90)] truncate">{frequency}x / week</p>
                                 </div>
                             </div>
 
@@ -681,7 +681,7 @@ export default function OnboardingPage() {
                         <button
                             onClick={handleBack}
                             disabled={step === 1}
-                            className="flex items-center gap-1 text-[10px] font-mono text-[rgb(var(--fg-rgb)/0.30)] hover:text-[rgb(var(--fg-rgb)/0.60)] disabled:opacity-0 transition"
+                            className="flex items-center gap-1 text-[10px] font-mono text-[var(--fg-30)] hover:text-[var(--fg-60)] disabled:opacity-0 transition"
                         >
                             <ChevronLeft size={14} /> BACK
                         </button>

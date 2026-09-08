@@ -81,7 +81,7 @@ export function StatChip({
       >
         {value}
       </span>
-      <span className="text-[10px] text-[rgb(var(--fg-rgb)/0.40)] uppercase tracking-wider">
+      <span className="text-[10px] text-[var(--fg-40)] uppercase tracking-wider">
         {label}
       </span>
     </div>
@@ -145,7 +145,7 @@ export function ProgressRing({
           {Math.round(pct * 100)}%
         </span>
         {label && (
-          <span className="text-[8px] text-[rgb(var(--fg-rgb)/0.30)] uppercase tracking-wider mt-0.5">
+          <span className="text-[8px] text-[var(--fg-30)] uppercase tracking-wider mt-0.5">
             {label}
           </span>
         )}

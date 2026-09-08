@@ -90,7 +90,7 @@ function groupExercisesBySegment(list: LocalExercise[]) {
 
 function SetsStepper({ value, onChange }: { value: number; onChange: (v: number) => void }) {
     return (
-        <div className="flex items-center gap-1 rounded-md border border-[rgb(var(--accent-rgb)/0.2)] bg-[rgb(var(--fg-rgb)/0.03)] px-1 shrink-0">
+        <div className="flex items-center gap-1 rounded-md border border-[rgb(var(--accent-rgb)/0.2)] bg-[var(--fg-03)] px-1 shrink-0">
             <button onClick={() => onChange(Math.max(1, value - 1))} className="w-6 h-7 flex items-center justify-center text-[rgb(var(--accent-light-rgb))] hover:bg-[rgb(var(--accent-rgb)/0.1)] rounded">−</button>
             <span className="w-5 text-center text-sm font-bold">{value}</span>
             <button onClick={() => onChange(value + 1)} className="w-6 h-7 flex items-center justify-center text-[rgb(var(--accent-light-rgb))] hover:bg-[rgb(var(--accent-rgb)/0.1)] rounded">+</button>
@@ -101,9 +101,9 @@ function SetsStepper({ value, onChange }: { value: number; onChange: (v: number)
 function EmptyState({ title, subtitle }: { title: string; subtitle: string }) {
     return (
         <div className="text-center py-12">
-            <div className="w-9 h-9 mx-auto mb-3 rotate-45 border-2 border-[rgb(var(--fg-rgb)/0.15)] rounded-sm" />
-            <p className="text-sm font-bold tracking-widest text-[rgb(var(--fg-rgb)/0.30)]">{title}</p>
-            <p className="text-xs text-[rgb(var(--fg-rgb)/0.20)] mt-1">{subtitle}</p>
+            <div className="w-9 h-9 mx-auto mb-3 rotate-45 border-2 border-[var(--fg-15)] rounded-sm" />
+            <p className="text-sm font-bold tracking-widest text-[var(--fg-30)]">{title}</p>
+            <p className="text-xs text-[var(--fg-20)] mt-1">{subtitle}</p>
         </div>
     );
 }
@@ -111,20 +111,20 @@ function EmptyState({ title, subtitle }: { title: string; subtitle: string }) {
 function ReadOnlyRow({ ex, index }: { ex: LocalExercise; index: number }) {
     const wu = useUnits();
     return (
-        <div className="flex items-center gap-2 rounded-lg border border-[rgb(var(--fg-rgb)/0.06)] bg-[rgb(var(--fg-rgb)/0.02)] px-3 py-2.5">
-            <span className="text-[10px] font-mono text-[rgb(var(--fg-rgb)/0.25)] w-5 shrink-0">{String(index + 1).padStart(2, "0")}</span>
-            <p className="text-[13px] font-medium text-[rgb(var(--fg-rgb)/0.85)] flex-1 min-w-0 truncate">{ex.name}</p>
+        <div className="flex items-center gap-2 rounded-lg border border-[var(--fg-06)] bg-[var(--fg-02)] px-3 py-2.5">
+            <span className="text-[10px] font-mono text-[var(--fg-25)] w-5 shrink-0">{String(index + 1).padStart(2, "0")}</span>
+            <p className="text-[13px] font-medium text-[var(--fg-85)] flex-1 min-w-0 truncate">{ex.name}</p>
             {ex.isCardio ? (
                 <div className="flex items-center gap-3 shrink-0">
-                    {ex.target_duration_minutes != null && <div className="text-center"><p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.30)] leading-none">MIN</p><p className="text-sm font-bold text-[rgb(var(--fg-rgb)/0.80)]">{ex.target_duration_minutes}</p></div>}
-                    {ex.target_incline != null && <div className="text-center"><p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.30)] leading-none">INCLINE</p><p className="text-sm font-bold text-[rgb(var(--fg-rgb)/0.80)]">{ex.target_incline}%</p></div>}
-                    {ex.target_speed != null && <div className="text-center"><p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.30)] leading-none">KM/H</p><p className="text-sm font-bold text-[rgb(var(--fg-rgb)/0.80)]">{ex.target_speed}</p></div>}
+                    {ex.target_duration_minutes != null && <div className="text-center"><p className="text-[8px] font-mono text-[var(--fg-30)] leading-none">MIN</p><p className="text-sm font-bold text-[var(--fg-80)]">{ex.target_duration_minutes}</p></div>}
+                    {ex.target_incline != null && <div className="text-center"><p className="text-[8px] font-mono text-[var(--fg-30)] leading-none">INCLINE</p><p className="text-sm font-bold text-[var(--fg-80)]">{ex.target_incline}%</p></div>}
+                    {ex.target_speed != null && <div className="text-center"><p className="text-[8px] font-mono text-[var(--fg-30)] leading-none">KM/H</p><p className="text-sm font-bold text-[var(--fg-80)]">{ex.target_speed}</p></div>}
                 </div>
             ) : (
                 <div className="flex items-center gap-3 shrink-0">
-                    <div className="text-center"><p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.30)] leading-none">SETS</p><p className="text-sm font-bold text-[rgb(var(--fg-rgb)/0.80)]">{ex.target_sets}</p></div>
-                    <div className="text-center"><p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.30)] leading-none">REPS</p><p className="text-sm font-bold text-[rgb(var(--fg-rgb)/0.80)]">{ex.target_reps}</p></div>
-                    {ex.target_weight != null && <div className="text-center"><p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.30)] leading-none">{wu.toUpperCase()}</p><p className="text-sm font-bold text-[rgb(var(--fg-rgb)/0.80)]">{Math.round(kgToUnit(ex.target_weight, wu))}</p></div>}
+                    <div className="text-center"><p className="text-[8px] font-mono text-[var(--fg-30)] leading-none">SETS</p><p className="text-sm font-bold text-[var(--fg-80)]">{ex.target_sets}</p></div>
+                    <div className="text-center"><p className="text-[8px] font-mono text-[var(--fg-30)] leading-none">REPS</p><p className="text-sm font-bold text-[var(--fg-80)]">{ex.target_reps}</p></div>
+                    {ex.target_weight != null && <div className="text-center"><p className="text-[8px] font-mono text-[var(--fg-30)] leading-none">{wu.toUpperCase()}</p><p className="text-sm font-bold text-[var(--fg-80)]">{Math.round(kgToUnit(ex.target_weight, wu))}</p></div>}
                 </div>
             )}
         </div>
@@ -137,39 +137,39 @@ function SortableRow({ ex, index, onUpdate, onRemove }: { ex: LocalExercise; ind
     const [expanded, setExpanded] = useState(false);
     const swu = useUnits();
     return (
-        <div ref={setNodeRef} style={style} className="rounded-lg border border-[rgb(var(--fg-rgb)/0.06)] bg-[rgb(var(--fg-rgb)/0.02)]">
+        <div ref={setNodeRef} style={style} className="rounded-lg border border-[var(--fg-06)] bg-[var(--fg-02)]">
             <div className="flex items-center gap-2 px-3 py-2.5">
-                <button {...attributes} {...listeners} className="text-[rgb(var(--fg-rgb)/0.30)] hover:text-[rgb(var(--accent-light-rgb))] cursor-grab active:cursor-grabbing shrink-0 touch-none"><GripVertical size={16} /></button>
-                <span className="text-[10px] font-mono text-[rgb(var(--fg-rgb)/0.25)] w-5 shrink-0">{String(index + 1).padStart(2, "0")}</span>
-                <p className="text-[13px] font-medium text-[rgb(var(--fg-rgb)/0.85)] flex-1 min-w-0 truncate">{ex.name}</p>
+                <button {...attributes} {...listeners} className="text-[var(--fg-30)] hover:text-[rgb(var(--accent-light-rgb))] cursor-grab active:cursor-grabbing shrink-0 touch-none"><GripVertical size={16} /></button>
+                <span className="text-[10px] font-mono text-[var(--fg-25)] w-5 shrink-0">{String(index + 1).padStart(2, "0")}</span>
+                <p className="text-[13px] font-medium text-[var(--fg-85)] flex-1 min-w-0 truncate">{ex.name}</p>
                 {ex.isCardio ? (
                     <div className="flex items-center gap-2 shrink-0">
-                        <input type="number" min="0" onWheel={(e) => (e.target as HTMLElement).blur()} inputMode="numeric" value={ex.target_duration_minutes ?? ""} onChange={(e) => onUpdate(ex.id, { target_duration_minutes: e.target.value ? Number(e.target.value) : null })} placeholder="MIN" className="w-14 shrink-0 rounded-md bg-[rgb(var(--fg-rgb)/0.03)] border border-[rgb(var(--accent-rgb)/0.2)] text-center text-sm py-1.5 focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.5)]" />
-                        <input type="number" min="0" onWheel={(e) => (e.target as HTMLElement).blur()} inputMode="decimal" value={ex.target_incline ?? ""} onChange={(e) => onUpdate(ex.id, { target_incline: e.target.value ? Number(e.target.value) : null })} placeholder="%" className="w-12 shrink-0 rounded-md bg-[rgb(var(--fg-rgb)/0.03)] border border-[rgb(var(--accent-rgb)/0.2)] text-center text-sm py-1.5 focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.5)]" />
-                        <input type="number" min="0" onWheel={(e) => (e.target as HTMLElement).blur()} inputMode="decimal" value={ex.target_speed ?? ""} onChange={(e) => onUpdate(ex.id, { target_speed: e.target.value ? Number(e.target.value) : null })} placeholder="KM/H" className="w-16 shrink-0 rounded-md bg-[rgb(var(--fg-rgb)/0.03)] border border-[rgb(var(--accent-rgb)/0.2)] text-center text-sm py-1.5 focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.5)]" />
+                        <input type="number" min="0" onWheel={(e) => (e.target as HTMLElement).blur()} inputMode="numeric" value={ex.target_duration_minutes ?? ""} onChange={(e) => onUpdate(ex.id, { target_duration_minutes: e.target.value ? Number(e.target.value) : null })} placeholder="MIN" className="w-14 shrink-0 rounded-md bg-[var(--fg-03)] border border-[rgb(var(--accent-rgb)/0.2)] text-center text-sm py-1.5 focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.5)]" />
+                        <input type="number" min="0" onWheel={(e) => (e.target as HTMLElement).blur()} inputMode="decimal" value={ex.target_incline ?? ""} onChange={(e) => onUpdate(ex.id, { target_incline: e.target.value ? Number(e.target.value) : null })} placeholder="%" className="w-12 shrink-0 rounded-md bg-[var(--fg-03)] border border-[rgb(var(--accent-rgb)/0.2)] text-center text-sm py-1.5 focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.5)]" />
+                        <input type="number" min="0" onWheel={(e) => (e.target as HTMLElement).blur()} inputMode="decimal" value={ex.target_speed ?? ""} onChange={(e) => onUpdate(ex.id, { target_speed: e.target.value ? Number(e.target.value) : null })} placeholder="KM/H" className="w-16 shrink-0 rounded-md bg-[var(--fg-03)] border border-[rgb(var(--accent-rgb)/0.2)] text-center text-sm py-1.5 focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.5)]" />
                     </div>
                 ) : (
                     <div className="flex items-center gap-2 shrink-0">
                         <SetsStepper value={ex.target_sets} onChange={(v) => onUpdate(ex.id, { target_sets: v })} />
-                        <input type="text" value={ex.target_reps} onChange={(e) => onUpdate(ex.id, { target_reps: e.target.value })} className="w-14 shrink-0 rounded-md bg-[rgb(var(--fg-rgb)/0.03)] border border-[rgb(var(--accent-rgb)/0.2)] text-center text-sm py-1.5 focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.5)]" />
+                        <input type="text" value={ex.target_reps} onChange={(e) => onUpdate(ex.id, { target_reps: e.target.value })} className="w-14 shrink-0 rounded-md bg-[var(--fg-03)] border border-[rgb(var(--accent-rgb)/0.2)] text-center text-sm py-1.5 focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.5)]" />
                     </div>
                 )}
-                <button onClick={() => setExpanded((v) => !v)} className={`shrink-0 transition ${expanded ? "text-[rgb(var(--accent-light-rgb))]" : "text-[rgb(var(--fg-rgb)/0.30)] hover:text-[rgb(var(--fg-rgb)/0.70)]"}`}><Settings2 size={15} /></button>
-                <button onClick={() => onRemove(ex.id)} className="text-[rgb(var(--fg-rgb)/0.30)] hover:text-red-400 transition shrink-0"><Trash2 size={16} /></button>
+                <button onClick={() => setExpanded((v) => !v)} className={`shrink-0 transition ${expanded ? "text-[rgb(var(--accent-light-rgb))]" : "text-[var(--fg-30)] hover:text-[var(--fg-70)]"}`}><Settings2 size={15} /></button>
+                <button onClick={() => onRemove(ex.id)} className="text-[var(--fg-30)] hover:text-red-400 transition shrink-0"><Trash2 size={16} /></button>
             </div>
             {expanded && (
-                <div className="px-3 pb-3 pt-1 border-t border-[rgb(var(--fg-rgb)/0.05)] grid grid-cols-2 gap-2">
+                <div className="px-3 pb-3 pt-1 border-t border-[var(--fg-05)] grid grid-cols-2 gap-2">
                     <div>
-                        <label className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">WEIGHT ({swu.toUpperCase()})</label>
-                        <input type="number" min="0" onWheel={(e) => (e.target as HTMLElement).blur()} inputMode="decimal" value={ex.target_weight ?? ""} onChange={(e) => onUpdate(ex.id, { target_weight: e.target.value ? Number(e.target.value) : null })} placeholder="—" className="w-full mt-1 rounded-md bg-[rgb(var(--fg-rgb)/0.03)] border border-[rgb(var(--fg-rgb)/0.10)] text-center text-sm py-1.5 focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.5)]" />
+                        <label className="text-[9px] font-mono text-[var(--fg-30)]">WEIGHT ({swu.toUpperCase()})</label>
+                        <input type="number" min="0" onWheel={(e) => (e.target as HTMLElement).blur()} inputMode="decimal" value={ex.target_weight ?? ""} onChange={(e) => onUpdate(ex.id, { target_weight: e.target.value ? Number(e.target.value) : null })} placeholder="—" className="w-full mt-1 rounded-md bg-[var(--fg-03)] border border-[var(--fg-10)] text-center text-sm py-1.5 focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.5)]" />
                     </div>
                     <div>
-                        <label className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">REST (SEC)</label>
-                        <input type="number" min="0" onWheel={(e) => (e.target as HTMLElement).blur()} inputMode="numeric" value={ex.rest_seconds ?? ""} onChange={(e) => onUpdate(ex.id, { rest_seconds: e.target.value ? Number(e.target.value) : null })} placeholder="90" className="w-full mt-1 rounded-md bg-[rgb(var(--fg-rgb)/0.03)] border border-[rgb(var(--fg-rgb)/0.10)] text-center text-sm py-1.5 focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.5)]" />
+                        <label className="text-[9px] font-mono text-[var(--fg-30)]">REST (SEC)</label>
+                        <input type="number" min="0" onWheel={(e) => (e.target as HTMLElement).blur()} inputMode="numeric" value={ex.rest_seconds ?? ""} onChange={(e) => onUpdate(ex.id, { rest_seconds: e.target.value ? Number(e.target.value) : null })} placeholder="90" className="w-full mt-1 rounded-md bg-[var(--fg-03)] border border-[var(--fg-10)] text-center text-sm py-1.5 focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.5)]" />
                     </div>
                     <div className="col-span-2">
-                        <label className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">NOTES</label>
-                        <input type="text" value={ex.notes} onChange={(e) => onUpdate(ex.id, { notes: e.target.value })} placeholder="e.g. slow eccentric" className="w-full mt-1 rounded-md bg-[rgb(var(--fg-rgb)/0.03)] border border-[rgb(var(--fg-rgb)/0.10)] px-2 text-sm py-1.5 focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.5)]" />
+                        <label className="text-[9px] font-mono text-[var(--fg-30)]">NOTES</label>
+                        <input type="text" value={ex.notes} onChange={(e) => onUpdate(ex.id, { notes: e.target.value })} placeholder="e.g. slow eccentric" className="w-full mt-1 rounded-md bg-[var(--fg-03)] border border-[var(--fg-10)] px-2 text-sm py-1.5 focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.5)]" />
                     </div>
                 </div>
             )}
@@ -318,20 +318,20 @@ function DayEditorModal({
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
             <div className="relative w-full max-w-xl max-h-[92vh] bg-[var(--bg-elevated)] border border-[rgb(var(--accent-rgb)/0.15)] rounded-t-2xl sm:rounded-2xl flex flex-col overflow-hidden">
                 {/* Header */}
-                <div className="flex items-center justify-between px-5 py-4 border-b border-[rgb(var(--fg-rgb)/0.06)] shrink-0">
+                <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--fg-06)] shrink-0">
                     <div>
-                        <h2 className="text-lg font-bold text-[rgb(var(--fg-rgb)/0.90)]">{WEEKDAY_FULL[weekday]}</h2>
-                        <p className="text-[10px] font-mono text-[rgb(var(--fg-rgb)/0.35)] mt-0.5">
+                        <h2 className="text-lg font-bold text-[var(--fg-90)]">{WEEKDAY_FULL[weekday]}</h2>
+                        <p className="text-[10px] font-mono text-[var(--fg-35)] mt-0.5">
                             {isRest ? "Rest day" : plan ? `${exercises.length} exercises · ${totalSets} sets` : "No plan yet"}
                         </p>
                     </div>
                     <div className="flex items-center gap-2">
                         {plan && !editMode && (
-                            <button onClick={() => setEditMode(true)} className="flex items-center gap-1.5 text-[10px] font-mono px-3 py-1.5 rounded-lg border border-[rgb(var(--fg-rgb)/0.10)] text-[rgb(var(--fg-rgb)/0.50)] hover:text-[rgb(var(--fg-rgb)/0.80)] transition">
+                            <button onClick={() => setEditMode(true)} className="flex items-center gap-1.5 text-[10px] font-mono px-3 py-1.5 rounded-lg border border-[var(--fg-10)] text-[var(--fg-50)] hover:text-[var(--fg-80)] transition">
                                 <Pencil size={11} /> EDIT
                             </button>
                         )}
-                        <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full border border-[rgb(var(--fg-rgb)/0.10)] text-[rgb(var(--fg-rgb)/0.40)] hover:text-[rgb(var(--fg-rgb)/0.80)] transition">
+                        <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full border border-[var(--fg-10)] text-[var(--fg-40)] hover:text-[var(--fg-80)] transition">
                             <X size={16} />
                         </button>
                     </div>
@@ -348,7 +348,7 @@ function DayEditorModal({
                             <EmptyState title="NO EXERCISES" subtitle="Tap Edit to add exercises." />
                         ) : (
                             <div className="space-y-4">
-                                {plan?.template_name && <p className="text-base font-bold text-[rgb(var(--fg-rgb)/0.90)] mb-1">{plan.template_name}</p>}
+                                {plan?.template_name && <p className="text-base font-bold text-[var(--fg-90)] mb-1">{plan.template_name}</p>}
                                 {groupExercisesBySegment(exercises).map((group, gi) => (
                                     <div key={`${group.label}-${gi}`}>
                                         <p className="text-[10px] font-mono tracking-widest text-[rgb(var(--accent-light-rgb)/0.6)] mb-2">{group.label.toUpperCase()}</p>
@@ -383,16 +383,16 @@ function DayEditorModal({
                                     <input
                                         type="text" value={title} onChange={(e) => setTitle(e.target.value)}
                                         placeholder={`${WEEKDAY_FULL[weekday]} Plan`}
-                                        className="w-full bg-transparent text-base font-bold text-[rgb(var(--fg-rgb)/0.90)] placeholder:text-[rgb(var(--fg-rgb)/0.25)] focus:outline-none mb-4 border-b border-[rgb(var(--fg-rgb)/0.06)] pb-2 focus:border-[rgb(var(--accent-rgb)/0.4)]"
+                                        className="w-full bg-transparent text-base font-bold text-[var(--fg-90)] placeholder:text-[var(--fg-25)] focus:outline-none mb-4 border-b border-[var(--fg-06)] pb-2 focus:border-[rgb(var(--accent-rgb)/0.4)]"
                                     />
                                     {exercises.length > 0 && (
                                         <div className="grid grid-cols-2 gap-3 mb-4">
                                             <div className="glass-card p-2.5 text-center">
-                                                <p className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">EXERCISES</p>
+                                                <p className="text-[9px] font-mono text-[var(--fg-30)]">EXERCISES</p>
                                                 <p className="text-lg font-bold">{exercises.length}</p>
                                             </div>
                                             <div className="glass-card p-2.5 text-center">
-                                                <p className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">TOTAL SETS</p>
+                                                <p className="text-[9px] font-mono text-[var(--fg-30)]">TOTAL SETS</p>
                                                 <p className="text-lg font-bold">{totalSets}</p>
                                             </div>
                                         </div>
@@ -422,7 +422,7 @@ function DayEditorModal({
 
                 {/* Footer — Save button in edit mode */}
                 {editMode && (
-                    <div className="px-5 py-3 border-t border-[rgb(var(--fg-rgb)/0.06)] shrink-0">
+                    <div className="px-5 py-3 border-t border-[var(--fg-06)] shrink-0">
                         <button
                             onClick={handleSave}
                             disabled={!hasContent || saving}
@@ -734,28 +734,28 @@ export default function SchedulePage() {
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-xl md:text-2xl font-bold font-display tracking-wide text-[rgb(var(--accent-light-rgb))]">Schedule</h1>
-                        <p className="text-[rgb(var(--fg-rgb)/0.35)] text-xs mt-0.5 font-mono">
+                        <p className="text-[var(--fg-35)] text-xs mt-0.5 font-mono">
                             {hasPlan ? `${trainingDays} training · ${restDays} rest · ${7 - trainingDays - restDays} unset` : "Set your week once. It repeats."}
                         </p>
                     </div>
                     <div className="flex items-center gap-1.5">
-                        <button onClick={() => setShowMusclePicker(true)} className="w-8 h-8 flex items-center justify-center rounded-lg border border-[rgb(var(--fg-rgb)/0.08)] text-[rgb(var(--fg-rgb)/0.35)] hover:text-[rgb(var(--fg-rgb)/0.70)] hover:border-[rgb(var(--accent-rgb)/0.3)] transition" title="Muscle Map"><PersonStanding size={16} /></button>
-                        <button onClick={() => setShowDatabase(true)} className="w-8 h-8 flex items-center justify-center rounded-lg border border-[rgb(var(--fg-rgb)/0.08)] text-[rgb(var(--fg-rgb)/0.35)] hover:text-[rgb(var(--fg-rgb)/0.70)] hover:border-[rgb(var(--accent-rgb)/0.3)] transition" title="Exercise Database"><Database size={16} /></button>
-                        <button onClick={() => setPlanBrowserOpen(true)} className="w-8 h-8 flex items-center justify-center rounded-lg border border-[rgb(var(--fg-rgb)/0.08)] text-[rgb(var(--fg-rgb)/0.35)] hover:text-[rgb(var(--fg-rgb)/0.70)] hover:border-[rgb(var(--accent-rgb)/0.3)] transition" title="Plan Library"><BookOpen size={16} /></button>
+                        <button onClick={() => setShowMusclePicker(true)} className="w-8 h-8 flex items-center justify-center rounded-lg border border-[var(--fg-08)] text-[var(--fg-35)] hover:text-[var(--fg-70)] hover:border-[rgb(var(--accent-rgb)/0.3)] transition" title="Muscle Map"><PersonStanding size={16} /></button>
+                        <button onClick={() => setShowDatabase(true)} className="w-8 h-8 flex items-center justify-center rounded-lg border border-[var(--fg-08)] text-[var(--fg-35)] hover:text-[var(--fg-70)] hover:border-[rgb(var(--accent-rgb)/0.3)] transition" title="Exercise Database"><Database size={16} /></button>
+                        <button onClick={() => setPlanBrowserOpen(true)} className="w-8 h-8 flex items-center justify-center rounded-lg border border-[var(--fg-08)] text-[var(--fg-35)] hover:text-[var(--fg-70)] hover:border-[rgb(var(--accent-rgb)/0.3)] transition" title="Plan Library"><BookOpen size={16} /></button>
                     </div>
                 </div>
 
                 {/* ─── Tabs ─── */}
-                <div className="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-[rgb(var(--fg-rgb)/0.03)] border border-[rgb(var(--fg-rgb)/0.06)]">
+                <div className="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-[var(--fg-03)] border border-[var(--fg-06)]">
                     <button
                         onClick={() => setActiveTab("today")}
-                        className={`py-2 rounded-lg text-xs font-bold tracking-wide transition ${activeTab === "today" ? "bg-[rgb(var(--accent-rgb)/0.15)] text-[rgb(var(--accent-light-rgb))] border border-[rgb(var(--accent-rgb)/0.3)]" : "text-[rgb(var(--fg-rgb)/0.40)] hover:text-[rgb(var(--fg-rgb)/0.60)] border border-transparent"}`}
+                        className={`py-2 rounded-lg text-xs font-bold tracking-wide transition ${activeTab === "today" ? "bg-[rgb(var(--accent-rgb)/0.15)] text-[rgb(var(--accent-light-rgb))] border border-[rgb(var(--accent-rgb)/0.3)]" : "text-[var(--fg-40)] hover:text-[var(--fg-60)] border border-transparent"}`}
                     >
                         TODAY
                     </button>
                     <button
                         onClick={() => setActiveTab("week")}
-                        className={`py-2 rounded-lg text-xs font-bold tracking-wide transition ${activeTab === "week" ? "bg-[rgb(var(--accent-rgb)/0.15)] text-[rgb(var(--accent-light-rgb))] border border-[rgb(var(--accent-rgb)/0.3)]" : "text-[rgb(var(--fg-rgb)/0.40)] hover:text-[rgb(var(--fg-rgb)/0.60)] border border-transparent"}`}
+                        className={`py-2 rounded-lg text-xs font-bold tracking-wide transition ${activeTab === "week" ? "bg-[rgb(var(--accent-rgb)/0.15)] text-[rgb(var(--accent-light-rgb))] border border-[rgb(var(--accent-rgb)/0.3)]" : "text-[var(--fg-40)] hover:text-[var(--fg-60)] border border-transparent"}`}
                     >
                         MY WEEK
                     </button>
@@ -769,8 +769,8 @@ export default function SchedulePage() {
                                 <div className="w-14 h-14 mx-auto mb-4 rounded-2xl border border-[rgb(var(--accent-rgb)/0.3)] bg-[rgb(var(--accent-rgb)/0.1)] flex items-center justify-center">
                                     <Dumbbell size={24} className="text-[rgb(var(--accent-light-rgb))]" />
                                 </div>
-                                <h2 className="text-lg font-bold text-[rgb(var(--fg-rgb)/0.90)] mb-1">No plan yet</h2>
-                                <p className="text-xs text-[rgb(var(--fg-rgb)/0.35)] mb-5 max-w-xs mx-auto">Import a proven program or build your own — tap any day below to start.</p>
+                                <h2 className="text-lg font-bold text-[var(--fg-90)] mb-1">No plan yet</h2>
+                                <p className="text-xs text-[var(--fg-35)] mb-5 max-w-xs mx-auto">Import a proven program or build your own — tap any day below to start.</p>
 
                                 <div className="grid grid-cols-2 gap-2 mb-3">
                                     {QUICK_START_TEMPLATES.slice(0, 4).map((tpl) => (
@@ -778,10 +778,10 @@ export default function SchedulePage() {
                                             key={tpl.key}
                                             onClick={() => importQuickStartTemplate(tpl)}
                                             disabled={importingTemplate !== null}
-                                            className="text-left rounded-xl border border-[rgb(var(--fg-rgb)/0.08)] bg-[rgb(var(--fg-rgb)/0.02)] p-3 hover:border-[rgb(var(--accent-rgb)/0.3)] disabled:opacity-40 transition"
+                                            className="text-left rounded-xl border border-[var(--fg-08)] bg-[var(--fg-02)] p-3 hover:border-[rgb(var(--accent-rgb)/0.3)] disabled:opacity-40 transition"
                                         >
-                                            <p className="text-[11px] font-bold text-[rgb(var(--fg-rgb)/0.80)] truncate">{tpl.name}</p>
-                                            <p className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.30)] mt-0.5">{tpl.daysPerWeek}D/WK · {tpl.muscleCoverage}</p>
+                                            <p className="text-[11px] font-bold text-[var(--fg-80)] truncate">{tpl.name}</p>
+                                            <p className="text-[9px] font-mono text-[var(--fg-30)] mt-0.5">{tpl.daysPerWeek}D/WK · {tpl.muscleCoverage}</p>
                                             {importingTemplate === tpl.key && <p className="text-[9px] font-mono text-[rgb(var(--accent-light-rgb))] mt-1">Importing...</p>}
                                         </button>
                                     ))}
@@ -809,16 +809,16 @@ export default function SchedulePage() {
                                             plan?.is_rest
                                                 ? "border-emerald-400/15 bg-emerald-400/[0.03] hover:border-emerald-400/30"
                                                 : plan
-                                                    ? "border-[rgb(var(--accent-rgb)/0.12)] bg-[rgb(var(--fg-rgb)/0.02)] hover:border-[rgb(var(--accent-rgb)/0.35)]"
-                                                    : "border-[rgb(var(--fg-rgb)/0.06)] bg-[rgb(var(--fg-rgb)/0.01)] hover:border-[rgb(var(--fg-rgb)/0.15)]"
+                                                    ? "border-[rgb(var(--accent-rgb)/0.12)] bg-[var(--fg-02)] hover:border-[rgb(var(--accent-rgb)/0.35)]"
+                                                    : "border-[var(--fg-06)] bg-[var(--fg-01)] hover:border-[var(--fg-15)]"
                                         } ${isToday ? "ring-1 ring-[rgb(var(--accent-rgb)/0.3)]" : ""}`}
                                     >
                                         <div className="flex items-center gap-3">
                                             {/* Day indicator */}
                                             <div className={`w-11 h-11 rounded-xl flex flex-col items-center justify-center shrink-0 ${
-                                                plan?.is_rest ? "bg-emerald-400/10" : plan ? "bg-[rgb(var(--accent-rgb)/0.1)]" : "bg-[rgb(var(--fg-rgb)/0.03)]"
+                                                plan?.is_rest ? "bg-emerald-400/10" : plan ? "bg-[rgb(var(--accent-rgb)/0.1)]" : "bg-[var(--fg-03)]"
                                             }`}>
-                                                <span className={`text-[9px] font-mono leading-none ${plan?.is_rest ? "text-emerald-300/60" : plan ? "text-[rgb(var(--accent-light-rgb)/0.6)]" : "text-[rgb(var(--fg-rgb)/0.25)]"}`}>
+                                                <span className={`text-[9px] font-mono leading-none ${plan?.is_rest ? "text-emerald-300/60" : plan ? "text-[rgb(var(--accent-light-rgb)/0.6)]" : "text-[var(--fg-25)]"}`}>
                                                     {WEEKDAY_LABELS[wd].slice(0, 3)}
                                                 </span>
                                                 {isToday && <span className="w-1 h-1 rounded-full bg-[rgb(var(--accent-light-rgb))] mt-0.5" />}
@@ -834,25 +834,25 @@ export default function SchedulePage() {
                                                         </>
                                                     ) : (
                                                         <>
-                                                            <p className="text-sm font-medium text-[rgb(var(--fg-rgb)/0.85)] truncate">{plan.template_name || "Workout"}</p>
+                                                            <p className="text-sm font-medium text-[var(--fg-85)] truncate">{plan.template_name || "Workout"}</p>
                                                             <div className="flex items-center gap-2 mt-0.5">
-                                                                <span className="text-[10px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">{plan.exercise_count} exercises</span>
+                                                                <span className="text-[10px] font-mono text-[var(--fg-30)]">{plan.exercise_count} exercises</span>
                                                                 {plan.muscles.length > 0 && (
-                                                                    <span className="text-[10px] font-mono text-[rgb(var(--fg-rgb)/0.20)] truncate">{plan.muscles.slice(0, 3).join(" · ")}</span>
+                                                                    <span className="text-[10px] font-mono text-[var(--fg-20)] truncate">{plan.muscles.slice(0, 3).join(" · ")}</span>
                                                                 )}
                                                             </div>
                                                         </>
                                                     )
                                                 ) : (
                                                     <>
-                                                        <p className="text-sm text-[rgb(var(--fg-rgb)/0.25)]">No plan</p>
-                                                        <p className="text-[10px] font-mono text-[rgb(var(--fg-rgb)/0.15)]">Tap to set up</p>
+                                                        <p className="text-sm text-[var(--fg-25)]">No plan</p>
+                                                        <p className="text-[10px] font-mono text-[var(--fg-15)]">Tap to set up</p>
                                                     </>
                                                 )}
                                             </div>
 
                                             {/* Chevron */}
-                                            <ChevronDown size={14} className="text-[rgb(var(--fg-rgb)/0.15)] group-hover:text-[rgb(var(--fg-rgb)/0.30)] transition shrink-0 -rotate-90" />
+                                            <ChevronDown size={14} className="text-[var(--fg-15)] group-hover:text-[var(--fg-30)] transition shrink-0 -rotate-90" />
                                         </div>
                                     </button>
                                 );
@@ -867,13 +867,13 @@ export default function SchedulePage() {
                                     className="w-full flex items-center justify-between px-4 py-3 transition"
                                 >
                                     <div className="flex items-center gap-2">
-                                        <BarChart3 size={14} className="text-[rgb(var(--fg-rgb)/0.30)]" />
-                                        <span className="text-[10px] font-mono tracking-widest text-[rgb(var(--fg-rgb)/0.40)]">WEEKLY VOLUME</span>
+                                        <BarChart3 size={14} className="text-[var(--fg-30)]" />
+                                        <span className="text-[10px] font-mono tracking-widest text-[var(--fg-40)]">WEEKLY VOLUME</span>
                                         {adaptiveLoaded && Object.values(adaptiveData).some((d) => d.hasEnoughData) && (
                                             <span className="text-[8px] font-mono px-1.5 py-0.5 rounded-full border border-[rgb(var(--accent-rgb)/0.2)] bg-[rgb(var(--accent-rgb)/0.08)] text-[rgb(var(--accent-light-rgb)/0.6)]">PERSONALIZED</span>
                                         )}
                                     </div>
-                                    {volumeExpanded ? <ChevronUp size={14} className="text-[rgb(var(--fg-rgb)/0.25)]" /> : <ChevronDown size={14} className="text-[rgb(var(--fg-rgb)/0.25)]" />}
+                                    {volumeExpanded ? <ChevronUp size={14} className="text-[var(--fg-25)]" /> : <ChevronDown size={14} className="text-[var(--fg-25)]" />}
                                 </button>
 
                                 {volumeExpanded && (
@@ -890,12 +890,12 @@ export default function SchedulePage() {
                                             const optStartPct = (min / barMax) * 100;
                                             const optEndPct = (max / barMax) * 100;
                                             const trendIcon = status.trend === "improving" ? "↑" : status.trend === "maintaining" ? "→" : status.trend === "stalling" ? "↓" : status.trend === "declining" ? "↓↓" : null;
-                                            const trendColor = status.trend === "improving" ? "text-emerald-300" : status.trend === "maintaining" ? "text-[rgb(var(--fg-rgb)/0.40)]" : status.trend === "stalling" ? "text-amber-300" : status.trend === "declining" ? "text-red-400" : "";
+                                            const trendColor = status.trend === "improving" ? "text-emerald-300" : status.trend === "maintaining" ? "text-[var(--fg-40)]" : status.trend === "stalling" ? "text-amber-300" : status.trend === "declining" ? "text-red-400" : "";
                                             return (
                                                 <div key={v.segment}>
                                                     <div className="flex items-center justify-between mb-1">
                                                         <div className="flex items-center gap-2">
-                                                            <p className="text-[10px] font-mono text-[rgb(var(--fg-rgb)/0.60)]">{v.segment}</p>
+                                                            <p className="text-[10px] font-mono text-[var(--fg-60)]">{v.segment}</p>
                                                             {trendIcon && <span className={`text-[9px] font-mono font-bold ${trendColor}`}>{trendIcon}</span>}
                                                             {adaptive?.performanceChangePct !== null && adaptive?.performanceChangePct !== undefined && adaptive.hasEnoughData && (
                                                                 <span className={`text-[8px] font-mono ${adaptive.performanceChangePct >= 0 ? "text-emerald-300/60" : "text-red-400/60"}`}>{adaptive.performanceChangePct >= 0 ? "+" : ""}{adaptive.performanceChangePct.toFixed(1)}%</span>
@@ -903,14 +903,14 @@ export default function SchedulePage() {
                                                         </div>
                                                         <div className="flex items-center gap-2">
                                                             <span className={`text-[9px] font-mono font-bold ${status.color}`}>{status.label}</span>
-                                                            <span className="text-xs font-bold font-mono text-[rgb(var(--fg-rgb)/0.70)]">{v.sets}</span>
-                                                            <span className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">/ {min}–{max}</span>
+                                                            <span className="text-xs font-bold font-mono text-[var(--fg-70)]">{v.sets}</span>
+                                                            <span className="text-[8px] font-mono text-[var(--fg-30)]">/ {min}–{max}</span>
                                                         </div>
                                                     </div>
-                                                    <div className="relative h-2 rounded-full bg-[rgb(var(--fg-rgb)/0.05)] overflow-hidden">
+                                                    <div className="relative h-2 rounded-full bg-[var(--fg-05)] overflow-hidden">
                                                         <div className="absolute top-0 bottom-0 rounded-full bg-[rgb(var(--accent-rgb)/0.1)]" style={{ left: `${optStartPct}%`, width: `${optEndPct - optStartPct}%` }} />
                                                         <div
-                                                            className={`absolute top-0 bottom-0 left-0 rounded-full transition-all ${status.label === "NONE" ? "bg-[rgb(var(--fg-rgb)/0.10)]" : status.label === "LOW" ? "bg-amber-400/70" : status.label === "OPTIMAL" ? "bg-[rgb(var(--accent-rgb)/0.7)]" : status.label === "HIGH" ? "bg-orange-400/70" : "bg-red-400/70"}`}
+                                                            className={`absolute top-0 bottom-0 left-0 rounded-full transition-all ${status.label === "NONE" ? "bg-[var(--fg-10)]" : status.label === "LOW" ? "bg-amber-400/70" : status.label === "OPTIMAL" ? "bg-[rgb(var(--accent-rgb)/0.7)]" : status.label === "HIGH" ? "bg-orange-400/70" : "bg-red-400/70"}`}
                                                             style={{ width: `${pct}%` }}
                                                         />
                                                     </div>
@@ -918,7 +918,7 @@ export default function SchedulePage() {
                                                 </div>
                                             );
                                         })}
-                                        <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.20)] pt-1">
+                                        <p className="text-[8px] font-mono text-[var(--fg-20)] pt-1">
                                             {adaptiveLoaded && Object.values(adaptiveData).some((d) => d.hasEnoughData) ? "✦ = personalized from your training history." : "General guidelines — personalize after 4+ weeks of logging."}
                                         </p>
                                     </div>
@@ -932,16 +932,16 @@ export default function SchedulePage() {
                         {/* Calendar Strip */}
                         <div className="glass-card p-3">
                             <div className="flex items-center justify-between mb-2.5 gap-2">
-                                <button onClick={() => setWeekOffset((w) => w - 1)} className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg border border-[rgb(var(--fg-rgb)/0.06)] text-[rgb(var(--fg-rgb)/0.35)] hover:text-[rgb(var(--accent-light-rgb))] transition">←</button>
+                                <button onClick={() => setWeekOffset((w) => w - 1)} className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg border border-[var(--fg-06)] text-[var(--fg-35)] hover:text-[rgb(var(--accent-light-rgb))] transition">←</button>
                                 <div className="text-center min-w-0">
-                                    <p className="text-[10px] font-mono text-[rgb(var(--fg-rgb)/0.40)]">
+                                    <p className="text-[10px] font-mono text-[var(--fg-40)]">
                                         {weekDates[0].toLocaleDateString(undefined, { month: "short", day: "numeric" })} – {weekDates[6].toLocaleDateString(undefined, { month: "short", day: "numeric" })}
                                     </p>
                                     {(weekOffset !== 0 || selectedDate !== today) && (
                                         <button onClick={() => { setWeekOffset(0); setSelectedDate(today); }} className="text-[9px] font-mono text-[rgb(var(--accent-light-rgb)/0.6)] hover:text-[rgb(var(--accent-light-rgb))] transition">JUMP TO TODAY</button>
                                     )}
                                 </div>
-                                <button onClick={() => setWeekOffset((w) => w + 1)} className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg border border-[rgb(var(--fg-rgb)/0.06)] text-[rgb(var(--fg-rgb)/0.35)] hover:text-[rgb(var(--accent-light-rgb))] transition">→</button>
+                                <button onClick={() => setWeekOffset((w) => w + 1)} className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg border border-[var(--fg-06)] text-[var(--fg-35)] hover:text-[rgb(var(--accent-light-rgb))] transition">→</button>
                             </div>
 
                             <div ref={calendarRef} className="grid grid-cols-7 gap-1.5">
@@ -959,12 +959,12 @@ export default function SchedulePage() {
                                             className={`relative flex flex-col items-center rounded-xl border py-2.5 transition active:scale-[0.95] ${
                                                 isSelected
                                                     ? "border-[rgb(var(--accent-rgb)/0.5)] bg-[rgb(var(--accent-rgb)/0.1)]"
-                                                    : "border-[rgb(var(--fg-rgb)/0.04)] bg-[rgb(var(--fg-rgb)/0.01)] hover:border-[rgb(var(--fg-rgb)/0.10)]"
+                                                    : "border-[var(--fg-04)] bg-[var(--fg-01)] hover:border-[var(--fg-10)]"
                                             }`}
                                         >
-                                            <span className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">{d.toLocaleDateString(undefined, { weekday: "short" }).slice(0, 2).toUpperCase()}</span>
-                                            <span className={`text-sm font-bold ${isSelected ? "text-[var(--text-primary)]" : "text-[rgb(var(--fg-rgb)/0.70)]"}`}>{d.getDate()}</span>
-                                            <span className={`w-1.5 h-1.5 rounded-full mt-1 ${plan ? (plan.is_rest ? "bg-emerald-400/50" : "bg-[rgb(var(--accent-rgb)/0.6)]") : "bg-[rgb(var(--fg-rgb)/0.10)]"}`} />
+                                            <span className="text-[8px] font-mono text-[var(--fg-30)]">{d.toLocaleDateString(undefined, { weekday: "short" }).slice(0, 2).toUpperCase()}</span>
+                                            <span className={`text-sm font-bold ${isSelected ? "text-[var(--text-primary)]" : "text-[var(--fg-70)]"}`}>{d.getDate()}</span>
+                                            <span className={`w-1.5 h-1.5 rounded-full mt-1 ${plan ? (plan.is_rest ? "bg-emerald-400/50" : "bg-[rgb(var(--accent-rgb)/0.6)]") : "bg-[var(--fg-10)]"}`} />
                                             {isToday && <span className="absolute top-1 right-1 w-1 h-1 rounded-full bg-[rgb(var(--accent-light-rgb))]" />}
                                         </button>
                                     );
@@ -973,11 +973,11 @@ export default function SchedulePage() {
                         </div>
 
                         {/* Selected Day Detail */}
-                        <div className="rounded-xl border border-[rgb(var(--accent-rgb)/0.12)] bg-[rgb(var(--fg-rgb)/0.02)] p-4 md:p-5">
+                        <div className="rounded-xl border border-[rgb(var(--accent-rgb)/0.12)] bg-[var(--fg-02)] p-4 md:p-5">
                             <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
                                 <div>
                                     <p className="text-[10px] font-mono tracking-widest text-[rgb(var(--accent-light-rgb)/0.6)]">{dayLabel.toUpperCase()}</p>
-                                    <p className="text-lg font-bold text-[rgb(var(--fg-rgb)/0.90)] mt-0.5">
+                                    <p className="text-lg font-bold text-[var(--fg-90)] mt-0.5">
                                         {selectedPlan?.is_rest ? "Rest / Recovery" : selectedPlan?.template_name || "No Plan"}
                                     </p>
                                 </div>
@@ -1002,15 +1002,15 @@ export default function SchedulePage() {
                                 <>
                                     <div className="grid grid-cols-3 gap-2 mb-4">
                                         <div className="glass-card p-2.5 text-center">
-                                            <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">EXERCISES</p>
+                                            <p className="text-[8px] font-mono text-[var(--fg-30)]">EXERCISES</p>
                                             <p className="text-base font-bold">{viewExercises.length}</p>
                                         </div>
                                         <div className="glass-card p-2.5 text-center">
-                                            <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">SETS</p>
+                                            <p className="text-[8px] font-mono text-[var(--fg-30)]">SETS</p>
                                             <p className="text-base font-bold">{viewTotalSets}</p>
                                         </div>
                                         <div className="glass-card p-2.5 text-center">
-                                            <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">EST. TIME</p>
+                                            <p className="text-[8px] font-mono text-[var(--fg-30)]">EST. TIME</p>
                                             <p className="text-base font-bold">{viewTotalSets * 3}m</p>
                                         </div>
                                     </div>
@@ -1020,8 +1020,8 @@ export default function SchedulePage() {
                                             <p className="text-[10px] font-mono tracking-widest text-amber-300/70">RECOVERY STATUS</p>
                                             {recoveryWarnings.map((w) => (
                                                 <div key={w.segment} className="flex items-center gap-3">
-                                                    <p className="text-[10px] font-mono text-[rgb(var(--fg-rgb)/0.50)] w-20 shrink-0">{w.segment}</p>
-                                                    <div className="flex-1 h-1.5 rounded-full bg-[rgb(var(--fg-rgb)/0.05)] overflow-hidden">
+                                                    <p className="text-[10px] font-mono text-[var(--fg-50)] w-20 shrink-0">{w.segment}</p>
+                                                    <div className="flex-1 h-1.5 rounded-full bg-[var(--fg-05)] overflow-hidden">
                                                         <div className={`h-full rounded-full ${w.pct < 25 ? "bg-red-400/70" : w.pct < 50 ? "bg-orange-400/70" : w.pct < 80 ? "bg-amber-300/70" : "bg-cyan-400/60"}`} style={{ width: `${w.pct}%` }} />
                                                     </div>
                                                     <p className={`text-[10px] font-mono font-bold w-10 text-right ${w.pct < 25 ? "text-red-400" : w.pct < 50 ? "text-orange-400" : w.pct < 80 ? "text-amber-300" : "text-cyan-300"}`}>{w.pct}%</p>
@@ -1079,13 +1079,13 @@ export default function SchedulePage() {
 
             {importConfirm && createPortal(
                 <div className="fixed inset-0 z-[210] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-                    <div className="w-full max-w-sm rounded-2xl border border-[rgb(var(--fg-rgb)/0.08)] bg-[var(--bg-card)] p-5">
-                        <p className="text-sm font-semibold text-[rgb(var(--fg-rgb)/0.85)] mb-2">Switch plan?</p>
-                        <p className="text-[11px] text-[rgb(var(--fg-rgb)/0.35)] mb-4">
-                            Replace <span className="text-[rgb(var(--fg-rgb)/0.60)]">{importConfirm.label}</span> with <span className="text-[rgb(var(--fg-rgb)/0.60)]">{importConfirm.plan.name}</span>? This will update the days this plan uses.
+                    <div className="w-full max-w-sm rounded-2xl border border-[var(--fg-08)] bg-[var(--bg-card)] p-5">
+                        <p className="text-sm font-semibold text-[var(--fg-85)] mb-2">Switch plan?</p>
+                        <p className="text-[11px] text-[var(--fg-35)] mb-4">
+                            Replace <span className="text-[var(--fg-60)]">{importConfirm.label}</span> with <span className="text-[var(--fg-60)]">{importConfirm.plan.name}</span>? This will update the days this plan uses.
                         </p>
                         <div className="flex gap-2">
-                            <button onClick={() => setImportConfirm(null)} className="flex-1 text-sm font-medium py-2.5 rounded-xl border border-[rgb(var(--fg-rgb)/0.08)] text-[rgb(var(--fg-rgb)/0.50)] hover:text-[rgb(var(--fg-rgb)/0.80)] transition">
+                            <button onClick={() => setImportConfirm(null)} className="flex-1 text-sm font-medium py-2.5 rounded-xl border border-[var(--fg-08)] text-[var(--fg-50)] hover:text-[var(--fg-80)] transition">
                                 Cancel
                             </button>
                             <button onClick={() => executeImport(importConfirm.plan)} className="flex-1 text-sm font-semibold py-2.5 rounded-xl bg-[rgb(var(--accent-rgb))] text-black hover:brightness-110 transition">

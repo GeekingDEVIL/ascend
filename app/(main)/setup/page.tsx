@@ -117,7 +117,7 @@ export default function SetupPage() {
         <motion.div variants={staggerItem} className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-black tracking-tight">My Setup</h1>
-            <p className="text-xs text-[rgb(var(--fg-rgb)/0.40)] font-mono mt-0.5">Customize your experience</p>
+            <p className="text-xs text-[var(--fg-40)] font-mono mt-0.5">Customize your experience</p>
           </div>
           {saved && (
             <motion.div
@@ -135,7 +135,7 @@ export default function SetupPage() {
         <motion.div variants={staggerItem} className="glass-card p-4">
           <div className="flex items-center gap-2 mb-3">
             <Monitor size={16} className="text-[rgb(var(--accent-rgb))]" />
-            <h2 className="text-xs font-mono uppercase tracking-widest text-[rgb(var(--fg-rgb)/0.50)]">Theme</h2>
+            <h2 className="text-xs font-mono uppercase tracking-widest text-[var(--fg-50)]">Theme</h2>
           </div>
           <div className="grid grid-cols-4 gap-2">
             {([
@@ -153,14 +153,14 @@ export default function SetupPage() {
                   className={`relative flex flex-col items-center gap-1.5 py-2.5 rounded-lg border transition ${
                     active
                       ? "border-[rgb(var(--accent-rgb)/0.5)] bg-[rgb(var(--accent-rgb)/0.08)]"
-                      : "border-[rgb(var(--fg-rgb)/0.05)] hover:border-[rgb(var(--fg-rgb)/0.10)]"
+                      : "border-[var(--fg-05)] hover:border-[var(--fg-10)]"
                   }`}
                 >
                   <div
-                    className="w-6 h-6 rounded-full border border-[rgb(var(--fg-rgb)/0.15)]"
+                    className="w-6 h-6 rounded-full border border-[var(--fg-15)]"
                     style={{ background: t.preview }}
                   />
-                  <span className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.50)]">{t.label}</span>
+                  <span className="text-[9px] font-mono text-[var(--fg-50)]">{t.label}</span>
                   {active && (
                     <div className="absolute top-1 right-1">
                       <Check size={10} className="text-[rgb(var(--accent-rgb))]" />
@@ -176,7 +176,7 @@ export default function SetupPage() {
         <motion.div variants={staggerItem} className="glass-card p-4">
           <div className="flex items-center gap-2 mb-3">
             <Palette size={16} className="text-[rgb(var(--accent-rgb))]" />
-            <h2 className="text-xs font-mono uppercase tracking-widest text-[rgb(var(--fg-rgb)/0.50)]">Accent Color</h2>
+            <h2 className="text-xs font-mono uppercase tracking-widest text-[var(--fg-50)]">Accent Color</h2>
           </div>
           <div className="grid grid-cols-4 gap-2">
             {ACCENT_PRESETS.map((p) => (
@@ -186,11 +186,11 @@ export default function SetupPage() {
                 className={`relative flex flex-col items-center gap-1.5 py-2.5 rounded-lg border transition ${
                   accent === p.key
                     ? "border-[rgb(var(--accent-rgb)/0.5)] bg-[rgb(var(--accent-rgb)/0.08)]"
-                    : "border-[rgb(var(--fg-rgb)/0.05)] hover:border-[rgb(var(--fg-rgb)/0.10)]"
+                    : "border-[var(--fg-05)] hover:border-[var(--fg-10)]"
                 }`}
               >
                 <div className="w-5 h-5 rounded-full" style={{ background: `rgb(${p.rgb})` }} />
-                <span className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.50)]">{p.label}</span>
+                <span className="text-[9px] font-mono text-[var(--fg-50)]">{p.label}</span>
                 {accent === p.key && (
                   <div className="absolute top-1 right-1">
                     <Check size={10} className="text-[rgb(var(--accent-rgb))]" />
@@ -205,7 +205,7 @@ export default function SetupPage() {
         <motion.div variants={staggerItem} className="glass-card p-4">
           <div className="flex items-center gap-2 mb-3">
             <Ruler size={16} className="text-[rgb(var(--accent-rgb))]" />
-            <h2 className="text-xs font-mono uppercase tracking-widest text-[rgb(var(--fg-rgb)/0.50)]">Units</h2>
+            <h2 className="text-xs font-mono uppercase tracking-widest text-[var(--fg-50)]">Units</h2>
           </div>
           <div className="grid grid-cols-2 gap-2">
             {(["metric", "imperial"] as const).map((u) => (
@@ -215,7 +215,7 @@ export default function SetupPage() {
                 className={`py-2.5 rounded-lg border text-sm font-mono transition ${
                   unit === u
                     ? "border-[rgb(var(--accent-rgb)/0.5)] bg-[rgb(var(--accent-rgb)/0.08)] text-[var(--text-primary)]"
-                    : "border-[rgb(var(--fg-rgb)/0.05)] text-[rgb(var(--fg-rgb)/0.40)] hover:border-[rgb(var(--fg-rgb)/0.10)]"
+                    : "border-[var(--fg-05)] text-[var(--fg-40)] hover:border-[var(--fg-10)]"
                 }`}
               >
                 {u === "metric" ? "Metric (kg/cm)" : "Imperial (lb/in)"}
@@ -228,7 +228,7 @@ export default function SetupPage() {
         <motion.div variants={staggerItem} className="glass-card p-4">
           <div className="flex items-center gap-2 mb-3">
             <Building2 size={16} className="text-[rgb(var(--accent-rgb))]" />
-            <h2 className="text-xs font-mono uppercase tracking-widest text-[rgb(var(--fg-rgb)/0.50)]">Gym Profile</h2>
+            <h2 className="text-xs font-mono uppercase tracking-widest text-[var(--fg-50)]">Gym Profile</h2>
           </div>
           <div className="relative">
             <OnboardingTooltip id="setup-gym" message="Pick your gym type to filter exercises" position="top" />
@@ -243,13 +243,13 @@ export default function SetupPage() {
                     className={`w-full flex items-center gap-3 p-3 rounded-lg border transition text-left ${
                       active
                         ? "border-[rgb(var(--accent-rgb)/0.5)] bg-[rgb(var(--accent-rgb)/0.08)]"
-                        : "border-[rgb(var(--fg-rgb)/0.05)] hover:border-[rgb(var(--fg-rgb)/0.10)]"
+                        : "border-[var(--fg-05)] hover:border-[var(--fg-10)]"
                     }`}
                   >
-                    <Icon size={18} className={active ? "text-[rgb(var(--accent-rgb))]" : "text-[rgb(var(--fg-rgb)/0.30)]"} />
+                    <Icon size={18} className={active ? "text-[rgb(var(--accent-rgb))]" : "text-[var(--fg-30)]"} />
                     <div className="flex-1 min-w-0">
-                      <p className={`text-sm font-medium ${active ? "text-[var(--text-primary)]" : "text-[rgb(var(--fg-rgb)/0.60)]"}`}>{gp.label}</p>
-                      <p className="text-[10px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">{gp.desc} — {gp.equipment.length} items</p>
+                      <p className={`text-sm font-medium ${active ? "text-[var(--text-primary)]" : "text-[var(--fg-60)]"}`}>{gp.label}</p>
+                      <p className="text-[10px] font-mono text-[var(--fg-30)]">{gp.desc} — {gp.equipment.length} items</p>
                     </div>
                     {active && <Check size={14} className="text-[rgb(var(--accent-rgb))] shrink-0" />}
                   </button>
@@ -264,7 +264,7 @@ export default function SetupPage() {
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <Zap size={16} className="text-[rgb(var(--accent-rgb))]" />
-              <h2 className="text-xs font-mono uppercase tracking-widest text-[rgb(var(--fg-rgb)/0.50)]">Modules</h2>
+              <h2 className="text-xs font-mono uppercase tracking-widest text-[var(--fg-50)]">Modules</h2>
             </div>
             <a href="/discover" className="text-[10px] font-mono text-[rgb(var(--accent-rgb))] flex items-center gap-0.5">
               All modules <ChevronRight size={10} />
@@ -278,20 +278,20 @@ export default function SetupPage() {
                 <button
                   key={mod.key}
                   onClick={() => toggleModule(mod.key)}
-                  className="w-full flex items-center gap-3 p-2.5 rounded-lg hover:bg-[rgb(var(--fg-rgb)/0.02)] transition text-left"
+                  className="w-full flex items-center gap-3 p-2.5 rounded-lg hover:bg-[var(--fg-02)] transition text-left"
                 >
                   <div
                     className="w-7 h-7 rounded-md flex items-center justify-center"
                     style={{ background: `rgb(${mod.colorRgb} / ${enabled ? 0.15 : 0.05})` }}
                   >
-                    <Icon size={14} style={{ color: enabled ? `rgb(${mod.colorRgb})` : "rgb(var(--fg-rgb) / 0.2)" }} />
+                    <Icon size={14} style={{ color: enabled ? `rgb(${mod.colorRgb})` : "var(--fg-20)" }} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className={`text-sm ${enabled ? "text-[var(--text-primary)]" : "text-[rgb(var(--fg-rgb)/0.40)]"}`}>{mod.name}</p>
+                    <p className={`text-sm ${enabled ? "text-[var(--text-primary)]" : "text-[var(--fg-40)]"}`}>{mod.name}</p>
                   </div>
                   <div
                     className={`w-9 h-5 rounded-full p-0.5 transition-colors ${
-                      enabled ? "bg-[rgb(var(--accent-rgb))]" : "bg-[rgb(var(--fg-rgb)/0.10)]"
+                      enabled ? "bg-[rgb(var(--accent-rgb))]" : "bg-[var(--fg-10)]"
                     }`}
                   >
                     <motion.div
@@ -317,7 +317,7 @@ export default function SetupPage() {
         </motion.div>
 
         <motion.div variants={staggerItem} className="text-center py-2">
-          <p className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.15)]">ASCEND v0.3.0</p>
+          <p className="text-[9px] font-mono text-[var(--fg-15)]">ASCEND v0.3.0</p>
         </motion.div>
       </motion.div>
     </div>

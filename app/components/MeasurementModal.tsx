@@ -45,7 +45,7 @@ function RulerSlider({ value, onChange }: { value: number; onChange: (v: number)
             <div className="absolute top-0 left-1/2 h-full flex items-end pb-2 transition-transform" style={{ transform: `translateX(calc(-50% + ${offset}px))` }}>
                 {ticks.map((cm) => (
                     <div key={cm} className="flex flex-col items-center shrink-0" style={{ width: TICK_PX }}>
-                        <div className={`w-px ${cm % 5 === 0 ? "h-4 bg-[rgb(var(--fg-rgb)/0.30)]" : "h-2.5 bg-[rgb(var(--fg-rgb)/0.15)]"}`} />
+                        <div className={`w-px ${cm % 5 === 0 ? "h-4 bg-[var(--fg-30)]" : "h-2.5 bg-[var(--fg-15)]"}`} />
                     </div>
                 ))}
             </div>
@@ -82,22 +82,22 @@ export default function MeasurementModal({
     return createPortal(
         <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/70 backdrop-blur-sm">
             <div className="relative w-full max-w-md rounded-t-2xl border-t border-[rgb(var(--accent-rgb)/0.25)] bg-[var(--bg-elevated)] pb-6" style={{ boxShadow: "0 -20px 60px -12px rgb(var(--accent-rgb) / 0.3)" }}>
-                <div className="w-9 h-1 rounded-full bg-[rgb(var(--fg-rgb)/0.15)] mx-auto mt-3 mb-2" />
+                <div className="w-9 h-1 rounded-full bg-[var(--fg-15)] mx-auto mt-3 mb-2" />
                 <div className="flex items-center justify-between px-5 mb-2">
-                    <p className="text-xs font-mono tracking-[0.2em] text-[rgb(var(--fg-rgb)/0.50)]">{type.toUpperCase()}</p>
-                    <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-md text-[rgb(var(--fg-rgb)/0.40)] hover:text-[rgb(var(--fg-rgb)/0.80)] transition"><X size={16} /></button>
+                    <p className="text-xs font-mono tracking-[0.2em] text-[var(--fg-50)]">{type.toUpperCase()}</p>
+                    <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-md text-[var(--fg-40)] hover:text-[var(--fg-80)] transition"><X size={16} /></button>
                 </div>
 
                 <div className="text-center px-5">
-                    <p className="text-[10px] font-mono text-[rgb(var(--fg-rgb)/0.30)] mb-4">Last: {lastValue !== null ? `${lastValue} cm` : "— —"}</p>
+                    <p className="text-[10px] font-mono text-[var(--fg-30)] mb-4">Last: {lastValue !== null ? `${lastValue} cm` : "— —"}</p>
 
                     <div className="flex items-center justify-center gap-5 mb-4">
-                        <button onClick={() => setValue((v) => Math.max(MIN_CM, Math.round((v - 0.5) * 2) / 2))} className="w-9 h-9 rounded-full bg-[rgb(var(--fg-rgb)/0.06)] border border-[rgb(var(--fg-rgb)/0.10)] text-lg font-bold text-[rgb(var(--fg-rgb)/0.70)] hover:text-[var(--text-primary)] transition">−</button>
+                        <button onClick={() => setValue((v) => Math.max(MIN_CM, Math.round((v - 0.5) * 2) / 2))} className="w-9 h-9 rounded-full bg-[var(--fg-06)] border border-[var(--fg-10)] text-lg font-bold text-[var(--fg-70)] hover:text-[var(--text-primary)] transition">−</button>
                         <div>
-                            <span className="text-4xl font-bold font-mono text-[rgb(var(--fg-rgb)/0.95)]">{value.toFixed(1)}</span>
-                            <span className="text-sm font-mono text-[rgb(var(--fg-rgb)/0.30)] ml-1">cm</span>
+                            <span className="text-4xl font-bold font-mono text-[var(--fg-95)]">{value.toFixed(1)}</span>
+                            <span className="text-sm font-mono text-[var(--fg-30)] ml-1">cm</span>
                         </div>
-                        <button onClick={() => setValue((v) => Math.min(MAX_CM, Math.round((v + 0.5) * 2) / 2))} className="w-9 h-9 rounded-full bg-[rgb(var(--fg-rgb)/0.06)] border border-[rgb(var(--fg-rgb)/0.10)] text-lg font-bold text-[rgb(var(--fg-rgb)/0.70)] hover:text-[var(--text-primary)] transition">+</button>
+                        <button onClick={() => setValue((v) => Math.min(MAX_CM, Math.round((v + 0.5) * 2) / 2))} className="w-9 h-9 rounded-full bg-[var(--fg-06)] border border-[var(--fg-10)] text-lg font-bold text-[var(--fg-70)] hover:text-[var(--text-primary)] transition">+</button>
                     </div>
 
                     <RulerSlider value={value} onChange={setValue} />

@@ -154,11 +154,11 @@ export default function AchievementsPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold font-display text-[rgb(var(--accent-light-rgb))]">Achievements</h1>
-            <p className="text-[11px] text-[rgb(var(--fg-rgb)/0.30)] mt-0.5">Your training milestones and records</p>
+            <p className="text-[11px] text-[var(--fg-30)] mt-0.5">Your training milestones and records</p>
           </div>
           <div className="text-right">
-            <p className="text-2xl font-bold font-mono text-[rgb(var(--fg-rgb)/0.90)]">{totalEarned}<span className="text-sm text-[rgb(var(--fg-rgb)/0.30)]">/{totalAchievements}</span></p>
-            <p className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">{completionPct}% complete</p>
+            <p className="text-2xl font-bold font-mono text-[var(--fg-90)]">{totalEarned}<span className="text-sm text-[var(--fg-30)]">/{totalAchievements}</span></p>
+            <p className="text-[9px] font-mono text-[var(--fg-30)]">{completionPct}% complete</p>
           </div>
         </div>
 
@@ -166,7 +166,7 @@ export default function AchievementsPage() {
           <OnboardingTooltip id="achievements-chains" message="Look for chain dots — complete achievement chains for bonus progression!" position="bottom" />
         </div>
 
-        <div className="h-2.5 rounded-full bg-[rgb(var(--fg-rgb)/0.06)] overflow-hidden border border-[rgb(var(--fg-rgb)/0.04)]">
+        <div className="h-2.5 rounded-full bg-[var(--fg-06)] overflow-hidden border border-[var(--fg-04)]">
           <div
             className="h-full bg-gradient-to-r from-[rgb(var(--accent-rgb))] to-[rgb(var(--accent-light-rgb))] rounded-full transition-all"
             style={{ width: `${completionPct}%` }}
@@ -177,7 +177,7 @@ export default function AchievementsPage() {
           <div>
             <div className="flex items-center gap-1.5 mb-2.5">
               <Sparkles size={12} className="text-yellow-300" />
-              <p className="text-[10px] font-mono tracking-widest text-[rgb(var(--fg-rgb)/0.25)]">RECENTLY EARNED</p>
+              <p className="text-[10px] font-mono tracking-widest text-[var(--fg-25)]">RECENTLY EARNED</p>
             </div>
             <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
               {recentlyEarned.map((a) => {
@@ -185,9 +185,9 @@ export default function AchievementsPage() {
                 return (
                   <div key={a.key} className={`flex-shrink-0 w-32 rounded-xl border ${rarity.border} ${rarity.bg} p-3 text-center`}>
                     <div className="text-3xl mb-1.5">{a.icon}</div>
-                    <p className="text-[11px] font-bold text-[rgb(var(--fg-rgb)/0.90)] truncate">{a.name}</p>
+                    <p className="text-[11px] font-bold text-[var(--fg-90)] truncate">{a.name}</p>
                     <span className={`text-[8px] font-mono ${rarity.text}`}>{a.rarity}</span>
-                    <p className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.25)] mt-1">{timeAgo(earnedDates[a.key])}</p>
+                    <p className="text-[9px] font-mono text-[var(--fg-25)] mt-1">{timeAgo(earnedDates[a.key])}</p>
                   </div>
                 );
               })}
@@ -198,7 +198,7 @@ export default function AchievementsPage() {
         <div className="space-y-2">
           <div className="flex gap-2">
             <div className="flex-1 relative">
-              <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-[rgb(var(--fg-rgb)/0.20)]" />
+              <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--fg-20)]" />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -209,7 +209,7 @@ export default function AchievementsPage() {
             <button
               onClick={() => setMoreOpen((v) => !v)}
               className={`flex items-center gap-1.5 text-[10px] font-mono px-3 py-2 rounded-lg border transition shrink-0 ${
-                moreOpen || activeAdvancedCount > 0 ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-[rgb(var(--fg-rgb)/0.08)] text-[rgb(var(--fg-rgb)/0.40)] hover:text-[rgb(var(--fg-rgb)/0.70)]"
+                moreOpen || activeAdvancedCount > 0 ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-[var(--fg-08)] text-[var(--fg-40)] hover:text-[var(--fg-70)]"
               }`}
             >
               <SlidersHorizontal size={12} /> Filters{activeAdvancedCount > 0 && ` (${activeAdvancedCount})`}
@@ -222,7 +222,7 @@ export default function AchievementsPage() {
                 key={f}
                 onClick={() => setFilter(f)}
                 className={`text-[10px] font-mono px-3 py-1.5 rounded-lg border transition ${
-                  filter === f ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-[rgb(var(--fg-rgb)/0.10)] text-[rgb(var(--fg-rgb)/0.40)] hover:text-[rgb(var(--fg-rgb)/0.70)]"
+                  filter === f ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-[var(--fg-10)] text-[var(--fg-40)] hover:text-[var(--fg-70)]"
                 }`}
               >
                 {f.toUpperCase()} {f === "earned" ? `(${totalEarned})` : f === "locked" ? `(${totalAchievements - totalEarned})` : ""}
@@ -233,14 +233,14 @@ export default function AchievementsPage() {
           {moreOpen && (
             <div className="glass-card p-3 space-y-3">
               <div>
-                <p className="text-[8px] font-mono tracking-widest text-[rgb(var(--fg-rgb)/0.25)] mb-1.5">CATEGORY</p>
+                <p className="text-[8px] font-mono tracking-widest text-[var(--fg-25)] mb-1.5">CATEGORY</p>
                 <div className="flex gap-1.5 flex-wrap">
                   {categories.map((c) => (
                     <button
                       key={c}
                       onClick={() => setCategoryFilter(c)}
                       className={`text-[10px] font-mono px-2.5 py-1.5 rounded-lg border transition ${
-                        categoryFilter === c ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-[rgb(var(--fg-rgb)/0.10)] text-[rgb(var(--fg-rgb)/0.30)] hover:text-[rgb(var(--fg-rgb)/0.60)]"
+                        categoryFilter === c ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "border-[var(--fg-10)] text-[var(--fg-30)] hover:text-[var(--fg-60)]"
                       }`}
                     >
                       {c === "all" ? "ALL" : c.toUpperCase()}
@@ -249,7 +249,7 @@ export default function AchievementsPage() {
                 </div>
               </div>
               <div>
-                <p className="text-[8px] font-mono tracking-widest text-[rgb(var(--fg-rgb)/0.25)] mb-1.5">RARITY</p>
+                <p className="text-[8px] font-mono tracking-widest text-[var(--fg-25)] mb-1.5">RARITY</p>
                 <div className="flex gap-1.5 flex-wrap">
                   {rarities.map((r) => {
                     const active = rarityFilter === r;
@@ -259,7 +259,7 @@ export default function AchievementsPage() {
                         key={r}
                         onClick={() => setRarityFilter(r)}
                         className={`text-[10px] font-mono px-2.5 py-1.5 rounded-lg border transition ${
-                          active ? (rc ? `${rc.border} ${rc.bg} ${rc.text}` : "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]") : "border-[rgb(var(--fg-rgb)/0.10)] text-[rgb(var(--fg-rgb)/0.30)] hover:text-[rgb(var(--fg-rgb)/0.60)]"
+                          active ? (rc ? `${rc.border} ${rc.bg} ${rc.text}` : "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]") : "border-[var(--fg-10)] text-[var(--fg-30)] hover:text-[var(--fg-60)]"
                         }`}
                       >
                         {r === "all" ? "ALL" : r}
@@ -271,7 +271,7 @@ export default function AchievementsPage() {
               {activeAdvancedCount > 0 && (
                 <button
                   onClick={() => { setCategoryFilter("all"); setRarityFilter("all"); }}
-                  className="flex items-center gap-1 text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.30)] hover:text-[rgb(var(--fg-rgb)/0.60)] transition"
+                  className="flex items-center gap-1 text-[9px] font-mono text-[var(--fg-30)] hover:text-[var(--fg-60)] transition"
                 >
                   <X size={10} /> Clear filters
                 </button>
@@ -284,9 +284,9 @@ export default function AchievementsPage() {
           <CubeLoader message="Loading achievements…" />
         ) : Object.keys(grouped).length === 0 ? (
           <div className="text-center py-16">
-            <Award size={32} className="mx-auto mb-3 text-[rgb(var(--fg-rgb)/0.15)]" />
-            <p className="text-sm font-semibold text-[rgb(var(--fg-rgb)/0.25)]">NO ACHIEVEMENTS FOUND</p>
-            <p className="text-xs text-[rgb(var(--fg-rgb)/0.20)] mt-1">Try a different filter.</p>
+            <Award size={32} className="mx-auto mb-3 text-[var(--fg-15)]" />
+            <p className="text-sm font-semibold text-[var(--fg-25)]">NO ACHIEVEMENTS FOUND</p>
+            <p className="text-xs text-[var(--fg-20)] mt-1">Try a different filter.</p>
           </div>
         ) : (
           Object.entries(grouped).map(([category, achievements]) => (
@@ -304,29 +304,29 @@ export default function AchievementsPage() {
                       key={a.key}
                       variants={staggerItem}
                       className={`relative flex items-start gap-3 rounded-xl border p-3 transition overflow-hidden ${
-                        isEarned ? `${rarity.border} ${rarity.bg}` : "border-[rgb(var(--fg-rgb)/0.06)] bg-[rgb(var(--fg-rgb)/0.01)] opacity-50"
+                        isEarned ? `${rarity.border} ${rarity.bg}` : "border-[var(--fg-06)] bg-[var(--fg-01)] opacity-50"
                       }`}
                     >
                       {newlyEarned && (
                         <div className="achievement-celebrate" />
                       )}
                       <div className="text-2xl shrink-0 mt-0.5 relative z-[1]">
-                        {isEarned ? a.icon : isSecret ? <span className="text-xl">❓</span> : <Lock size={20} className="text-[rgb(var(--fg-rgb)/0.20)]" />}
+                        {isEarned ? a.icon : isSecret ? <span className="text-xl">❓</span> : <Lock size={20} className="text-[var(--fg-20)]" />}
                       </div>
                       <div className="flex-1 min-w-0 relative z-[1]">
                         <div className="flex items-center gap-2">
-                          <p className={`text-sm font-bold ${isEarned ? "text-[rgb(var(--fg-rgb)/0.90)]" : "text-[rgb(var(--fg-rgb)/0.30)]"} truncate`}>
+                          <p className={`text-sm font-bold ${isEarned ? "text-[var(--fg-90)]" : "text-[var(--fg-30)]"} truncate`}>
                             {isSecret ? "???" : a.name}
                           </p>
                           <span className={`text-[8px] font-mono px-1.5 py-0.5 rounded ${rarity.text} ${rarity.bg} border ${rarity.border} shrink-0`}>
                             {isSecret ? "SECRET" : a.rarity}
                           </span>
                         </div>
-                        <p className={`text-[10px] font-mono mt-0.5 ${isEarned ? "text-[rgb(var(--fg-rgb)/0.50)]" : "text-[rgb(var(--fg-rgb)/0.20)]"}`}>
+                        <p className={`text-[10px] font-mono mt-0.5 ${isEarned ? "text-[var(--fg-50)]" : "text-[var(--fg-20)]"}`}>
                           {isSecret ? "Hidden achievement — keep training to discover it" : a.description}
                         </p>
                         {isEarned && earnedDates[a.key] && (
-                          <p className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.25)] mt-1">
+                          <p className="text-[9px] font-mono text-[var(--fg-25)] mt-1">
                             {newlyEarned && <span className="text-[rgb(var(--accent-light-rgb))]">NEW! </span>}
                             Earned {timeAgo(earnedDates[a.key])}
                           </p>
@@ -338,12 +338,12 @@ export default function AchievementsPage() {
                                 <div
                                   key={i}
                                   className={`w-1.5 h-1.5 rounded-full ${
-                                    i < chain.earned ? "bg-[rgb(var(--accent-rgb))]" : "bg-[rgb(var(--fg-rgb)/0.10)]"
+                                    i < chain.earned ? "bg-[rgb(var(--accent-rgb))]" : "bg-[var(--fg-10)]"
                                   }`}
                                 />
                               ))}
                             </div>
-                            <span className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.20)]">{chain.earned}/{chain.total}</span>
+                            <span className="text-[8px] font-mono text-[var(--fg-20)]">{chain.earned}/{chain.total}</span>
                           </div>
                         )}
                         {!isEarned && !isSecret && (() => {
@@ -354,10 +354,10 @@ export default function AchievementsPage() {
                           return (
                             <div className="mt-1.5">
                               <div className="flex items-center justify-between mb-0.5">
-                                <span className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.25)]">{fmt(prog.current)} / {fmt(prog.target)}</span>
-                                <span className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.20)]">{pct}%</span>
+                                <span className="text-[8px] font-mono text-[var(--fg-25)]">{fmt(prog.current)} / {fmt(prog.target)}</span>
+                                <span className="text-[8px] font-mono text-[var(--fg-20)]">{pct}%</span>
                               </div>
-                              <div className="h-1 rounded-full bg-[rgb(var(--fg-rgb)/0.04)] overflow-hidden">
+                              <div className="h-1 rounded-full bg-[var(--fg-04)] overflow-hidden">
                                 <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: `linear-gradient(90deg, rgb(var(--accent-rgb) / 0.4), rgb(var(--accent-rgb) / 0.7))` }} />
                               </div>
                             </div>

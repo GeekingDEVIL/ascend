@@ -17,7 +17,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-[var(--bg-sunken)] flex items-center justify-center text-[rgb(var(--fg-rgb)/0.40)] text-sm font-mono">
+            <div className="min-h-screen bg-[var(--bg-sunken)] flex items-center justify-center text-[var(--fg-40)] text-sm font-mono">
                 Loading...
             </div>
         );

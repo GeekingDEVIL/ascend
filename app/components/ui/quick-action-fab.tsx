@@ -48,7 +48,7 @@ export default function QuickActionFab({ actions, accentRgb }: QuickActionFabPro
                 }}
               >
                 <a.icon size={16} style={{ color: `rgb(${ac})` }} />
-                <span className="text-xs font-medium text-[rgb(var(--fg-rgb)/0.80)]">{a.label}</span>
+                <span className="text-xs font-medium text-[var(--fg-80)]">{a.label}</span>
               </motion.button>
             );
           })}
@@ -68,7 +68,7 @@ export default function QuickActionFab({ actions, accentRgb }: QuickActionFabPro
         transition={spring}
       >
         {open ? (
-          <X size={22} className="text-[rgb(var(--fg-rgb)/0.60)]" />
+          <X size={22} className="text-[var(--fg-60)]" />
         ) : (
           <Plus size={22} style={{ color: `rgb(${c})` }} />
         )}

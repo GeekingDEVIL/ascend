@@ -51,7 +51,7 @@ export default function SubNavPills({ pills, activeKey, onSelect, accentRgb }: S
             className={`relative flex items-center gap-1.5 px-3.5 py-2 rounded-full text-[10px] font-mono tracking-wide whitespace-nowrap shrink-0 transition-colors ${
               active
                 ? "text-[var(--text-primary)]"
-                : "text-[rgb(var(--fg-rgb)/0.35)] hover:text-[rgb(var(--fg-rgb)/0.60)]"
+                : "text-[var(--fg-35)] hover:text-[var(--fg-60)]"
             }`}
           >
             {active && (

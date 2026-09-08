@@ -59,16 +59,16 @@ export default function DiscoverPage() {
         <SwipeNav sections={getYouSections(enabledKeys)} />
 
         <div>
-          <h1 className="text-xl md:text-2xl font-bold tracking-wide text-[rgb(var(--fg-rgb)/0.90)] flex items-center gap-2">
+          <h1 className="text-xl md:text-2xl font-bold tracking-wide text-[var(--fg-90)] flex items-center gap-2">
             <Compass size={22} className="text-[rgb(var(--accent-rgb))]" />
             Discover Modules
           </h1>
-          <p className="text-[rgb(var(--fg-rgb)/0.40)] text-sm mt-1">
+          <p className="text-[var(--fg-40)] text-sm mt-1">
             Enable the features you need. Core modules are always active. Toggle optional modules on or off — even upcoming ones.
           </p>
-          <div className="flex items-center gap-3 mt-2 text-[10px] font-mono tracking-wider text-[rgb(var(--fg-rgb)/0.25)]">
+          <div className="flex items-center gap-3 mt-2 text-[10px] font-mono tracking-wider text-[var(--fg-25)]">
             <span className="text-emerald-400/60">LIVE — built &amp; ready</span>
-            <span className="text-[rgb(var(--fg-rgb)/0.15)]">|</span>
+            <span className="text-[var(--fg-15)]">|</span>
             <span className="text-amber-400/50">COMING SOON — on the roadmap</span>
           </div>
         </div>
@@ -78,7 +78,7 @@ export default function DiscoverPage() {
           if (mods.length === 0) return null;
           return (
             <section key={group.label}>
-              <h2 className="text-[10px] font-mono tracking-[0.2em] text-[rgb(var(--fg-rgb)/0.30)] uppercase mb-3">{group.label}</h2>
+              <h2 className="text-[10px] font-mono tracking-[0.2em] text-[var(--fg-30)] uppercase mb-3">{group.label}</h2>
               <motion.div variants={staggerContainer} initial="hidden" animate="visible" className="space-y-2">
                 {mods.map((mod) => (
                   <ModuleCard
@@ -102,7 +102,7 @@ export default function DiscoverPage() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 30 }}
-            className="fixed bottom-28 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-xl bg-[rgb(var(--fg-rgb)/0.10)] backdrop-blur-md border border-[rgb(var(--fg-rgb)/0.10)] text-xs font-mono text-[rgb(var(--fg-rgb)/0.80)] shadow-lg"
+            className="fixed bottom-28 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-xl bg-[var(--fg-10)] backdrop-blur-md border border-[var(--fg-10)] text-xs font-mono text-[var(--fg-80)] shadow-lg"
           >
             {toast}
           </motion.div>
@@ -144,8 +144,8 @@ function ModuleCard({
       variants={staggerItem}
       className={`relative border rounded-lg p-4 flex items-center gap-4 transition-all ${
         enabled
-          ? "border-[rgb(var(--fg-rgb)/0.10)] bg-[rgb(var(--fg-rgb)/0.03)]"
-          : "border-[rgb(var(--fg-rgb)/0.05)] bg-[rgb(var(--fg-rgb)/0.01)] opacity-60"
+          ? "border-[var(--fg-10)] bg-[var(--fg-03)]"
+          : "border-[var(--fg-05)] bg-[var(--fg-01)] opacity-60"
       }`}
     >
       <div
@@ -157,7 +157,7 @@ function ModuleCard({
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="font-semibold text-sm text-[rgb(var(--fg-rgb)/0.90)]">{mod.name}</span>
+          <span className="font-semibold text-sm text-[var(--fg-90)]">{mod.name}</span>
           {isCore && (
             <span className="text-[9px] font-mono tracking-wider text-[rgb(var(--accent-rgb))] bg-[rgb(var(--accent-rgb)/0.1)] px-1.5 py-0.5 rounded">
               CORE
@@ -169,7 +169,7 @@ function ModuleCard({
             </span>
           )}
           {!isBuilt && (
-            <span className="text-[9px] font-mono tracking-wider text-[rgb(var(--fg-rgb)/0.30)] bg-[rgb(var(--fg-rgb)/0.05)] px-1.5 py-0.5 rounded">
+            <span className="text-[9px] font-mono tracking-wider text-[var(--fg-30)] bg-[var(--fg-05)] px-1.5 py-0.5 rounded">
               {phaseLabel}
             </span>
           )}
@@ -179,7 +179,7 @@ function ModuleCard({
             </span>
           )}
         </div>
-        <p className="text-xs text-[rgb(var(--fg-rgb)/0.40)] mt-0.5 truncate">{mod.description}</p>
+        <p className="text-xs text-[var(--fg-40)] mt-0.5 truncate">{mod.description}</p>
       </div>
 
       {isCore ? (
@@ -191,7 +191,7 @@ function ModuleCard({
           onClick={onToggle}
           disabled={toggling}
           className={`w-12 h-7 rounded-full relative transition-colors shrink-0 ${
-            enabled ? "bg-emerald-500/80" : "bg-[rgb(var(--fg-rgb)/0.10)]"
+            enabled ? "bg-emerald-500/80" : "bg-[var(--fg-10)]"
           }`}
           aria-label={`${enabled ? "Disable" : "Enable"} ${mod.name}`}
         >

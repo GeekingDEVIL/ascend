@@ -47,8 +47,8 @@ const LeaderboardRankings = React.forwardRef<HTMLDivElement, LeaderboardRankings
                 isMe
                   ? "border-[rgb(var(--accent-rgb)/0.3)] bg-[rgb(var(--accent-rgb)/0.06)]"
                   : entry.rank <= 3
-                    ? "border-[rgb(var(--fg-rgb)/0.08)] bg-[rgb(var(--fg-rgb)/0.03)]"
-                    : "border-[rgb(var(--fg-rgb)/0.04)] bg-[rgb(var(--fg-rgb)/0.01)]"
+                    ? "border-[var(--fg-08)] bg-[var(--fg-03)]"
+                    : "border-[var(--fg-04)] bg-[var(--fg-01)]"
               )}
               style={isMe ? { boxShadow: "0 0 15px -6px rgb(var(--accent-rgb) / 0.3)" } : undefined}
             >
@@ -56,25 +56,25 @@ const LeaderboardRankings = React.forwardRef<HTMLDivElement, LeaderboardRankings
                 {medal ? (
                   <span className="text-base">{medal}</span>
                 ) : (
-                  <span className="text-xs font-bold font-mono text-[rgb(var(--fg-rgb)/0.30)]">{entry.rank}</span>
+                  <span className="text-xs font-bold font-mono text-[var(--fg-30)]">{entry.rank}</span>
                 )}
               </div>
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 text-sm font-bold overflow-hidden bg-[rgb(var(--fg-rgb)/0.04)] border border-[rgb(var(--fg-rgb)/0.08)]">
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 text-sm font-bold overflow-hidden bg-[var(--fg-04)] border border-[var(--fg-08)]">
                 {entry.avatarUrl ? (
                   <img src={entry.avatarUrl} alt={entry.userName} className="w-full h-full object-cover" />
                 ) : (
-                  <span className="text-[rgb(var(--fg-rgb)/0.50)]">{entry.userName[0]?.toUpperCase()}</span>
+                  <span className="text-[var(--fg-50)]">{entry.userName[0]?.toUpperCase()}</span>
                 )}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
-                  <p className={cn("text-[13px] font-bold truncate", isMe ? "text-[rgb(var(--accent-light-rgb))]" : "text-[rgb(var(--fg-rgb)/0.85)]")}>{entry.userName}</p>
+                  <p className={cn("text-[13px] font-bold truncate", isMe ? "text-[rgb(var(--accent-light-rgb))]" : "text-[var(--fg-85)]")}>{entry.userName}</p>
                   {isMe && <span className="text-[7px] font-mono px-1.5 py-0.5 rounded-full bg-[rgb(var(--accent-rgb)/0.15)] border border-[rgb(var(--accent-rgb)/0.3)] text-[rgb(var(--accent-light-rgb))] shrink-0">YOU</span>}
                 </div>
-                {entry.byline && <p className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.25)]">{entry.byline}</p>}
+                {entry.byline && <p className="text-[9px] font-mono text-[var(--fg-25)]">{entry.byline}</p>}
               </div>
               <div className="text-right shrink-0">
-                <p className="text-sm font-bold font-mono text-[rgb(var(--fg-rgb)/0.80)]">{formatValue(entry.value)}</p>
+                <p className="text-sm font-bold font-mono text-[var(--fg-80)]">{formatValue(entry.value)}</p>
               </div>
             </div>
           );
@@ -85,15 +85,15 @@ const LeaderboardRankings = React.forwardRef<HTMLDivElement, LeaderboardRankings
             <button
               onClick={() => setPage(Math.max(0, page - 1))}
               disabled={page === 0}
-              className="w-7 h-7 rounded-lg border border-[rgb(var(--fg-rgb)/0.06)] flex items-center justify-center text-[rgb(var(--fg-rgb)/0.30)] hover:text-[rgb(var(--fg-rgb)/0.60)] disabled:opacity-20 disabled:cursor-not-allowed transition"
+              className="w-7 h-7 rounded-lg border border-[var(--fg-06)] flex items-center justify-center text-[var(--fg-30)] hover:text-[var(--fg-60)] disabled:opacity-20 disabled:cursor-not-allowed transition"
             >
               <ChevronLeft size={14} />
             </button>
-            <span className="text-[10px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">{page + 1} / {totalPages}</span>
+            <span className="text-[10px] font-mono text-[var(--fg-30)]">{page + 1} / {totalPages}</span>
             <button
               onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
               disabled={page === totalPages - 1}
-              className="w-7 h-7 rounded-lg border border-[rgb(var(--fg-rgb)/0.06)] flex items-center justify-center text-[rgb(var(--fg-rgb)/0.30)] hover:text-[rgb(var(--fg-rgb)/0.60)] disabled:opacity-20 disabled:cursor-not-allowed transition"
+              className="w-7 h-7 rounded-lg border border-[var(--fg-06)] flex items-center justify-center text-[var(--fg-30)] hover:text-[var(--fg-60)] disabled:opacity-20 disabled:cursor-not-allowed transition"
             >
               <ChevronRight size={14} />
             </button>

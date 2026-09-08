@@ -809,12 +809,12 @@ export default function Dashboard() {
             <h1 className="text-xl font-bold font-display text-[rgb(var(--accent-light-rgb))]">
               {profile?.username ? `${greeting}, ${profile.username}` : greeting}
             </h1>
-            <p className="text-[11px] font-mono text-[rgb(var(--fg-rgb)/0.30)] mt-0.5">{today ?? "..."} {time ? `· ${time}` : ""} · {nudge}</p>
+            <p className="text-[11px] font-mono text-[var(--fg-30)] mt-0.5">{today ?? "..."} {time ? `· ${time}` : ""} · {nudge}</p>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={() => router.push("/notifications")}
-              className="relative w-9 h-9 rounded-xl bg-[rgb(var(--fg-rgb)/0.04)] border border-[rgb(var(--fg-rgb)/0.06)] flex items-center justify-center text-[rgb(var(--fg-rgb)/0.40)] hover:text-[rgb(var(--fg-rgb)/0.70)] transition"
+              className="relative w-9 h-9 rounded-xl bg-[var(--fg-04)] border border-[var(--fg-06)] flex items-center justify-center text-[var(--fg-40)] hover:text-[var(--fg-70)] transition"
             >
               <Bell size={16} />
               {notifLoaded && notifications.length > 0 && (
@@ -844,10 +844,10 @@ export default function Dashboard() {
             isEnabled("progress") && stats.bodyWeight !== null && { label: `${formatWeight(stats.bodyWeight, weightUnit, 1)}`, sub: weightUnit, color: "rgb(139,92,246)" },
           ].filter(Boolean) as { label: string; sub: string; color: string }[];
           const renderPill = (pill: { label: string; sub: string; color: string }, i: number) => (
-            <div key={`${pill.sub}-${i}`} className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[rgb(var(--fg-rgb)/0.08)] bg-[rgb(var(--fg-rgb)/0.03)]">
+            <div key={`${pill.sub}-${i}`} className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[var(--fg-08)] bg-[var(--fg-03)]">
               <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: pill.color }} />
-              <span className="text-xs font-bold font-mono text-[rgb(var(--fg-rgb)/0.80)]">{pill.label}</span>
-              <span className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.25)]">{pill.sub}</span>
+              <span className="text-xs font-bold font-mono text-[var(--fg-80)]">{pill.label}</span>
+              <span className="text-[9px] font-mono text-[var(--fg-25)]">{pill.sub}</span>
             </div>
           );
           return (
@@ -886,10 +886,10 @@ export default function Dashboard() {
                 <AlertCircle size={18} className="text-orange-400/70" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-[rgb(var(--fg-rgb)/0.70)]">Yesterday was <span className="text-orange-300">{missedWorkout}</span></p>
-                <p className="text-[10px] font-mono text-[rgb(var(--fg-rgb)/0.25)] mt-0.5">Missed session — reschedule or skip?</p>
+                <p className="text-sm font-medium text-[var(--fg-70)]">Yesterday was <span className="text-orange-300">{missedWorkout}</span></p>
+                <p className="text-[10px] font-mono text-[var(--fg-25)] mt-0.5">Missed session — reschedule or skip?</p>
               </div>
-              <button onClick={() => router.push("/schedule")} className="shrink-0 px-3 py-1.5 rounded-lg bg-[rgb(var(--fg-rgb)/0.06)] border border-[rgb(var(--fg-rgb)/0.08)] text-[10px] font-mono text-[rgb(var(--fg-rgb)/0.50)] hover:text-[rgb(var(--fg-rgb)/0.80)] transition">
+              <button onClick={() => router.push("/schedule")} className="shrink-0 px-3 py-1.5 rounded-lg bg-[var(--fg-06)] border border-[var(--fg-08)] text-[10px] font-mono text-[var(--fg-50)] hover:text-[var(--fg-80)] transition">
                 Schedule
               </button>
             </div>
@@ -908,7 +908,7 @@ export default function Dashboard() {
                   <p className="text-sm font-semibold text-pink-300/90">{cyclePhase.phase} Phase</p>
                   <span className="text-[9px] font-mono text-pink-400/40">Day {cyclePhase.day}</span>
                 </div>
-                <p className="text-[10px] font-mono text-[rgb(var(--fg-rgb)/0.30)] mt-0.5">{cyclePhase.tip}</p>
+                <p className="text-[10px] font-mono text-[var(--fg-30)] mt-0.5">{cyclePhase.tip}</p>
               </div>
               <button onClick={() => router.push("/cycle")} className="shrink-0 px-3 py-1.5 rounded-lg bg-pink-400/10 border border-pink-400/20 text-[10px] font-mono text-pink-400/60 hover:text-pink-300 transition">
                 Log
@@ -919,27 +919,27 @@ export default function Dashboard() {
 
         {/* ─── Weekly Recap (Monday) ─── */}
         {weeklyRecap && (
-          <motion.div variants={staggerItem} className="rounded-2xl border border-[rgb(var(--accent-rgb)/0.15)] bg-[rgb(var(--fg-rgb)/0.03)] p-4" style={{ order: cardOrder.recapOrder, boxShadow: "0 0 20px -5px rgb(var(--accent-rgb) / 0.1)" }}>
+          <motion.div variants={staggerItem} className="rounded-2xl border border-[rgb(var(--accent-rgb)/0.15)] bg-[var(--fg-03)] p-4" style={{ order: cardOrder.recapOrder, boxShadow: "0 0 20px -5px rgb(var(--accent-rgb) / 0.1)" }}>
             <div className="flex items-center gap-2 mb-3">
               <BarChart3 size={14} className="text-[rgb(var(--accent-rgb))]" />
               <p className="text-[9px] font-mono tracking-widest text-[rgb(var(--accent-light-rgb)/0.4)]">LAST WEEK</p>
             </div>
             <div className="grid grid-cols-4 gap-2">
               <div className="text-center">
-                <p className="text-xl font-bold font-mono text-[rgb(var(--fg-rgb)/0.90)]">{weeklyRecap.workouts}</p>
-                <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.25)]">WORKOUTS</p>
+                <p className="text-xl font-bold font-mono text-[var(--fg-90)]">{weeklyRecap.workouts}</p>
+                <p className="text-[8px] font-mono text-[var(--fg-25)]">WORKOUTS</p>
               </div>
               <div className="text-center">
-                <p className="text-xl font-bold font-mono text-[rgb(var(--fg-rgb)/0.90)]">{Math.round(weeklyRecap.volume).toLocaleString()}</p>
-                <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.25)]">VOL ({weightUnit})</p>
+                <p className="text-xl font-bold font-mono text-[var(--fg-90)]">{Math.round(weeklyRecap.volume).toLocaleString()}</p>
+                <p className="text-[8px] font-mono text-[var(--fg-25)]">VOL ({weightUnit})</p>
               </div>
               <div className="text-center">
                 <p className="text-xl font-bold font-mono text-yellow-400/90">{weeklyRecap.prs}</p>
-                <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.25)]">PRs</p>
+                <p className="text-[8px] font-mono text-[var(--fg-25)]">PRs</p>
               </div>
               <div className="text-center">
                 <p className="text-xl font-bold font-mono text-orange-400/90">{weeklyRecap.streak}</p>
-                <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.25)]">STREAK</p>
+                <p className="text-[8px] font-mono text-[var(--fg-25)]">STREAK</p>
               </div>
             </div>
           </motion.div>
@@ -949,7 +949,7 @@ export default function Dashboard() {
         {insight && (
           <motion.div variants={staggerItem} className="rounded-xl border border-[rgb(var(--accent-rgb)/0.1)] bg-[rgb(var(--accent-rgb)/0.03)] px-4 py-3 flex items-center gap-3" style={{ order: cardOrder.insightOrder }}>
             <Sparkles size={14} className="text-[rgb(var(--accent-rgb))] shrink-0" />
-            <p className="text-[11px] font-mono text-[rgb(var(--fg-rgb)/0.50)]">{insight}</p>
+            <p className="text-[11px] font-mono text-[var(--fg-50)]">{insight}</p>
           </motion.div>
         )}
 
@@ -964,16 +964,16 @@ export default function Dashboard() {
             <Droplets size={16} className="text-blue-400/70 shrink-0" />
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between">
-                <p className="text-[11px] font-mono text-[rgb(var(--fg-rgb)/0.50)]">
+                <p className="text-[11px] font-mono text-[var(--fg-50)]">
                   {(hydrationMl / 1000).toFixed(1)}L / 3L
                 </p>
-                <span className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.25)]">{Math.min(100, Math.round((hydrationMl / 3000) * 100))}%</span>
+                <span className="text-[9px] font-mono text-[var(--fg-25)]">{Math.min(100, Math.round((hydrationMl / 3000) * 100))}%</span>
               </div>
-              <div className="h-1 rounded-full bg-[rgb(var(--fg-rgb)/0.04)] overflow-hidden mt-1">
+              <div className="h-1 rounded-full bg-[var(--fg-04)] overflow-hidden mt-1">
                 <div className="h-full rounded-full bg-blue-400/40" style={{ width: `${Math.min(100, (hydrationMl / 3000) * 100)}%` }} />
               </div>
             </div>
-            <ChevronRight size={12} className="text-[rgb(var(--fg-rgb)/0.15)] shrink-0" />
+            <ChevronRight size={12} className="text-[var(--fg-15)] shrink-0" />
           </motion.div>
         )}
 
@@ -1019,10 +1019,10 @@ export default function Dashboard() {
                     <p className="text-[9px] font-mono tracking-widest text-rose-300/40">DAILY HABITS</p>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <span className="text-[10px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">
+                    <span className="text-[10px] font-mono text-[var(--fg-30)]">
                       {habitStats.completed === habitStats.total && habitStats.total > 0 ? "Perfect Day!" : `${pct}%`}
                     </span>
-                    <ChevronRight size={12} className="text-[rgb(var(--fg-rgb)/0.15)]" />
+                    <ChevronRight size={12} className="text-[var(--fg-15)]" />
                   </div>
                 </div>
 
@@ -1077,7 +1077,7 @@ export default function Dashboard() {
                         initial={{ opacity: 0, scale: 0.5 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ duration: 0.4, delay: 0.3, ease: [0.34, 1.56, 0.64, 1] }}>
-                        <AnimatedPercent value={pct} className="text-lg font-bold font-mono text-[rgb(var(--fg-rgb)/0.70)]" />
+                        <AnimatedPercent value={pct} className="text-lg font-bold font-mono text-[var(--fg-70)]" />
                       </motion.div>
                     </div>
                   </div>
@@ -1092,7 +1092,7 @@ export default function Dashboard() {
                             background: h.done ? c.from : `${c.from}33`,
                             boxShadow: h.done ? `0 0 4px ${c.from}` : "none",
                           }} />
-                          <span className={`text-[10px] font-mono truncate ${h.done ? "text-[rgb(var(--fg-rgb)/0.50)] line-through" : "text-[rgb(var(--fg-rgb)/0.35)]"}`}>
+                          <span className={`text-[10px] font-mono truncate ${h.done ? "text-[var(--fg-50)] line-through" : "text-[var(--fg-35)]"}`}>
                             {h.icon} {h.name}
                           </span>
                           {h.done && <span className="text-[8px] text-emerald-400/50 ml-auto shrink-0">✓</span>}
@@ -1100,7 +1100,7 @@ export default function Dashboard() {
                       );
                     })}
                     {habitStats.habits.length > 4 && (
-                      <p className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.15)]">+{habitStats.habits.length - 4} more</p>
+                      <p className="text-[9px] font-mono text-[var(--fg-15)]">+{habitStats.habits.length - 4} more</p>
                     )}
                   </div>
                 </div>
@@ -1108,12 +1108,12 @@ export default function Dashboard() {
 
               {/* Quick complete strip */}
               {pendingHabits.length > 0 && (
-                <div className="border-t border-[rgb(var(--fg-rgb)/0.04)] px-4 py-2 flex gap-1.5 flex-wrap" onClick={(e) => e.stopPropagation()}>
+                <div className="border-t border-[var(--fg-04)] px-4 py-2 flex gap-1.5 flex-wrap" onClick={(e) => e.stopPropagation()}>
                   {pendingHabits.map((h) => (
                     <button
                       key={h.id}
                       onClick={() => quickCompleteHabit(h.id)}
-                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-[rgb(var(--fg-rgb)/0.06)] bg-[rgb(var(--fg-rgb)/0.02)] hover:bg-[rgb(var(--fg-rgb)/0.06)] text-[10px] font-mono text-[rgb(var(--fg-rgb)/0.40)] hover:text-[rgb(var(--fg-rgb)/0.60)] transition active:scale-95"
+                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-[var(--fg-06)] bg-[var(--fg-02)] hover:bg-[var(--fg-06)] text-[10px] font-mono text-[var(--fg-40)] hover:text-[var(--fg-60)] transition active:scale-95"
                     >
                       <span>{h.icon}</span> {h.name}
                     </button>
@@ -1125,22 +1125,22 @@ export default function Dashboard() {
         })()}
 
         {/* ─── Today's Workout Card ─── */}
-        <motion.div variants={staggerItem} className="rounded-2xl border border-[rgb(var(--accent-rgb)/0.15)] bg-[rgb(var(--fg-rgb)/0.03)] overflow-hidden" style={{ order: cardOrder.workoutOrder, boxShadow: "0 0 20px -5px rgb(var(--accent-rgb) / 0.1), inset 0 1px 0 rgb(var(--accent-rgb) / 0.05)" }}>
+        <motion.div variants={staggerItem} className="rounded-2xl border border-[rgb(var(--accent-rgb)/0.15)] bg-[var(--fg-03)] overflow-hidden" style={{ order: cardOrder.workoutOrder, boxShadow: "0 0 20px -5px rgb(var(--accent-rgb) / 0.1), inset 0 1px 0 rgb(var(--accent-rgb) / 0.05)" }}>
           <div className="p-4">
             <p className="text-[9px] font-mono tracking-widest text-[rgb(var(--accent-light-rgb)/0.4)] mb-2">TODAY&apos;S WORKOUT</p>
 
             {todayLoading ? (
               <div className="animate-pulse space-y-2 py-2">
-                <div className="h-5 w-40 rounded bg-[rgb(var(--fg-rgb)/0.06)]" />
-                <div className="h-3 w-28 rounded bg-[rgb(var(--fg-rgb)/0.04)]" />
+                <div className="h-5 w-40 rounded bg-[var(--fg-06)]" />
+                <div className="h-3 w-28 rounded bg-[var(--fg-04)]" />
               </div>
             ) : !todayPlan ? (
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-base font-semibold text-[rgb(var(--fg-rgb)/0.80)]">No Workout Planned</p>
-                  <p className="text-[11px] text-[rgb(var(--fg-rgb)/0.30)] mt-0.5">Set up your schedule to get started</p>
+                  <p className="text-base font-semibold text-[var(--fg-80)]">No Workout Planned</p>
+                  <p className="text-[11px] text-[var(--fg-30)] mt-0.5">Set up your schedule to get started</p>
                 </div>
-                <button onClick={() => router.push("/schedule")} className="shrink-0 px-4 py-2 rounded-xl bg-[rgb(var(--fg-rgb)/0.06)] border border-[rgb(var(--fg-rgb)/0.08)] text-xs font-medium text-[rgb(var(--fg-rgb)/0.60)] hover:text-[rgb(var(--fg-rgb)/0.90)] hover:bg-[rgb(var(--fg-rgb)/0.1)] transition">
+                <button onClick={() => router.push("/schedule")} className="shrink-0 px-4 py-2 rounded-xl bg-[var(--fg-06)] border border-[var(--fg-08)] text-xs font-medium text-[var(--fg-60)] hover:text-[var(--fg-90)] hover:bg-[var(--fg-10)] transition">
                   Schedule
                 </button>
               </div>
@@ -1152,10 +1152,10 @@ export default function Dashboard() {
                   </div>
                   <div>
                     <p className="text-base font-semibold text-emerald-400">Session Complete</p>
-                    <p className="text-[11px] font-mono text-[rgb(var(--fg-rgb)/0.30)] mt-0.5">{todayPlan.sets} sets completed</p>
+                    <p className="text-[11px] font-mono text-[var(--fg-30)] mt-0.5">{todayPlan.sets} sets completed</p>
                   </div>
                 </div>
-                <button onClick={() => router.push("/progress")} className="shrink-0 px-4 py-2 rounded-xl bg-[rgb(var(--fg-rgb)/0.06)] border border-[rgb(var(--fg-rgb)/0.08)] text-xs font-medium text-[rgb(var(--fg-rgb)/0.60)] hover:text-[rgb(var(--fg-rgb)/0.90)] hover:bg-[rgb(var(--fg-rgb)/0.1)] transition flex items-center gap-1.5">
+                <button onClick={() => router.push("/progress")} className="shrink-0 px-4 py-2 rounded-xl bg-[var(--fg-06)] border border-[var(--fg-08)] text-xs font-medium text-[var(--fg-60)] hover:text-[var(--fg-90)] hover:bg-[var(--fg-10)] transition flex items-center gap-1.5">
                   Progress <ChevronRight size={12} />
                 </button>
               </div>
@@ -1165,8 +1165,8 @@ export default function Dashboard() {
                   <HeartPulse size={18} className="text-blue-400" />
                 </div>
                 <div>
-                  <p className="text-base font-semibold text-[rgb(var(--fg-rgb)/0.80)]">Rest Day</p>
-                  <p className="text-[11px] text-[rgb(var(--fg-rgb)/0.30)] mt-0.5">Recovery is part of the plan</p>
+                  <p className="text-base font-semibold text-[var(--fg-80)]">Rest Day</p>
+                  <p className="text-[11px] text-[var(--fg-30)] mt-0.5">Recovery is part of the plan</p>
                 </div>
               </div>
             ) : (
@@ -1176,8 +1176,8 @@ export default function Dashboard() {
                     <Dumbbell size={18} className="text-[rgb(var(--accent-rgb))]" />
                   </div>
                   <div>
-                    <p className="text-base font-semibold text-[rgb(var(--fg-rgb)/0.80)]">{todayPlan.title}</p>
-                    <p className="text-[11px] font-mono text-[rgb(var(--fg-rgb)/0.30)] mt-0.5">
+                    <p className="text-base font-semibold text-[var(--fg-80)]">{todayPlan.title}</p>
+                    <p className="text-[11px] font-mono text-[var(--fg-30)] mt-0.5">
                       {todayPlan.count} exercise{todayPlan.count !== 1 ? "s" : ""} · {todayPlan.sets} sets · ~{estMinutes} min
                     </p>
                   </div>
@@ -1194,22 +1194,22 @@ export default function Dashboard() {
         </motion.div>
 
         {/* ─── Level & Rank ─── */}
-        <motion.div variants={staggerItem} className="rounded-2xl border border-[rgb(var(--accent-rgb)/0.15)] bg-[rgb(var(--fg-rgb)/0.03)] p-4" style={{ order: cardOrder.levelOrder, boxShadow: "0 0 20px -5px rgb(var(--accent-rgb) / 0.1), inset 0 1px 0 rgb(var(--accent-rgb) / 0.05)" }}>
+        <motion.div variants={staggerItem} className="rounded-2xl border border-[rgb(var(--accent-rgb)/0.15)] bg-[var(--fg-03)] p-4" style={{ order: cardOrder.levelOrder, boxShadow: "0 0 20px -5px rgb(var(--accent-rgb) / 0.1), inset 0 1px 0 rgb(var(--accent-rgb) / 0.05)" }}>
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-xl bg-[rgb(var(--accent-rgb)/0.1)] border border-[rgb(var(--accent-rgb)/0.2)] flex items-center justify-center">
                 <span className="text-lg font-bold text-[rgb(var(--accent-rgb))]">{statsLoaded ? level : "—"}</span>
               </div>
               <div>
-                <p className="text-sm font-semibold text-[rgb(var(--fg-rgb)/0.80)]">Level {statsLoaded ? level : "—"}</p>
-                <p className="text-[10px] font-mono text-[rgb(var(--fg-rgb)/0.30)] mt-0.5">
+                <p className="text-sm font-semibold text-[var(--fg-80)]">Level {statsLoaded ? level : "—"}</p>
+                <p className="text-[10px] font-mono text-[var(--fg-30)] mt-0.5">
                   <span className={rank.color}>{rank.name}</span>
-                  {nextRank && <span className="text-[rgb(var(--fg-rgb)/0.15)]"> · Next: {nextRank.name} at Lv.{nextRank.minLevel}</span>}
+                  {nextRank && <span className="text-[var(--fg-15)]"> · Next: {nextRank.name} at Lv.{nextRank.minLevel}</span>}
                 </p>
               </div>
             </div>
             <span className={`flex items-center gap-1 px-2.5 py-1 rounded-lg border text-[9px] font-mono tracking-wider ${rank.color}`}
-              style={{ borderColor: `${rank.glow?.replace("0.6", "0.3") ?? "rgb(var(--fg-rgb) / 0.1)"}`, backgroundColor: `${rank.glow?.replace("0.6", "0.06") ?? "rgb(var(--fg-rgb) / 0.03)"}` }}
+              style={{ borderColor: `${rank.glow?.replace("0.6", "0.3") ?? "var(--fg-10)"}`, backgroundColor: `${rank.glow?.replace("0.6", "0.06") ?? "var(--fg-03)"}` }}
             >
               <Award size={10} />
               {rank.name}
@@ -1219,18 +1219,18 @@ export default function Dashboard() {
           {/* XP Bar */}
           <div className="flex items-center gap-2">
             <Zap size={12} className="text-[rgb(var(--accent-rgb))] shrink-0" />
-            <div className="flex-1 h-2 bg-[rgb(var(--fg-rgb)/0.06)] rounded-full overflow-hidden">
+            <div className="flex-1 h-2 bg-[var(--fg-06)] rounded-full overflow-hidden">
               <div className="h-full rounded-full transition-all duration-500" style={{ width: `${xpProgress}%`, background: `linear-gradient(90deg, rgb(var(--accent-rgb) / 0.7), rgb(var(--accent-rgb)))` }} />
             </div>
-            <span className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.25)] shrink-0 min-w-[48px] text-right">
+            <span className="text-[9px] font-mono text-[var(--fg-25)] shrink-0 min-w-[48px] text-right">
               {levelInfo.isMaxLevel ? "MAX" : `${levelInfo.xpIntoCurrentLevel}/${levelInfo.xpNeededForNext}`}
             </span>
           </div>
 
           {stats.goal && (
-            <div className="flex items-center gap-2 mt-2.5 pt-2.5 border-t border-[rgb(var(--fg-rgb)/0.04)]">
-              <Target size={12} className="text-[rgb(var(--fg-rgb)/0.20)]" />
-              <span className="text-[10px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">Goal: <span className="text-[rgb(var(--fg-rgb)/0.50)]">{stats.goal}</span></span>
+            <div className="flex items-center gap-2 mt-2.5 pt-2.5 border-t border-[var(--fg-04)]">
+              <Target size={12} className="text-[var(--fg-20)]" />
+              <span className="text-[10px] font-mono text-[var(--fg-30)]">Goal: <span className="text-[var(--fg-50)]">{stats.goal}</span></span>
             </div>
           )}
         </motion.div>
@@ -1243,19 +1243,19 @@ export default function Dashboard() {
             { icon: <TrendingUp size={16} />, label: "WEEKLY VOL", value: statsLoaded ? `${Math.round(kgToUnit(stats.weeklyVolume, weightUnit)).toLocaleString()}` : "—", sub: weightUnit, color: "text-[rgb(var(--accent-rgb))]", bg: "bg-[rgb(var(--accent-rgb)/0.1)]", border: "border-[rgb(var(--accent-rgb)/0.2)]" },
             { icon: <Trophy size={16} />, label: "PRs", value: statsLoaded ? `${stats.prCount}` : "—", sub: "exercises", color: "text-yellow-400", bg: "bg-yellow-400/10", border: "border-yellow-400/20" },
           ].map((stat) => (
-            <div key={stat.label} className="rounded-xl border border-[rgb(var(--accent-rgb)/0.12)] bg-[rgb(var(--fg-rgb)/0.03)] p-3" style={{ boxShadow: "0 0 15px -5px rgb(var(--accent-rgb) / 0.08)" }}>
+            <div key={stat.label} className="rounded-xl border border-[rgb(var(--accent-rgb)/0.12)] bg-[var(--fg-03)] p-3" style={{ boxShadow: "0 0 15px -5px rgb(var(--accent-rgb) / 0.08)" }}>
               <div className="flex items-center justify-between mb-2">
                 <span className={`w-7 h-7 rounded-lg ${stat.bg} ${stat.border} border flex items-center justify-center ${stat.color}`}>{stat.icon}</span>
-                <p className="text-[8px] font-mono tracking-wider text-[rgb(var(--fg-rgb)/0.20)]">{stat.label}</p>
+                <p className="text-[8px] font-mono tracking-wider text-[var(--fg-20)]">{stat.label}</p>
               </div>
-              <p className="text-2xl font-bold text-[rgb(var(--fg-rgb)/0.90)] font-mono">{stat.value}</p>
-              <p className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.20)] mt-0.5">{stat.sub}</p>
+              <p className="text-2xl font-bold text-[var(--fg-90)] font-mono">{stat.value}</p>
+              <p className="text-[9px] font-mono text-[var(--fg-20)] mt-0.5">{stat.sub}</p>
             </div>
           ))}
         </motion.div>
 
         {/* ─── Attribute Rings ─── */}
-        <motion.div variants={staggerItem} className="rounded-2xl border border-[rgb(var(--accent-rgb)/0.15)] bg-[rgb(var(--fg-rgb)/0.03)] p-4" style={{ order: cardOrder.attrOrder, boxShadow: "0 0 20px -5px rgb(var(--accent-rgb) / 0.1), inset 0 1px 0 rgb(var(--accent-rgb) / 0.05)" }}>
+        <motion.div variants={staggerItem} className="rounded-2xl border border-[rgb(var(--accent-rgb)/0.15)] bg-[var(--fg-03)] p-4" style={{ order: cardOrder.attrOrder, boxShadow: "0 0 20px -5px rgb(var(--accent-rgb) / 0.1), inset 0 1px 0 rgb(var(--accent-rgb) / 0.05)" }}>
           <p className="text-[9px] font-mono tracking-widest text-[rgb(var(--accent-light-rgb)/0.4)] mb-3">ATTRIBUTES</p>
           <div className="grid grid-cols-4 gap-3">
             {[
@@ -1267,12 +1267,12 @@ export default function Dashboard() {
               <div key={attr.label} className="flex flex-col items-center">
                 <div className="relative w-14 h-14 mb-1.5">
                   <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
-                    <circle cx="18" cy="18" r="15" fill="none" stroke="rgb(var(--fg-rgb) / 0.04)" strokeWidth="2.5" />
+                    <circle cx="18" cy="18" r="15" fill="none" stroke="var(--fg-04)" strokeWidth="2.5" />
                     <circle cx="18" cy="18" r="15" fill="none" stroke={attr.color} strokeWidth="2.5" strokeDasharray={`${attr.value * 0.94} 94`} strokeLinecap="round" opacity="0.7" />
                   </svg>
-                  <span className="absolute inset-0 flex items-center justify-center text-[11px] font-mono font-bold text-[rgb(var(--fg-rgb)/0.70)]">{attr.value}</span>
+                  <span className="absolute inset-0 flex items-center justify-center text-[11px] font-mono font-bold text-[var(--fg-70)]">{attr.value}</span>
                 </div>
-                <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.25)]">{attr.label}</p>
+                <p className="text-[8px] font-mono text-[var(--fg-25)]">{attr.label}</p>
               </div>
             ))}
           </div>
@@ -1281,13 +1281,13 @@ export default function Dashboard() {
         {/* ─── Recovery & Body ─── */}
         <motion.div variants={staggerItem} className="grid grid-cols-2 gap-2.5" style={{ order: cardOrder.recoveryBodyOrder }}>
           {isEnabled("recovery") && (
-            <div className="rounded-xl border bg-[rgb(var(--fg-rgb)/0.03)] p-3" style={{ borderColor: `rgb(${MODULE_REGISTRY.recovery.colorRgb} / 0.15)`, boxShadow: `0 0 15px -5px rgb(${MODULE_REGISTRY.recovery.colorRgb} / 0.1)` }}>
+            <div className="rounded-xl border bg-[var(--fg-03)] p-3" style={{ borderColor: `rgb(${MODULE_REGISTRY.recovery.colorRgb} / 0.15)`, boxShadow: `0 0 15px -5px rgb(${MODULE_REGISTRY.recovery.colorRgb} / 0.1)` }}>
               <div className="flex items-center gap-1.5 mb-2">
                 <HeartPulse size={12} style={{ color: `rgb(${MODULE_REGISTRY.recovery.colorRgb})` }} />
-                <p className="text-[8px] font-mono tracking-wider text-[rgb(var(--fg-rgb)/0.25)]">RECOVERY</p>
+                <p className="text-[8px] font-mono tracking-wider text-[var(--fg-25)]">RECOVERY</p>
               </div>
-              <p className="text-2xl font-bold font-mono text-[rgb(var(--fg-rgb)/0.90)]">{stats.recoveryPct ?? "—"}<span className="text-xs text-[rgb(var(--fg-rgb)/0.25)]">%</span></p>
-              <p className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.20)] mt-0.5">
+              <p className="text-2xl font-bold font-mono text-[var(--fg-90)]">{stats.recoveryPct ?? "—"}<span className="text-xs text-[var(--fg-25)]">%</span></p>
+              <p className="text-[9px] font-mono text-[var(--fg-20)] mt-0.5">
                 {stats.recoveryPct !== null
                   ? stats.recoveryPct >= 80 ? "Ready to train" : stats.recoveryPct >= 50 ? "Partially recovered" : "Rest suggested"
                   : "No data"}
@@ -1295,20 +1295,20 @@ export default function Dashboard() {
             </div>
           )}
           {isEnabled("progress") && (
-            <div className="rounded-xl border bg-[rgb(var(--fg-rgb)/0.03)] p-3" style={{ borderColor: `rgb(${MODULE_REGISTRY.progress.colorRgb} / 0.15)`, boxShadow: `0 0 15px -5px rgb(${MODULE_REGISTRY.progress.colorRgb} / 0.1)` }}>
+            <div className="rounded-xl border bg-[var(--fg-03)] p-3" style={{ borderColor: `rgb(${MODULE_REGISTRY.progress.colorRgb} / 0.15)`, boxShadow: `0 0 15px -5px rgb(${MODULE_REGISTRY.progress.colorRgb} / 0.1)` }}>
               <div className="flex items-center gap-1.5 mb-2">
                 <TrendingUp size={12} style={{ color: `rgb(${MODULE_REGISTRY.progress.colorRgb})` }} />
-                <p className="text-[8px] font-mono tracking-wider text-[rgb(var(--fg-rgb)/0.25)]">BODY WEIGHT</p>
+                <p className="text-[8px] font-mono tracking-wider text-[var(--fg-25)]">BODY WEIGHT</p>
               </div>
-              <p className="text-2xl font-bold font-mono text-[rgb(var(--fg-rgb)/0.90)]">
-                {stats.bodyWeight !== null ? formatWeight(stats.bodyWeight, weightUnit, 1) : "—"}<span className="text-xs text-[rgb(var(--fg-rgb)/0.25)]"> {weightUnit}</span>
+              <p className="text-2xl font-bold font-mono text-[var(--fg-90)]">
+                {stats.bodyWeight !== null ? formatWeight(stats.bodyWeight, weightUnit, 1) : "—"}<span className="text-xs text-[var(--fg-25)]"> {weightUnit}</span>
               </p>
               {stats.bodyWeightChange !== null ? (
-                <p className={`text-[9px] font-mono mt-0.5 ${stats.bodyWeightChange > 0 ? "text-orange-300/60" : stats.bodyWeightChange < 0 ? "text-emerald-300/60" : "text-[rgb(var(--fg-rgb)/0.20)]"}`}>
+                <p className={`text-[9px] font-mono mt-0.5 ${stats.bodyWeightChange > 0 ? "text-orange-300/60" : stats.bodyWeightChange < 0 ? "text-emerald-300/60" : "text-[var(--fg-20)]"}`}>
                   {stats.bodyWeightChange > 0 ? "+" : stats.bodyWeightChange < 0 ? "−" : ""}{formatWeight(Math.abs(stats.bodyWeightChange), weightUnit, 1)} {weightUnit} from previous
                 </p>
               ) : (
-                <p className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.20)] mt-0.5">No trend data</p>
+                <p className="text-[9px] font-mono text-[var(--fg-20)] mt-0.5">No trend data</p>
               )}
             </div>
           )}
@@ -1322,7 +1322,7 @@ export default function Dashboard() {
           const pct = Math.min((eaten / target) * 100, 100);
           const over = eaten > target;
           return (
-            <motion.div variants={staggerItem} className="rounded-2xl border bg-[rgb(var(--fg-rgb)/0.03)] p-4" style={{ order: cardOrder.energyOrder, borderColor: `rgb(${MODULE_REGISTRY.nutrition.colorRgb} / 0.15)`, boxShadow: `0 0 20px -5px rgb(${MODULE_REGISTRY.nutrition.colorRgb} / 0.1), inset 0 1px 0 rgb(${MODULE_REGISTRY.nutrition.colorRgb} / 0.05)` }}>
+            <motion.div variants={staggerItem} className="rounded-2xl border bg-[var(--fg-03)] p-4" style={{ order: cardOrder.energyOrder, borderColor: `rgb(${MODULE_REGISTRY.nutrition.colorRgb} / 0.15)`, boxShadow: `0 0 20px -5px rgb(${MODULE_REGISTRY.nutrition.colorRgb} / 0.1), inset 0 1px 0 rgb(${MODULE_REGISTRY.nutrition.colorRgb} / 0.05)` }}>
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <Flame size={14} style={{ color: `rgb(${MODULE_REGISTRY.nutrition.colorRgb})` }} />
@@ -1337,13 +1337,13 @@ export default function Dashboard() {
               <div className="flex items-baseline justify-between mb-2">
                 <div className="flex items-baseline gap-1">
                   <span className="text-3xl font-bold font-mono text-[rgb(var(--accent-light-rgb))]">{remaining > 0 ? remaining : 0}</span>
-                  <span className="text-xs font-mono text-[rgb(var(--fg-rgb)/0.25)]">kcal left</span>
+                  <span className="text-xs font-mono text-[var(--fg-25)]">kcal left</span>
                 </div>
-                <span className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.20)]">{eaten} / {target}</span>
+                <span className="text-[9px] font-mono text-[var(--fg-20)]">{eaten} / {target}</span>
               </div>
 
               {/* Progress bar */}
-              <div className="h-2 rounded-full bg-[rgb(var(--fg-rgb)/0.06)] mb-3 overflow-hidden">
+              <div className="h-2 rounded-full bg-[var(--fg-06)] mb-3 overflow-hidden">
                 <div
                   className={`h-full rounded-full transition-all duration-500 ${over ? "bg-red-400" : "bg-[rgb(var(--accent-rgb))]"}`}
                   style={{ width: `${pct}%` }}
@@ -1352,39 +1352,39 @@ export default function Dashboard() {
 
               {/* Macros: eaten / target */}
               <div className="grid grid-cols-3 gap-2">
-                <div className="rounded-lg bg-[rgb(var(--fg-rgb)/0.03)] border border-[rgb(var(--fg-rgb)/0.06)] p-2 text-center">
-                  <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.25)]">PROTEIN</p>
-                  <p className="text-sm font-bold font-mono text-rose-300">{Math.round(todayIntake?.protein_g ?? 0)}<span className="text-[rgb(var(--fg-rgb)/0.20)]">/{calorieSummary.macros.protein}g</span></p>
+                <div className="rounded-lg bg-[var(--fg-03)] border border-[var(--fg-06)] p-2 text-center">
+                  <p className="text-[8px] font-mono text-[var(--fg-25)]">PROTEIN</p>
+                  <p className="text-sm font-bold font-mono text-rose-300">{Math.round(todayIntake?.protein_g ?? 0)}<span className="text-[var(--fg-20)]">/{calorieSummary.macros.protein}g</span></p>
                 </div>
-                <div className="rounded-lg bg-[rgb(var(--fg-rgb)/0.03)] border border-[rgb(var(--fg-rgb)/0.06)] p-2 text-center">
-                  <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.25)]">CARBS</p>
-                  <p className="text-sm font-bold font-mono text-amber-300">{Math.round(todayIntake?.carbs_g ?? 0)}<span className="text-[rgb(var(--fg-rgb)/0.20)]">/{calorieSummary.macros.carbs}g</span></p>
+                <div className="rounded-lg bg-[var(--fg-03)] border border-[var(--fg-06)] p-2 text-center">
+                  <p className="text-[8px] font-mono text-[var(--fg-25)]">CARBS</p>
+                  <p className="text-sm font-bold font-mono text-amber-300">{Math.round(todayIntake?.carbs_g ?? 0)}<span className="text-[var(--fg-20)]">/{calorieSummary.macros.carbs}g</span></p>
                 </div>
-                <div className="rounded-lg bg-[rgb(var(--fg-rgb)/0.03)] border border-[rgb(var(--fg-rgb)/0.06)] p-2 text-center">
-                  <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.25)]">FAT</p>
-                  <p className="text-sm font-bold font-mono text-blue-300">{Math.round(todayIntake?.fat_g ?? 0)}<span className="text-[rgb(var(--fg-rgb)/0.20)]">/{calorieSummary.macros.fat}g</span></p>
+                <div className="rounded-lg bg-[var(--fg-03)] border border-[var(--fg-06)] p-2 text-center">
+                  <p className="text-[8px] font-mono text-[var(--fg-25)]">FAT</p>
+                  <p className="text-sm font-bold font-mono text-blue-300">{Math.round(todayIntake?.fat_g ?? 0)}<span className="text-[var(--fg-20)]">/{calorieSummary.macros.fat}g</span></p>
                 </div>
               </div>
 
               {showQuickLog && (
-                <div className="mt-3 pt-3 border-t border-[rgb(var(--fg-rgb)/0.06)] space-y-2">
-                  <input type="text" value={qlLabel} onChange={(e) => setQlLabel(e.target.value)} placeholder="What did you eat?" className="w-full h-9 rounded-lg bg-[rgb(var(--fg-rgb)/0.04)] border border-[rgb(var(--fg-rgb)/0.08)] px-3 text-sm font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition placeholder:text-[rgb(var(--fg-rgb)/0.15)]" />
+                <div className="mt-3 pt-3 border-t border-[var(--fg-06)] space-y-2">
+                  <input type="text" value={qlLabel} onChange={(e) => setQlLabel(e.target.value)} placeholder="What did you eat?" className="w-full h-9 rounded-lg bg-[var(--fg-04)] border border-[var(--fg-08)] px-3 text-sm font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition placeholder:text-[var(--fg-15)]" />
                   <div className="grid grid-cols-4 gap-2">
                     <div>
-                      <label className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.30)] block mb-1">KCAL *</label>
-                      <input type="number" min="0" inputMode="numeric" onWheel={(e) => (e.target as HTMLElement).blur()} value={qlKcal} onChange={(e) => setQlKcal(e.target.value)} placeholder="—" className="w-full h-9 rounded-lg bg-[rgb(var(--fg-rgb)/0.04)] border border-[rgb(var(--fg-rgb)/0.08)] text-center text-sm font-bold font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition placeholder:text-[rgb(var(--fg-rgb)/0.15)]" />
+                      <label className="text-[8px] font-mono text-[var(--fg-30)] block mb-1">KCAL *</label>
+                      <input type="number" min="0" inputMode="numeric" onWheel={(e) => (e.target as HTMLElement).blur()} value={qlKcal} onChange={(e) => setQlKcal(e.target.value)} placeholder="—" className="w-full h-9 rounded-lg bg-[var(--fg-04)] border border-[var(--fg-08)] text-center text-sm font-bold font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition placeholder:text-[var(--fg-15)]" />
                     </div>
                     <div>
                       <label className="text-[8px] font-mono text-rose-300/50 block mb-1">PROT</label>
-                      <input type="number" min="0" inputMode="decimal" onWheel={(e) => (e.target as HTMLElement).blur()} value={qlProtein} onChange={(e) => setQlProtein(e.target.value)} placeholder="—" className="w-full h-9 rounded-lg bg-[rgb(var(--fg-rgb)/0.04)] border border-[rgb(var(--fg-rgb)/0.08)] text-center text-sm font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition placeholder:text-[rgb(var(--fg-rgb)/0.15)]" />
+                      <input type="number" min="0" inputMode="decimal" onWheel={(e) => (e.target as HTMLElement).blur()} value={qlProtein} onChange={(e) => setQlProtein(e.target.value)} placeholder="—" className="w-full h-9 rounded-lg bg-[var(--fg-04)] border border-[var(--fg-08)] text-center text-sm font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition placeholder:text-[var(--fg-15)]" />
                     </div>
                     <div>
                       <label className="text-[8px] font-mono text-amber-300/50 block mb-1">CARB</label>
-                      <input type="number" min="0" inputMode="decimal" onWheel={(e) => (e.target as HTMLElement).blur()} value={qlCarbs} onChange={(e) => setQlCarbs(e.target.value)} placeholder="—" className="w-full h-9 rounded-lg bg-[rgb(var(--fg-rgb)/0.04)] border border-[rgb(var(--fg-rgb)/0.08)] text-center text-sm font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition placeholder:text-[rgb(var(--fg-rgb)/0.15)]" />
+                      <input type="number" min="0" inputMode="decimal" onWheel={(e) => (e.target as HTMLElement).blur()} value={qlCarbs} onChange={(e) => setQlCarbs(e.target.value)} placeholder="—" className="w-full h-9 rounded-lg bg-[var(--fg-04)] border border-[var(--fg-08)] text-center text-sm font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition placeholder:text-[var(--fg-15)]" />
                     </div>
                     <div>
                       <label className="text-[8px] font-mono text-blue-300/50 block mb-1">FAT</label>
-                      <input type="number" min="0" inputMode="decimal" onWheel={(e) => (e.target as HTMLElement).blur()} value={qlFat} onChange={(e) => setQlFat(e.target.value)} placeholder="—" className="w-full h-9 rounded-lg bg-[rgb(var(--fg-rgb)/0.04)] border border-[rgb(var(--fg-rgb)/0.08)] text-center text-sm font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition placeholder:text-[rgb(var(--fg-rgb)/0.15)]" />
+                      <input type="number" min="0" inputMode="decimal" onWheel={(e) => (e.target as HTMLElement).blur()} value={qlFat} onChange={(e) => setQlFat(e.target.value)} placeholder="—" className="w-full h-9 rounded-lg bg-[var(--fg-04)] border border-[var(--fg-08)] text-center text-sm font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition placeholder:text-[var(--fg-15)]" />
                     </div>
                   </div>
                   <button onClick={handleQuickLog} disabled={!qlKcal || qlSaving} className="w-full py-2 rounded-lg bg-[rgb(var(--accent-rgb))] text-black text-xs font-semibold hover:brightness-110 disabled:opacity-40 transition">
@@ -1406,7 +1406,7 @@ export default function Dashboard() {
             <button
               key={link.label}
               onClick={() => router.push(link.href)}
-              className="rounded-xl border border-[rgb(var(--accent-rgb)/0.12)] bg-[rgb(var(--fg-rgb)/0.03)] p-3 flex flex-col items-center gap-1.5 text-[rgb(var(--fg-rgb)/0.30)] hover:text-[rgb(var(--accent-light-rgb))] hover:bg-[rgb(var(--accent-rgb)/0.05)] hover:border-[rgb(var(--accent-rgb)/0.25)] transition"
+              className="rounded-xl border border-[rgb(var(--accent-rgb)/0.12)] bg-[var(--fg-03)] p-3 flex flex-col items-center gap-1.5 text-[var(--fg-30)] hover:text-[rgb(var(--accent-light-rgb))] hover:bg-[rgb(var(--accent-rgb)/0.05)] hover:border-[rgb(var(--accent-rgb)/0.25)] transition"
             >
               {link.icon}
               <span className="text-[9px] font-mono tracking-wider">{link.label.toUpperCase()}</span>
@@ -1416,7 +1416,7 @@ export default function Dashboard() {
 
         {/* ─── Recent Notifications ─── */}
         {notifLoaded && notifications.length > 0 && (
-          <motion.div variants={staggerItem} className="rounded-2xl border border-[rgb(var(--accent-rgb)/0.12)] bg-[rgb(var(--fg-rgb)/0.03)] overflow-hidden" style={{ order: 90, boxShadow: "0 0 15px -5px rgb(var(--accent-rgb) / 0.08)" }}>
+          <motion.div variants={staggerItem} className="rounded-2xl border border-[rgb(var(--accent-rgb)/0.12)] bg-[var(--fg-03)] overflow-hidden" style={{ order: 90, boxShadow: "0 0 15px -5px rgb(var(--accent-rgb) / 0.08)" }}>
             <div className="flex items-center justify-between px-4 pt-3.5 pb-2">
               <p className="text-[9px] font-mono tracking-widest text-[rgb(var(--accent-light-rgb)/0.4)]">RECENT NOTIFICATIONS</p>
               <button onClick={() => router.push("/notifications")} className="text-[9px] font-mono text-[rgb(var(--accent-rgb)/0.5)] hover:text-[rgb(var(--accent-rgb))] transition">
@@ -1428,12 +1428,12 @@ export default function Dashboard() {
                 <button
                   key={n.id}
                   onClick={() => dismissNotification(n.id)}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-[rgb(var(--fg-rgb)/0.02)] transition text-left"
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-[var(--fg-02)] transition text-left"
                 >
-                  <Bell size={12} className="text-[rgb(var(--fg-rgb)/0.20)] shrink-0" />
+                  <Bell size={12} className="text-[var(--fg-20)] shrink-0" />
                   <div className="min-w-0 flex-1">
-                    <p className="text-[11px] text-[rgb(var(--fg-rgb)/0.60)] truncate">{n.message}</p>
-                    <p className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.15)] mt-0.5">{timeAgo(n.created_at)}</p>
+                    <p className="text-[11px] text-[var(--fg-60)] truncate">{n.message}</p>
+                    <p className="text-[9px] font-mono text-[var(--fg-15)] mt-0.5">{timeAgo(n.created_at)}</p>
                   </div>
                 </button>
               ))}

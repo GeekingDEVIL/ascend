@@ -10,7 +10,7 @@ export default function CubeLoader({ message }: { message?: string }) {
 
         <div className='relative w-full h-full preserve-3d animate-cube-spin'>
 
-          <div className='absolute inset-0 m-auto w-8 h-8 bg-white rounded-full blur-md shadow-[0_0_40px_rgb(var(--fg-rgb) / 0.8)] animate-pulse-fast' />
+          <div className='absolute inset-0 m-auto w-8 h-8 bg-white rounded-full blur-md shadow-[0_0_40px_var(--fg-80)] animate-pulse-fast' />
 
           <div className='side-wrapper front'>
             <div className='face bg-[rgb(var(--accent-rgb)/0.1)] border-2 border-[rgb(var(--accent-rgb))] shadow-[0_0_15px_rgb(var(--accent-rgb)/0.4)]' />
@@ -44,7 +44,7 @@ export default function CubeLoader({ message }: { message?: string }) {
         <h3 className='text-sm font-semibold tracking-[0.3em] text-[rgb(var(--accent-light-rgb))] uppercase'>
           Loading
         </h3>
-        <p className='text-xs text-[rgb(var(--fg-rgb)/0.30)]'>
+        <p className='text-xs text-[var(--fg-30)]'>
           {message || "Preparing your experience…"}
         </p>
       </div>
@@ -65,7 +65,7 @@ export default function CubeLoader({ message }: { message?: string }) {
 
         @keyframes breathe {
           0%, 100% { transform: translateZ(48px); opacity: 0.8; }
-          50% { transform: translateZ(80px); opacity: 0.4; border-color: rgb(var(--fg-rgb) / 0.8); }
+          50% { transform: translateZ(80px); opacity: 0.4; border-color: var(--fg-80); }
         }
 
         @keyframes pulse-fast {

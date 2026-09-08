@@ -55,7 +55,7 @@ function Chip({ active, children, onClick }: { active: boolean; children: React.
       className={`text-[10px] font-medium px-3 py-1.5 rounded-lg border transition-all ${
         active
           ? "border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.12)] text-[rgb(var(--accent-light-rgb))]"
-          : "border-[rgb(var(--fg-rgb)/0.06)] text-[rgb(var(--fg-rgb)/0.35)] hover:text-[rgb(var(--fg-rgb)/0.60)] hover:border-[rgb(var(--fg-rgb)/0.15)]"
+          : "border-[var(--fg-06)] text-[var(--fg-35)] hover:text-[var(--fg-60)] hover:border-[var(--fg-15)]"
       }`}
     >
       {children}
@@ -124,7 +124,7 @@ export default function PlanBrowserModal({ open, onClose, onImport, importing, u
   const content = (
     <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-lg max-h-[94vh] bg-[var(--bg-card)] border border-[rgb(var(--fg-rgb)/0.08)] rounded-t-2xl sm:rounded-2xl flex flex-col overflow-hidden">
+      <div className="relative w-full max-w-lg max-h-[94vh] bg-[var(--bg-card)] border border-[var(--fg-08)] rounded-t-2xl sm:rounded-2xl flex flex-col overflow-hidden">
 
         {!detail ? (
           <>
@@ -132,25 +132,25 @@ export default function PlanBrowserModal({ open, onClose, onImport, importing, u
             <div className="px-5 pt-5 pb-3 shrink-0">
               <div className="flex items-center justify-between mb-3">
                 <div>
-                  <h2 className="text-lg font-bold text-[rgb(var(--fg-rgb)/0.90)]">Plan Library</h2>
-                  <p className="text-[10px] font-mono text-[rgb(var(--fg-rgb)/0.30)] mt-0.5">{filtered.length} programs available</p>
+                  <h2 className="text-lg font-bold text-[var(--fg-90)]">Plan Library</h2>
+                  <p className="text-[10px] font-mono text-[var(--fg-30)] mt-0.5">{filtered.length} programs available</p>
                 </div>
-                <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-xl border border-[rgb(var(--fg-rgb)/0.08)] text-[rgb(var(--fg-rgb)/0.35)] hover:text-[rgb(var(--fg-rgb)/0.70)] transition">
+                <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-xl border border-[var(--fg-08)] text-[var(--fg-35)] hover:text-[var(--fg-70)] transition">
                   <X size={16} />
                 </button>
               </div>
 
               {/* Search */}
               <div className="relative">
-                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[rgb(var(--fg-rgb)/0.25)]" />
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--fg-25)]" />
                 <input
                   type="text" value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); if (e.target.value.trim()) setViewMode("search"); else setViewMode("browse"); }}
                   placeholder="Search plans..."
-                  className="w-full rounded-xl bg-[rgb(var(--fg-rgb)/0.03)] border border-[rgb(var(--fg-rgb)/0.06)] pl-9 pr-10 py-2.5 text-sm text-[rgb(var(--fg-rgb)/0.80)] placeholder:text-[rgb(var(--fg-rgb)/0.20)] focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.3)]"
+                  className="w-full rounded-xl bg-[var(--fg-03)] border border-[var(--fg-06)] pl-9 pr-10 py-2.5 text-sm text-[var(--fg-80)] placeholder:text-[var(--fg-20)] focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.3)]"
                 />
                 <button
                   onClick={() => setFiltersOpen((v) => !v)}
-                  className={`absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-lg transition ${filtersOpen || hasActiveFilters ? "bg-[rgb(var(--accent-rgb)/0.15)] text-[rgb(var(--accent-light-rgb))]" : "text-[rgb(var(--fg-rgb)/0.30)] hover:text-[rgb(var(--fg-rgb)/0.60)]"}`}
+                  className={`absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-lg transition ${filtersOpen || hasActiveFilters ? "bg-[rgb(var(--accent-rgb)/0.15)] text-[rgb(var(--accent-light-rgb))]" : "text-[var(--fg-30)] hover:text-[var(--fg-60)]"}`}
                 >
                   <SlidersHorizontal size={14} />
                 </button>
@@ -160,13 +160,13 @@ export default function PlanBrowserModal({ open, onClose, onImport, importing, u
               {filtersOpen && (
                 <div className="mt-3 space-y-2.5 pb-1">
                   <div className="flex items-center justify-between">
-                    <p className="text-[9px] font-mono tracking-widest text-[rgb(var(--fg-rgb)/0.25)]">FILTERS</p>
+                    <p className="text-[9px] font-mono tracking-widest text-[var(--fg-25)]">FILTERS</p>
                     {hasActiveFilters && (
                       <button onClick={clearFilters} className="text-[9px] font-mono text-[rgb(var(--accent-light-rgb)/0.5)] hover:text-[rgb(var(--accent-light-rgb))]">Clear all</button>
                     )}
                   </div>
                   <div>
-                    <p className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.25)] mb-1.5">ENVIRONMENT</p>
+                    <p className="text-[9px] font-mono text-[var(--fg-25)] mb-1.5">ENVIRONMENT</p>
                     <div className="flex flex-wrap gap-1.5">
                       <Chip active={envFilter === "All"} onClick={() => setEnvFilter("All")}>All</Chip>
                       {PLAN_ENVIRONMENTS.map((e) => <Chip key={e} active={envFilter === e} onClick={() => setEnvFilter(e)}>{e}</Chip>)}
@@ -174,14 +174,14 @@ export default function PlanBrowserModal({ open, onClose, onImport, importing, u
                   </div>
                   <div className="flex gap-4">
                     <div>
-                      <p className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.25)] mb-1.5">DAYS / WEEK</p>
+                      <p className="text-[9px] font-mono text-[var(--fg-25)] mb-1.5">DAYS / WEEK</p>
                       <div className="flex flex-wrap gap-1.5">
                         <Chip active={daysFilter === null} onClick={() => setDaysFilter(null)}>All</Chip>
                         {DAY_COUNTS.map((d) => <Chip key={d} active={daysFilter === d} onClick={() => setDaysFilter(d)}>{d}D</Chip>)}
                       </div>
                     </div>
                     <div>
-                      <p className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.25)] mb-1.5">LEVEL</p>
+                      <p className="text-[9px] font-mono text-[var(--fg-25)] mb-1.5">LEVEL</p>
                       <div className="flex flex-wrap gap-1.5">
                         <Chip active={levelFilter === "All"} onClick={() => setLevelFilter("All")}>All</Chip>
                         {PLAN_LEVELS.map((l) => <Chip key={l} active={levelFilter === l} onClick={() => setLevelFilter(l)}>{l}</Chip>)}
@@ -189,7 +189,7 @@ export default function PlanBrowserModal({ open, onClose, onImport, importing, u
                     </div>
                   </div>
                   <div>
-                    <p className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.25)] mb-1.5">GOAL</p>
+                    <p className="text-[9px] font-mono text-[var(--fg-25)] mb-1.5">GOAL</p>
                     <div className="flex flex-wrap gap-1.5">
                       <Chip active={goalFilter === "All"} onClick={() => setGoalFilter("All")}>All</Chip>
                       {PLAN_GOALS.map((g) => <Chip key={g} active={goalFilter === g} onClick={() => setGoalFilter(g)}>{g}</Chip>)}
@@ -199,15 +199,15 @@ export default function PlanBrowserModal({ open, onClose, onImport, importing, u
               )}
             </div>
 
-            <div className="border-t border-[rgb(var(--fg-rgb)/0.04)]" />
+            <div className="border-t border-[var(--fg-04)]" />
 
             {/* Plan List */}
             <div className="flex-1 overflow-y-auto custom-scroll px-4 py-3">
               {filtered.length === 0 ? (
                 <div className="text-center py-16">
-                  <div className="w-9 h-9 mx-auto mb-3 rotate-45 border-2 border-[rgb(var(--fg-rgb)/0.15)] rounded-sm" />
-                  <p className="text-sm font-bold tracking-widest text-[rgb(var(--fg-rgb)/0.30)]">NO PLANS MATCH</p>
-                  <p className="text-xs text-[rgb(var(--fg-rgb)/0.20)] mt-1">Try adjusting your filters.</p>
+                  <div className="w-9 h-9 mx-auto mb-3 rotate-45 border-2 border-[var(--fg-15)] rounded-sm" />
+                  <p className="text-sm font-bold tracking-widest text-[var(--fg-30)]">NO PLANS MATCH</p>
+                  <p className="text-xs text-[var(--fg-20)] mt-1">Try adjusting your filters.</p>
                 </div>
               ) : (isSearching || hasActiveFilters) ? (
                 /* Flat list when searching or filtering */
@@ -226,19 +226,19 @@ export default function PlanBrowserModal({ open, onClose, onImport, importing, u
                     const displayPlans = isExpanded ? plans : plans.slice(0, 3);
 
                     return (
-                      <div key={goal} className={`rounded-2xl border overflow-hidden ${isExpanded ? meta.accent : "border-[rgb(var(--fg-rgb)/0.05)] bg-[rgb(var(--fg-rgb)/0.01)]"}`}>
+                      <div key={goal} className={`rounded-2xl border overflow-hidden ${isExpanded ? meta.accent : "border-[var(--fg-05)] bg-[var(--fg-01)]"}`}>
                         <button
                           onClick={() => setExpandedGoal(isExpanded ? null : goal)}
-                          className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-[rgb(var(--fg-rgb)/0.02)] transition text-left"
+                          className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-[var(--fg-02)] transition text-left"
                         >
                           <div className={`w-9 h-9 rounded-xl border flex items-center justify-center shrink-0 ${meta.accent}`}>
                             <GoalIcon size={16} className={meta.color} />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-[13px] font-bold text-[rgb(var(--fg-rgb)/0.85)]">{goal}</p>
-                            <p className="text-[10px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">{plans.length} plans · {meta.description}</p>
+                            <p className="text-[13px] font-bold text-[var(--fg-85)]">{goal}</p>
+                            <p className="text-[10px] font-mono text-[var(--fg-30)]">{plans.length} plans · {meta.description}</p>
                           </div>
-                          <ChevronRight size={14} className={`text-[rgb(var(--fg-rgb)/0.20)] transition-transform ${isExpanded ? "rotate-90" : ""}`} />
+                          <ChevronRight size={14} className={`text-[var(--fg-20)] transition-transform ${isExpanded ? "rotate-90" : ""}`} />
                         </button>
 
                         <div className="px-3 pb-3 space-y-1.5">
@@ -248,7 +248,7 @@ export default function PlanBrowserModal({ open, onClose, onImport, importing, u
                           {!isExpanded && plans.length > 3 && (
                             <button
                               onClick={(e) => { e.stopPropagation(); setExpandedGoal(goal); }}
-                              className="w-full py-2 text-[10px] font-mono text-[rgb(var(--accent-light-rgb)/0.5)] hover:text-[rgb(var(--accent-light-rgb))] transition rounded-lg hover:bg-[rgb(var(--fg-rgb)/0.02)]"
+                              className="w-full py-2 text-[10px] font-mono text-[rgb(var(--accent-light-rgb)/0.5)] hover:text-[rgb(var(--accent-light-rgb))] transition rounded-lg hover:bg-[var(--fg-02)]"
                             >
                               Show {plans.length - 3} more plans
                             </button>
@@ -268,10 +268,10 @@ export default function PlanBrowserModal({ open, onClose, onImport, importing, u
             <div className="px-5 pt-5 pb-4 shrink-0">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <button onClick={() => setSelectedPlan(null)} className="flex items-center gap-1 text-[10px] font-mono text-[rgb(var(--fg-rgb)/0.30)] hover:text-[rgb(var(--fg-rgb)/0.60)] transition mb-2">
+                  <button onClick={() => setSelectedPlan(null)} className="flex items-center gap-1 text-[10px] font-mono text-[var(--fg-30)] hover:text-[var(--fg-60)] transition mb-2">
                     <ChevronLeft size={12} /> ALL PLANS
                   </button>
-                  <h2 className="text-lg font-bold text-[rgb(var(--fg-rgb)/0.90)] leading-tight">{detail.name}</h2>
+                  <h2 className="text-lg font-bold text-[var(--fg-90)] leading-tight">{detail.name}</h2>
                   <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                     {(() => {
                       const meta = GOAL_META[detail.goal] || GOAL_META["Overall fitness"];
@@ -283,44 +283,44 @@ export default function PlanBrowserModal({ open, onClose, onImport, importing, u
                       );
                     })()}
                     <span className="text-[9px] font-mono px-2 py-0.5 rounded-md bg-[rgb(var(--accent-rgb)/0.08)] border border-[rgb(var(--accent-rgb)/0.15)] text-[rgb(var(--accent-light-rgb)/0.6)]">{detail.env}</span>
-                    <span className="text-[9px] font-mono px-2 py-0.5 rounded-md bg-[rgb(var(--fg-rgb)/0.03)] border border-[rgb(var(--fg-rgb)/0.06)] text-[rgb(var(--fg-rgb)/0.30)]">{detail.level}</span>
-                    <span className="text-[9px] font-mono px-2 py-0.5 rounded-md bg-[rgb(var(--fg-rgb)/0.03)] border border-[rgb(var(--fg-rgb)/0.06)] text-[rgb(var(--fg-rgb)/0.30)]">{detail.split}</span>
+                    <span className="text-[9px] font-mono px-2 py-0.5 rounded-md bg-[var(--fg-03)] border border-[var(--fg-06)] text-[var(--fg-30)]">{detail.level}</span>
+                    <span className="text-[9px] font-mono px-2 py-0.5 rounded-md bg-[var(--fg-03)] border border-[var(--fg-06)] text-[var(--fg-30)]">{detail.split}</span>
                   </div>
                 </div>
-                <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-xl border border-[rgb(var(--fg-rgb)/0.08)] text-[rgb(var(--fg-rgb)/0.35)] hover:text-[rgb(var(--fg-rgb)/0.70)] transition shrink-0">
+                <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-xl border border-[var(--fg-08)] text-[var(--fg-35)] hover:text-[var(--fg-70)] transition shrink-0">
                   <X size={16} />
                 </button>
               </div>
             </div>
 
-            <div className="border-t border-[rgb(var(--fg-rgb)/0.04)]" />
+            <div className="border-t border-[var(--fg-04)]" />
 
             {/* Detail Body */}
             <div className="flex-1 overflow-y-auto custom-scroll px-5 py-4 space-y-4">
               {/* Stats row */}
               <div className="grid grid-cols-3 gap-2">
-                <div className="rounded-xl border border-[rgb(var(--fg-rgb)/0.06)] bg-[rgb(var(--fg-rgb)/0.02)] p-3 text-center">
-                  <Calendar size={13} className="mx-auto mb-1.5 text-[rgb(var(--fg-rgb)/0.25)]" />
-                  <p className="text-xs font-bold text-[rgb(var(--fg-rgb)/0.70)]">{detail.schedule}</p>
-                  <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.25)] mt-0.5">SCHEDULE</p>
+                <div className="rounded-xl border border-[var(--fg-06)] bg-[var(--fg-02)] p-3 text-center">
+                  <Calendar size={13} className="mx-auto mb-1.5 text-[var(--fg-25)]" />
+                  <p className="text-xs font-bold text-[var(--fg-70)]">{detail.schedule}</p>
+                  <p className="text-[8px] font-mono text-[var(--fg-25)] mt-0.5">SCHEDULE</p>
                 </div>
-                <div className="rounded-xl border border-[rgb(var(--fg-rgb)/0.06)] bg-[rgb(var(--fg-rgb)/0.02)] p-3 text-center">
-                  <Clock size={13} className="mx-auto mb-1.5 text-[rgb(var(--fg-rgb)/0.25)]" />
-                  <p className="text-xs font-bold text-[rgb(var(--fg-rgb)/0.70)]">{detail.duration}</p>
-                  <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.25)] mt-0.5">DURATION</p>
+                <div className="rounded-xl border border-[var(--fg-06)] bg-[var(--fg-02)] p-3 text-center">
+                  <Clock size={13} className="mx-auto mb-1.5 text-[var(--fg-25)]" />
+                  <p className="text-xs font-bold text-[var(--fg-70)]">{detail.duration}</p>
+                  <p className="text-[8px] font-mono text-[var(--fg-25)] mt-0.5">DURATION</p>
                 </div>
-                <div className="rounded-xl border border-[rgb(var(--fg-rgb)/0.06)] bg-[rgb(var(--fg-rgb)/0.02)] p-3 text-center">
-                  <BarChart3 size={13} className="mx-auto mb-1.5 text-[rgb(var(--fg-rgb)/0.25)]" />
-                  <p className="text-[10px] font-bold text-[rgb(var(--fg-rgb)/0.70)] leading-tight">{detail.volume}</p>
-                  <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.25)] mt-0.5">VOLUME</p>
+                <div className="rounded-xl border border-[var(--fg-06)] bg-[var(--fg-02)] p-3 text-center">
+                  <BarChart3 size={13} className="mx-auto mb-1.5 text-[var(--fg-25)]" />
+                  <p className="text-[10px] font-bold text-[var(--fg-70)] leading-tight">{detail.volume}</p>
+                  <p className="text-[8px] font-mono text-[var(--fg-25)] mt-0.5">VOLUME</p>
                 </div>
               </div>
 
               {/* Note */}
               {detail.note && (
-                <div className="flex gap-2.5 rounded-xl border border-[rgb(var(--fg-rgb)/0.06)] bg-[rgb(var(--fg-rgb)/0.02)] p-3">
-                  <Info size={13} className="shrink-0 text-[rgb(var(--fg-rgb)/0.25)] mt-0.5" />
-                  <p className="text-[10px] text-[rgb(var(--fg-rgb)/0.40)] leading-relaxed">{detail.note}</p>
+                <div className="flex gap-2.5 rounded-xl border border-[var(--fg-06)] bg-[var(--fg-02)] p-3">
+                  <Info size={13} className="shrink-0 text-[var(--fg-25)] mt-0.5" />
+                  <p className="text-[10px] text-[var(--fg-40)] leading-relaxed">{detail.note}</p>
                 </div>
               )}
 
@@ -331,22 +331,22 @@ export default function PlanBrowserModal({ open, onClose, onImport, importing, u
                   ? WEEKDAY_NAMES[weekdays[day.dayNum - 1]]
                   : `Day ${day.dayNum}`;
                 return (
-                  <div key={day.dayNum} className="rounded-xl border border-[rgb(var(--fg-rgb)/0.06)] bg-[rgb(var(--fg-rgb)/0.02)] overflow-hidden">
-                    <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-[rgb(var(--fg-rgb)/0.04)]">
+                  <div key={day.dayNum} className="rounded-xl border border-[var(--fg-06)] bg-[var(--fg-02)] overflow-hidden">
+                    <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-[var(--fg-04)]">
                       <div className="flex items-center gap-2">
-                        <span className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.25)] w-8">{dayLabel}</span>
-                        <span className="text-xs font-semibold text-[rgb(var(--fg-rgb)/0.80)]">{day.focus}</span>
+                        <span className="text-[9px] font-mono text-[var(--fg-25)] w-8">{dayLabel}</span>
+                        <span className="text-xs font-semibold text-[var(--fg-80)]">{day.focus}</span>
                       </div>
-                      <span className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.20)]">{day.exercises.length} ex</span>
+                      <span className="text-[9px] font-mono text-[var(--fg-20)]">{day.exercises.length} ex</span>
                     </div>
                     <div className="px-3.5 py-1">
                       {day.exercises.map((ex, i) => (
-                        <div key={i} className="flex items-center justify-between gap-2 py-2 border-b border-[rgb(var(--fg-rgb)/0.03)] last:border-b-0">
+                        <div key={i} className="flex items-center justify-between gap-2 py-2 border-b border-[var(--fg-03)] last:border-b-0">
                           <div className="flex items-center gap-2 min-w-0">
-                            <span className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.15)] w-4 shrink-0 text-right">{i + 1}</span>
-                            <span className="text-[11px] text-[rgb(var(--fg-rgb)/0.65)] truncate">{ex.name}</span>
+                            <span className="text-[9px] font-mono text-[var(--fg-15)] w-4 shrink-0 text-right">{i + 1}</span>
+                            <span className="text-[11px] text-[var(--fg-65)] truncate">{ex.name}</span>
                           </div>
-                          <span className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.30)] shrink-0">{ex.sets}×{ex.reps}</span>
+                          <span className="text-[9px] font-mono text-[var(--fg-30)] shrink-0">{ex.sets}×{ex.reps}</span>
                         </div>
                       ))}
                     </div>
@@ -356,7 +356,7 @@ export default function PlanBrowserModal({ open, onClose, onImport, importing, u
             </div>
 
             {/* Import Footer */}
-            <div className="px-5 py-3.5 border-t border-[rgb(var(--fg-rgb)/0.06)] shrink-0">
+            <div className="px-5 py-3.5 border-t border-[var(--fg-06)] shrink-0">
               <button
                 onClick={() => onImport(detail)}
                 disabled={importing}
@@ -381,11 +381,11 @@ function PlanCard({ plan, compact, showGoal, onClick }: { plan: WorkoutPlan; com
   return (
     <button
       onClick={onClick}
-      className={`w-full text-left rounded-xl border border-[rgb(var(--fg-rgb)/0.05)] bg-[rgb(var(--fg-rgb)/0.015)] hover:border-[rgb(var(--accent-rgb)/0.2)] hover:bg-[rgb(var(--fg-rgb)/0.03)] transition group ${compact ? "p-3" : "p-3.5"}`}
+      className={`w-full text-left rounded-xl border border-[var(--fg-05)] bg-[var(--fg-01)] hover:border-[rgb(var(--accent-rgb)/0.2)] hover:bg-[var(--fg-03)] transition group ${compact ? "p-3" : "p-3.5"}`}
     >
       <div className="flex items-start justify-between gap-2 mb-1.5">
-        <p className={`${compact ? "text-[12px]" : "text-[13px]"} font-semibold text-[rgb(var(--fg-rgb)/0.85)] leading-tight`}>{plan.name}</p>
-        <ChevronRight size={14} className="text-[rgb(var(--fg-rgb)/0.15)] group-hover:text-[rgb(var(--fg-rgb)/0.40)] transition shrink-0 mt-0.5" />
+        <p className={`${compact ? "text-[12px]" : "text-[13px]"} font-semibold text-[var(--fg-85)] leading-tight`}>{plan.name}</p>
+        <ChevronRight size={14} className="text-[var(--fg-15)] group-hover:text-[var(--fg-40)] transition shrink-0 mt-0.5" />
       </div>
       <div className="flex items-center gap-1.5 flex-wrap">
         {showGoal ? (
@@ -395,9 +395,9 @@ function PlanCard({ plan, compact, showGoal, onClick }: { plan: WorkoutPlan; com
         ) : (
           <span className="text-[9px] font-mono px-2 py-0.5 rounded-md bg-[rgb(var(--accent-rgb)/0.08)] border border-[rgb(var(--accent-rgb)/0.15)] text-[rgb(var(--accent-light-rgb)/0.6)]">{plan.days}D/WK</span>
         )}
-        <span className="text-[9px] font-mono px-2 py-0.5 rounded-md bg-[rgb(var(--fg-rgb)/0.03)] border border-[rgb(var(--fg-rgb)/0.06)] text-[rgb(var(--fg-rgb)/0.30)]">{plan.level}</span>
-        <span className="text-[9px] font-mono px-2 py-0.5 rounded-md bg-[rgb(var(--fg-rgb)/0.03)] border border-[rgb(var(--fg-rgb)/0.06)] text-[rgb(var(--fg-rgb)/0.30)]">{plan.env}</span>
-        <span className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.20)] ml-auto">{plan.duration}</span>
+        <span className="text-[9px] font-mono px-2 py-0.5 rounded-md bg-[var(--fg-03)] border border-[var(--fg-06)] text-[var(--fg-30)]">{plan.level}</span>
+        <span className="text-[9px] font-mono px-2 py-0.5 rounded-md bg-[var(--fg-03)] border border-[var(--fg-06)] text-[var(--fg-30)]">{plan.env}</span>
+        <span className="text-[9px] font-mono text-[var(--fg-20)] ml-auto">{plan.duration}</span>
       </div>
     </button>
   );

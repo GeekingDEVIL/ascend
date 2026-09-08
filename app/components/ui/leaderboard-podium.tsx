@@ -17,8 +17,8 @@ interface LeaderboardPodiumProps extends React.HTMLAttributes<HTMLDivElement> {
 
 const PODIUM_CONFIG: Record<number, { height: string; medal: string; ring: string; glow: string; bg: string; barBg: string }> = {
   1: { height: "h-24", medal: "🥇", ring: "border-yellow-400/60", glow: "0 0 24px -4px rgba(250,204,21,0.4)", bg: "bg-yellow-400/10", barBg: "bg-gradient-to-t from-[rgb(var(--accent-rgb)/0.15)] to-transparent" },
-  2: { height: "h-16", medal: "🥈", ring: "border-slate-300/50", glow: "0 0 20px -4px rgba(203,213,225,0.3)", bg: "bg-slate-300/10", barBg: "bg-gradient-to-t from-[rgb(var(--fg-rgb)/0.06)] to-transparent" },
-  3: { height: "h-12", medal: "🥉", ring: "border-amber-600/50", glow: "0 0 20px -4px rgba(217,119,6,0.3)", bg: "bg-amber-600/10", barBg: "bg-gradient-to-t from-[rgb(var(--fg-rgb)/0.04)] to-transparent" },
+  2: { height: "h-16", medal: "🥈", ring: "border-slate-300/50", glow: "0 0 20px -4px rgba(203,213,225,0.3)", bg: "bg-slate-300/10", barBg: "bg-gradient-to-t from-[var(--fg-06)] to-transparent" },
+  3: { height: "h-12", medal: "🥉", ring: "border-amber-600/50", glow: "0 0 20px -4px rgba(217,119,6,0.3)", bg: "bg-amber-600/10", barBg: "bg-gradient-to-t from-[var(--fg-04)] to-transparent" },
 };
 
 function formatValue(v: number): string {
@@ -57,16 +57,16 @@ const LeaderboardPodium = React.forwardRef<HTMLDivElement, LeaderboardPodiumProp
                   {r.avatarUrl ? (
                     <img src={r.avatarUrl} alt={r.userName} className="w-full h-full object-cover" />
                   ) : (
-                    <span className="text-[rgb(var(--fg-rgb)/0.70)]">{r.userName[0]?.toUpperCase()}</span>
+                    <span className="text-[var(--fg-70)]">{r.userName[0]?.toUpperCase()}</span>
                   )}
                 </div>
                 <span className="absolute -bottom-1 -right-1 text-sm">{config.medal}</span>
               </div>
               <div className="text-center">
-                <p className={cn("text-[11px] font-semibold text-[rgb(var(--fg-rgb)/0.80)] truncate max-w-[100px]", r.rank === 1 && "text-[12px] text-[rgb(var(--fg-rgb)/0.90)]")}>{firstName}</p>
+                <p className={cn("text-[11px] font-semibold text-[var(--fg-80)] truncate max-w-[100px]", r.rank === 1 && "text-[12px] text-[var(--fg-90)]")}>{firstName}</p>
                 <p className="text-[10px] font-mono text-[rgb(var(--accent-light-rgb))]">{formatValue(r.value)}</p>
               </div>
-              <div className={cn("w-full rounded-t-lg", config.height, config.barBg, "border border-b-0 border-[rgb(var(--fg-rgb)/0.06)]")} />
+              <div className={cn("w-full rounded-t-lg", config.height, config.barBg, "border border-b-0 border-[var(--fg-06)]")} />
             </div>
           );
         })}

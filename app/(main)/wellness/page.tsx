@@ -144,13 +144,13 @@ export default function WellnessPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold font-display text-[rgb(var(--accent-light-rgb))]">Hydration</h1>
-            <p className="text-[11px] text-[rgb(var(--fg-rgb)/0.30)] mt-0.5">Stay on top of your water intake</p>
+            <p className="text-[11px] text-[var(--fg-30)] mt-0.5">Stay on top of your water intake</p>
           </div>
           <div className="text-right">
-            <p className="text-2xl font-bold font-mono text-[rgb(var(--fg-rgb)/0.90)]">
-              {(totalMl / 1000).toFixed(1)}<span className="text-sm text-[rgb(var(--fg-rgb)/0.30)]">L</span>
+            <p className="text-2xl font-bold font-mono text-[var(--fg-90)]">
+              {(totalMl / 1000).toFixed(1)}<span className="text-sm text-[var(--fg-30)]">L</span>
             </p>
-            <p className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">of {GOAL_ML / 1000}L goal</p>
+            <p className="text-[9px] font-mono text-[var(--fg-30)]">of {GOAL_ML / 1000}L goal</p>
           </div>
         </div>
 
@@ -173,7 +173,7 @@ export default function WellnessPage() {
                   </defs>
                   <path
                     d="M20,10 L15,170 Q15,175 20,175 L100,175 Q105,175 105,170 L100,10"
-                    fill="none" stroke="rgb(var(--fg-rgb) / 0.15)" strokeWidth="2" strokeLinecap="round"
+                    fill="none" stroke="var(--fg-15)" strokeWidth="2" strokeLinecap="round"
                   />
                   <g clipPath="url(#glassClip)">
                     <motion.rect
@@ -221,7 +221,7 @@ export default function WellnessPage() {
                   </motion.span>
                 </div>
               </div>
-              <p className="text-[10px] font-mono text-[rgb(var(--fg-rgb)/0.30)] mt-2">
+              <p className="text-[10px] font-mono text-[var(--fg-30)] mt-2">
                 {glasses} glass{glasses !== 1 ? "es" : ""} today
               </p>
               {pct >= 100 && (
@@ -248,38 +248,38 @@ export default function WellnessPage() {
                 <motion.button
                   key={ml} variants={staggerItem}
                   onClick={() => logWater(ml)}
-                  className="flex flex-col items-center gap-1 py-3 rounded-xl border border-[rgb(var(--fg-rgb)/0.06)] bg-[rgb(var(--fg-rgb)/0.02)] hover:bg-[rgb(var(--fg-rgb)/0.05)] active:scale-95 transition"
+                  className="flex flex-col items-center gap-1 py-3 rounded-xl border border-[var(--fg-06)] bg-[var(--fg-02)] hover:bg-[var(--fg-05)] active:scale-95 transition"
                 >
                   <Droplets size={16} className="text-blue-400/70" />
-                  <span className="text-xs font-mono font-bold text-[rgb(var(--fg-rgb)/0.80)]">{ml}ml</span>
-                  <span className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.25)]">{ml / 250} glass</span>
+                  <span className="text-xs font-mono font-bold text-[var(--fg-80)]">{ml}ml</span>
+                  <span className="text-[8px] font-mono text-[var(--fg-25)]">{ml / 250} glass</span>
                 </motion.button>
               ))}
             </motion.div>
 
             {/* Custom amount */}
-            <div className="rounded-xl border border-[rgb(var(--fg-rgb)/0.06)] bg-[rgb(var(--fg-rgb)/0.02)] p-4">
-              <p className="text-[9px] font-mono tracking-widest text-[rgb(var(--fg-rgb)/0.25)] mb-3">CUSTOM AMOUNT</p>
+            <div className="rounded-xl border border-[var(--fg-06)] bg-[var(--fg-02)] p-4">
+              <p className="text-[9px] font-mono tracking-widest text-[var(--fg-25)] mb-3">CUSTOM AMOUNT</p>
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => setCustomAmount((p) => Math.max(50, p - 50))}
-                  className="w-10 h-10 rounded-lg border border-[rgb(var(--fg-rgb)/0.10)] flex items-center justify-center text-[rgb(var(--fg-rgb)/0.40)] hover:text-[rgb(var(--fg-rgb)/0.70)] active:scale-95 transition"
+                  className="w-10 h-10 rounded-lg border border-[var(--fg-10)] flex items-center justify-center text-[var(--fg-40)] hover:text-[var(--fg-70)] active:scale-95 transition"
                 >
                   <Minus size={16} />
                 </button>
                 <div className="flex-1 text-center">
-                  <span className="text-2xl font-bold font-mono text-[rgb(var(--fg-rgb)/0.90)]">{customAmount}</span>
-                  <span className="text-sm font-mono text-[rgb(var(--fg-rgb)/0.30)] ml-1">ml</span>
+                  <span className="text-2xl font-bold font-mono text-[var(--fg-90)]">{customAmount}</span>
+                  <span className="text-sm font-mono text-[var(--fg-30)] ml-1">ml</span>
                 </div>
                 <button
                   onClick={() => setCustomAmount((p) => Math.min(2000, p + 50))}
-                  className="w-10 h-10 rounded-lg border border-[rgb(var(--fg-rgb)/0.10)] flex items-center justify-center text-[rgb(var(--fg-rgb)/0.40)] hover:text-[rgb(var(--fg-rgb)/0.70)] active:scale-95 transition"
+                  className="w-10 h-10 rounded-lg border border-[var(--fg-10)] flex items-center justify-center text-[var(--fg-40)] hover:text-[var(--fg-70)] active:scale-95 transition"
                 >
                   <Plus size={16} />
                 </button>
                 <button
                   onClick={() => logWater(customAmount)}
-                  className="px-4 h-10 rounded-lg font-mono text-sm font-bold text-[rgb(var(--fg-rgb)/0.90)] active:scale-95 transition"
+                  className="px-4 h-10 rounded-lg font-mono text-sm font-bold text-[var(--fg-90)] active:scale-95 transition"
                   style={{ background: `rgb(${fillColor} / 0.2)`, border: `1px solid rgb(${fillColor} / 0.3)` }}
                 >
                   Log
@@ -289,26 +289,26 @@ export default function WellnessPage() {
 
             {/* Streak + Stats Row */}
             <div className="grid grid-cols-3 gap-2">
-              <div className="rounded-xl border border-[rgb(var(--fg-rgb)/0.06)] bg-[rgb(var(--fg-rgb)/0.02)] p-3 text-center">
+              <div className="rounded-xl border border-[var(--fg-06)] bg-[var(--fg-02)] p-3 text-center">
                 <Flame size={16} className="mx-auto mb-1 text-orange-400/70" />
-                <p className="text-lg font-bold font-mono text-[rgb(var(--fg-rgb)/0.90)]">{streak}</p>
-                <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.25)]">DAY STREAK</p>
+                <p className="text-lg font-bold font-mono text-[var(--fg-90)]">{streak}</p>
+                <p className="text-[8px] font-mono text-[var(--fg-25)]">DAY STREAK</p>
               </div>
-              <div className="rounded-xl border border-[rgb(var(--fg-rgb)/0.06)] bg-[rgb(var(--fg-rgb)/0.02)] p-3 text-center">
+              <div className="rounded-xl border border-[var(--fg-06)] bg-[var(--fg-02)] p-3 text-center">
                 <Droplets size={16} className="mx-auto mb-1 text-blue-400/70" />
-                <p className="text-lg font-bold font-mono text-[rgb(var(--fg-rgb)/0.90)]">{(weekAvg / 1000).toFixed(1)}L</p>
-                <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.25)]">WEEK AVG</p>
+                <p className="text-lg font-bold font-mono text-[var(--fg-90)]">{(weekAvg / 1000).toFixed(1)}L</p>
+                <p className="text-[8px] font-mono text-[var(--fg-25)]">WEEK AVG</p>
               </div>
-              <div className="rounded-xl border border-[rgb(var(--fg-rgb)/0.06)] bg-[rgb(var(--fg-rgb)/0.02)] p-3 text-center">
+              <div className="rounded-xl border border-[var(--fg-06)] bg-[var(--fg-02)] p-3 text-center">
                 <HeartPulse size={16} className="mx-auto mb-1 text-emerald-400/70" />
-                <p className="text-lg font-bold font-mono text-[rgb(var(--fg-rgb)/0.90)]">{daysMetGoal}<span className="text-xs text-[rgb(var(--fg-rgb)/0.30)]">/7</span></p>
-                <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.25)]">GOALS MET</p>
+                <p className="text-lg font-bold font-mono text-[var(--fg-90)]">{daysMetGoal}<span className="text-xs text-[var(--fg-30)]">/7</span></p>
+                <p className="text-[8px] font-mono text-[var(--fg-25)]">GOALS MET</p>
               </div>
             </div>
 
             {/* 7-Day Chart */}
-            <div className="rounded-xl border border-[rgb(var(--fg-rgb)/0.06)] bg-[rgb(var(--fg-rgb)/0.02)] p-4">
-              <p className="text-[9px] font-mono tracking-widest text-[rgb(var(--fg-rgb)/0.25)] mb-3">LAST 7 DAYS</p>
+            <div className="rounded-xl border border-[var(--fg-06)] bg-[var(--fg-02)] p-4">
+              <p className="text-[9px] font-mono tracking-widest text-[var(--fg-25)] mb-3">LAST 7 DAYS</p>
               <div className="flex items-end gap-1.5 h-28">
                 {dayTotals.map((day) => {
                   const barPct = maxDay > 0 ? (day.total / maxDay) * 100 : 0;
@@ -318,7 +318,7 @@ export default function WellnessPage() {
                       <div className="flex-1 w-full flex items-end relative">
                         {/* Goal line */}
                         <div
-                          className="absolute w-full border-t border-dashed border-[rgb(var(--fg-rgb)/0.10)]"
+                          className="absolute w-full border-t border-dashed border-[var(--fg-10)]"
                           style={{ bottom: `${goalLine}%` }}
                         />
                         <motion.div
@@ -333,7 +333,7 @@ export default function WellnessPage() {
                           transition={{ type: "spring", stiffness: 80, damping: 15, delay: 0.05 }}
                         />
                       </div>
-                      <span className={`text-[8px] font-mono ${day.label === "Today" ? "text-[rgb(var(--fg-rgb)/0.60)]" : "text-[rgb(var(--fg-rgb)/0.20)]"}`}>
+                      <span className={`text-[8px] font-mono ${day.label === "Today" ? "text-[var(--fg-60)]" : "text-[var(--fg-20)]"}`}>
                         {day.label}
                       </span>
                     </div>
@@ -341,8 +341,8 @@ export default function WellnessPage() {
                 })}
               </div>
               <div className="flex items-center justify-between mt-2">
-                <span className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.15)]">--- {GOAL_ML / 1000}L goal</span>
-                <span className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.15)]">
+                <span className="text-[8px] font-mono text-[var(--fg-15)]">--- {GOAL_ML / 1000}L goal</span>
+                <span className="text-[8px] font-mono text-[var(--fg-15)]">
                   Best: {(Math.max(...dayTotals.map((d) => d.total)) / 1000).toFixed(1)}L
                 </span>
               </div>
@@ -354,7 +354,7 @@ export default function WellnessPage() {
                 <HeartPulse size={14} className="text-emerald-400/70" />
                 <p className="text-[9px] font-mono tracking-widest text-emerald-400/40">RECOVERY IMPACT</p>
               </div>
-              <p className="text-xs text-[rgb(var(--fg-rgb)/0.50)]">
+              <p className="text-xs text-[var(--fg-50)]">
                 {pct >= 100
                   ? "Excellent hydration today. Proper hydration improves muscle recovery by up to 25% and reduces delayed onset muscle soreness."
                   : pct >= 60
@@ -363,7 +363,7 @@ export default function WellnessPage() {
               </p>
               {pct < 100 && (
                 <div className="mt-2 flex items-center gap-2">
-                  <div className="flex-1 h-1 rounded-full bg-[rgb(var(--fg-rgb)/0.04)] overflow-hidden">
+                  <div className="flex-1 h-1 rounded-full bg-[var(--fg-04)] overflow-hidden">
                     <div
                       className="h-full rounded-full transition-all"
                       style={{
@@ -374,26 +374,26 @@ export default function WellnessPage() {
                       }}
                     />
                   </div>
-                  <span className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.20)]">{GOAL_ML - totalMl}ml to go</span>
+                  <span className="text-[8px] font-mono text-[var(--fg-20)]">{GOAL_ML - totalMl}ml to go</span>
                 </div>
               )}
             </div>
 
             {/* Today's log */}
-            <div className="rounded-xl border border-[rgb(var(--fg-rgb)/0.06)] bg-[rgb(var(--fg-rgb)/0.02)] p-4">
+            <div className="rounded-xl border border-[var(--fg-06)] bg-[var(--fg-02)] p-4">
               <div className="flex items-center justify-between mb-3">
-                <p className="text-[9px] font-mono tracking-widest text-[rgb(var(--fg-rgb)/0.25)]">TODAY&apos;S LOG</p>
+                <p className="text-[9px] font-mono tracking-widest text-[var(--fg-25)]">TODAY&apos;S LOG</p>
                 {todayLogs.length > 0 && (
                   <button
                     onClick={undoLast}
-                    className="flex items-center gap-1 text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.25)] hover:text-[rgb(var(--fg-rgb)/0.50)] transition"
+                    className="flex items-center gap-1 text-[9px] font-mono text-[var(--fg-25)] hover:text-[var(--fg-50)] transition"
                   >
                     <Undo2 size={10} /> Undo last
                   </button>
                 )}
               </div>
               {todayLogs.length === 0 ? (
-                <p className="text-xs text-[rgb(var(--fg-rgb)/0.20)] text-center py-4">No water logged yet today</p>
+                <p className="text-xs text-[var(--fg-20)] text-center py-4">No water logged yet today</p>
               ) : (
                 <div className="space-y-1.5 max-h-48 overflow-y-auto">
                   {todayLogs.map((log, i) => (
@@ -401,13 +401,13 @@ export default function WellnessPage() {
                       key={log.id}
                       initial={i === 0 ? { opacity: 0, x: -10 } : false}
                       animate={{ opacity: 1, x: 0 }}
-                      className="flex items-center justify-between py-1.5 px-2 rounded-lg bg-[rgb(var(--fg-rgb)/0.02)]"
+                      className="flex items-center justify-between py-1.5 px-2 rounded-lg bg-[var(--fg-02)]"
                     >
                       <div className="flex items-center gap-2">
                         <Droplets size={12} className="text-blue-400/50" />
-                        <span className="text-xs font-mono text-[rgb(var(--fg-rgb)/0.60)]">{log.amount_ml}ml</span>
+                        <span className="text-xs font-mono text-[var(--fg-60)]">{log.amount_ml}ml</span>
                       </div>
-                      <span className="text-[10px] font-mono text-[rgb(var(--fg-rgb)/0.25)]">
+                      <span className="text-[10px] font-mono text-[var(--fg-25)]">
                         {new Date(log.logged_at).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}
                       </span>
                     </motion.div>

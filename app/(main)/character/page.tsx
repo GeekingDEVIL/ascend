@@ -155,7 +155,7 @@ function SkillTree({ stats, classColor }: {
                 y1={parent.y + 14}
                 x2={node.x}
                 y2={node.y - 14}
-                stroke={nodeUnlocked ? `rgb(${node.color} / 0.5)` : parentUnlocked ? `rgb(${node.color} / 0.2)` : "rgb(var(--fg-rgb) / 0.06)"}
+                stroke={nodeUnlocked ? `rgb(${node.color} / 0.5)` : parentUnlocked ? `rgb(${node.color} / 0.2)` : "var(--fg-06)"}
                 strokeWidth={nodeUnlocked ? 2 : 1}
                 strokeDasharray={nodeUnlocked ? "none" : "4 3"}
               />
@@ -189,8 +189,8 @@ function SkillTree({ stats, classColor }: {
                   cx={node.x}
                   cy={node.y}
                   r={14}
-                  fill={unlocked ? `rgb(${node.color} / 0.15)` : "rgb(var(--fg-rgb) / 0.03)"}
-                  stroke={unlocked ? `rgb(${node.color} / 0.6)` : "rgb(var(--fg-rgb) / 0.08)"}
+                  fill={unlocked ? `rgb(${node.color} / 0.15)` : "var(--fg-03)"}
+                  stroke={unlocked ? `rgb(${node.color} / 0.6)` : "var(--fg-08)"}
                   strokeWidth={isSelected ? 2 : 1}
                 />
                 {unlocked ? (
@@ -210,7 +210,7 @@ function SkillTree({ stats, classColor }: {
                     y={node.y + 1}
                     textAnchor="middle"
                     dominantBaseline="central"
-                    fill="rgb(var(--fg-rgb) / 0.15)"
+                    fill="var(--fg-15)"
                     fontSize={8}
                   >
                     &#x1F512;
@@ -230,15 +230,15 @@ function SkillTree({ stats, classColor }: {
             }}
           >
             <p className="text-[10px] font-bold font-mono" style={{
-              color: unlockedIds.has(selected.id) ? `rgb(${selected.color})` : "rgb(var(--fg-rgb) / 0.5)",
+              color: unlockedIds.has(selected.id) ? `rgb(${selected.color})` : "var(--fg-50)",
             }}>
               {selected.name}
             </p>
-            <p className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">{selected.description}</p>
+            <p className="text-[9px] font-mono text-[var(--fg-30)]">{selected.description}</p>
             {unlockedIds.has(selected.id) ? (
               <p className="text-[8px] font-mono text-emerald-400/60 mt-0.5">UNLOCKED</p>
             ) : (
-              <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.20)] mt-0.5">LOCKED</p>
+              <p className="text-[8px] font-mono text-[var(--fg-20)] mt-0.5">LOCKED</p>
             )}
           </div>
         )}
@@ -292,7 +292,7 @@ function TitlesCard({ stats, classColor }: {
         <p className="section-label">TITLES</p>
         <div className="flex items-center gap-1.5">
           <Star size={10} className="text-yellow-400/60" />
-          <span className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">PRESTIGE {prestigeLevel}</span>
+          <span className="text-[9px] font-mono text-[var(--fg-30)]">PRESTIGE {prestigeLevel}</span>
         </div>
       </div>
 
@@ -317,17 +317,17 @@ function TitlesCard({ stats, classColor }: {
           })}
         </div>
       ) : (
-        <p className="text-[10px] font-mono text-[rgb(var(--fg-rgb)/0.20)] mb-3">Complete workouts to earn titles</p>
+        <p className="text-[10px] font-mono text-[var(--fg-20)] mb-3">Complete workouts to earn titles</p>
       )}
 
       {next && (
-        <div className="flex items-center gap-2 p-2 rounded-lg bg-[rgb(var(--fg-rgb)/0.02)] border border-[rgb(var(--fg-rgb)/0.04)]">
-          <Sparkles size={12} className="text-[rgb(var(--fg-rgb)/0.15)] shrink-0" />
+        <div className="flex items-center gap-2 p-2 rounded-lg bg-[var(--fg-02)] border border-[var(--fg-04)]">
+          <Sparkles size={12} className="text-[var(--fg-15)] shrink-0" />
           <div>
-            <p className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.40)]">
+            <p className="text-[9px] font-mono text-[var(--fg-40)]">
               Next: <span className="font-bold" style={{ color: `rgb(${RARITY_COLORS[next.rarity]} / 0.6)` }}>{next.name}</span>
             </p>
-            <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.20)]">{next.condition}</p>
+            <p className="text-[8px] font-mono text-[var(--fg-20)]">{next.condition}</p>
           </div>
         </div>
       )}
@@ -367,11 +367,11 @@ function WeaknessCard({ statBars }: { statBars: StatBar[] }) {
         </div>
         <div className="flex-1">
           <div className="flex items-center justify-between mb-1">
-            <p className="text-[10px] font-mono text-[rgb(var(--fg-rgb)/0.50)]">
-              {weakest.label} is your weakest at <span className="font-bold text-[rgb(var(--fg-rgb)/0.70)]">{weakest.value}</span>
+            <p className="text-[10px] font-mono text-[var(--fg-50)]">
+              {weakest.label} is your weakest at <span className="font-bold text-[var(--fg-70)]">{weakest.value}</span>
             </p>
           </div>
-          <div className="h-1.5 rounded-full bg-[rgb(var(--fg-rgb)/0.04)] overflow-hidden">
+          <div className="h-1.5 rounded-full bg-[var(--fg-04)] overflow-hidden">
             <div
               className="h-full rounded-full"
               style={{
@@ -382,7 +382,7 @@ function WeaknessCard({ statBars }: { statBars: StatBar[] }) {
           </div>
         </div>
       </div>
-      <p className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.30)] leading-relaxed">
+      <p className="text-[9px] font-mono text-[var(--fg-30)] leading-relaxed">
         {WEAKNESS_TIPS[weakest.label] ?? "Keep training to improve this attribute"}
       </p>
     </div>
@@ -433,7 +433,7 @@ function RadarChart({ stats, classColor }: { stats: StatBar[]; classColor: strin
               key={pct}
               points={pts.map((p) => `${p[0]},${p[1]}`).join(" ")}
               fill="none"
-              stroke="rgb(var(--fg-rgb) / 0.06)"
+              stroke="var(--fg-06)"
               strokeWidth={1}
             />
           );
@@ -442,14 +442,14 @@ function RadarChart({ stats, classColor }: { stats: StatBar[]; classColor: strin
         {/* Axis lines */}
         {stats.map((_, i) => {
           const [x, y] = radarPoint(cx, cy, maxR, i, n);
-          return <line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke="rgb(var(--fg-rgb) / 0.06)" strokeWidth={1} />;
+          return <line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke="var(--fg-06)" strokeWidth={1} />;
         })}
 
         {/* Ghost polygon */}
         <polygon
           points={ghostPath}
-          fill="rgb(var(--fg-rgb) / 0.03)"
-          stroke="rgb(var(--fg-rgb) / 0.12)"
+          fill="var(--fg-03)"
+          stroke="var(--fg-12)"
           strokeWidth={1}
           strokeDasharray="4 3"
         />
@@ -493,7 +493,7 @@ function RadarChart({ stats, classColor }: { stats: StatBar[]; classColor: strin
                 y={ly + 11}
                 textAnchor="middle"
                 dominantBaseline="central"
-                fill="rgb(var(--fg-rgb) / 0.35)"
+                fill="var(--fg-35)"
                 fontSize={8}
                 fontFamily="monospace"
               >
@@ -508,11 +508,11 @@ function RadarChart({ stats, classColor }: { stats: StatBar[]; classColor: strin
       <div className="absolute bottom-0 right-2 flex items-center gap-3">
         <div className="flex items-center gap-1">
           <div className="w-3 h-[2px] rounded" style={{ background: `rgb(${classColor} / 0.7)` }} />
-          <span className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">NOW</span>
+          <span className="text-[8px] font-mono text-[var(--fg-30)]">NOW</span>
         </div>
         <div className="flex items-center gap-1">
-          <div className="w-3 h-[2px] rounded border-t border-dashed border-[rgb(var(--fg-rgb)/0.20)]" />
-          <span className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">PREV</span>
+          <div className="w-3 h-[2px] rounded border-t border-dashed border-[var(--fg-20)]" />
+          <span className="text-[8px] font-mono text-[var(--fg-30)]">PREV</span>
         </div>
       </div>
     </div>
@@ -617,42 +617,42 @@ export default function CharacterPage() {
                     <classification.fitnessClass.icon size={28} style={{ color: `rgb(${classification.fitnessClass.color})` }} />
                   </div>
                   <div>
-                    <p className="text-[9px] font-mono tracking-widest text-[rgb(var(--fg-rgb)/0.25)]">CLASS</p>
+                    <p className="text-[9px] font-mono tracking-widest text-[var(--fg-25)]">CLASS</p>
                     <p className="text-xl font-bold font-display" style={{ color: `rgb(${classification.fitnessClass.color})` }}>
                       {classification.fitnessClass.name}
                     </p>
-                    <p className="text-[10px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">{classification.fitnessClass.description}</p>
+                    <p className="text-[10px] font-mono text-[var(--fg-30)]">{classification.fitnessClass.description}</p>
                   </div>
                 </div>
 
                 {/* Power level + rank */}
                 <div className="flex items-center gap-4 mb-5">
                   <div className="flex-1">
-                    <p className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.25)] mb-1">POWER LEVEL</p>
+                    <p className="text-[9px] font-mono text-[var(--fg-25)] mb-1">POWER LEVEL</p>
                     <div className="flex items-baseline gap-2">
                       <p className="text-3xl font-bold font-display" style={{ color: `rgb(${classification.fitnessClass.color})` }}>
                         {classification.powerLevel}
                       </p>
-                      <p className="text-sm font-mono text-[rgb(var(--fg-rgb)/0.20)]">/ 100</p>
+                      <p className="text-sm font-mono text-[var(--fg-20)]">/ 100</p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.25)] mb-1">RANK</p>
+                    <p className="text-[9px] font-mono text-[var(--fg-25)] mb-1">RANK</p>
                     <p className={`text-sm font-bold font-mono ${rank.color}`}>{rank.name}</p>
-                    <p className="text-[10px] font-mono text-[rgb(var(--fg-rgb)/0.25)]">Level {levelInfo.level}</p>
+                    <p className="text-[10px] font-mono text-[var(--fg-25)]">Level {levelInfo.level}</p>
                   </div>
                 </div>
 
                 {/* XP bar */}
                 <div className="mb-1">
                   <div className="flex items-center justify-between mb-1">
-                    <p className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.25)]">XP</p>
-                    <p className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.25)]">
+                    <p className="text-[9px] font-mono text-[var(--fg-25)]">XP</p>
+                    <p className="text-[9px] font-mono text-[var(--fg-25)]">
                       {stats.totalXp.toLocaleString()} total
                       {nextRank && ` · ${nextRank.name} at Lv ${nextRank.minLevel}`}
                     </p>
                   </div>
-                  <div className="h-2 rounded-full bg-[rgb(var(--fg-rgb)/0.06)] overflow-hidden">
+                  <div className="h-2 rounded-full bg-[var(--fg-06)] overflow-hidden">
                     <div
                       className="h-full rounded-full transition-all"
                       style={{
@@ -661,7 +661,7 @@ export default function CharacterPage() {
                       }}
                     />
                   </div>
-                  <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.20)] mt-0.5">
+                  <p className="text-[8px] font-mono text-[var(--fg-20)] mt-0.5">
                     {levelInfo.xpIntoCurrentLevel} / {levelInfo.xpNeededForNext} XP to level {levelInfo.level + 1}
                   </p>
                 </div>
@@ -690,41 +690,41 @@ export default function CharacterPage() {
             <div className="grid grid-cols-3 gap-2">
               <div className="glass-card p-3 text-center">
                 <Flame size={14} className="text-orange-400/50 mx-auto mb-1" />
-                <p className="text-lg font-bold font-display text-[rgb(var(--fg-rgb)/0.80)]">{stats.streak}</p>
-                <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.25)]">STREAK</p>
+                <p className="text-lg font-bold font-display text-[var(--fg-80)]">{stats.streak}</p>
+                <p className="text-[8px] font-mono text-[var(--fg-25)]">STREAK</p>
               </div>
               <div className="glass-card p-3 text-center">
                 <Target size={14} className="text-emerald-400/50 mx-auto mb-1" />
-                <p className="text-lg font-bold font-display text-[rgb(var(--fg-rgb)/0.80)]">{stats.totalWorkouts}</p>
-                <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.25)]">WORKOUTS</p>
+                <p className="text-lg font-bold font-display text-[var(--fg-80)]">{stats.totalWorkouts}</p>
+                <p className="text-[8px] font-mono text-[var(--fg-25)]">WORKOUTS</p>
               </div>
               <div className="glass-card p-3 text-center">
                 <Award size={14} className="text-cyan-400/50 mx-auto mb-1" />
-                <p className="text-lg font-bold font-display text-[rgb(var(--fg-rgb)/0.80)]">{stats.achievementCount}</p>
-                <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.25)]">ACHIEVEMENTS</p>
+                <p className="text-lg font-bold font-display text-[var(--fg-80)]">{stats.achievementCount}</p>
+                <p className="text-[8px] font-mono text-[var(--fg-25)]">ACHIEVEMENTS</p>
               </div>
               <div className="glass-card p-3 text-center">
                 <TrendingUp size={14} className="text-violet-400/50 mx-auto mb-1" />
-                <p className="text-lg font-bold font-display text-[rgb(var(--fg-rgb)/0.80)]">{stats.prCount}</p>
-                <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.25)]">PRs SET</p>
+                <p className="text-lg font-bold font-display text-[var(--fg-80)]">{stats.prCount}</p>
+                <p className="text-[8px] font-mono text-[var(--fg-25)]">PRs SET</p>
               </div>
               <div className="glass-card p-3 text-center">
                 <Swords size={14} className="text-red-400/50 mx-auto mb-1" />
-                <p className="text-lg font-bold font-display text-[rgb(var(--fg-rgb)/0.80)]">{(stats.totalVolume / 1000).toFixed(0)}k</p>
-                <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.25)]">VOLUME KG</p>
+                <p className="text-lg font-bold font-display text-[var(--fg-80)]">{(stats.totalVolume / 1000).toFixed(0)}k</p>
+                <p className="text-[8px] font-mono text-[var(--fg-25)]">VOLUME KG</p>
               </div>
               <div className="glass-card p-3 text-center">
                 <Crown size={14} className="text-yellow-400/50 mx-auto mb-1" />
-                <p className="text-lg font-bold font-display text-[rgb(var(--fg-rgb)/0.80)]">{stats.bestStreak}</p>
-                <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.25)]">BEST STREAK</p>
+                <p className="text-lg font-bold font-display text-[var(--fg-80)]">{stats.bestStreak}</p>
+                <p className="text-[8px] font-mono text-[var(--fg-25)]">BEST STREAK</p>
               </div>
             </div>
           </>
         ) : (
           <div className="glass-card p-8 text-center">
             <Crown size={40} className="text-orange-400/20 mx-auto mb-3" />
-            <p className="text-sm text-[rgb(var(--fg-rgb)/0.40)] mb-1">No character data yet</p>
-            <p className="text-[10px] font-mono text-[rgb(var(--fg-rgb)/0.20)]">Complete your first workout to unlock your character sheet</p>
+            <p className="text-sm text-[var(--fg-40)] mb-1">No character data yet</p>
+            <p className="text-[10px] font-mono text-[var(--fg-20)]">Complete your first workout to unlock your character sheet</p>
           </div>
         )}
       </div>

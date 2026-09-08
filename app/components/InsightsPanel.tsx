@@ -23,10 +23,10 @@ function InfoTip({ term, text }: { term: string; text: string }) {
   const [open, setOpen] = useState(false);
   return (
     <span className="relative inline-block ml-1">
-      <button onClick={(e) => { e.stopPropagation(); setOpen(!open); }} className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full border border-[rgb(var(--fg-rgb)/0.15)] text-[7px] font-mono text-[rgb(var(--fg-rgb)/0.30)] hover:text-[rgb(var(--fg-rgb)/0.50)] hover:border-[rgb(var(--fg-rgb)/0.30)] transition">?</button>
+      <button onClick={(e) => { e.stopPropagation(); setOpen(!open); }} className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full border border-[var(--fg-15)] text-[7px] font-mono text-[var(--fg-30)] hover:text-[var(--fg-50)] hover:border-[var(--fg-30)] transition">?</button>
       {open && (
-        <span className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-1 w-56 p-2.5 rounded-md bg-[var(--bg-elevated)] border border-[rgb(var(--fg-rgb)/0.15)] text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.50)] leading-relaxed shadow-lg" onClick={(e) => e.stopPropagation()}>
-          <strong className="text-[rgb(var(--fg-rgb)/0.70)]">{term}</strong> — {text}
+        <span className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-1 w-56 p-2.5 rounded-md bg-[var(--bg-elevated)] border border-[var(--fg-15)] text-[9px] font-mono text-[var(--fg-50)] leading-relaxed shadow-lg" onClick={(e) => e.stopPropagation()}>
+          <strong className="text-[var(--fg-70)]">{term}</strong> — {text}
         </span>
       )}
     </span>
@@ -35,9 +35,9 @@ function InfoTip({ term, text }: { term: string; text: string }) {
 
 function Card({ title, subtitle, children, accent }: { title: string; subtitle?: string; children: React.ReactNode; accent?: string }) {
   return (
-    <div className={`rounded-lg border ${accent ? `border-${accent}/20 bg-${accent}/[0.03]` : "border-[rgb(var(--accent-rgb)/0.15)] bg-[rgb(var(--fg-rgb)/0.02)]"} p-4`} style={{ boxShadow: "inset 0 1px 0 rgb(var(--accent-rgb) / 0.06)" }}>
-      <p className="text-[10px] font-mono tracking-widest text-[rgb(var(--fg-rgb)/0.25)] mb-1">{title}</p>
-      {subtitle && <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.15)] mb-3">{subtitle}</p>}
+    <div className={`rounded-lg border ${accent ? `border-${accent}/20 bg-${accent}/[0.03]` : "border-[rgb(var(--accent-rgb)/0.15)] bg-[var(--fg-02)]"} p-4`} style={{ boxShadow: "inset 0 1px 0 rgb(var(--accent-rgb) / 0.06)" }}>
+      <p className="text-[10px] font-mono tracking-widest text-[var(--fg-25)] mb-1">{title}</p>
+      {subtitle && <p className="text-[8px] font-mono text-[var(--fg-15)] mb-3">{subtitle}</p>}
       {!subtitle && <div className="mb-2" />}
       {children}
     </div>
@@ -60,15 +60,15 @@ export function PredictionVsRealityCard({ data }: { data: PredictionAccuracy }) 
     <Card title="EXPECTED VS ACTUAL" subtitle="How your real weight compares to what the math predicted">
       <ResponsiveContainer width="100%" height={120}>
         <LineChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: 4 }}>
-          <XAxis dataKey="date" tick={{ fontSize: 7, fill: "rgb(var(--fg-rgb) / 0.15)" }} axisLine={false} tickLine={false} />
-          <YAxis domain={["auto", "auto"]} tick={{ fontSize: 7, fill: "rgb(var(--fg-rgb) / 0.15)" }} axisLine={false} tickLine={false} width={30} />
-          <Tooltip contentStyle={{ background: "var(--bg-elevated)", border: "1px solid rgb(var(--fg-rgb) / 0.1)", borderRadius: 6, fontSize: 10, fontFamily: "monospace" }} />
-          <Line type="monotone" dataKey="predicted" stroke="rgb(var(--fg-rgb) / 0.2)" strokeDasharray="4 2" dot={false} name="Expected" />
+          <XAxis dataKey="date" tick={{ fontSize: 7, fill: "var(--fg-15)" }} axisLine={false} tickLine={false} />
+          <YAxis domain={["auto", "auto"]} tick={{ fontSize: 7, fill: "var(--fg-15)" }} axisLine={false} tickLine={false} width={30} />
+          <Tooltip contentStyle={{ background: "var(--bg-elevated)", border: "1px solid var(--fg-10)", borderRadius: 6, fontSize: 10, fontFamily: "monospace" }} />
+          <Line type="monotone" dataKey="predicted" stroke="var(--fg-20)" strokeDasharray="4 2" dot={false} name="Expected" />
           <Line type="monotone" dataKey="actual" stroke="rgb(34,211,238)" dot={false} strokeWidth={2} name="Actual" connectNulls />
         </LineChart>
       </ResponsiveContainer>
       <p className={`text-[9px] font-mono mt-2 ${dirColor}`}>{data.message}</p>
-      <p className="text-[7px] font-mono text-[rgb(var(--fg-rgb)/0.15)] mt-1">Average difference: {displayError > 0 ? "+" : ""}{displayError} {wu}</p>
+      <p className="text-[7px] font-mono text-[var(--fg-15)] mt-1">Average difference: {displayError > 0 ? "+" : ""}{displayError} {wu}</p>
     </Card>
   );
 }
@@ -81,10 +81,10 @@ export function AnomalyCard({ data }: { data: AnomalyExplanation }) {
       <div className="space-y-2">
         {data.explanations.map((e, i) => (
           <div key={i} className="flex items-start gap-2">
-            <div className={`w-1.5 h-1.5 rounded-full mt-1 shrink-0 ${e.likelihood === "high" ? "bg-emerald-400" : e.likelihood === "medium" ? "bg-amber-400" : "bg-[rgb(var(--fg-rgb)/0.20)]"}`} />
+            <div className={`w-1.5 h-1.5 rounded-full mt-1 shrink-0 ${e.likelihood === "high" ? "bg-emerald-400" : e.likelihood === "medium" ? "bg-amber-400" : "bg-[var(--fg-20)]"}`} />
             <div>
-              <p className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.50)]">{e.factor}</p>
-              <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.25)]">{e.detail}</p>
+              <p className="text-[9px] font-mono text-[var(--fg-50)]">{e.factor}</p>
+              <p className="text-[8px] font-mono text-[var(--fg-25)]">{e.detail}</p>
             </div>
           </div>
         ))}
@@ -99,32 +99,32 @@ export function AdaptationCard({ data }: { data: AdaptationSignal }) {
     <Card title="YOUR BODY IS ADJUSTING" subtitle="Your metabolism may have slowed down — this is normal during a diet">
       <div className="flex items-center gap-2 mb-2">
         <div className={`w-2 h-2 rounded-full ${data.suggestDietBreak ? "bg-amber-400" : "bg-cyan-400"}`} />
-        <p className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.50)]">
+        <p className="text-[9px] font-mono text-[var(--fg-50)]">
           Burning ~{data.tdeeDrop} fewer calories/day over {data.overWeeks} weeks
           <InfoTip term="Why this happens" text="When you eat less for a while, your body adapts by burning slightly fewer calories. This is natural and temporary." />
         </p>
       </div>
-      <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">{data.message}</p>
+      <p className="text-[8px] font-mono text-[var(--fg-30)]">{data.message}</p>
     </Card>
   );
 }
 
 export function LeanMassCard({ data }: { data: LeanMassSignal }) {
-  const colors = { favorable: "text-emerald-300", neutral: "text-[rgb(var(--fg-rgb)/0.40)]", concerning: "text-amber-300" };
-  const icons = { favorable: "bg-emerald-400", neutral: "bg-[rgb(var(--fg-rgb)/0.20)]", concerning: "bg-amber-400" };
+  const colors = { favorable: "text-emerald-300", neutral: "text-[var(--fg-40)]", concerning: "text-amber-300" };
+  const icons = { favorable: "bg-emerald-400", neutral: "bg-[var(--fg-20)]", concerning: "bg-amber-400" };
   const signals = { favorable: "LOOKING GOOD", neutral: "HOLDING STEADY", concerning: "KEEP AN EYE ON THIS" };
   return (
     <Card title="MUSCLE VS FAT CHECK" subtitle="Are you losing fat, gaining muscle, or both?">
       <div className="grid grid-cols-2 gap-3 mb-3">
-        <div className="rounded-md bg-[rgb(var(--fg-rgb)/0.03)] border border-[rgb(var(--fg-rgb)/0.04)] p-2 text-center">
-          <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">SCALE WEIGHT</p>
-          <p className={`text-sm font-bold font-mono ${data.weightTrend === "falling" ? "text-emerald-300" : data.weightTrend === "rising" ? "text-amber-300" : "text-[rgb(var(--fg-rgb)/0.40)]"}`}>
+        <div className="rounded-md bg-[var(--fg-03)] border border-[var(--fg-04)] p-2 text-center">
+          <p className="text-[8px] font-mono text-[var(--fg-30)]">SCALE WEIGHT</p>
+          <p className={`text-sm font-bold font-mono ${data.weightTrend === "falling" ? "text-emerald-300" : data.weightTrend === "rising" ? "text-amber-300" : "text-[var(--fg-40)]"}`}>
             {data.weightTrend === "falling" ? "↓ Going down" : data.weightTrend === "rising" ? "↑ Going up" : "→ Steady"}
           </p>
         </div>
-        <div className="rounded-md bg-[rgb(var(--fg-rgb)/0.03)] border border-[rgb(var(--fg-rgb)/0.04)] p-2 text-center">
-          <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">LIFT STRENGTH</p>
-          <p className={`text-sm font-bold font-mono ${data.strengthTrend === "rising" ? "text-emerald-300" : data.strengthTrend === "falling" ? "text-red-300" : "text-[rgb(var(--fg-rgb)/0.40)]"}`}>
+        <div className="rounded-md bg-[var(--fg-03)] border border-[var(--fg-04)] p-2 text-center">
+          <p className="text-[8px] font-mono text-[var(--fg-30)]">LIFT STRENGTH</p>
+          <p className={`text-sm font-bold font-mono ${data.strengthTrend === "rising" ? "text-emerald-300" : data.strengthTrend === "falling" ? "text-red-300" : "text-[var(--fg-40)]"}`}>
             {data.strengthTrend === "rising" ? "↑ Getting stronger" : data.strengthTrend === "falling" ? "↓ Dropping" : "→ Steady"}
           </p>
         </div>
@@ -133,7 +133,7 @@ export function LeanMassCard({ data }: { data: LeanMassSignal }) {
         <div className={`w-2 h-2 rounded-full ${icons[data.signal]}`} />
         <p className={`text-[9px] font-mono ${colors[data.signal]}`}>{signals[data.signal]}</p>
       </div>
-      <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.25)]">{data.message}</p>
+      <p className="text-[8px] font-mono text-[var(--fg-25)]">{data.message}</p>
     </Card>
   );
 }
@@ -147,26 +147,26 @@ export function WeeklyBudgetCard({ data }: { data: WeeklyBudget }) {
     <Card title="WEEKLY CALORIE BUDGET" subtitle="Your total calorie allowance for this week">
       <div className="text-center mb-3">
         <p className="text-2xl font-bold font-mono text-[rgb(var(--accent-light-rgb))]">{data.remaining.toLocaleString()}</p>
-        <p className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">calories left this week</p>
+        <p className="text-[9px] font-mono text-[var(--fg-30)]">calories left this week</p>
       </div>
-      <div className="relative h-3 rounded-full bg-[rgb(var(--fg-rgb)/0.06)] overflow-hidden mb-2">
+      <div className="relative h-3 rounded-full bg-[var(--fg-06)] overflow-hidden mb-2">
         <div className={`h-full rounded-full transition-all ${data.onTrack ? "bg-emerald-400/60" : "bg-amber-400/60"}`} style={{ width: `${pct}%` }} />
-        <div className="absolute top-0 h-full w-0.5 bg-[rgb(var(--fg-rgb)/0.20)]" style={{ left: `${expectedPct}%` }} />
+        <div className="absolute top-0 h-full w-0.5 bg-[var(--fg-20)]" style={{ left: `${expectedPct}%` }} />
       </div>
-      <div className="flex justify-between text-[7px] font-mono text-[rgb(var(--fg-rgb)/0.20)]">
+      <div className="flex justify-between text-[7px] font-mono text-[var(--fg-20)]">
         <span>{data.consumed.toLocaleString()} eaten so far</span>
         <span>{data.weeklyTarget.toLocaleString()} total budget</span>
       </div>
       <div className="grid grid-cols-2 gap-2 mt-3">
-        <div className="rounded-md bg-[rgb(var(--fg-rgb)/0.03)] border border-[rgb(var(--fg-rgb)/0.04)] p-2 text-center">
-          <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">AVG PER DAY</p>
+        <div className="rounded-md bg-[var(--fg-03)] border border-[var(--fg-04)] p-2 text-center">
+          <p className="text-[8px] font-mono text-[var(--fg-30)]">AVG PER DAY</p>
           <p className={`text-sm font-bold font-mono ${data.onTrack ? "text-emerald-300" : "text-amber-300"}`}>{data.dailyPace}</p>
-          <p className="text-[7px] font-mono text-[rgb(var(--fg-rgb)/0.20)]">calories/day</p>
+          <p className="text-[7px] font-mono text-[var(--fg-20)]">calories/day</p>
         </div>
-        <div className="rounded-md bg-[rgb(var(--fg-rgb)/0.03)] border border-[rgb(var(--fg-rgb)/0.04)] p-2 text-center">
-          <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">{data.daysLeft > 0 ? "YOU CAN EAT" : "WEEK DONE"}</p>
+        <div className="rounded-md bg-[var(--fg-03)] border border-[var(--fg-04)] p-2 text-center">
+          <p className="text-[8px] font-mono text-[var(--fg-30)]">{data.daysLeft > 0 ? "YOU CAN EAT" : "WEEK DONE"}</p>
           <p className="text-sm font-bold font-mono text-[rgb(var(--accent-light-rgb))]">{data.dailyRemaining}</p>
-          <p className="text-[7px] font-mono text-[rgb(var(--fg-rgb)/0.20)]">{data.daysLeft > 0 ? `per day for ${data.daysLeft} more days` : "great work"}</p>
+          <p className="text-[7px] font-mono text-[var(--fg-20)]">{data.daysLeft > 0 ? `per day for ${data.daysLeft} more days` : "great work"}</p>
         </div>
       </div>
       {ahead && <p className="text-[8px] font-mono text-amber-300/50 mt-2 text-center">You're eating a bit fast — try lighter meals the rest of the week to stay on track.</p>}
@@ -176,7 +176,7 @@ export function WeeklyBudgetCard({ data }: { data: WeeklyBudget }) {
 
 export function RecoveryCard({ data }: { data: RecoveryAdjustment }) {
   if (data.severity === "none") return null;
-  const colors = { mild: "text-cyan-300", moderate: "text-amber-300", aggressive: "text-red-300", none: "text-[rgb(var(--fg-rgb)/0.40)]" };
+  const colors = { mild: "text-cyan-300", moderate: "text-amber-300", aggressive: "text-red-300", none: "text-[var(--fg-40)]" };
   const labels = { mild: "Small", moderate: "Moderate", aggressive: "Large", none: "" };
   return (
     <Card title="RECOVERY CHECK" subtitle="How your calorie deficit affects your gym performance">
@@ -187,8 +187,8 @@ export function RecoveryCard({ data }: { data: RecoveryAdjustment }) {
           <InfoTip term="Why this matters" text="Eating fewer calories means your body has less energy to repair muscles after training. A bigger deficit = slower recovery." />
         </p>
       </div>
-      <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.25)]">{data.recommendation}</p>
-      <p className="text-[7px] font-mono text-[rgb(var(--fg-rgb)/0.15)] mt-1">Consider doing {Math.round(data.volumeMultiplier * 100)}% of your normal training volume</p>
+      <p className="text-[8px] font-mono text-[var(--fg-25)]">{data.recommendation}</p>
+      <p className="text-[7px] font-mono text-[var(--fg-15)] mt-1">Consider doing {Math.round(data.volumeMultiplier * 100)}% of your normal training volume</p>
     </Card>
   );
 }
@@ -198,15 +198,15 @@ export function RecompCard({ data }: { data: RecompAssessment }) {
     <Card title="BODY RECOMPOSITION" subtitle="Building muscle while losing fat — tracked by weight + strength changes">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <div className={`w-2 h-2 rounded-full ${data.successScore >= 70 ? "bg-emerald-400" : data.successScore >= 40 ? "bg-amber-400" : "bg-[rgb(var(--fg-rgb)/0.20)]"}`} />
-          <p className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.50)]">Progress: {data.successScore}/100</p>
+          <div className={`w-2 h-2 rounded-full ${data.successScore >= 70 ? "bg-emerald-400" : data.successScore >= 40 ? "bg-amber-400" : "bg-[var(--fg-20)]"}`} />
+          <p className="text-[9px] font-mono text-[var(--fg-50)]">Progress: {data.successScore}/100</p>
         </div>
-        <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.20)]">{data.weeksTracked} weeks tracked</p>
+        <p className="text-[8px] font-mono text-[var(--fg-20)]">{data.weeksTracked} weeks tracked</p>
       </div>
-      <div className="h-1.5 rounded-full bg-[rgb(var(--fg-rgb)/0.06)] overflow-hidden mb-3">
-        <div className={`h-full rounded-full ${data.successScore >= 70 ? "bg-emerald-400/60" : data.successScore >= 40 ? "bg-amber-400/60" : "bg-[rgb(var(--fg-rgb)/0.10)]"}`} style={{ width: `${data.successScore}%` }} />
+      <div className="h-1.5 rounded-full bg-[var(--fg-06)] overflow-hidden mb-3">
+        <div className={`h-full rounded-full ${data.successScore >= 70 ? "bg-emerald-400/60" : data.successScore >= 40 ? "bg-amber-400/60" : "bg-[var(--fg-10)]"}`} style={{ width: `${data.successScore}%` }} />
       </div>
-      <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">{data.message}</p>
+      <p className="text-[8px] font-mono text-[var(--fg-30)]">{data.message}</p>
     </Card>
   );
 }
@@ -231,14 +231,14 @@ export function CycleCard({ data, phaseInfo }: { data: CycleAwareComparison; pha
         <div className={`w-2 h-2 rounded-full ${data.currentPhase === "luteal" ? "bg-amber-400" : data.currentPhase === "menstrual" ? "bg-rose-400" : "bg-emerald-400"}`} />
         <p className={`text-[9px] font-mono ${phaseColors[data.currentPhase]}`}>{phaseLabels[data.currentPhase]}</p>
       </div>
-      <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.25)] mb-2">{phaseInfo}</p>
+      <p className="text-[8px] font-mono text-[var(--fg-25)] mb-2">{phaseInfo}</p>
       {data.samePhaseLastCycle !== null && (
-        <div className="rounded-md bg-[rgb(var(--fg-rgb)/0.03)] border border-[rgb(var(--fg-rgb)/0.04)] p-2 mt-2">
-          <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">VS SAME POINT LAST CYCLE</p>
-          <p className={`text-sm font-bold font-mono ${data.deltaKg !== null && data.deltaKg < 0 ? "text-emerald-300" : "text-[rgb(var(--fg-rgb)/0.50)]"}`}>
+        <div className="rounded-md bg-[var(--fg-03)] border border-[var(--fg-04)] p-2 mt-2">
+          <p className="text-[8px] font-mono text-[var(--fg-30)]">VS SAME POINT LAST CYCLE</p>
+          <p className={`text-sm font-bold font-mono ${data.deltaKg !== null && data.deltaKg < 0 ? "text-emerald-300" : "text-[var(--fg-50)]"}`}>
             {data.deltaKg !== null ? `${data.deltaKg > 0 ? "+" : ""}${Number(kgToUnit(data.deltaKg, wu).toFixed(1))} ${wu}` : "—"}
           </p>
-          <p className="text-[7px] font-mono text-[rgb(var(--fg-rgb)/0.20)]">{data.adjustedTrend}</p>
+          <p className="text-[7px] font-mono text-[var(--fg-20)]">{data.adjustedTrend}</p>
         </div>
       )}
     </Card>
@@ -250,18 +250,18 @@ export function ExerciseExpenditureCard({ data, adaptiveMode }: { data: SessionE
     <Card title="WORKOUT CALORIES BURNED" subtitle="Estimated energy used during this session">
       <div className="grid grid-cols-3 gap-2">
         <div className="text-center">
-          <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">BURNED</p>
+          <p className="text-[8px] font-mono text-[var(--fg-30)]">BURNED</p>
           <p className="text-lg font-bold font-mono text-[rgb(var(--accent-light-rgb))]">{data.kcal}</p>
-          <p className="text-[7px] font-mono text-[rgb(var(--fg-rgb)/0.20)]">calories</p>
+          <p className="text-[7px] font-mono text-[var(--fg-20)]">calories</p>
         </div>
         <div className="text-center">
-          <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">INTENSITY<InfoTip term="Intensity (MET)" text="How hard your body worked compared to rest. Higher = more intense. Walking is ~3, lifting weights is ~5." /></p>
-          <p className="text-lg font-bold font-mono text-[rgb(var(--fg-rgb)/0.60)]">{data.met}</p>
+          <p className="text-[8px] font-mono text-[var(--fg-30)]">INTENSITY<InfoTip term="Intensity (MET)" text="How hard your body worked compared to rest. Higher = more intense. Walking is ~3, lifting weights is ~5." /></p>
+          <p className="text-lg font-bold font-mono text-[var(--fg-60)]">{data.met}</p>
         </div>
         <div className="text-center">
-          <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">TIME</p>
-          <p className="text-lg font-bold font-mono text-[rgb(var(--fg-rgb)/0.60)]">{data.durationMinutes}</p>
-          <p className="text-[7px] font-mono text-[rgb(var(--fg-rgb)/0.20)]">min</p>
+          <p className="text-[8px] font-mono text-[var(--fg-30)]">TIME</p>
+          <p className="text-lg font-bold font-mono text-[var(--fg-60)]">{data.durationMinutes}</p>
+          <p className="text-[7px] font-mono text-[var(--fg-20)]">min</p>
         </div>
       </div>
       {adaptiveMode && (
@@ -282,8 +282,8 @@ export function PatternWarningsCard({ warnings }: { warnings: PatternWarning[] }
               {w.severity === "concern" ? "⚠" : w.severity === "warning" ? "◆" : "ⓘ"}
             </span>
             <div>
-              <p className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.50)]">{w.pattern}</p>
-              <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.25)]">{w.detail}</p>
+              <p className="text-[9px] font-mono text-[var(--fg-50)]">{w.pattern}</p>
+              <p className="text-[8px] font-mono text-[var(--fg-25)]">{w.detail}</p>
             </div>
           </div>
         ))}
@@ -300,29 +300,29 @@ export function ScenarioCard({ scenario, onDateChange, onTargetChange }: {
   return (
     <Card title="WHAT IF?" subtitle="Drag the slider to see how timeline changes affect your daily calories">
       <div className="grid grid-cols-2 gap-3 mb-3">
-        <div className="rounded-md bg-[rgb(var(--fg-rgb)/0.03)] border border-[rgb(var(--fg-rgb)/0.04)] p-2 text-center">
-          <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">DAILY TARGET</p>
+        <div className="rounded-md bg-[var(--fg-03)] border border-[var(--fg-04)] p-2 text-center">
+          <p className="text-[8px] font-mono text-[var(--fg-30)]">DAILY TARGET</p>
           <p className="text-sm font-bold font-mono text-[rgb(var(--accent-light-rgb))]">{scenario.dailyTarget}</p>
-          <p className="text-[7px] font-mono text-[rgb(var(--fg-rgb)/0.20)]">calories</p>
+          <p className="text-[7px] font-mono text-[var(--fg-20)]">calories</p>
         </div>
-        <div className="rounded-md bg-[rgb(var(--fg-rgb)/0.03)] border border-[rgb(var(--fg-rgb)/0.04)] p-2 text-center">
-          <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">GOAL DATE</p>
-          <p className="text-sm font-bold font-mono text-[rgb(var(--fg-rgb)/0.60)]">{scenario.etaDays}d</p>
-          <p className="text-[7px] font-mono text-[rgb(var(--fg-rgb)/0.20)]">{scenario.etaDate}</p>
+        <div className="rounded-md bg-[var(--fg-03)] border border-[var(--fg-04)] p-2 text-center">
+          <p className="text-[8px] font-mono text-[var(--fg-30)]">GOAL DATE</p>
+          <p className="text-sm font-bold font-mono text-[var(--fg-60)]">{scenario.etaDays}d</p>
+          <p className="text-[7px] font-mono text-[var(--fg-20)]">{scenario.etaDate}</p>
         </div>
       </div>
       <div className="space-y-2">
         <div>
-          <p className="text-[7px] font-mono text-[rgb(var(--fg-rgb)/0.25)] mb-1">Adjust timeline</p>
+          <p className="text-[7px] font-mono text-[var(--fg-25)] mb-1">Adjust timeline</p>
           <input
             type="range"
             min={30}
             max={365}
             value={scenario.etaDays}
             onChange={(e) => onDateChange(Number(e.target.value))}
-            className="w-full h-1 accent-[rgb(var(--accent-rgb))] bg-[rgb(var(--fg-rgb)/0.10)] rounded-full appearance-none"
+            className="w-full h-1 accent-[rgb(var(--accent-rgb))] bg-[var(--fg-10)] rounded-full appearance-none"
           />
-          <div className="flex justify-between text-[7px] font-mono text-[rgb(var(--fg-rgb)/0.15)]">
+          <div className="flex justify-between text-[7px] font-mono text-[var(--fg-15)]">
             <span>1 month</span>
             <span>1 year</span>
           </div>
@@ -330,9 +330,9 @@ export function ScenarioCard({ scenario, onDateChange, onTargetChange }: {
       </div>
       <div className="mt-2 flex items-center gap-2">
         <div className={`w-1.5 h-1.5 rounded-full ${scenario.feasibility.feasible ? "bg-emerald-400" : "bg-amber-400"}`} />
-        <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">{scenario.feasibility.reason}</p>
+        <p className="text-[8px] font-mono text-[var(--fg-30)]">{scenario.feasibility.reason}</p>
       </div>
-      <p className="text-[7px] font-mono text-[rgb(var(--fg-rgb)/0.15)] mt-1">Rate: {scenario.rateKgPerWeek} kg/week</p>
+      <p className="text-[7px] font-mono text-[var(--fg-15)] mt-1">Rate: {scenario.rateKgPerWeek} kg/week</p>
     </Card>
   );
 }
@@ -340,7 +340,7 @@ export function ScenarioCard({ scenario, onDateChange, onTargetChange }: {
 export function DietBreakCard({ onStart, suggestion }: { onStart: () => void; suggestion: string }) {
   return (
     <Card title="TIME FOR A BREAK?" subtitle="Your body may benefit from eating at maintenance for a bit">
-      <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.30)] mb-3">{suggestion}</p>
+      <p className="text-[8px] font-mono text-[var(--fg-30)] mb-3">{suggestion}</p>
       <button
         onClick={onStart}
         className="w-full text-[9px] font-mono py-2 rounded-lg border border-[rgb(var(--accent-rgb)/0.3)] text-[rgb(var(--accent-light-rgb)/0.6)] hover:text-[rgb(var(--accent-light-rgb))] hover:border-[rgb(var(--accent-rgb)/0.5)] transition"
@@ -360,29 +360,29 @@ export function MonthlyInsightsCard({ data, weightUnit }: { data: MonthlyCompari
   return (
     <Card title="MONTHLY PERFORMANCE" subtitle="How this month compares to your recent training">
       <div className="grid grid-cols-3 gap-2 mb-3">
-        <div className="rounded-md bg-[rgb(var(--fg-rgb)/0.03)] border border-[rgb(var(--fg-rgb)/0.04)] p-2 text-center">
-          <p className="text-lg font-bold font-mono text-[rgb(var(--fg-rgb)/0.90)]">{data.current.workouts}</p>
-          <p className="text-[7px] font-mono text-[rgb(var(--fg-rgb)/0.25)]">workouts</p>
+        <div className="rounded-md bg-[var(--fg-03)] border border-[var(--fg-04)] p-2 text-center">
+          <p className="text-lg font-bold font-mono text-[var(--fg-90)]">{data.current.workouts}</p>
+          <p className="text-[7px] font-mono text-[var(--fg-25)]">workouts</p>
           {data.frequencyChange != null && (
-            <p className={`text-[8px] font-mono mt-0.5 ${data.frequencyChange > 0 ? "text-emerald-300" : data.frequencyChange < 0 ? "text-orange-300" : "text-[rgb(var(--fg-rgb)/0.30)]"}`}>
+            <p className={`text-[8px] font-mono mt-0.5 ${data.frequencyChange > 0 ? "text-emerald-300" : data.frequencyChange < 0 ? "text-orange-300" : "text-[var(--fg-30)]"}`}>
               {data.frequencyChange > 0 ? "+" : ""}{data.frequencyChange}%
             </p>
           )}
         </div>
-        <div className="rounded-md bg-[rgb(var(--fg-rgb)/0.03)] border border-[rgb(var(--fg-rgb)/0.04)] p-2 text-center">
+        <div className="rounded-md bg-[var(--fg-03)] border border-[var(--fg-04)] p-2 text-center">
           <p className="text-lg font-bold font-mono text-[rgb(var(--accent-light-rgb))]">{fmtVol(data.current.totalVolume)}</p>
-          <p className="text-[7px] font-mono text-[rgb(var(--fg-rgb)/0.25)]">volume ({weightUnit})</p>
+          <p className="text-[7px] font-mono text-[var(--fg-25)]">volume ({weightUnit})</p>
           {data.volumeChange != null && (
-            <p className={`text-[8px] font-mono mt-0.5 ${data.volumeChange > 0 ? "text-emerald-300" : data.volumeChange < 0 ? "text-orange-300" : "text-[rgb(var(--fg-rgb)/0.30)]"}`}>
+            <p className={`text-[8px] font-mono mt-0.5 ${data.volumeChange > 0 ? "text-emerald-300" : data.volumeChange < 0 ? "text-orange-300" : "text-[var(--fg-30)]"}`}>
               {data.volumeChange > 0 ? "+" : ""}{data.volumeChange}%
             </p>
           )}
         </div>
-        <div className="rounded-md bg-[rgb(var(--fg-rgb)/0.03)] border border-[rgb(var(--fg-rgb)/0.04)] p-2 text-center">
-          <p className="text-lg font-bold font-mono text-[rgb(var(--fg-rgb)/0.90)]">{fmtDur(data.current.avgDuration)}</p>
-          <p className="text-[7px] font-mono text-[rgb(var(--fg-rgb)/0.25)]">avg session</p>
+        <div className="rounded-md bg-[var(--fg-03)] border border-[var(--fg-04)] p-2 text-center">
+          <p className="text-lg font-bold font-mono text-[var(--fg-90)]">{fmtDur(data.current.avgDuration)}</p>
+          <p className="text-[7px] font-mono text-[var(--fg-25)]">avg session</p>
           {data.durationChange != null && (
-            <p className={`text-[8px] font-mono mt-0.5 ${Math.abs(data.durationChange) <= 10 ? "text-[rgb(var(--fg-rgb)/0.30)]" : data.durationChange > 0 ? "text-cyan-300" : "text-orange-300"}`}>
+            <p className={`text-[8px] font-mono mt-0.5 ${Math.abs(data.durationChange) <= 10 ? "text-[var(--fg-30)]" : data.durationChange > 0 ? "text-cyan-300" : "text-orange-300"}`}>
               {data.durationChange > 0 ? "+" : ""}{data.durationChange}%
             </p>
           )}
@@ -395,17 +395,17 @@ export function MonthlyInsightsCard({ data, weightUnit }: { data: MonthlyCompari
           return (
             <div key={m.month} className="flex-1 flex flex-col items-center">
               <div
-                className={`w-full rounded-md transition-all ${isCurrent ? "bg-gradient-to-t from-[rgb(var(--accent-rgb))] to-[rgb(var(--accent-light-rgb))]" : "bg-[rgb(var(--fg-rgb)/0.06)]"}`}
+                className={`w-full rounded-md transition-all ${isCurrent ? "bg-gradient-to-t from-[rgb(var(--accent-rgb))] to-[rgb(var(--accent-light-rgb))]" : "bg-[var(--fg-06)]"}`}
                 style={{ height: `${pct}%`, ...(isCurrent ? { boxShadow: "0 0 12px -3px rgb(var(--accent-rgb) / 0.5)" } : {}) }}
               />
-              <p className={`text-[7px] font-mono mt-1 ${isCurrent ? "text-[rgb(var(--accent-light-rgb)/0.6)]" : "text-[rgb(var(--fg-rgb)/0.15)]"}`}>
+              <p className={`text-[7px] font-mono mt-1 ${isCurrent ? "text-[rgb(var(--accent-light-rgb)/0.6)]" : "text-[var(--fg-15)]"}`}>
                 {m.label.split(" ")[0]}
               </p>
             </div>
           );
         })}
       </div>
-      <div className="flex items-center gap-3 text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.25)]">
+      <div className="flex items-center gap-3 text-[8px] font-mono text-[var(--fg-25)]">
         {data.streak > 1 && <span className="text-emerald-300/60">{data.streak}-month streak</span>}
         {data.bestMonth && <span>Best: {data.bestMonth.label} ({fmtVol(data.bestMonth.totalVolume)} {weightUnit})</span>}
       </div>
@@ -422,31 +422,31 @@ export function StrengthBenchmarkCard({ data, weightUnit }: { data: StrengthBenc
       <div className="flex items-center gap-3 mb-3">
         <div className="flex items-center gap-1">
           <div className="w-2 h-2 rounded-full bg-emerald-400" />
-          <span className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">{data.totalUp} up</span>
+          <span className="text-[8px] font-mono text-[var(--fg-30)]">{data.totalUp} up</span>
         </div>
         <div className="flex items-center gap-1">
-          <div className="w-2 h-2 rounded-full bg-[rgb(var(--fg-rgb)/0.20)]" />
-          <span className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">{data.totalStable} stable</span>
+          <div className="w-2 h-2 rounded-full bg-[var(--fg-20)]" />
+          <span className="text-[8px] font-mono text-[var(--fg-30)]">{data.totalStable} stable</span>
         </div>
         <div className="flex items-center gap-1">
           <div className="w-2 h-2 rounded-full bg-orange-400" />
-          <span className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">{data.totalDown} down</span>
+          <span className="text-[8px] font-mono text-[var(--fg-30)]">{data.totalDown} down</span>
         </div>
       </div>
       <div className="space-y-1.5">
         {top.map((ex) => (
           <div key={ex.exerciseId} className="flex items-center gap-2">
             <div className="flex-1 min-w-0">
-              <p className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.60)] truncate">{ex.exerciseName}</p>
+              <p className="text-[9px] font-mono text-[var(--fg-60)] truncate">{ex.exerciseName}</p>
             </div>
             <div className="flex items-center gap-2 shrink-0">
-              <span className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.25)]">
+              <span className="text-[8px] font-mono text-[var(--fg-25)]">
                 {Math.round(kgToUnit(ex.previousE1rm, weightUnit))} → {Math.round(kgToUnit(ex.currentE1rm, weightUnit))}
               </span>
               <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-md ${
                 ex.trend === "up" ? "text-emerald-300 bg-emerald-400/10" :
                 ex.trend === "down" ? "text-orange-300 bg-orange-400/10" :
-                "text-[rgb(var(--fg-rgb)/0.30)] bg-[rgb(var(--fg-rgb)/0.04)]"
+                "text-[var(--fg-30)] bg-[var(--fg-04)]"
               }`}>
                 {ex.changePercent > 0 ? "+" : ""}{ex.changePercent}%
               </span>
@@ -492,14 +492,14 @@ export function PhasePerformanceCard({ data, weightUnit }: { data: PhasePerforma
                   }}
                 />
               </div>
-              <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.50)]">{p.label.slice(0, 4)}</p>
-              <p className="text-[7px] font-mono text-[rgb(var(--fg-rgb)/0.25)]">{p.workouts}w</p>
-              <p className="text-[7px] font-mono text-[rgb(var(--fg-rgb)/0.20)]">{Math.round(kgToUnit(p.avgVolume, weightUnit))}{weightUnit}</p>
+              <p className="text-[8px] font-mono text-[var(--fg-50)]">{p.label.slice(0, 4)}</p>
+              <p className="text-[7px] font-mono text-[var(--fg-25)]">{p.workouts}w</p>
+              <p className="text-[7px] font-mono text-[var(--fg-20)]">{Math.round(kgToUnit(p.avgVolume, weightUnit))}{weightUnit}</p>
             </div>
           );
         })}
       </div>
-      <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.35)] leading-relaxed">{data.recommendation}</p>
+      <p className="text-[8px] font-mono text-[var(--fg-35)] leading-relaxed">{data.recommendation}</p>
     </Card>
   );
 }

@@ -30,18 +30,18 @@ export default function ComingSoon({ icon: Icon, name, description, colorRgb }: 
         transition={{ delay: 0.1 }}
         className="space-y-2"
       >
-        <h1 className="text-xl font-bold text-[rgb(var(--fg-rgb)/0.90)]">{name}</h1>
-        <p className="text-sm text-[rgb(var(--fg-rgb)/0.40)] max-w-xs">{description}</p>
+        <h1 className="text-xl font-bold text-[var(--fg-90)]">{name}</h1>
+        <p className="text-sm text-[var(--fg-40)] max-w-xs">{description}</p>
       </motion.div>
 
       <motion.div
         initial={{ y: 12, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.2 }}
-        className="flex items-center gap-2 mt-4 px-4 py-2.5 rounded-lg bg-[rgb(var(--fg-rgb)/0.04)] border border-[rgb(var(--fg-rgb)/0.06)]"
+        className="flex items-center gap-2 mt-4 px-4 py-2.5 rounded-lg bg-[var(--fg-04)] border border-[var(--fg-06)]"
       >
-        <Construction size={16} className="text-[rgb(var(--fg-rgb)/0.30)]" />
-        <span className="text-xs font-mono tracking-wider text-[rgb(var(--fg-rgb)/0.30)] uppercase">Coming Soon</span>
+        <Construction size={16} className="text-[var(--fg-30)]" />
+        <span className="text-xs font-mono tracking-wider text-[var(--fg-30)] uppercase">Coming Soon</span>
       </motion.div>
     </div>
   );

@@ -202,8 +202,8 @@ export default function BodyPage() {
             <Ruler size={18} className="text-emerald-400" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-[rgb(var(--fg-rgb)/0.90)] font-display">Body Measurements</h1>
-            <p className="text-[10px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">{measuredCount}/{BODY_PARTS.length} tracked · {Object.keys(goals).length} goals</p>
+            <h1 className="text-lg font-bold text-[var(--fg-90)] font-display">Body Measurements</h1>
+            <p className="text-[10px] font-mono text-[var(--fg-30)]">{measuredCount}/{BODY_PARTS.length} tracked · {Object.keys(goals).length} goals</p>
           </div>
         </div>
 
@@ -212,15 +212,15 @@ export default function BodyPage() {
           <p className="section-label mb-3">TAP A BODY PART TO LOG</p>
           <div className="relative w-full" style={{ aspectRatio: "1/1.6" }}>
             <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
-              <ellipse cx="50" cy="6" rx="5" ry="5.5" fill="none" stroke="rgb(var(--fg-rgb) / 0.08)" strokeWidth="0.5" />
-              <rect x="47.5" y="11" width="5" height="3" rx="1" fill="none" stroke="rgb(var(--fg-rgb) / 0.06)" strokeWidth="0.4" />
-              <path d="M35 14 Q35 14 30 16 L28 28 L32 44 L40 48 L50 50 L60 48 L68 44 L72 28 L70 16 Q65 14 65 14 Z" fill="none" stroke="rgb(var(--fg-rgb) / 0.08)" strokeWidth="0.5" />
-              <path d="M30 16 L22 20 L18 30 L14 40 L12 46" fill="none" stroke="rgb(var(--fg-rgb) / 0.06)" strokeWidth="0.5" />
-              <path d="M70 16 L78 20 L82 30 L86 40 L88 46" fill="none" stroke="rgb(var(--fg-rgb) / 0.06)" strokeWidth="0.5" />
-              <path d="M40 48 L36 60 L34 72 L34 85 L33 95" fill="none" stroke="rgb(var(--fg-rgb) / 0.06)" strokeWidth="0.5" />
-              <path d="M60 48 L64 60 L66 72 L66 85 L67 95" fill="none" stroke="rgb(var(--fg-rgb) / 0.06)" strokeWidth="0.5" />
-              <path d="M32 36 Q50 38 68 36" fill="none" stroke="rgb(var(--fg-rgb) / 0.04)" strokeWidth="0.3" strokeDasharray="1 1" />
-              <path d="M34 44 Q50 46 66 44" fill="none" stroke="rgb(var(--fg-rgb) / 0.04)" strokeWidth="0.3" strokeDasharray="1 1" />
+              <ellipse cx="50" cy="6" rx="5" ry="5.5" fill="none" stroke="var(--fg-08)" strokeWidth="0.5" />
+              <rect x="47.5" y="11" width="5" height="3" rx="1" fill="none" stroke="var(--fg-06)" strokeWidth="0.4" />
+              <path d="M35 14 Q35 14 30 16 L28 28 L32 44 L40 48 L50 50 L60 48 L68 44 L72 28 L70 16 Q65 14 65 14 Z" fill="none" stroke="var(--fg-08)" strokeWidth="0.5" />
+              <path d="M30 16 L22 20 L18 30 L14 40 L12 46" fill="none" stroke="var(--fg-06)" strokeWidth="0.5" />
+              <path d="M70 16 L78 20 L82 30 L86 40 L88 46" fill="none" stroke="var(--fg-06)" strokeWidth="0.5" />
+              <path d="M40 48 L36 60 L34 72 L34 85 L33 95" fill="none" stroke="var(--fg-06)" strokeWidth="0.5" />
+              <path d="M60 48 L64 60 L66 72 L66 85 L67 95" fill="none" stroke="var(--fg-06)" strokeWidth="0.5" />
+              <path d="M32 36 Q50 38 68 36" fill="none" stroke="var(--fg-04)" strokeWidth="0.3" strokeDasharray="1 1" />
+              <path d="M34 44 Q50 46 66 44" fill="none" stroke="var(--fg-04)" strokeWidth="0.3" strokeDasharray="1 1" />
             </svg>
 
             {BODY_PARTS.map((part) => {
@@ -240,12 +240,12 @@ export default function BodyPage() {
                       ? "border-[rgb(var(--accent-rgb))] bg-[rgb(var(--accent-rgb)/0.3)] scale-125 shadow-[0_0_12px_rgb(var(--accent-rgb)/0.4)]"
                       : entry
                         ? hasGoal ? "border-emerald-400/60 bg-emerald-400/20 hover:scale-110 ring-1 ring-emerald-400/20 ring-offset-1 ring-offset-transparent" : "border-emerald-400/50 bg-emerald-400/15 hover:scale-110"
-                        : "border-[rgb(var(--fg-rgb)/0.15)] bg-[rgb(var(--fg-rgb)/0.05)] hover:border-[rgb(var(--fg-rgb)/0.30)] hover:scale-110"
+                        : "border-[var(--fg-15)] bg-[var(--fg-05)] hover:border-[var(--fg-30)] hover:scale-110"
                   }`}>
                     {entry && <div className="w-1.5 h-1.5 rounded-full bg-emerald-400/80" />}
                   </div>
                   <div className={`mt-0.5 text-center transition-opacity ${isSelected ? "opacity-100" : "opacity-70 group-hover:opacity-100"}`}>
-                    <p className="text-[7px] font-mono text-[rgb(var(--fg-rgb)/0.40)] whitespace-nowrap">{part.label}</p>
+                    <p className="text-[7px] font-mono text-[var(--fg-40)] whitespace-nowrap">{part.label}</p>
                     {entry && (
                       <div className="flex items-center gap-0.5 justify-center">
                         <p className="text-[8px] font-mono text-emerald-300/70 font-bold">{entry.current}cm</p>
@@ -268,14 +268,14 @@ export default function BodyPage() {
           <div className="glass-card p-4 mb-4 border-[rgb(var(--accent-rgb)/0.2)]" style={{ boxShadow: "0 0 30px -8px rgb(var(--accent-rgb) / 0.15)" }}>
             <div className="flex items-center justify-between mb-3">
               <div>
-                <p className="text-sm font-bold text-[rgb(var(--fg-rgb)/0.90)]">{selectedPart.label}</p>
+                <p className="text-sm font-bold text-[var(--fg-90)]">{selectedPart.label}</p>
                 {latest[selected] && (
-                  <p className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">
+                  <p className="text-[9px] font-mono text-[var(--fg-30)]">
                     Last: {latest[selected].current}cm on {new Date(latest[selected].date).toLocaleDateString()}
                   </p>
                 )}
               </div>
-              <button onClick={() => { setSelected(null); setShowGoalInput(false); }} className="w-7 h-7 rounded-md border border-[rgb(var(--fg-rgb)/0.10)] flex items-center justify-center text-[rgb(var(--fg-rgb)/0.30)] hover:text-[rgb(var(--fg-rgb)/0.60)] transition">
+              <button onClick={() => { setSelected(null); setShowGoalInput(false); }} className="w-7 h-7 rounded-md border border-[var(--fg-10)] flex items-center justify-center text-[var(--fg-30)] hover:text-[var(--fg-60)] transition">
                 <X size={14} />
               </button>
             </div>
@@ -290,10 +290,10 @@ export default function BodyPage() {
                   onChange={(e) => setInputValue(e.target.value)}
                   placeholder="0.0"
                   onKeyDown={(e) => e.key === "Enter" && saveMeasurement()}
-                  className="w-full h-12 rounded-xl bg-[rgb(var(--fg-rgb)/0.04)] border border-[rgb(var(--fg-rgb)/0.08)] text-center text-xl font-bold font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition"
+                  className="w-full h-12 rounded-xl bg-[var(--fg-04)] border border-[var(--fg-08)] text-center text-xl font-bold font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] transition"
                   autoFocus
                 />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-mono text-[rgb(var(--fg-rgb)/0.25)]">cm</span>
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-mono text-[var(--fg-25)]">cm</span>
               </div>
               <button
                 onClick={saveMeasurement}
@@ -316,17 +316,17 @@ export default function BodyPage() {
                     if (!prog) return null;
                     return (
                       <div className="mt-1">
-                        <div className="h-1.5 rounded-full bg-[rgb(var(--fg-rgb)/0.06)] overflow-hidden">
+                        <div className="h-1.5 rounded-full bg-[var(--fg-06)] overflow-hidden">
                           <div className="h-full rounded-full bg-emerald-400/60 transition-all" style={{ width: `${prog.pct}%` }} />
                         </div>
-                        <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.25)] mt-0.5">
+                        <p className="text-[8px] font-mono text-[var(--fg-25)] mt-0.5">
                           {prog.pct >= 100 ? "Goal reached!" : `${prog.remaining.toFixed(1)}cm to ${prog.direction === "gain" ? "gain" : "lose"} · ${Math.round(prog.pct)}%`}
                         </p>
                       </div>
                     );
                   })()}
                 </div>
-                <button onClick={() => { setShowGoalInput(true); setGoalInput(String(goals[selected])); }} className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.25)] hover:text-[rgb(var(--fg-rgb)/0.50)] transition">Edit</button>
+                <button onClick={() => { setShowGoalInput(true); setGoalInput(String(goals[selected])); }} className="text-[9px] font-mono text-[var(--fg-25)] hover:text-[var(--fg-50)] transition">Edit</button>
                 <button onClick={removeGoal} className="text-[9px] font-mono text-red-400/30 hover:text-red-400/60 transition">
                   <X size={10} />
                 </button>
@@ -352,14 +352,14 @@ export default function BodyPage() {
                 >
                   {savingGoal ? "..." : <Check size={14} />}
                 </button>
-                <button onClick={() => setShowGoalInput(false)} className="shrink-0 h-10 px-2 rounded-lg border border-[rgb(var(--fg-rgb)/0.10)] text-[rgb(var(--fg-rgb)/0.30)] hover:text-[rgb(var(--fg-rgb)/0.60)] transition">
+                <button onClick={() => setShowGoalInput(false)} className="shrink-0 h-10 px-2 rounded-lg border border-[var(--fg-10)] text-[var(--fg-30)] hover:text-[var(--fg-60)] transition">
                   <X size={14} />
                 </button>
               </div>
             ) : (
               <button
                 onClick={() => setShowGoalInput(true)}
-                className="flex items-center gap-1.5 text-[10px] font-mono text-[rgb(var(--fg-rgb)/0.20)] hover:text-emerald-300/60 transition mb-3"
+                className="flex items-center gap-1.5 text-[10px] font-mono text-[var(--fg-20)] hover:text-emerald-300/60 transition mb-3"
               >
                 <Target size={10} /> Set goal
               </button>
@@ -367,16 +367,16 @@ export default function BodyPage() {
 
             {/* Sparkline trend */}
             {selectedHistory.length >= 2 && (
-              <div className="flex items-center gap-3 mb-3 rounded-lg bg-[rgb(var(--fg-rgb)/0.02)] border border-[rgb(var(--fg-rgb)/0.04)] px-3 py-2">
+              <div className="flex items-center gap-3 mb-3 rounded-lg bg-[var(--fg-02)] border border-[var(--fg-04)] px-3 py-2">
                 <Sparkline values={historyByPart[selected] ?? []} goal={goals[selected]} />
                 <div className="min-w-0">
-                  <p className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">Trend ({selectedHistory.length} entries)</p>
+                  <p className="text-[9px] font-mono text-[var(--fg-30)]">Trend ({selectedHistory.length} entries)</p>
                   {(() => {
                     const vals = historyByPart[selected];
                     if (!vals || vals.length < 2) return null;
                     const total = vals[vals.length - 1] - vals[0];
                     return (
-                      <p className={`text-[10px] font-mono font-bold ${total > 0 ? "text-red-400/60" : total < 0 ? "text-emerald-400/60" : "text-[rgb(var(--fg-rgb)/0.30)]"}`}>
+                      <p className={`text-[10px] font-mono font-bold ${total > 0 ? "text-red-400/60" : total < 0 ? "text-emerald-400/60" : "text-[var(--fg-30)]"}`}>
                         {total > 0 ? "+" : ""}{total.toFixed(1)}cm overall
                       </p>
                     );
@@ -388,11 +388,11 @@ export default function BodyPage() {
             {/* Mini history */}
             {selectedHistory.length > 0 && (
               <div className="space-y-1.5">
-                <p className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.20)]">RECENT</p>
+                <p className="text-[9px] font-mono text-[var(--fg-20)]">RECENT</p>
                 {selectedHistory.slice(0, 5).map((m) => (
                   <div key={m.id} className="flex items-center justify-between text-[10px] font-mono">
-                    <span className="text-[rgb(var(--fg-rgb)/0.30)]">{new Date(m.measured_at).toLocaleDateString()}</span>
-                    <span className="text-[rgb(var(--fg-rgb)/0.60)] font-bold">{m.value_cm} cm</span>
+                    <span className="text-[var(--fg-30)]">{new Date(m.measured_at).toLocaleDateString()}</span>
+                    <span className="text-[var(--fg-60)] font-bold">{m.value_cm} cm</span>
                   </div>
                 ))}
               </div>
@@ -416,12 +416,12 @@ export default function BodyPage() {
                   className="glass-card glass-card-interactive p-3 text-left"
                 >
                   <div className="flex items-center justify-between mb-1">
-                    <p className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.30)]">{part.label.toUpperCase()}</p>
+                    <p className="text-[9px] font-mono text-[var(--fg-30)]">{part.label.toUpperCase()}</p>
                     {sparkVals && sparkVals.length >= 2 && <Sparkline values={sparkVals} goal={goal} />}
                   </div>
                   <div className="flex items-baseline gap-1.5">
-                    <p className="text-lg font-bold font-display text-[rgb(var(--fg-rgb)/0.80)]">{entry.current}</p>
-                    <p className="text-[10px] font-mono text-[rgb(var(--fg-rgb)/0.25)]">cm</p>
+                    <p className="text-lg font-bold font-display text-[var(--fg-80)]">{entry.current}</p>
+                    <p className="text-[10px] font-mono text-[var(--fg-25)]">cm</p>
                     {deltaInfo && deltaInfo.trend !== "same" && (
                       <span className={`text-[9px] font-mono ml-auto ${deltaInfo.trend === "down" ? "text-emerald-400/60" : "text-red-400/50"}`}>
                         {deltaInfo.delta > 0 ? "+" : ""}{deltaInfo.delta.toFixed(1)}
@@ -430,15 +430,15 @@ export default function BodyPage() {
                   </div>
                   {prog && (
                     <div className="mt-1.5">
-                      <div className="h-1 rounded-full bg-[rgb(var(--fg-rgb)/0.06)] overflow-hidden">
+                      <div className="h-1 rounded-full bg-[var(--fg-06)] overflow-hidden">
                         <div className="h-full rounded-full bg-emerald-400/50 transition-all" style={{ width: `${prog.pct}%` }} />
                       </div>
-                      <p className="text-[7px] font-mono text-[rgb(var(--fg-rgb)/0.20)] mt-0.5">
+                      <p className="text-[7px] font-mono text-[var(--fg-20)] mt-0.5">
                         {prog.pct >= 100 ? "Goal reached" : `${prog.remaining.toFixed(1)}cm to go`} · {goal}cm
                       </p>
                     </div>
                   )}
-                  {!prog && <p className="text-[8px] font-mono text-[rgb(var(--fg-rgb)/0.15)] mt-1">{new Date(entry.date).toLocaleDateString()}</p>}
+                  {!prog && <p className="text-[8px] font-mono text-[var(--fg-15)] mt-1">{new Date(entry.date).toLocaleDateString()}</p>}
                 </button>
               );
             })}
@@ -448,9 +448,9 @@ export default function BodyPage() {
         {/* Empty state */}
         {!loading && measuredCount === 0 && !selected && (
           <div className="glass-card p-6 text-center">
-            <Ruler size={32} className="text-[rgb(var(--fg-rgb)/0.10)] mx-auto mb-3" />
-            <p className="text-sm text-[rgb(var(--fg-rgb)/0.40)] mb-1">No measurements yet</p>
-            <p className="text-[10px] font-mono text-[rgb(var(--fg-rgb)/0.20)]">Tap any point on the body diagram above to start tracking</p>
+            <Ruler size={32} className="text-[var(--fg-10)] mx-auto mb-3" />
+            <p className="text-sm text-[var(--fg-40)] mb-1">No measurements yet</p>
+            <p className="text-[10px] font-mono text-[var(--fg-20)]">Tap any point on the body diagram above to start tracking</p>
           </div>
         )}
       </div>

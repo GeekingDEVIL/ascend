@@ -46,15 +46,15 @@ export default function CustomSelect({ options, value, onChange, placeholder = "
 
     return (
         <div ref={containerRef} className="relative">
-            {label && <label className="text-[9px] font-mono text-[rgb(var(--fg-rgb)/0.30)] mb-1 block">{label}</label>}
+            {label && <label className="text-[9px] font-mono text-[var(--fg-30)] mb-1 block">{label}</label>}
 
             <button
                 type="button"
                 onClick={() => setOpen((o) => !o)}
-                className="w-full flex items-center justify-between gap-2 rounded-lg bg-[rgb(var(--fg-rgb)/0.04)] border border-[rgb(var(--fg-rgb)/0.08)] px-3 py-2.5 text-sm font-mono text-left transition focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)]"
+                className="w-full flex items-center justify-between gap-2 rounded-lg bg-[var(--fg-04)] border border-[var(--fg-08)] px-3 py-2.5 text-sm font-mono text-left transition focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)]"
             >
-                <span className={`truncate ${selected ? "text-[rgb(var(--fg-rgb)/0.80)]" : "text-[rgb(var(--fg-rgb)/0.30)]"}`}>{selected ? selected.label : placeholder}</span>
-                <ChevronDown size={14} className={`shrink-0 text-[rgb(var(--fg-rgb)/0.30)] transition-transform ${open ? "rotate-180" : ""}`} />
+                <span className={`truncate ${selected ? "text-[var(--fg-80)]" : "text-[var(--fg-30)]"}`}>{selected ? selected.label : placeholder}</span>
+                <ChevronDown size={14} className={`shrink-0 text-[var(--fg-30)] transition-transform ${open ? "rotate-180" : ""}`} />
             </button>
 
             {open && (
@@ -64,38 +64,38 @@ export default function CustomSelect({ options, value, onChange, placeholder = "
                         <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setOpen(false)} />
                         <div className="relative z-10 bg-[var(--bg-elevated)] border-t border-[rgb(var(--accent-rgb)/0.2)] rounded-t-2xl max-h-[75vh] flex flex-col">
                             <div className="flex items-center justify-between px-5 pt-4 pb-2">
-                                <p className="text-xs font-mono tracking-widest text-[rgb(var(--fg-rgb)/0.40)]">{label ?? "SELECT"}</p>
-                                <button onClick={() => setOpen(false)} className="w-8 h-8 flex items-center justify-center rounded-lg text-[rgb(var(--fg-rgb)/0.40)] hover:text-[rgb(var(--fg-rgb)/0.70)] transition">
+                                <p className="text-xs font-mono tracking-widest text-[var(--fg-40)]">{label ?? "SELECT"}</p>
+                                <button onClick={() => setOpen(false)} className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--fg-40)] hover:text-[var(--fg-70)] transition">
                                     <X size={18} />
                                 </button>
                             </div>
                             {searchable && (
                                 <div className="px-5 pb-3">
-                                    <div className="flex items-center gap-2 rounded-lg bg-[rgb(var(--fg-rgb)/0.04)] border border-[rgb(var(--fg-rgb)/0.08)] px-3 py-2.5">
-                                        <Search size={14} className="text-[rgb(var(--fg-rgb)/0.30)] shrink-0" />
+                                    <div className="flex items-center gap-2 rounded-lg bg-[var(--fg-04)] border border-[var(--fg-08)] px-3 py-2.5">
+                                        <Search size={14} className="text-[var(--fg-30)] shrink-0" />
                                         <input
                                             autoFocus
                                             value={query}
                                             onChange={(e) => setQuery(e.target.value)}
                                             placeholder="Search..."
-                                            className="flex-1 min-w-0 bg-transparent text-sm font-mono text-[rgb(var(--fg-rgb)/0.80)] placeholder:text-[rgb(var(--fg-rgb)/0.20)] focus:outline-none"
+                                            className="flex-1 min-w-0 bg-transparent text-sm font-mono text-[var(--fg-80)] placeholder:text-[var(--fg-20)] focus:outline-none"
                                         />
                                     </div>
                                 </div>
                             )}
                             <div className="overflow-y-auto px-3 pb-6 space-y-1">
                                 {filtered.length === 0 ? (
-                                    <p className="text-xs font-mono text-[rgb(var(--fg-rgb)/0.30)] text-center py-6">No results</p>
+                                    <p className="text-xs font-mono text-[var(--fg-30)] text-center py-6">No results</p>
                                 ) : (
                                     filtered.map((o) => (
                                         <button
                                             key={o.value}
                                             onClick={() => select(o.value)}
-                                            className={`w-full flex items-center justify-between gap-2 px-3 py-3 rounded-lg text-left transition ${o.value === value ? "bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "text-[rgb(var(--fg-rgb)/0.70)] hover:bg-[rgb(var(--fg-rgb)/0.04)]"}`}
+                                            className={`w-full flex items-center justify-between gap-2 px-3 py-3 rounded-lg text-left transition ${o.value === value ? "bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "text-[var(--fg-70)] hover:bg-[var(--fg-04)]"}`}
                                         >
                                             <span className="min-w-0">
                                                 <span className="block text-sm font-bold truncate">{o.label}</span>
-                                                {o.sub && <span className="block text-[10px] font-mono text-[rgb(var(--fg-rgb)/0.30)] truncate">{o.sub}</span>}
+                                                {o.sub && <span className="block text-[10px] font-mono text-[var(--fg-30)] truncate">{o.sub}</span>}
                                             </span>
                                             {o.value === value && <Check size={16} className="shrink-0 text-[rgb(var(--accent-light-rgb))]" />}
                                         </button>
@@ -108,32 +108,32 @@ export default function CustomSelect({ options, value, onChange, placeholder = "
                     {/* Desktop: inline dropdown */}
                     <div className="hidden md:block absolute z-[80] top-full left-0 right-0 mt-1.5 rounded-lg border border-[rgb(var(--accent-rgb)/0.2)] bg-[var(--bg-elevated)] shadow-xl overflow-hidden">
                         {searchable && (
-                            <div className="p-2 border-b border-[rgb(var(--fg-rgb)/0.06)]">
-                                <div className="flex items-center gap-2 rounded-lg bg-[rgb(var(--fg-rgb)/0.04)] border border-[rgb(var(--fg-rgb)/0.08)] px-2.5 py-2">
-                                    <Search size={13} className="text-[rgb(var(--fg-rgb)/0.30)] shrink-0" />
+                            <div className="p-2 border-b border-[var(--fg-06)]">
+                                <div className="flex items-center gap-2 rounded-lg bg-[var(--fg-04)] border border-[var(--fg-08)] px-2.5 py-2">
+                                    <Search size={13} className="text-[var(--fg-30)] shrink-0" />
                                     <input
                                         autoFocus
                                         value={query}
                                         onChange={(e) => setQuery(e.target.value)}
                                         placeholder="Search..."
-                                        className="flex-1 min-w-0 bg-transparent text-xs font-mono text-[rgb(var(--fg-rgb)/0.80)] placeholder:text-[rgb(var(--fg-rgb)/0.20)] focus:outline-none"
+                                        className="flex-1 min-w-0 bg-transparent text-xs font-mono text-[var(--fg-80)] placeholder:text-[var(--fg-20)] focus:outline-none"
                                     />
                                 </div>
                             </div>
                         )}
                         <div className="max-h-64 overflow-y-auto p-1.5 space-y-0.5">
                             {filtered.length === 0 ? (
-                                <p className="text-xs font-mono text-[rgb(var(--fg-rgb)/0.30)] text-center py-4">No results</p>
+                                <p className="text-xs font-mono text-[var(--fg-30)] text-center py-4">No results</p>
                             ) : (
                                 filtered.map((o) => (
                                     <button
                                         key={o.value}
                                         onClick={() => select(o.value)}
-                                        className={`w-full flex items-center justify-between gap-2 px-2.5 py-2 rounded-md text-left text-xs font-mono transition ${o.value === value ? "bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "text-[rgb(var(--fg-rgb)/0.70)] hover:bg-[rgb(var(--fg-rgb)/0.05)]"}`}
+                                        className={`w-full flex items-center justify-between gap-2 px-2.5 py-2 rounded-md text-left text-xs font-mono transition ${o.value === value ? "bg-[rgb(var(--accent-rgb)/0.1)] text-[rgb(var(--accent-light-rgb))]" : "text-[var(--fg-70)] hover:bg-[var(--fg-05)]"}`}
                                     >
                                         <span className="min-w-0">
                                             <span className="block truncate">{o.label}</span>
-                                            {o.sub && <span className="block text-[9px] text-[rgb(var(--fg-rgb)/0.30)] truncate">{o.sub}</span>}
+                                            {o.sub && <span className="block text-[9px] text-[var(--fg-30)] truncate">{o.sub}</span>}
                                         </span>
                                         {o.value === value && <Check size={13} className="shrink-0 text-[rgb(var(--accent-light-rgb))]" />}
                                     </button>
