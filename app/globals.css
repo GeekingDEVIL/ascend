@@ -417,6 +417,44 @@ button:active:not(:disabled), [role="button"]:active:not(:disabled) {
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* ── Split-flap counter panel ── */
+.flap-panel {
+  background: linear-gradient(180deg, rgb(var(--fg-rgb, 255 255 255) / 0.03) 0%, rgb(var(--fg-rgb, 255 255 255) / 0.01) 100%);
+}
+.flap-track {
+  background: rgb(var(--fg-rgb, 255 255 255) / 0.02);
+  border: 1px solid rgb(var(--fg-rgb, 255 255 255) / 0.06);
+  box-shadow: inset 0 1px 3px rgb(0 0 0 / 0.3), inset 0 -1px 1px rgb(255 255 255 / 0.02);
+}
+.flap-digit-text {
+  color: var(--fg-80);
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.3);
+}
+.flap-accent .flap-digit-text {
+  color: rgb(var(--accent-light-rgb));
+  text-shadow: 0 0 8px rgb(var(--accent-rgb) / 0.3), 0 1px 2px rgb(0 0 0 / 0.3);
+}
+.flap-highlight {
+  color: rgb(var(--accent-light-rgb)) !important;
+  text-shadow: 0 0 12px rgb(var(--accent-rgb) / 0.6) !important;
+  transition: color 0.3s, text-shadow 0.3s;
+}
+@keyframes flap-down {
+  0% { transform: rotateX(0deg); }
+  100% { transform: rotateX(-90deg); }
+}
+.flap-flip {
+  animation: flap-down 0.15s ease-in forwards;
+  backface-visibility: hidden;
+}
+
+@keyframes delta-fly {
+  0% { opacity: 1; transform: translate(-50%, 0); }
+  100% { opacity: 0; transform: translate(-50%, -20px); }
+}
+.animate-delta-fly { animation: delta-fly 1.5s ease-out forwards; }
+
 @keyframes celebrate-glow {
   0%, 100% { box-shadow: inset 0 0 12px rgb(var(--accent-rgb) / 0), 0 0 0 rgb(var(--accent-rgb) / 0); }
   50% { box-shadow: inset 0 0 12px rgb(var(--accent-rgb) / 0.15), 0 0 20px rgb(var(--accent-rgb) / 0.1); }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Plus, Play, X, RefreshCw, Pause, SkipForward, ChevronDown, Moon, Flame, Dumbbell, Timer, TrendingUp, Share2, Trash2, Ban, Calendar, Pencil, Undo2, Minus } from "lucide-react";
 import { useSwipeable } from "react-swipeable";
@@ -80,12 +80,523 @@ function SwipeSet({ completed, onComplete, children }: { completed: boolean; onC
     );
 }
 
+/* ─── SPLIT-FLAP DIGIT ─── */
+function FlapDigit({ digit, delay = 0 }: { digit: string; delay?: number }) {
+    const isNum = /\d/.test(digit);
+    const [current, setCurrent] = useState(digit);
+    const [prev, setPrev] = useState(digit);
+    const [flipping, setFlipping] = useState(false);
+    const [highlight, setHighlight] = useState(false);
+    const prevRef = useRef(digit);
+
+    useEffect(() => {
+        if (digit === prevRef.current) return;
+        const old = prevRef.current;
+        prevRef.current = digit;
+        if (!isNum) { setCurrent(digit); setPrev(digit); return; }
+        const t0 = setTimeout(() => {
+            setPrev(old);
+            setFlipping(true);
+            setHighlight(true);
+            const t1 = setTimeout(() => { setCurrent(digit); }, 150);
+            const t2 = setTimeout(() => { setFlipping(false); setPrev(digit); }, 300);
+            const t3 = setTimeout(() => { setHighlight(false); }, 600);
+            return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+        }, delay);
+        return () => clearTimeout(t0);
+    }, [digit, delay, isNum]);
+
+    if (!isNum) return <span className="inline-flex items-center justify-center w-[0.3em] text-[var(--fg-15)]">{digit}</span>;
+
+    return (
+        <span className="flap-slot inline-flex relative" style={{ width: "0.65em", height: "1.3em" }}>
+            {/* Embossed track */}
+            <span className="absolute inset-0 rounded-[3px] flap-track" />
+            {/* Bottom half (new digit, revealed by flip) */}
+            <span className="absolute inset-0 flex items-center justify-center flap-digit-text" style={{ clipPath: "inset(50% 0 0 0)" }}>
+                {current}
+            </span>
+            {/* Top half (always current) */}
+            <span className={`absolute inset-0 flex items-center justify-center flap-digit-text ${highlight ? "flap-highlight" : ""}`} style={{ clipPath: "inset(0 0 50% 0)" }}>
+                {current}
+            </span>
+            {/* Flipping flap (top half of old digit, flips down) */}
+            {flipping && (
+                <span className="absolute inset-0 flex items-center justify-center flap-digit-text flap-flip" style={{ clipPath: "inset(0 0 50% 0)", transformOrigin: "bottom center" }}>
+                    {prev}
+                </span>
+            )}
+            {/* Center hairline */}
+            <span className="absolute left-[1px] right-[1px] top-1/2 h-px bg-[var(--fg-06)]" />
+        </span>
+    );
+}
+
+function FlapNumber({ value, suffix = "", accent = false }: { value: string; suffix?: string; accent?: boolean }) {
+    const chars = value.split("");
+    const len = chars.length;
+    return (
+        <span className={`inline-flex items-center font-mono font-bold tabular-nums gap-px ${accent ? "flap-accent" : ""}`}>
+            {chars.map((ch, i) => <FlapDigit key={`${len}-${i}`} digit={ch} delay={(len - 1 - i) * 60} />)}
+            {suffix && <span className="text-[0.4em] font-medium text-[var(--fg-25)] self-end mb-[0.15em] ml-1">{suffix}</span>}
+        </span>
+    );
+}
+
+function DeltaToast({ value }: { value: number }) {
+    const [show, setShow] = useState(true);
+    useEffect(() => { const t = setTimeout(() => setShow(false), 1500); return () => clearTimeout(t); }, []);
+    if (!show || value <= 0) return null;
+    return (
+        <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-[11px] font-mono font-bold text-emerald-400 animate-delta-fly pointer-events-none whitespace-nowrap">
+            +{Math.round(value).toLocaleString()}
+        </span>
+    );
+}
+
+/* ─── MINI RUNE CIRCLE PROGRESS ─── */
+const RUNE_PATHS = [
+    "M8 16V4M8 4L3 0M8 4L13 0",      // Algiz
+    "M8 16V0M8 0L3 5M8 0L13 5",      // Tiwaz
+    "M3 0L13 8L3 16",                  // Kenaz
+    "M8 0L16 8L8 16L0 8Z",            // Ingwaz
+    "M0 0H16L0 16H16M0 0V16M16 0V16", // Dagaz
+    "M4 16V6L8 0L12 6V16M4 6H12",    // Othala
+    "M3 0L13 6L3 10L13 16",           // Sowilo
+    "M0 16V0L8 10L16 0V16",           // Ehwaz
+    "M3 16V0M3 0L13 4M3 7L13 11",    // Fehu
+    "M4 16V0M4 0H12L12 8H4",         // Wunjo
+    "M4 16V0H11L11 7H4M8 7L13 16",   // Raido
+    "M0 0L16 16M16 0L0 16",           // Gebo
+    "M3 0V16M13 0V16M3 8H13",        // Hagalaz
+    "M8 0V16M4 0H12M4 16H12",        // Isa
+    "M8 0V16M3 5L13 11",             // Nauthiz
+    "M4 16V0M4 4L12 8M4 8L12 12",   // Ansuz
+];
+
+function MiniRuneCircle({ completed, total, circleSize = 64 }: { completed: number; total: number; circleSize?: number }) {
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const stateRef = useRef({
+        prevCompleted: completed,
+        flashRunes: new Map<number, number>(),
+        shimmerAngle: 0,
+        revealProgress: new Map<number, number>(),
+        globalRotation: 0,
+    });
+    const frameRef = useRef(0);
+    const accentRef = useRef("45, 212, 191");
+
+    const cTotal = Math.max(total, 1);
+    const cCompleted = Math.min(completed, cTotal);
+    const SIZE = circleSize;
+    const RADIUS = SIZE * 0.36;
+    const GLYPH_SIZE = Math.max(5, SIZE * 0.09);
+
+    const parsedPaths = useMemo(() => RUNE_PATHS.map((d) => {
+        const cmds: Array<{ type: string; args: number[] }> = [];
+        const re = /([MLHVZ])([^MLHVZ]*)/gi;
+        let m;
+        while ((m = re.exec(d)) !== null) {
+            const type = m[1].toUpperCase();
+            const args = m[2].trim().split(/[\s,]+/).filter(Boolean).map(Number);
+            cmds.push({ type, args });
+        }
+        return cmds;
+    }), []);
+
+    function drawRune(ctx: CanvasRenderingContext2D, cmds: typeof parsedPaths[0], cx: number, cy: number, glyphSize: number, drawFraction = 1) {
+        const scale = glyphSize / 16;
+        const ox = cx - glyphSize / 2;
+        const oy = cy - glyphSize / 2;
+        let curX = 0, curY = 0;
+        const segments: Array<[number, number, number, number]> = [];
+        for (const { type, args } of cmds) {
+            switch (type) {
+                case "M": curX = args[0]; curY = args[1]; break;
+                case "L": segments.push([curX, curY, args[0], args[1]]); curX = args[0]; curY = args[1]; break;
+                case "H": segments.push([curX, curY, args[0], curY]); curX = args[0]; break;
+                case "V": segments.push([curX, curY, curX, args[0]]); curY = args[0]; break;
+                case "Z": break;
+            }
+        }
+        const totalSegs = segments.length;
+        const segsToShow = Math.ceil(totalSegs * drawFraction);
+        ctx.beginPath();
+        for (let si = 0; si < segsToShow; si++) {
+            const [x1, y1, x2, y2] = segments[si];
+            const sx1 = ox + x1 * scale, sy1 = oy + y1 * scale;
+            const sx2 = ox + x2 * scale, sy2 = oy + y2 * scale;
+            if (si === segsToShow - 1 && drawFraction < 1) {
+                const segFrac = (drawFraction * totalSegs) - si;
+                ctx.moveTo(sx1, sy1);
+                ctx.lineTo(sx1 + (sx2 - sx1) * segFrac, sy1 + (sy2 - sy1) * segFrac);
+            } else {
+                ctx.moveTo(sx1, sy1);
+                ctx.lineTo(sx2, sy2);
+            }
+        }
+        ctx.stroke();
+    }
+
+    const getAngle = useCallback((i: number, rot: number) => (i / cTotal) * Math.PI * 2 - Math.PI / 2 + rot, [cTotal]);
+
+    useEffect(() => {
+        const st = stateRef.current;
+        if (completed > st.prevCompleted) {
+            const prev = st.prevCompleted;
+            for (let i = prev; i < completed; i++) {
+                st.flashRunes.set(i, 0);
+                st.revealProgress.set(i, 0);
+            }
+            st.prevCompleted = completed;
+        } else {
+            st.prevCompleted = completed;
+        }
+    }, [completed]);
+
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+
+        accentRef.current = (getComputedStyle(document.documentElement).getPropertyValue("--accent-rgb").trim() || "45 212 191").replace(/\s+/g, ", ");
+
+        let lastTime = 0;
+        const loop = (time: number) => {
+            const dt = Math.min((time - lastTime) / 1000, 0.05);
+            lastTime = time;
+            const st = stateRef.current;
+            const accent = accentRef.current;
+
+            const dpr = window.devicePixelRatio || 2;
+            canvas.width = SIZE * dpr;
+            canvas.height = SIZE * dpr;
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            ctx.clearRect(0, 0, SIZE, SIZE);
+
+            const mx = SIZE / 2;
+            const my = SIZE / 2;
+
+            // #7: Slow continuous rotation (~1 deg/sec)
+            st.globalRotation += dt * 0.017;
+            const rot = st.globalRotation;
+
+            // Shimmer rotates around the circle (faster than base rotation)
+            st.shimmerAngle = (st.shimmerAngle + dt * 1.2) % (Math.PI * 2);
+
+            // Update flash timers (white → accent fade)
+            for (const [idx, prog] of st.flashRunes) {
+                const np = prog + dt * 2;
+                if (np >= 1) st.flashRunes.delete(idx);
+                else st.flashRunes.set(idx, np);
+            }
+
+            // Update reveal
+            for (const [idx, prog] of st.revealProgress) {
+                const np = prog + dt * 2.5;
+                if (np >= 1) { st.revealProgress.set(idx, 1); setTimeout(() => st.revealProgress.delete(idx), 100); }
+                else st.revealProgress.set(idx, np);
+            }
+
+            // --- DRAW ---
+            const pulsePhase = (time / 1000) % 2.5 / 2.5;
+            const pulseVal = 0.5 + Math.sin(pulsePhase * Math.PI * 2) * 0.5;
+
+            // Ambient center glow
+            if (cCompleted > 0) {
+                const fraction = cCompleted / cTotal;
+                const cGrad = ctx.createRadialGradient(mx, my, 0, mx, my, RADIUS * 0.55);
+                cGrad.addColorStop(0, `rgba(${accent}, ${0.04 + fraction * 0.06})`);
+                cGrad.addColorStop(1, `rgba(${accent}, 0)`);
+                ctx.fillStyle = cGrad;
+                ctx.beginPath();
+                ctx.arc(mx, my, RADIUS * 0.55, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Background dashed circle track (no progress arc — #1)
+            ctx.setLineDash([2, 6]);
+            ctx.strokeStyle = `rgba(${accent}, 0.06)`;
+            ctx.lineWidth = 0.8;
+            ctx.beginPath();
+            ctx.arc(mx, my, RADIUS, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Glyphs on circle
+            for (let i = 0; i < cTotal; i++) {
+                const a = getAngle(i, rot);
+                const gx = mx + Math.cos(a) * RADIUS;
+                const gy = my + Math.sin(a) * RADIUS;
+                const isActive = i < cCompleted;
+                const isLatest = i === cCompleted - 1;
+                const runeIdx = i % parsedPaths.length;
+                const isRevealing = st.revealProgress.has(i);
+                const isFlashing = st.flashRunes.has(i);
+
+                ctx.save();
+                ctx.lineCap = "round";
+                ctx.lineJoin = "round";
+
+                // #6: Dormant = faint rune outline instead of dot
+                if (!isActive) {
+                    ctx.strokeStyle = `rgba(${accent}, 0.07)`;
+                    ctx.lineWidth = 0.8;
+                    drawRune(ctx, parsedPaths[runeIdx], gx, gy, GLYPH_SIZE);
+                    ctx.restore();
+                    continue;
+                }
+
+                // Glyph shimmer — angular distance from shimmer position
+                let angleDist = Math.abs(a - (st.shimmerAngle - Math.PI / 2 + rot));
+                if (angleDist > Math.PI) angleDist = Math.PI * 2 - angleDist;
+                const shimmerBoost = angleDist < 0.6 ? (1 - angleDist / 0.6) * 0.4 : 0;
+                const intensity = isLatest ? 1 : Math.min(1, (0.25 + (i / Math.max(cCompleted - 1, 1)) * 0.55) + shimmerBoost);
+
+                // Underglow pool
+                const uR = isLatest ? GLYPH_SIZE * 1.8 : GLYPH_SIZE * 1.0;
+                const uAlpha = isLatest ? 0.15 : 0.03 + (i / Math.max(cCompleted, 1)) * 0.06;
+                const uGrad = ctx.createRadialGradient(gx, gy, 0, gx, gy, uR);
+                uGrad.addColorStop(0, `rgba(${accent}, ${uAlpha})`);
+                uGrad.addColorStop(1, `rgba(${accent}, 0)`);
+                ctx.fillStyle = uGrad;
+                ctx.beginPath();
+                ctx.arc(gx, gy, uR, 0, Math.PI * 2);
+                ctx.fill();
+
+                // #5: Flash-on-reveal — starts white, fades to accent
+                if (isFlashing) {
+                    const fp = st.flashRunes.get(i)!;
+                    const flashR = GLYPH_SIZE * (0.8 + fp * 1.2);
+                    const flashAlpha = (1 - fp) * 0.5;
+                    const whiteAmount = Math.max(0, 1 - fp * 2);
+                    ctx.shadowColor = `rgba(255, 255, 255, ${flashAlpha * whiteAmount})`;
+                    ctx.shadowBlur = 16;
+                    const fg = ctx.createRadialGradient(gx, gy, 0, gx, gy, flashR);
+                    fg.addColorStop(0, `rgba(${whiteAmount > 0.5 ? "255, 255, 255" : accent}, ${flashAlpha})`);
+                    fg.addColorStop(1, `rgba(${accent}, 0)`);
+                    ctx.fillStyle = fg;
+                    ctx.beginPath();
+                    ctx.arc(gx, gy, flashR, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                }
+
+                // Breathing halo on latest
+                if (isLatest && !isFlashing) {
+                    const haloR = GLYPH_SIZE * (0.9 + pulseVal * 0.5);
+                    const haloAlpha = 0.06 + pulseVal * 0.1;
+                    const hg = ctx.createRadialGradient(gx, gy, 0, gx, gy, haloR);
+                    hg.addColorStop(0, `rgba(${accent}, ${haloAlpha})`);
+                    hg.addColorStop(1, `rgba(${accent}, 0)`);
+                    ctx.fillStyle = hg;
+                    ctx.beginPath();
+                    ctx.arc(gx, gy, haloR, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                // Draw the rune glyph
+                const drawFrac = isRevealing ? st.revealProgress.get(i)! : 1;
+                // #5: Flashing runes start white then transition to accent
+                const flashProg = isFlashing ? st.flashRunes.get(i)! : 0;
+                const strokeColor = isFlashing
+                    ? (flashProg < 0.4
+                        ? `rgba(255, 255, 255, ${1 - flashProg})`
+                        : `rgba(${accent}, ${0.5 + (flashProg - 0.4) * 0.83})`)
+                    : isLatest
+                        ? `rgba(${accent}, ${0.7 + pulseVal * 0.3})`
+                        : `rgba(${accent}, ${intensity})`;
+
+                ctx.strokeStyle = strokeColor;
+                ctx.lineWidth = isLatest ? 1.8 : 1.2;
+
+                if (isLatest || isFlashing) {
+                    ctx.shadowColor = isFlashing ? `rgba(255, 255, 255, ${0.6 * (1 - flashProg)})` : `rgba(${accent}, ${0.3 + pulseVal * 0.4})`;
+                    ctx.shadowBlur = isFlashing ? 12 : 6 + pulseVal * 6;
+                }
+
+                drawRune(ctx, parsedPaths[runeIdx], gx, gy, GLYPH_SIZE, drawFrac);
+
+                // Extra glow pass on latest
+                if (isLatest && !isFlashing) {
+                    ctx.strokeStyle = `rgba(${accent}, ${0.12 + pulseVal * 0.18})`;
+                    ctx.lineWidth = 2.5;
+                    ctx.shadowBlur = 10 + pulseVal * 8;
+                    drawRune(ctx, parsedPaths[runeIdx], gx, gy, GLYPH_SIZE, drawFrac);
+                }
+
+                ctx.restore();
+            }
+
+            // #4: Percentage text in center
+            const pct = cTotal > 0 ? Math.round((cCompleted / cTotal) * 100) : 0;
+            const fontSize = Math.max(9, SIZE * 0.15);
+            ctx.font = `700 ${fontSize}px "JetBrains Mono", monospace`;
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillStyle = `rgba(${accent}, ${0.5 + pulseVal * 0.2})`;
+            ctx.shadowColor = `rgba(${accent}, 0.3)`;
+            ctx.shadowBlur = 4;
+            ctx.fillText(`${pct}%`, mx, my);
+            ctx.shadowBlur = 0;
+
+            frameRef.current = requestAnimationFrame(loop);
+        };
+        frameRef.current = requestAnimationFrame(loop);
+        return () => cancelAnimationFrame(frameRef.current);
+    }, [cCompleted, cTotal, parsedPaths, getAngle, SIZE, RADIUS, GLYPH_SIZE]);
+
+    return (
+        <div className="flex justify-center">
+            <canvas ref={canvasRef} style={{ width: `${SIZE}px`, height: `${SIZE}px` }} />
+        </div>
+    );
+}
+
+type ExVolumeEntry = { name: string; volume: number; color?: string };
+
+function SessionCounterPanel({ sets, totalSets, volume, elapsed, weightUnit, lastDelta, lastSessionVolume, exerciseVolumes }: {
+    sets: number; totalSets: number; volume: number; elapsed: number; weightUnit: string; lastDelta: number;
+    lastSessionVolume: number; exerciseVolumes: ExVolumeEntry[];
+}) {
+    const volStr = Math.round(volume).toLocaleString();
+    const min = String(Math.floor(elapsed / 60)).padStart(2, "0");
+    const sec = String(elapsed % 60).padStart(2, "0");
+    const [deltaKey, setDeltaKey] = useState(0);
+    const prevDelta = useRef(lastDelta);
+    const [expanded, setExpanded] = useState(false);
+    const [showCalInfo, setShowCalInfo] = useState(false);
+    const panelRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (lastDelta !== prevDelta.current && lastDelta > 0) {
+            prevDelta.current = lastDelta;
+            setDeltaKey((k) => k + 1);
+        }
+    }, [lastDelta]);
+
+    useEffect(() => {
+        if (!expanded) return;
+        function handleClick(e: MouseEvent) {
+            if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
+                setExpanded(false);
+            }
+        }
+        document.addEventListener("mousedown", handleClick);
+        return () => document.removeEventListener("mousedown", handleClick);
+    }, [expanded]);
+
+    const volDiff = lastSessionVolume > 0 ? volume - lastSessionVolume : 0;
+    const kcalEstimate = Math.round(volume * 0.05);
+    const evs = exerciseVolumes ?? [];
+    const maxExVol = Math.max(...evs.map((e) => e.volume), 1);
+
+    return (
+        <div ref={panelRef} className="rounded-2xl border border-[var(--fg-06)] overflow-hidden flap-panel">
+            {/* Main counters */}
+            <div className="flex items-stretch cursor-pointer" onClick={() => setExpanded((e) => !e)}>
+                {/* SETS */}
+                <div className="flex-1 py-3 px-2 text-center border-r border-[var(--fg-04)]">
+                    <p className="text-[7px] font-mono tracking-[0.2em] text-[var(--fg-20)] mb-1.5">SETS</p>
+                    <div className="text-xl leading-none">
+                        <FlapNumber value={String(sets)} />
+                        <span className="text-[var(--fg-12)] text-[0.5em] mx-0.5 font-mono">/</span>
+                        <span className="text-[0.5em] text-[var(--fg-20)] font-mono">{totalSets}</span>
+                    </div>
+                </div>
+                {/* VOLUME */}
+                <div className="flex-[2] py-3 px-2 text-center relative">
+                    <p className="text-[7px] font-mono tracking-[0.2em] text-[var(--fg-20)] mb-1.5">VOLUME</p>
+                    <div className="text-2xl leading-none">
+                        <FlapNumber value={volStr} suffix={weightUnit} accent />
+                    </div>
+                    {deltaKey > 0 && <DeltaToast key={deltaKey} value={lastDelta} />}
+                    {lastSessionVolume > 0 && (
+                        <p className={`text-[8px] font-mono mt-1.5 ${volDiff >= 0 ? "text-emerald-400/60" : "text-red-400/50"}`}>
+                            {volDiff >= 0 ? "↑" : "↓"} {Math.abs(Math.round(volDiff)).toLocaleString()}{weightUnit} vs last
+                        </p>
+                    )}
+                </div>
+                {/* ELAPSED */}
+                <div className="flex-1 py-3 px-2 text-center border-l border-[var(--fg-04)]">
+                    <p className="text-[7px] font-mono tracking-[0.2em] text-[var(--fg-20)] mb-1.5">ELAPSED</p>
+                    <div className="text-xl leading-none">
+                        <FlapNumber value={min} />
+                        <span className="text-[var(--fg-15)] mx-px animate-pulse font-mono">:</span>
+                        <FlapNumber value={sec} />
+                    </div>
+                </div>
+            </div>
+            {/* Mini rune circle — tap to expand/collapse */}
+            <div className="cursor-pointer border-t border-[var(--fg-04)]" onClick={() => setExpanded((e) => !e)}>
+                {/* Collapsed: small circle + hint */}
+                {!expanded && (
+                    <div className="py-2">
+                        <MiniRuneCircle completed={sets} total={totalSets} circleSize={64} />
+                        <p className="text-[7px] font-mono text-[var(--fg-15)] text-center mt-0.5 tracking-wider">tap for details</p>
+                    </div>
+                )}
+                {/* Expanded: bigger circle + merged details */}
+                {expanded && (
+                    <div className="py-3 space-y-3">
+                        <MiniRuneCircle completed={sets} total={totalSets} circleSize={120} />
+                        <div className="px-4 space-y-3">
+                            {/* Calorie estimate */}
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-1.5">
+                                    <span className="text-[9px] font-mono text-[var(--fg-25)]">EST. CALORIES</span>
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); setShowCalInfo((v) => !v); }}
+                                        className="w-3.5 h-3.5 rounded-full border border-[var(--fg-15)] flex items-center justify-center text-[8px] font-mono text-[var(--fg-30)] hover:text-[var(--fg-60)] hover:border-[var(--fg-30)] transition"
+                                    >i</button>
+                                </div>
+                                <span className="text-sm font-mono font-bold text-amber-400/70">{kcalEstimate} kcal</span>
+                            </div>
+                            {showCalInfo && (
+                                <div className="text-[8px] font-mono text-[var(--fg-30)] bg-[var(--fg-03)] rounded-lg px-3 py-2 leading-relaxed">
+                                    Estimated as total volume × 0.05 kcal/kg. Rough approximation based on mechanical work. Actual burn varies by exercise type, rest, body composition, and intensity.
+                                </div>
+                            )}
+                            {/* Per-exercise volume bars */}
+                            {evs.length > 0 && (
+                                <div className="space-y-1.5">
+                                    <p className="text-[8px] font-mono tracking-widest text-[var(--fg-20)]">VOLUME BY EXERCISE</p>
+                                    {evs.map((ev) => (
+                                        <div key={ev.name} className="flex items-center gap-2">
+                                            <span className="text-[9px] font-mono text-[var(--fg-40)] w-24 truncate shrink-0">{ev.name}</span>
+                                            <div className="flex-1 h-1.5 rounded-full bg-[var(--fg-06)] overflow-hidden">
+                                                <div className="h-full rounded-full bg-[rgb(var(--accent-rgb))] transition-all duration-500" style={{ width: `${(ev.volume / maxExVol) * 100}%` }} />
+                                            </div>
+                                            <span className="text-[8px] font-mono text-[var(--fg-25)] w-12 text-right shrink-0">{Math.round(ev.volume).toLocaleString()}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+
 /* ─── MAIN COMPONENT ─── */
 export default function WorkoutPage() {
     const router = useRouter();
     const { enabledKeys } = useModules();
     const w = useWorkoutSession();
     const [editingExId, setEditingExId] = useState<string | null>(null);
+    const prevVolRef = useRef(0);
+    const [lastDelta, setLastDelta] = useState(0);
+
+    useEffect(() => {
+        const vol = w.sessionVolume ?? 0;
+        if (vol > prevVolRef.current && prevVolRef.current > 0) {
+            setLastDelta(vol - prevVolRef.current);
+        }
+        prevVolRef.current = vol;
+    }, [w.sessionVolume]);
 
     /* ═══════════════════════════════════════════════════════════════
        RENDER
@@ -443,12 +954,6 @@ export default function WorkoutPage() {
                             </div>
                             <h1 className="text-lg font-bold text-[var(--fg-90)] leading-tight">{w.dayTitle}</h1>
                         </div>
-                        {w.status === "active" && (
-                            <div className="text-right shrink-0 rounded-xl border border-[rgb(var(--accent-rgb)/0.15)] bg-[rgb(var(--accent-rgb)/0.05)] px-3 py-1.5">
-                                <p className="text-[8px] font-mono text-[var(--fg-25)]">ELAPSED</p>
-                                <p className="text-lg font-bold font-mono text-[rgb(var(--accent-rgb))]">{formatClock(w.elapsed)}</p>
-                            </div>
-                        )}
                         {w.status === "not_started" && (
                             <div className="flex items-center gap-2 shrink-0">
                                 <button onClick={() => w.setShowDeletePlanConfirm(true)} className="w-9 h-9 flex items-center justify-center rounded-xl border border-[var(--fg-06)] text-[var(--fg-20)] hover:text-red-400/80 hover:border-red-500/20 transition">
@@ -462,15 +967,28 @@ export default function WorkoutPage() {
                     </div>
                 </div>
 
-                {/* ── PROGRESS BAR ── */}
-                {w.status === "active" && (
-                    <div className="flex items-center gap-3">
-                        <div className="flex-1 h-1.5 rounded-full bg-[var(--fg-06)] overflow-hidden">
-                            <div className="h-full bg-[rgb(var(--accent-rgb))] rounded-full transition-all" style={{ width: `${w.totalPlanned ? Math.min(100, (w.completedCount / w.totalPlanned) * 100) : 0}%` }} />
-                        </div>
-                        <p className="text-[10px] font-mono text-[var(--fg-25)] shrink-0">{w.completedCount}/{w.totalPlanned}</p>
-                    </div>
-                )}
+                {/* ── SESSION COUNTER PANEL ── */}
+                {w.status === "active" && (() => {
+                    const exVols: ExVolumeEntry[] = w.exercisesList.map((ex) => {
+                        const sets = (w.logs[ex.id] ?? []).filter((s) => s.completed && !s.is_warmup);
+                        const mult = isDualWeight(ex) ? 2 : 1;
+                        const vol = sets.reduce((sum, s) => sum + (Number(s.weight) || 0) * (Number(s.reps) || 0) * mult, 0);
+                        return { name: ex.name, volume: Math.round(kgToUnit(vol, w.weightUnit)) };
+                    }).filter((e) => e.volume > 0);
+                    const lastVol = w.recentSessions.length > 0 ? Math.round(kgToUnit(w.recentSessions[0].volume, w.weightUnit)) : 0;
+                    return (
+                        <SessionCounterPanel
+                            sets={w.completedCount}
+                            totalSets={w.totalPlanned}
+                            volume={Math.round(kgToUnit(w.sessionVolume, w.weightUnit))}
+                            elapsed={w.elapsed}
+                            weightUnit={w.weightUnit}
+                            lastDelta={Math.round(kgToUnit(lastDelta, w.weightUnit))}
+                            lastSessionVolume={lastVol}
+                            exerciseVolumes={exVols}
+                        />
+                    );
+                })()}
 
                 {/* ── CYCLE TRAINING BANNER (female mode) ── */}
                 {w.cycleProfile && (w.status === "not_started" || w.status === "active") && (
@@ -807,56 +1325,61 @@ export default function WorkoutPage() {
                                             {ex.isCardio ? (
                                                 /* ── CARDIO: single entry, no sets ── */
                                                 <div className="px-4 pb-4 pt-2 space-y-3">
-                                                    <div className="grid grid-cols-2 gap-2">
-                                                        <div>
-                                                            <p className="text-[8px] font-mono text-[var(--fg-30)] mb-1">DURATION (MIN)</p>
-                                                            <input
-                                                                type="number" min="0" inputMode="numeric"
-                                                                onWheel={(e) => (e.target as HTMLElement).blur()}
-                                                                value={sets[0]?.duration ?? ""}
-                                                                onChange={(e) => w.updateSet(ex.id, 0, "duration", e.target.value)}
-                                                                disabled={sets[0]?.completed}
-                                                                placeholder="—"
-                                                                className="w-full h-12 rounded-lg bg-[var(--fg-04)] border border-[var(--fg-08)] text-center text-xl font-bold font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] disabled:opacity-40 transition"
-                                                            />
-                                                        </div>
-                                                        <div>
-                                                            <p className="text-[8px] font-mono text-[var(--fg-30)] mb-1">DISTANCE (KM)</p>
-                                                            <input
-                                                                type="number" min="0" inputMode="decimal"
-                                                                onWheel={(e) => (e.target as HTMLElement).blur()}
-                                                                value={sets[0]?.distance ?? ""}
-                                                                onChange={(e) => w.updateSet(ex.id, 0, "distance", e.target.value)}
-                                                                disabled={sets[0]?.completed}
-                                                                placeholder="—"
-                                                                className="w-full h-12 rounded-lg bg-[var(--fg-04)] border border-[var(--fg-08)] text-center text-xl font-bold font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] disabled:opacity-40 transition"
-                                                            />
-                                                        </div>
-                                                        <div>
-                                                            <p className="text-[8px] font-mono text-[var(--fg-30)] mb-1">SPEED (KM/H)</p>
-                                                            <input
-                                                                type="number" min="0" inputMode="decimal"
-                                                                onWheel={(e) => (e.target as HTMLElement).blur()}
-                                                                value={sets[0]?.weight ?? ""}
-                                                                onChange={(e) => w.updateSet(ex.id, 0, "weight", e.target.value)}
-                                                                disabled={sets[0]?.completed}
-                                                                placeholder="—"
-                                                                className="w-full h-12 rounded-lg bg-[var(--fg-04)] border border-[var(--fg-08)] text-center text-xl font-bold font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] disabled:opacity-40 transition"
-                                                            />
-                                                        </div>
-                                                        <div>
-                                                            <p className="text-[8px] font-mono text-[var(--fg-30)] mb-1">INCLINE (%)</p>
-                                                            <input
-                                                                type="number" min="0" inputMode="decimal"
-                                                                onWheel={(e) => (e.target as HTMLElement).blur()}
-                                                                value={sets[0]?.reps ?? ""}
-                                                                onChange={(e) => w.updateSet(ex.id, 0, "reps", e.target.value)}
-                                                                disabled={sets[0]?.completed}
-                                                                placeholder="—"
-                                                                className="w-full h-12 rounded-lg bg-[var(--fg-04)] border border-[var(--fg-08)] text-center text-xl font-bold font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] disabled:opacity-40 transition"
-                                                            />
-                                                        </div>
-                                                    </div>
+                                                    {(() => {
+                                                        const cs = sets[0];
+                                                        const dur = Number(cs?.duration) || 0;
+                                                        const spd = Number(cs?.weight) || 0;
+                                                        const dist = Number(cs?.distance) || 0;
+                                                        const incl = Number(cs?.reps) || 0;
+                                                        const inputCls = "w-full h-12 rounded-lg bg-[var(--fg-04)] border border-[var(--fg-08)] text-center text-xl font-bold font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.4)] disabled:opacity-40 transition";
+                                                        const autoCalcDistance = (newDur: number, newSpd: number) => {
+                                                            if (newDur > 0 && newSpd > 0) w.updateSet(ex.id, 0, "distance", String(Math.round(newSpd * (newDur / 60) * 100) / 100));
+                                                        };
+                                                        const equivDist = dist > 0 && incl > 0 ? Math.round(dist * (1 + incl * 0.03) * 100) / 100 : 0;
+                                                        return (
+                                                            <>
+                                                                <div className="grid grid-cols-2 gap-2">
+                                                                    <div>
+                                                                        <p className="text-[8px] font-mono text-[var(--fg-30)] mb-1">DURATION (MIN)</p>
+                                                                        <input type="number" min="0" inputMode="numeric" onWheel={(e) => (e.target as HTMLElement).blur()}
+                                                                            value={cs?.duration ?? ""}
+                                                                            onChange={(e) => { w.updateSet(ex.id, 0, "duration", e.target.value); autoCalcDistance(Number(e.target.value) || 0, spd); }}
+                                                                            disabled={cs?.completed} placeholder="—" className={inputCls} />
+                                                                    </div>
+                                                                    <div>
+                                                                        <p className="text-[8px] font-mono text-[var(--fg-30)] mb-1">DISTANCE (KM)</p>
+                                                                        <input type="number" min="0" inputMode="decimal" onWheel={(e) => (e.target as HTMLElement).blur()}
+                                                                            value={cs?.distance ?? ""}
+                                                                            onChange={(e) => {
+                                                                                w.updateSet(ex.id, 0, "distance", e.target.value);
+                                                                                const newDist = Number(e.target.value) || 0;
+                                                                                if (dur > 0 && newDist > 0) w.updateSet(ex.id, 0, "weight", String(Math.round(newDist / (dur / 60) * 10) / 10));
+                                                                            }}
+                                                                            disabled={cs?.completed} placeholder="auto" className={inputCls} />
+                                                                    </div>
+                                                                    <div>
+                                                                        <p className="text-[8px] font-mono text-[var(--fg-30)] mb-1">SPEED (KM/H)</p>
+                                                                        <input type="number" min="0" inputMode="decimal" onWheel={(e) => (e.target as HTMLElement).blur()}
+                                                                            value={cs?.weight ?? ""}
+                                                                            onChange={(e) => { w.updateSet(ex.id, 0, "weight", e.target.value); autoCalcDistance(dur, Number(e.target.value) || 0); }}
+                                                                            disabled={cs?.completed} placeholder="—" className={inputCls} />
+                                                                    </div>
+                                                                    <div>
+                                                                        <p className="text-[8px] font-mono text-[var(--fg-30)] mb-1">INCLINE (%)</p>
+                                                                        <input type="number" min="0" inputMode="decimal" onWheel={(e) => (e.target as HTMLElement).blur()}
+                                                                            value={cs?.reps ?? ""}
+                                                                            onChange={(e) => w.updateSet(ex.id, 0, "reps", e.target.value)}
+                                                                            disabled={cs?.completed} placeholder="—" className={inputCls} />
+                                                                    </div>
+                                                                </div>
+                                                                {equivDist > 0 && (
+                                                                    <p className="text-[8px] font-mono text-[var(--fg-25)] text-center">
+                                                                        ≈ {equivDist} km equivalent flat distance ({incl}% grade)
+                                                                    </p>
+                                                                )}
+                                                            </>
+                                                        );
+                                                    })()}
                                                     <input
                                                         type="text"
                                                         value={sets[0]?.note ?? ""}
@@ -873,7 +1396,12 @@ export default function WorkoutPage() {
                                                             LOG CARDIO ✓
                                                         </button>
                                                     ) : (
-                                                        <p className="text-[10px] font-mono text-[rgb(var(--accent-light-rgb)/0.5)] text-center py-2">✓ Logged</p>
+                                                        <button
+                                                            onClick={() => w.editSet(ex.id, 0)}
+                                                            className="w-full flex items-center justify-center gap-2 text-[10px] font-mono text-[rgb(var(--accent-light-rgb)/0.5)] hover:text-[rgb(var(--accent-light-rgb)/0.8)] py-2 transition"
+                                                        >
+                                                            <Pencil size={10} /> ✓ Logged — tap to edit
+                                                        </button>
                                                     )}
                                                 </div>
                                             ) : (

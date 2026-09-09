@@ -193,6 +193,21 @@ SetEntry: { index, weight, reps, duration, distance, note, completed, logId, is_
 - Smart substitutions (equipment mismatch → alternatives)
 - Max 3 sessions/day
 - Share summary as canvas-rendered image
+- **Session counter panel** (split-flap / Solari board style):
+  - Three counters: SETS (compact), VOLUME (accent-colored, 2× width), ELAPSED timer
+  - Embossed digit tracks with inner shadow, center hairline, CSS 3D flip animation
+  - Staggered carry cascade: rightmost digit animates first, leftward digits delayed 60ms each
+  - Delta toast: "+N" flies up on volume change after completing a set
+  - Comparison ghost: "↑/↓ Xkg vs last session" when previous session data exists
+  - Mini rune circle progress (Canvas 2D, 60fps): 16 unique rune glyphs (Algiz→Ansuz) arranged in a circle
+    - Dormant sets = faint rune outlines (not dots), completed = accent-colored glyph with white pop flash on reveal
+    - Center percentage display (e.g. "93%") in JetBrains Mono bold
+    - No progress arc — clean circle of glyphs only
+    - Subtle continuous rotation (~1 deg/sec) — living sigil feel
+    - Shimmer sweep across glyphs for ambient motion
+    - Collapsed (64px): compact circle + "tap for details" hint text
+    - Expanded (120px): larger circle + merged calorie estimate + per-exercise volume bars
+    - Replaces chevron — tap circle area to toggle expand/collapse
 
 ## Theme System
 

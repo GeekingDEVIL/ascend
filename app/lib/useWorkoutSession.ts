@@ -174,6 +174,11 @@ export function useWorkoutSession() {
     /* ── DERIVED ── */
     const totalPlanned = exercisesList.reduce((sum, e) => sum + e.target_sets, 0);
     const completedCount = Object.values(logs).flat().filter((s) => s.completed && !s.is_warmup).length;
+    const sessionVolume = Object.entries(logs).reduce((total, [exId, sets]) => {
+        const ex = exercisesList.find((e) => e.id === exId);
+        const mult = ex && isDualWeight(ex) ? 2 : 1;
+        return total + sets.filter((s) => s.completed && !s.is_warmup).reduce((sum, s) => sum + (Number(s.weight) || 0) * (Number(s.reps) || 0) * mult, 0);
+    }, 0);
 
     /* ── LOAD ── */
     const load = useCallback(async () => {
@@ -1006,7 +1011,7 @@ export function useWorkoutSession() {
         startingFreestyle, savingFreestylePlan, deletingPlan,
 
         // Derived
-        totalPlanned, completedCount, today, weightUnit, userSex, equipmentAccess,
+        totalPlanned, completedCount, sessionVolume, today, weightUnit, userSex, equipmentAccess,
 
         // Constants
         MAX_SESSIONS_PER_DAY,
