@@ -33,6 +33,7 @@ export type WorkoutExercise = {
     isCardio: boolean;
     isBodyweight: boolean;
     is_unilateral: boolean;
+    superset_group?: number | null;
 };
 
 export function isDualWeight(ex: WorkoutExercise): boolean {
@@ -51,6 +52,8 @@ export type SetEntry = {
     logId: string | null;
     is_warmup?: boolean;
     warmup_label?: string;
+    rpe?: number;
+    set_type?: "working" | "warmup" | "drop" | "rest_pause";
 };
 
 export type SessionStatus = "loading" | "not_started" | "active" | "completed" | "rest_day" | "no_plan" | "freestyle";
@@ -226,14 +229,14 @@ export function useWorkoutSession() {
 
             const { data: exRows } = await supabase
                 .from("scheduled_exercises")
-                .select("id, order_index, target_sets, target_reps, target_weight, rest_seconds, exercise_id, exercises(name, category, equipment, body_segment, is_unilateral)")
+                .select("id, order_index, target_sets, target_reps, target_weight, rest_seconds, exercise_id, superset_group, exercises(name, category, equipment, body_segment, is_unilateral)")
                 .eq("scheduled_day_id", day.id)
                 .order("order_index");
 
             const mapped: WorkoutExercise[] = (exRows ?? []).map((r: any) => {
                 const seg = r.exercises?.body_segment ?? "";
                 const equip = r.exercises?.equipment ?? "";
-                return { id: r.id, exercise_id: r.exercise_id, order_index: r.order_index, target_sets: r.target_sets, target_reps: r.target_reps, target_weight: r.target_weight, rest_seconds: r.rest_seconds, name: r.exercises?.name ?? "Unknown", category: r.exercises?.category ?? "", equipment: equip, body_segment: seg, isCardio: seg === "Cardio", isBodyweight: equip.toLowerCase() === "bodyweight" && seg !== "Cardio", is_unilateral: r.exercises?.is_unilateral ?? false };
+                return { id: r.id, exercise_id: r.exercise_id, order_index: r.order_index, target_sets: r.target_sets, target_reps: r.target_reps, target_weight: r.target_weight, rest_seconds: r.rest_seconds, name: r.exercises?.name ?? "Unknown", category: r.exercises?.category ?? "", equipment: equip, body_segment: seg, isCardio: seg === "Cardio", isBodyweight: equip.toLowerCase() === "bodyweight" && seg !== "Cardio", is_unilateral: r.exercises?.is_unilateral ?? false, superset_group: r.superset_group ?? null };
             });
             setExercisesList(mapped);
             if (mapped.length === 0) { setStatus("no_plan"); return; }
@@ -320,7 +323,7 @@ export function useWorkoutSession() {
                     const arr: SetEntry[] = [];
                     for (let i = 0; i < count; i++) {
                         const saved = rows.find((r: any) => r.set_index === i);
-                        arr.push(saved ? { index: i, weight: saved.weight != null ? String(saved.weight) : "", reps: saved.reps != null ? String(saved.reps) : "", duration: saved.duration_seconds != null ? String(saved.duration_seconds) : "", distance: saved.distance != null ? String(saved.distance) : "", note: "", completed: true, logId: saved.id, is_warmup: saved.is_warmup ?? false } : emptySet(i));
+                        arr.push(saved ? { index: i, weight: saved.weight != null ? String(saved.weight) : "", reps: saved.reps != null ? String(saved.reps) : "", duration: saved.duration_seconds != null ? String(saved.duration_seconds) : "", distance: saved.distance != null ? String(saved.distance) : "", note: "", completed: true, logId: saved.id, is_warmup: saved.is_warmup ?? false, rpe: saved.rpe ?? undefined, set_type: saved.set_type ?? (saved.is_warmup ? "warmup" : "working") } : emptySet(i));
                     }
                     logMap[ex.id] = arr;
                 });
@@ -533,13 +536,13 @@ export function useWorkoutSession() {
 
         const { data: exRows } = await supabase
             .from("scheduled_exercises")
-            .select("id, order_index, target_sets, target_reps, target_weight, rest_seconds, exercise_id, exercises(name, category, equipment, body_segment, is_unilateral)")
+            .select("id, order_index, target_sets, target_reps, target_weight, rest_seconds, exercise_id, superset_group, exercises(name, category, equipment, body_segment, is_unilateral)")
             .eq("scheduled_day_id", day.id)
             .order("order_index");
 
         const mapped: WorkoutExercise[] = (exRows ?? []).map((r: any) => {
             const seg = r.exercises?.body_segment ?? ""; const equip = r.exercises?.equipment ?? "";
-            return { id: r.id, exercise_id: r.exercise_id, order_index: r.order_index, target_sets: r.target_sets, target_reps: r.target_reps, target_weight: r.target_weight, rest_seconds: r.rest_seconds, name: r.exercises?.name ?? "Unknown", category: r.exercises?.category ?? "", equipment: equip, body_segment: seg, isCardio: seg === "Cardio", isBodyweight: equip.toLowerCase() === "bodyweight" && seg !== "Cardio", is_unilateral: r.exercises?.is_unilateral ?? false };
+            return { id: r.id, exercise_id: r.exercise_id, order_index: r.order_index, target_sets: r.target_sets, target_reps: r.target_reps, target_weight: r.target_weight, rest_seconds: r.rest_seconds, name: r.exercises?.name ?? "Unknown", category: r.exercises?.category ?? "", equipment: equip, body_segment: seg, isCardio: seg === "Cardio", isBodyweight: equip.toLowerCase() === "bodyweight" && seg !== "Cardio", is_unilateral: r.exercises?.is_unilateral ?? false, superset_group: r.superset_group ?? null };
         });
 
         const { data: session } = await supabase.from("workout_sessions").insert({ user_id: user.id, scheduled_day_id: day.id, date: today, title: "Freestyle Session", status: "active", sex: userSex }).select().single();
@@ -607,13 +610,16 @@ export function useWorkoutSession() {
         }
 
         const perSide = isDualWeight(ex);
-        const payload: any = { workout_session_id: sessionId, user_id: user.id, exercise_id: ex.exercise_id, scheduled_exercise_id: ex.id, set_index: idx, is_warmup: set.is_warmup ?? false, is_per_side: perSide };
+        const setType = set.set_type ?? (set.is_warmup ? "warmup" : "working");
+        const payload: any = { workout_session_id: sessionId, user_id: user.id, exercise_id: ex.exercise_id, scheduled_exercise_id: ex.id, set_index: idx, is_warmup: set.is_warmup ?? false, is_per_side: perSide, set_type: setType };
         if (ex.isCardio) { payload.duration_seconds = set.duration ? Number(set.duration) : null; payload.distance = set.distance ? Number(set.distance) : null; }
         else { payload.weight = ex.isBodyweight ? 0 : (finalWeight ? Number(finalWeight) : null); payload.reps = finalReps ? Number(finalReps) : null; }
 
         setLogs((p) => ({ ...p, [ex.id]: p[ex.id].map((s) => (s.index === idx ? { ...s, weight: finalWeight, reps: finalReps, completed: true } : s)) }));
         if (navigator.vibrate) navigator.vibrate(50);
-        if (!ex.isCardio && !ex.isBodyweight && finalWeight && finalReps && !set.is_warmup) checkPR(ex.exercise_id, ex.name, Number(finalWeight), Number(finalReps));
+        const isDrop = set.set_type === "drop";
+        const isRestPause = set.set_type === "rest_pause";
+        if (!ex.isCardio && !ex.isBodyweight && finalWeight && finalReps && !set.is_warmup && !isDrop) checkPR(ex.exercise_id, ex.name, Number(finalWeight), Number(finalReps));
 
         const isEdit = !!set.logId;
         let logId = set.logId;
@@ -623,9 +629,22 @@ export function useWorkoutSession() {
 
         if (!isEdit) {
             setLastAction({ exId: ex.id, setIdx: idx, logId, ts: Date.now(), exName: ex.name, weight: finalWeight, reps: finalReps });
-            const restSec = ex.rest_seconds ?? 90;
-            const adjustedRest = Math.round(restSec * (cycleProfile?.restMultiplier ?? 1));
-            if (adjustedRest > 0) { setRestRemaining(adjustedRest); setRestPaused(false); }
+            if (!isDrop) {
+                const inSuperset = ex.superset_group != null;
+                const supersetDone = inSuperset && (() => {
+                    const group = exercisesList.filter((e) => e.superset_group === ex.superset_group);
+                    return group.every((gex) => {
+                        const gSets = logs[gex.id] ?? [];
+                        const currentSetIdx = gSets.filter((gs) => !gs.is_warmup && gs.completed).length;
+                        const targetIdx = gex.id === ex.id ? currentSetIdx : currentSetIdx;
+                        return targetIdx > 0;
+                    });
+                })();
+                const shouldRest = inSuperset ? supersetDone : true;
+                const restSec = ex.rest_seconds ?? 90;
+                const adjustedRest = Math.round(restSec * (cycleProfile?.restMultiplier ?? 1));
+                if (adjustedRest > 0 && !isRestPause && shouldRest) { setRestRemaining(adjustedRest); setRestPaused(false); }
+            }
         }
     }
 
@@ -640,6 +659,63 @@ export function useWorkoutSession() {
         setRestRemaining(null);
         setRestPaused(false);
         setLastAction(null);
+    }
+
+    async function updateSetRpe(exId: string, setIdx: number, rpe: number) {
+        setLogs((p) => ({ ...p, [exId]: p[exId].map((s) => (s.index === setIdx ? { ...s, rpe } : s)) }));
+        const set = logs[exId]?.find((s) => s.index === setIdx);
+        if (set?.logId) await supabase.from("exercise_set_logs").update({ rpe }).eq("id", set.logId);
+    }
+
+    function addDropSet(exId: string) {
+        const sets = logs[exId] ?? [];
+        const lastCompleted = [...sets].reverse().find((s) => s.completed && !s.is_warmup);
+        const dropWeight = lastCompleted?.weight ? String(Math.round(Number(lastCompleted.weight) * 0.8)) : "";
+        const newIdx = sets.length;
+        const newSet: SetEntry = { ...emptySet(newIdx), weight: dropWeight, set_type: "drop" };
+        setLogs((p) => ({ ...p, [exId]: [...p[exId], newSet] }));
+    }
+
+    function addRestPauseSet(exId: string) {
+        const sets = logs[exId] ?? [];
+        const lastCompleted = [...sets].reverse().find((s) => s.completed && !s.is_warmup);
+        const newIdx = sets.length;
+        const newSet: SetEntry = { ...emptySet(newIdx), weight: lastCompleted?.weight ?? "", set_type: "rest_pause" };
+        setLogs((p) => ({ ...p, [exId]: [...p[exId], newSet] }));
+        setRestRemaining(15);
+        setRestPaused(false);
+    }
+
+    async function toggleSuperset(exId1: string, exId2: string) {
+        if (!user) return;
+        const ex1 = exercisesList.find((e) => e.id === exId1);
+        const ex2 = exercisesList.find((e) => e.id === exId2);
+        if (!ex1 || !ex2) return;
+
+        if (ex1.superset_group != null && ex1.superset_group === ex2.superset_group) {
+            await supabase.from("scheduled_exercises").update({ superset_group: null }).in("id", [exId1, exId2]);
+            setExercisesList((p) => p.map((e) => e.id === exId1 || e.id === exId2 ? { ...e, superset_group: null } : e));
+        } else {
+            const maxGroup = Math.max(0, ...exercisesList.map((e) => e.superset_group ?? 0));
+            const groupNum = maxGroup + 1;
+            await supabase.from("scheduled_exercises").update({ superset_group: groupNum }).in("id", [exId1, exId2]);
+            setExercisesList((p) => p.map((e) => e.id === exId1 || e.id === exId2 ? { ...e, superset_group: groupNum } : e));
+        }
+    }
+
+    function getSupersetGroup(exId: string): WorkoutExercise[] {
+        const ex = exercisesList.find((e) => e.id === exId);
+        if (!ex?.superset_group) return [ex!];
+        return exercisesList.filter((e) => e.superset_group === ex.superset_group);
+    }
+
+    function isSupersetComplete(exId: string): boolean {
+        const group = getSupersetGroup(exId);
+        return group.every((gex) => {
+            const sets = logs[gex.id] ?? [];
+            const working = sets.filter((s) => !s.is_warmup);
+            return working.length > 0 && working.every((s) => s.completed);
+        });
     }
 
     async function propagateToTemplate(orderIdx: number, newExId: string) {
@@ -1025,7 +1101,7 @@ export function useWorkoutSession() {
 
         // Actions
         startWorkout, beginFreestyleSession, addFreestyleExercise, removeFreestyleExercise,
-        updateSet, completeSet, editSet, undoLastSet, handleSwap, handleAddExercise, addSet, removeSet,
+        updateSet, completeSet, editSet, undoLastSet, updateSetRpe, addDropSet, addRestPauseSet, toggleSuperset, getSupersetGroup, handleSwap, handleAddExercise, addSet, removeSet,
         deletePlan, removeExercise, skipExercise, unskipExercise, toggleWarmup,
         finishWorkout, handleShare, saveFreestyleAsRecurringPlan,
         logBodyWeight, confirmExercise, startAnotherWorkout, startManualRestTimer,

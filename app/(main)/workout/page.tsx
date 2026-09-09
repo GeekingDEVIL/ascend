@@ -589,6 +589,35 @@ export default function WorkoutPage() {
     const [editingExId, setEditingExId] = useState<string | null>(null);
     const prevVolRef = useRef(0);
     const [lastDelta, setLastDelta] = useState(0);
+    const [rpePrompt, setRpePrompt] = useState<{ exId: string; setIdx: number } | null>(null);
+    const rpeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const sortedExercises = useMemo(() => {
+        if (w.status !== "active") return w.exercisesList;
+        const list = [...w.exercisesList];
+        list.sort((a, b) => {
+            const aSkipped = w.skippedExercises.has(a.id);
+            const bSkipped = w.skippedExercises.has(b.id);
+            const aSets = (w.logs[a.id] ?? []).filter((s) => !s.is_warmup);
+            const bSets = (w.logs[b.id] ?? []).filter((s) => !s.is_warmup);
+            const aDone = aSets.length > 0 && aSets.every((s) => s.completed) && w.confirmedExercises.has(a.id);
+            const bDone = bSets.length > 0 && bSets.every((s) => s.completed) && w.confirmedExercises.has(b.id);
+
+            if (aSkipped && !bSkipped) return 1;
+            if (!aSkipped && bSkipped) return -1;
+            if (aDone && !bDone) return 1;
+            if (!aDone && bDone) return -1;
+
+            if (w.expandedId === a.id && w.expandedId !== b.id) return -1;
+            if (w.expandedId !== a.id && w.expandedId === b.id) return 1;
+
+            // Keep superset partners adjacent
+            if (a.superset_group != null && a.superset_group === b.superset_group) return a.order_index - b.order_index;
+
+            return a.order_index - b.order_index;
+        });
+        return list;
+    }, [w.exercisesList, w.logs, w.expandedId, w.skippedExercises, w.confirmedExercises, w.status]);
 
     useEffect(() => {
         const vol = w.sessionVolume ?? 0;
@@ -597,6 +626,27 @@ export default function WorkoutPage() {
         }
         prevVolRef.current = vol;
     }, [w.sessionVolume]);
+
+    function showRpePrompt(exId: string, setIdx: number) {
+        if (rpeTimerRef.current) clearTimeout(rpeTimerRef.current);
+        setRpePrompt({ exId, setIdx });
+        rpeTimerRef.current = setTimeout(() => setRpePrompt(null), 3000);
+    }
+
+    function handleRpe(rpe: number) {
+        if (!rpePrompt) return;
+        w.updateSetRpe(rpePrompt.exId, rpePrompt.setIdx, rpe);
+        if (rpeTimerRef.current) clearTimeout(rpeTimerRef.current);
+        setRpePrompt(null);
+    }
+
+    function completeWithRpe(ex: WorkoutExercise, idx: number, overrides?: { weight?: string; reps?: string }, isQuickLog?: boolean) {
+        const set = w.logs[ex.id]?.find((s) => s.index === idx);
+        w.completeSet(ex, idx, overrides);
+        if (!isQuickLog && !set?.is_warmup && set?.set_type !== "drop") {
+            showRpePrompt(ex.id, idx);
+        }
+    }
 
     /* ═══════════════════════════════════════════════════════════════
        RENDER
@@ -1203,7 +1253,7 @@ export default function WorkoutPage() {
                 {/* ── ACTIVE EXERCISE LIST ── */}
                 {w.status === "active" && (
                     <div className="space-y-3">
-                        {w.exercisesList.map((ex, i) => {
+                        {sortedExercises.map((ex, i) => {
                             const sets = w.logs[ex.id] ?? [];
                             const workingSetsOnly = sets.filter((s) => !s.is_warmup);
                             const warmupSetsOnly = sets.filter((s) => s.is_warmup);
@@ -1215,8 +1265,18 @@ export default function WorkoutPage() {
                             const allDone = done === workingSetsOnly.length && workingSetsOnly.length > 0 && warmupDone === warmupSetsOnly.length;
                             const isSkipped = w.skippedExercises.has(ex.id);
 
+                            const prevEx = i > 0 ? w.exercisesList[i - 1] : null;
+                            const showSupersetConnector = prevEx && prevEx.superset_group != null && prevEx.superset_group === ex.superset_group;
+
                             return (
-                                <div key={ex.id} className={`rounded-xl border overflow-hidden transition-all ${isSkipped ? "border-[var(--fg-04)] bg-[var(--fg-01)] opacity-50" : allDone ? "border-[rgb(var(--accent-rgb)/0.2)] bg-[rgb(var(--accent-rgb)/0.03)]" : "border-[var(--fg-06)] bg-[var(--fg-03)]"}`}>
+                                <div key={ex.id}>
+                                {showSupersetConnector && (
+                                    <div className="flex items-center justify-center -my-1.5 relative z-10">
+                                        <div className="w-px h-3 bg-fuchsia-400/20" />
+                                        <span className="absolute text-[7px] font-mono text-fuchsia-400/40 bg-[var(--bg-base)] px-1">SUPERSET</span>
+                                    </div>
+                                )}
+                                <div className={`rounded-xl border overflow-hidden transition-all ${isSkipped ? "border-[var(--fg-04)] bg-[var(--fg-01)] opacity-50" : allDone ? "border-[rgb(var(--accent-rgb)/0.2)] bg-[rgb(var(--accent-rgb)/0.03)]" : ex.superset_group != null ? "border-fuchsia-400/15 bg-[var(--fg-03)]" : "border-[var(--fg-06)] bg-[var(--fg-03)]"}`}>
                                     {/* Exercise header */}
                                     <button onClick={() => isSkipped ? w.unskipExercise(ex.id) : w.setExpandedId(isOpen ? null : ex.id)} className="w-full flex items-center gap-3 px-4 py-3 text-left">
                                         <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-[10px] font-mono font-bold ${isSkipped ? "bg-[var(--fg-03)] text-[var(--fg-15)] border border-[var(--fg-04)]" : allDone ? "bg-[rgb(var(--accent-rgb)/0.15)] text-[rgb(var(--accent-rgb))] border border-[rgb(var(--accent-rgb)/0.2)]" : "bg-[var(--fg-04)] text-[var(--fg-20)] border border-[var(--fg-06)]"}`}>
@@ -1225,6 +1285,9 @@ export default function WorkoutPage() {
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-1.5">
                                                 <p className={`text-[13px] font-medium truncate ${isSkipped ? "text-[var(--fg-30)] line-through" : "text-[var(--fg-80)]"}`}>{ex.name}</p>
+                                                {ex.superset_group != null && !isSkipped && (
+                                                    <span className="shrink-0 text-[8px] font-mono px-1.5 py-0.5 rounded bg-fuchsia-400/10 text-fuchsia-300/60 border border-fuchsia-400/15">SS</span>
+                                                )}
                                                 {w.substitutions[ex.id] && !isSkipped && (
                                                     <span className="shrink-0 text-[8px] font-mono px-1.5 py-0.5 rounded bg-orange-400/10 text-orange-300/60 border border-orange-400/15">NO GEAR</span>
                                                 )}
@@ -1427,9 +1490,11 @@ export default function WorkoutPage() {
 
                                                     {sets.map((s, si) => {
                                                         const isWarmup = !!s.is_warmup;
+                                                        const isDrop = s.set_type === "drop";
+                                                        const isRestPause = s.set_type === "rest_pause";
                                                         const warmupCount = sets.filter((x) => x.is_warmup).length;
                                                         const workingIdx = isWarmup ? -1 : s.index - warmupCount;
-                                                        const displayNum = isWarmup ? `W${si + 1}` : String(workingIdx + 1);
+                                                        const displayNum = isWarmup ? `W${si + 1}` : isDrop ? "D" : isRestPause ? "RP" : String(workingIdx + 1);
                                                         const prevSets = w.lastSets[ex.exercise_id] ?? [];
                                                         const prevSet = !isWarmup ? prevSets[workingIdx] : undefined;
                                                         const prevW = prevSet?.weight != null ? String(kgToUnit(prevSet.weight, w.weightUnit)) : "";
@@ -1443,10 +1508,10 @@ export default function WorkoutPage() {
                                                         const setVol = s.completed && s.weight && s.reps ? Number(s.weight) * Number(s.reps) * (dualWt ? 2 : 1) : 0;
                                                         const weightIncrement = w.weightUnit === "kg" ? 2.5 : 5;
                                                         const isDeleting = editingExId === ex.id;
-                                                        const inputCls = (warm: boolean) => `flex-1 min-w-0 h-10 sm:h-11 rounded-lg border text-center text-sm sm:text-base font-bold font-mono focus:outline-none disabled:opacity-40 transition ${warm ? "bg-amber-400/[0.03] border-amber-400/[0.1] focus:border-amber-400/30" : "bg-[var(--fg-04)] border-[var(--fg-08)] focus:border-[rgb(var(--accent-rgb)/0.4)] focus:bg-[rgb(var(--accent-rgb))]/[0.03]"}`;
+                                                        const inputCls = (warm: boolean) => `flex-1 min-w-0 h-10 sm:h-11 rounded-lg border text-center text-sm sm:text-base font-bold font-mono focus:outline-none disabled:opacity-40 transition ${warm ? "bg-amber-400/[0.03] border-amber-400/[0.1] focus:border-amber-400/30" : isDrop ? "bg-orange-400/[0.03] border-orange-400/[0.1] focus:border-orange-400/30" : isRestPause ? "bg-violet-400/[0.03] border-violet-400/[0.1] focus:border-violet-400/30" : "bg-[var(--fg-04)] border-[var(--fg-08)] focus:border-[rgb(var(--accent-rgb)/0.4)] focus:bg-[rgb(var(--accent-rgb))]/[0.03]"}`;
                                                         const chipCls = "h-9 sm:h-10 rounded-full text-center text-sm sm:text-base font-bold font-mono";
                                                         return (
-                                                        <div key={s.index} className={isWarmup ? "rounded-lg bg-amber-400/[0.04] border border-amber-400/[0.08] px-1 py-0.5" : ""}>
+                                                        <div key={s.index} className={isWarmup ? "rounded-lg bg-amber-400/[0.04] border border-amber-400/[0.08] px-1 py-0.5" : isDrop ? "rounded-lg bg-orange-400/[0.04] border border-orange-400/[0.08] px-1 py-0.5" : isRestPause ? "rounded-lg bg-violet-400/[0.04] border border-violet-400/[0.08] px-1 py-0.5" : ""}>
                                                             {/* Set row: optional delete × + set content */}
                                                             <div className="flex items-center gap-1">
                                                                 {/* Delete button (edit mode) */}
@@ -1502,9 +1567,9 @@ export default function WorkoutPage() {
                                                                     </div>
                                                                 ) : (
                                                                 /* ── INCOMPLETE SET — input mode ── */
-                                                                <SwipeSet completed={false} onComplete={() => w.completeSet(ex, s.index)}>
-                                                                    <div className={`flex items-center gap-1.5 sm:gap-2 ${isWarmup ? "bg-transparent" : "bg-[var(--bg-elevated)]"}`}>
-                                                                        <span className={`text-[10px] font-mono w-6 sm:w-7 text-center shrink-0 ${isWarmup ? "text-amber-400/50" : "text-[var(--fg-25)]"}`}>
+                                                                <SwipeSet completed={false} onComplete={() => completeWithRpe(ex, s.index)}>
+                                                                    <div className={`flex items-center gap-1.5 sm:gap-2 ${isWarmup ? "bg-transparent" : isDrop || isRestPause ? "bg-transparent" : "bg-[var(--bg-elevated)]"}`}>
+                                                                        <span className={`text-[10px] font-mono w-6 sm:w-7 text-center shrink-0 ${isWarmup ? "text-amber-400/50" : isDrop ? "text-orange-400/50" : isRestPause ? "text-violet-400/50" : "text-[var(--fg-25)]"}`}>
                                                                             {displayNum}
                                                                         </span>
                                                                         {isWarmup && s.warmup_label && (
@@ -1527,7 +1592,7 @@ export default function WorkoutPage() {
                                                                             </>
                                                                         )}
                                                                         <button
-                                                                            onClick={() => w.completeSet(ex, s.index)}
+                                                                            onClick={() => completeWithRpe(ex, s.index)}
                                                                             className={`w-9 h-9 sm:w-11 sm:h-11 shrink-0 rounded-lg border flex items-center justify-center transition ${
                                                                                 isWarmup ? "border-amber-400/15 text-amber-400/30 hover:border-amber-400/40 hover:text-amber-400/70 active:scale-95" : "border-[var(--fg-10)] text-[var(--fg-20)] hover:border-[rgb(var(--accent-rgb)/0.4)] hover:text-[rgb(var(--accent-light-rgb))] hover:bg-[rgb(var(--accent-rgb))]/[0.05] active:scale-95"
                                                                             }`}
@@ -1539,6 +1604,31 @@ export default function WorkoutPage() {
                                                                 )}
                                                                 </div>
                                                             </div>
+                                                            {/* ── RPE prompt (after manual completion) ── */}
+                                                            {rpePrompt?.exId === ex.id && rpePrompt.setIdx === s.index && s.completed && !isWarmup && (
+                                                                <div className="flex items-center gap-1 ml-7 sm:ml-8 mt-1 animate-[fadeInUp_0.15s_ease]">
+                                                                    <span className="text-[8px] font-mono text-[var(--fg-20)] mr-1">RPE</span>
+                                                                    {[6, 7, 8, 9, 10].map((v) => (
+                                                                        <button key={v} onClick={() => handleRpe(v)}
+                                                                            className={`w-7 h-7 rounded-full text-[10px] font-mono font-bold border transition active:scale-90 ${
+                                                                                v <= 7 ? "border-emerald-500/20 text-emerald-400/70 hover:bg-emerald-500/10" :
+                                                                                v <= 8 ? "border-amber-500/20 text-amber-400/70 hover:bg-amber-500/10" :
+                                                                                "border-red-500/20 text-red-400/70 hover:bg-red-500/10"
+                                                                            }`}
+                                                                        >{v}</button>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+                                                            {/* ── RPE badge on completed set ── */}
+                                                            {s.completed && !isWarmup && s.rpe && !(rpePrompt?.exId === ex.id && rpePrompt.setIdx === s.index) && (
+                                                                <div className="ml-7 sm:ml-8 mt-0.5">
+                                                                    <span className={`text-[8px] font-mono px-1.5 py-0.5 rounded-full border ${
+                                                                        s.rpe <= 7 ? "border-emerald-500/15 text-emerald-400/50 bg-emerald-500/[0.04]" :
+                                                                        s.rpe <= 8 ? "border-amber-500/15 text-amber-400/50 bg-amber-500/[0.04]" :
+                                                                        "border-red-500/15 text-red-400/50 bg-red-500/[0.04]"
+                                                                    }`}>RPE {s.rpe}</span>
+                                                                </div>
+                                                            )}
                                                             {/* ── Quick-log area (below the set row) ── */}
                                                             {showQuickLog && !isDeleting && (
                                                                 <div className="mt-1.5 ml-7 sm:ml-8 space-y-1.5" style={{ width: "calc(100% - 32px)" }}>
@@ -1551,7 +1641,7 @@ export default function WorkoutPage() {
                                                                     {/* Repeat last completed set (for sets 2+) */}
                                                                     {lastCompleted && workingIdx > 0 && !userTyped && (
                                                                         <button
-                                                                            onClick={() => w.completeSet(ex, s.index, { weight: lastCompleted.weight, reps: lastCompleted.reps })}
+                                                                            onClick={() => completeWithRpe(ex, s.index, { weight: lastCompleted.weight, reps: lastCompleted.reps }, true)}
                                                                             className="w-full flex items-center justify-between gap-2 py-2 px-3 rounded-lg border border-[var(--fg-08)] bg-[var(--fg-03)] text-[var(--fg-50)] hover:text-[var(--fg-80)] hover:bg-[var(--fg-06)] active:scale-[0.98] transition"
                                                                         >
                                                                             <span className="text-[11px] font-mono font-medium flex items-center gap-1.5">
@@ -1565,11 +1655,11 @@ export default function WorkoutPage() {
                                                                     {hasPrev && !userTyped && (
                                                                         <div className="flex items-center gap-1.5">
                                                                             {!ex.isBodyweight && (
-                                                                                <button onClick={() => w.completeSet(ex, s.index, { weight: String(Number(prevW) + weightIncrement), reps: prevR })} className="flex-1 text-[10px] font-mono font-medium py-2 rounded-lg border border-emerald-500/15 bg-emerald-500/[0.04] text-emerald-400/80 hover:bg-emerald-500/[0.1] active:scale-[0.98] transition">
+                                                                                <button onClick={() => completeWithRpe(ex, s.index, { weight: String(Number(prevW) + weightIncrement), reps: prevR }, true)} className="flex-1 text-[10px] font-mono font-medium py-2 rounded-lg border border-emerald-500/15 bg-emerald-500/[0.04] text-emerald-400/80 hover:bg-emerald-500/[0.1] active:scale-[0.98] transition">
                                                                                     +{weightIncrement}{w.weightUnit} → {Number(prevW) + weightIncrement}
                                                                                 </button>
                                                                             )}
-                                                                            <button onClick={() => w.completeSet(ex, s.index, { weight: prevW, reps: String(Number(prevR) + 1) })} className="flex-1 text-[10px] font-mono font-medium py-2 rounded-lg border border-emerald-500/15 bg-emerald-500/[0.04] text-emerald-400/80 hover:bg-emerald-500/[0.1] active:scale-[0.98] transition">
+                                                                            <button onClick={() => completeWithRpe(ex, s.index, { weight: prevW, reps: String(Number(prevR) + 1) }, true)} className="flex-1 text-[10px] font-mono font-medium py-2 rounded-lg border border-emerald-500/15 bg-emerald-500/[0.04] text-emerald-400/80 hover:bg-emerald-500/[0.1] active:scale-[0.98] transition">
                                                                                 +1 rep → {Number(prevR) + 1}
                                                                             </button>
                                                                         </div>
@@ -1582,11 +1672,21 @@ export default function WorkoutPage() {
                                                         );
                                                     })}
 
-                                                    {/* Add / Remove set controls */}
-                                                    <div className="flex items-center gap-3 pt-1 ml-5 sm:ml-7">
+                                                    {/* Add / Remove / Drop / Rest-Pause controls */}
+                                                    <div className="flex items-center gap-3 pt-1 ml-5 sm:ml-7 flex-wrap">
                                                         <button onClick={() => w.addSet(ex.id)} className="flex items-center gap-1.5 text-[rgb(var(--accent-light-rgb)/0.6)] text-[10px] font-mono hover:text-[rgb(var(--accent-light-rgb))] transition">
                                                             <Plus size={12} /> Add set
                                                         </button>
+                                                        {!ex.isCardio && workingSetsOnly.some((s) => s.completed) && (
+                                                            <>
+                                                                <button onClick={() => w.addDropSet(ex.id)} className="flex items-center gap-1.5 text-[10px] font-mono text-orange-400/50 hover:text-orange-400/80 transition">
+                                                                    <ChevronDown size={10} /> Drop set
+                                                                </button>
+                                                                <button onClick={() => w.addRestPauseSet(ex.id)} className="flex items-center gap-1.5 text-[10px] font-mono text-violet-400/50 hover:text-violet-400/80 transition">
+                                                                    <Pause size={10} /> Rest-pause
+                                                                </button>
+                                                            </>
+                                                        )}
                                                         {sets.length > 1 && (
                                                             <button
                                                                 onClick={() => setEditingExId(editingExId === ex.id ? null : ex.id)}
@@ -1613,6 +1713,7 @@ export default function WorkoutPage() {
                                             )}
                                         </div>
                                     )}
+                                </div>
                                 </div>
                             );
                         })}

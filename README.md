@@ -105,7 +105,7 @@ supabase/
 
 ## Database Schema
 
-25 migrations in `supabase/migrations/`. All tables have RLS (user_id = auth.uid()).
+26 migrations in `supabase/migrations/`. All tables have RLS (user_id = auth.uid()).
 
 ### Core Tables
 
@@ -114,9 +114,9 @@ supabase/
 | `profiles` | User profile | PK=auth id, username, sex, equipment_access[], gym_type |
 | `exercises` | Exercise library | name, primary_muscle, equipment, category, is_unilateral, tracking_method |
 | `workout_sessions` | Sessions | status (active/completed), date, total_volume, xp_earned, sex |
-| `exercise_set_logs` | Individual sets | exercise_id, set_index, weight, reps, duration, distance, is_warmup |
+| `exercise_set_logs` | Individual sets | exercise_id, set_index, weight, reps, duration, distance, is_warmup, rpe, set_type |
 | `scheduled_days` | Schedule entries | date, title, is_rest |
-| `scheduled_exercises` | Exercises in schedule | order_index, target_sets/reps/weight, rest_seconds |
+| `scheduled_exercises` | Exercises in schedule | order_index, target_sets/reps/weight, rest_seconds, superset_group |
 | `workout_templates` | Saved templates | name |
 | `workout_template_exercises` | Template contents | same shape as scheduled_exercises |
 | `recurring_plans` | Weekly recurrence | weekday (0-6) → template_id |
@@ -156,7 +156,7 @@ Key types (exported from useWorkoutSession):
 WorkoutExercise: { id, exercise_id, order_index, target_sets, target_reps, target_weight,
                    rest_seconds, name, category, equipment, body_segment, isCardio, isBodyweight }
 
-SetEntry: { index, weight, reps, duration, distance, note, completed, logId, is_warmup }
+SetEntry: { index, weight, reps, duration, distance, note, completed, logId, is_warmup, rpe, set_type }
 ```
 
 ### Session Flow
@@ -208,6 +208,12 @@ SetEntry: { index, weight, reps, duration, distance, note, completed, logId, is_
     - Collapsed (64px): compact circle + "tap for details" hint text
     - Expanded (120px): larger circle + merged calorie estimate + per-exercise volume bars
     - Replaces chevron — tap circle area to toggle expand/collapse
+- **RPE rating**: after manual set completion, row of 5 chips (6–10) appears for 3s auto-dismiss; color-coded green/amber/red; stored per set; badge shown on completed sets; suppressed for quick-log
+- **Drop sets**: "Drop set" button (orange) adds set at 80% weight, labeled "D", orange-themed row; skips rest timer and PR detection
+- **Rest-pause sets**: "Rest-pause" button (violet) adds set at same weight, labeled "RP", violet-themed row; starts 15s micro-rest timer
+- **Set type system**: `set_type` column (working/warmup/drop/rest_pause) replaces boolean `is_warmup`
+- **Superset grouping**: exercises can be grouped; fuchsia "SS" badge + connector line between grouped exercises; rest timer only starts after all exercises in group complete current round
+- **Auto-promote ordering**: active exercises float to top, completed/skipped sink to bottom (view-only reorder via useMemo, preserves DB order and superset adjacency)
 
 ## Theme System
 
