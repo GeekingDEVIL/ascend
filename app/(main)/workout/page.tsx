@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, Plus, Play, X, RefreshCw, Pause, SkipForward, ChevronDown, Moon, Flame, Dumbbell, Timer, TrendingUp, Share2, Trash2, Ban, Calendar } from "lucide-react";
+import { Check, Plus, Play, X, RefreshCw, Pause, SkipForward, ChevronDown, Moon, Flame, Dumbbell, Timer, TrendingUp, Share2, Trash2, Ban, Calendar, Pencil, Undo2, Minus } from "lucide-react";
 import { useSwipeable } from "react-swipeable";
 import CubeLoader from "../../components/ui/cube-loader";
 import AddExerciseModal from "../../components/AddExerciseModal";
@@ -13,6 +13,7 @@ import {
     useWorkoutSession,
     formatClock,
     kgToUnit,
+    isDualWeight,
     getCycleAdjustedWeight,
     type WorkoutExercise,
     type SetEntry,
@@ -84,6 +85,7 @@ export default function WorkoutPage() {
     const router = useRouter();
     const { enabledKeys } = useModules();
     const w = useWorkoutSession();
+    const [editingExId, setEditingExId] = useState<string | null>(null);
 
     /* ═══════════════════════════════════════════════════════════════
        RENDER
@@ -876,13 +878,21 @@ export default function WorkoutPage() {
                                                 </div>
                                             ) : (
                                                 /* ── STRENGTH / BODYWEIGHT: set-based ── */
-                                                <div className="px-4 pb-4 space-y-1.5 border-t border-[var(--fg-06)] pt-3">
-                                                    <div className="flex items-center gap-1.5 sm:gap-2 text-[8px] font-mono text-[var(--fg-25)] tracking-wider">
-                                                        <span className="w-5 sm:w-7" />
+                                                <div className="px-4 pb-4 space-y-1 border-t border-[var(--fg-06)] pt-3">
+                                                    {/* Column headers */}
+                                                    <div className="flex items-center gap-1.5 sm:gap-2 text-[8px] font-mono text-[var(--fg-25)] tracking-wider mb-0.5">
+                                                        {editingExId === ex.id ? <span className="w-6" /> : null}
+                                                        <span className="w-6 sm:w-7" />
                                                         {ex.isBodyweight ? (
                                                             <span className="flex-1 text-center">REPS</span>
                                                         ) : (
-                                                            <><span className="flex-1 text-center">{w.weightUnit.toUpperCase()}</span><span className="flex-1 text-center">REPS</span></>
+                                                            <>
+                                                                <span className="flex-1 text-center">
+                                                                    {w.weightUnit.toUpperCase()}
+                                                                    {isDualWeight(ex) && <span className="text-[rgb(var(--accent-rgb))] font-bold ml-1">/ SIDE</span>}
+                                                                </span>
+                                                                <span className="flex-1 text-center">REPS</span>
+                                                            </>
                                                         )}
                                                         <span className="w-9 sm:w-11" />
                                                     </div>
@@ -890,50 +900,178 @@ export default function WorkoutPage() {
                                                     {sets.map((s, si) => {
                                                         const isWarmup = !!s.is_warmup;
                                                         const warmupCount = sets.filter((x) => x.is_warmup).length;
-                                                        const displayNum = isWarmup ? `W${si + 1}` : String(s.index - warmupCount + 1);
+                                                        const workingIdx = isWarmup ? -1 : s.index - warmupCount;
+                                                        const displayNum = isWarmup ? `W${si + 1}` : String(workingIdx + 1);
+                                                        const prevSets = w.lastSets[ex.exercise_id] ?? [];
+                                                        const prevSet = !isWarmup ? prevSets[workingIdx] : undefined;
+                                                        const prevW = prevSet?.weight != null ? String(kgToUnit(prevSet.weight, w.weightUnit)) : "";
+                                                        const prevR = prevSet?.reps != null ? String(prevSet.reps) : "";
+                                                        const completedWorking = sets.filter((x) => !x.is_warmup && x.completed);
+                                                        const lastCompleted = completedWorking.length > 0 ? completedWorking[completedWorking.length - 1] : null;
+                                                        const hasPrev = !!(prevW && prevR);
+                                                        const userTyped = !!(s.weight || s.reps);
+                                                        const showQuickLog = !s.completed && !isWarmup && !ex.isCardio;
+                                                        const dualWt = isDualWeight(ex);
+                                                        const setVol = s.completed && s.weight && s.reps ? Number(s.weight) * Number(s.reps) * (dualWt ? 2 : 1) : 0;
+                                                        const weightIncrement = w.weightUnit === "kg" ? 2.5 : 5;
+                                                        const isDeleting = editingExId === ex.id;
+                                                        const inputCls = (warm: boolean) => `flex-1 min-w-0 h-10 sm:h-11 rounded-lg border text-center text-sm sm:text-base font-bold font-mono focus:outline-none disabled:opacity-40 transition ${warm ? "bg-amber-400/[0.03] border-amber-400/[0.1] focus:border-amber-400/30" : "bg-[var(--fg-04)] border-[var(--fg-08)] focus:border-[rgb(var(--accent-rgb)/0.4)] focus:bg-[rgb(var(--accent-rgb))]/[0.03]"}`;
+                                                        const chipCls = "h-9 sm:h-10 rounded-full text-center text-sm sm:text-base font-bold font-mono";
                                                         return (
                                                         <div key={s.index} className={isWarmup ? "rounded-lg bg-amber-400/[0.04] border border-amber-400/[0.08] px-1 py-0.5" : ""}>
-                                                            <SwipeSet completed={s.completed} onComplete={() => w.completeSet(ex, s.index)}>
-                                                                <div className={`flex items-center gap-1.5 sm:gap-2 ${isWarmup ? "bg-transparent" : "bg-[var(--bg-elevated)]"}`}>
-                                                                    <span className={`text-[10px] font-mono w-5 sm:w-7 text-center shrink-0 ${isWarmup ? "text-amber-400/50" : s.completed ? "text-[rgb(var(--accent-light-rgb)/0.5)]" : "text-[var(--fg-25)]"}`}>
-                                                                        {displayNum}
-                                                                    </span>
-                                                                    {isWarmup && s.warmup_label && (
-                                                                        <span className="text-[8px] font-mono text-amber-400/50 w-8 shrink-0">{s.warmup_label}</span>
-                                                                    )}
-                                                                    {ex.isBodyweight ? (
-                                                                        <input type="number" min="0" inputMode="numeric" onWheel={(e) => (e.target as HTMLElement).blur()} placeholder="—" value={s.reps} onChange={(e) => w.updateSet(ex.id, s.index, "reps", e.target.value)} disabled={s.completed}
-                                                                            className={`flex-1 min-w-0 h-10 sm:h-11 rounded-lg border text-center text-sm sm:text-base font-bold font-mono focus:outline-none disabled:opacity-40 transition ${isWarmup ? "bg-amber-400/[0.03] border-amber-400/[0.1] focus:border-amber-400/30" : "bg-[var(--fg-04)] border-[var(--fg-08)] focus:border-[rgb(var(--accent-rgb)/0.4)] focus:bg-[rgb(var(--accent-rgb))]/[0.03]"}`} />
-                                                                    ) : (
-                                                                        <>
-                                                                            <input type="number" min="0" inputMode="decimal" onWheel={(e) => (e.target as HTMLElement).blur()} placeholder="—" value={s.weight} onChange={(e) => w.updateSet(ex.id, s.index, "weight", e.target.value)} disabled={s.completed}
-                                                                                className={`flex-1 min-w-0 h-10 sm:h-11 rounded-lg border text-center text-sm sm:text-base font-bold font-mono focus:outline-none disabled:opacity-40 transition ${isWarmup ? "bg-amber-400/[0.03] border-amber-400/[0.1] focus:border-amber-400/30" : "bg-[var(--fg-04)] border-[var(--fg-08)] focus:border-[rgb(var(--accent-rgb)/0.4)] focus:bg-[rgb(var(--accent-rgb))]/[0.03]"}`} />
-                                                                            <input type="number" min="0" inputMode="numeric" onWheel={(e) => (e.target as HTMLElement).blur()} placeholder="—" value={s.reps} onChange={(e) => w.updateSet(ex.id, s.index, "reps", e.target.value)} disabled={s.completed}
-                                                                                className={`flex-1 min-w-0 h-10 sm:h-11 rounded-lg border text-center text-sm sm:text-base font-bold font-mono focus:outline-none disabled:opacity-40 transition ${isWarmup ? "bg-amber-400/[0.03] border-amber-400/[0.1] focus:border-amber-400/30" : "bg-[var(--fg-04)] border-[var(--fg-08)] focus:border-[rgb(var(--accent-rgb)/0.4)] focus:bg-[rgb(var(--accent-rgb))]/[0.03]"}`} />
-                                                                        </>
-                                                                    )}
+                                                            {/* Set row: optional delete × + set content */}
+                                                            <div className="flex items-center gap-1">
+                                                                {/* Delete button (edit mode) */}
+                                                                {isDeleting && (
                                                                     <button
-                                                                        onClick={() => !s.completed && w.completeSet(ex, s.index)}
-                                                                        className={`w-9 h-9 sm:w-11 sm:h-11 shrink-0 rounded-lg border flex items-center justify-center transition ${s.completed
-                                                                            ? isWarmup ? "border-amber-400/40 bg-amber-400/15 text-amber-400" : "border-[rgb(var(--accent-rgb)/0.5)] bg-[rgb(var(--accent-rgb)/0.2)] text-[rgb(var(--accent-light-rgb))]"
-                                                                            : isWarmup ? "border-amber-400/15 text-amber-400/30 hover:border-amber-400/40 hover:text-amber-400/70 active:scale-95" : "border-[var(--fg-10)] text-[var(--fg-20)] hover:border-[rgb(var(--accent-rgb)/0.4)] hover:text-[rgb(var(--accent-light-rgb))] hover:bg-[rgb(var(--accent-rgb))]/[0.05] active:scale-95"
-                                                                            }`}
+                                                                        onClick={() => w.removeSet(ex.id, s.index)}
+                                                                        className="w-6 h-6 shrink-0 rounded-full bg-red-500/15 border border-red-500/30 flex items-center justify-center text-red-400 hover:bg-red-500/25 active:scale-90 transition"
                                                                     >
-                                                                        <Check size={16} />
+                                                                        <X size={12} />
                                                                     </button>
+                                                                )}
+                                                                <div className="flex-1 min-w-0">
+                                                                {/* ── COMPLETED WORKING SET — chip/tag style ── */}
+                                                                {s.completed && !isWarmup ? (
+                                                                    <button
+                                                                        onClick={() => !isDeleting && w.editSet(ex.id, s.index)}
+                                                                        className="w-full flex items-center gap-1.5 sm:gap-2 group rounded-lg py-1.5 px-1 relative overflow-hidden hover:brightness-110 active:scale-[0.99] transition"
+                                                                    >
+                                                                        <div className="absolute left-0 top-1 bottom-1 w-[2px] rounded-full" style={{ background: "rgb(var(--accent-rgb) / 0.5)" }} />
+                                                                        {/* Set number in accent circle */}
+                                                                        <div className="w-6 sm:w-7 h-6 sm:h-7 shrink-0 rounded-full flex items-center justify-center text-[10px] font-mono font-bold" style={{ background: "rgb(var(--accent-rgb) / 0.15)", color: "rgb(var(--accent-light-rgb))" }}>
+                                                                            {displayNum}
+                                                                        </div>
+                                                                        {/* Weight chip */}
+                                                                        {!ex.isBodyweight && (
+                                                                            <div className={`flex-1 ${chipCls} flex items-center justify-center gap-1 rounded-lg`} style={{ background: "rgb(var(--accent-rgb) / 0.06)", border: "1px solid rgb(var(--accent-rgb) / 0.12)" }}>
+                                                                                <span className="text-[var(--fg-80)]">{s.weight}</span>
+                                                                                {dualWt && (
+                                                                                    <span className="text-[8px] font-bold px-1 py-px rounded" style={{ background: "rgb(var(--accent-rgb) / 0.2)", color: "rgb(var(--accent-light-rgb))" }}>×2</span>
+                                                                                )}
+                                                                            </div>
+                                                                        )}
+                                                                        {/* Reps chip */}
+                                                                        <div className={`flex-1 ${chipCls} flex items-center justify-center rounded-lg`} style={{ background: "rgb(var(--accent-rgb) / 0.06)", border: "1px solid rgb(var(--accent-rgb) / 0.12)" }}>
+                                                                            <span className="text-[var(--fg-80)]">{s.reps}</span>
+                                                                            {ex.isBodyweight && <span className="text-[10px] font-mono text-[var(--fg-30)] ml-1">reps</span>}
+                                                                        </div>
+                                                                        {/* Volume + pencil */}
+                                                                        <div className="flex flex-col items-center shrink-0 w-9 sm:w-11">
+                                                                            <Pencil size={12} className="text-[var(--fg-15)] group-hover:text-[rgb(var(--accent-light-rgb))] transition" />
+                                                                            {setVol > 0 && (
+                                                                                <span className="text-[7px] font-mono text-[var(--fg-15)] mt-0.5">{Math.round(setVol)}</span>
+                                                                            )}
+                                                                        </div>
+                                                                    </button>
+                                                                ) : s.completed && isWarmup ? (
+                                                                    /* ── COMPLETED WARMUP ── */
+                                                                    <div className="flex items-center gap-1.5 sm:gap-2 opacity-50">
+                                                                        <span className="text-[10px] font-mono w-6 sm:w-7 text-center shrink-0 text-amber-400/50">{displayNum}</span>
+                                                                        {s.warmup_label && <span className="text-[8px] font-mono text-amber-400/50 w-8 shrink-0">{s.warmup_label}</span>}
+                                                                        <span className="flex-1 text-center text-xs font-mono text-amber-400/40">{s.weight} × {s.reps}</span>
+                                                                        <div className="w-9 h-9 sm:w-11 sm:h-11 shrink-0 rounded-lg border border-amber-400/30 bg-amber-400/10 flex items-center justify-center text-amber-400"><Check size={14} /></div>
+                                                                    </div>
+                                                                ) : (
+                                                                /* ── INCOMPLETE SET — input mode ── */
+                                                                <SwipeSet completed={false} onComplete={() => w.completeSet(ex, s.index)}>
+                                                                    <div className={`flex items-center gap-1.5 sm:gap-2 ${isWarmup ? "bg-transparent" : "bg-[var(--bg-elevated)]"}`}>
+                                                                        <span className={`text-[10px] font-mono w-6 sm:w-7 text-center shrink-0 ${isWarmup ? "text-amber-400/50" : "text-[var(--fg-25)]"}`}>
+                                                                            {displayNum}
+                                                                        </span>
+                                                                        {isWarmup && s.warmup_label && (
+                                                                            <span className="text-[8px] font-mono text-amber-400/50 w-8 shrink-0">{s.warmup_label}</span>
+                                                                        )}
+                                                                        {ex.isBodyweight ? (
+                                                                            <input type="number" min="0" inputMode="numeric" onWheel={(e) => (e.target as HTMLElement).blur()} placeholder={prevR || "—"} value={s.reps} onChange={(e) => w.updateSet(ex.id, s.index, "reps", e.target.value)}
+                                                                                className={inputCls(isWarmup)} />
+                                                                        ) : (
+                                                                            <>
+                                                                                <div className="flex-1 min-w-0 relative">
+                                                                                    <input type="number" min="0" inputMode="decimal" onWheel={(e) => (e.target as HTMLElement).blur()} placeholder={prevW || "—"} value={s.weight} onChange={(e) => w.updateSet(ex.id, s.index, "weight", e.target.value)}
+                                                                                        className={`w-full h-10 sm:h-11 rounded-lg border text-center text-sm sm:text-base font-bold font-mono focus:outline-none disabled:opacity-40 transition ${isWarmup ? "bg-amber-400/[0.03] border-amber-400/[0.1] focus:border-amber-400/30" : "bg-[var(--fg-04)] border-[var(--fg-08)] focus:border-[rgb(var(--accent-rgb)/0.4)] focus:bg-[rgb(var(--accent-rgb))]/[0.03]"}`} />
+                                                                                    {dualWt && (
+                                                                                        <span className="absolute right-1 top-0.5 text-[7px] font-mono font-bold px-1 rounded" style={{ background: "rgb(var(--accent-rgb) / 0.12)", color: "rgb(var(--accent-light-rgb) / 0.7)" }}>/ side</span>
+                                                                                    )}
+                                                                                </div>
+                                                                                <input type="number" min="0" inputMode="numeric" onWheel={(e) => (e.target as HTMLElement).blur()} placeholder={prevR || "—"} value={s.reps} onChange={(e) => w.updateSet(ex.id, s.index, "reps", e.target.value)}
+                                                                                    className={inputCls(isWarmup)} />
+                                                                            </>
+                                                                        )}
+                                                                        <button
+                                                                            onClick={() => w.completeSet(ex, s.index)}
+                                                                            className={`w-9 h-9 sm:w-11 sm:h-11 shrink-0 rounded-lg border flex items-center justify-center transition ${
+                                                                                isWarmup ? "border-amber-400/15 text-amber-400/30 hover:border-amber-400/40 hover:text-amber-400/70 active:scale-95" : "border-[var(--fg-10)] text-[var(--fg-20)] hover:border-[rgb(var(--accent-rgb)/0.4)] hover:text-[rgb(var(--accent-light-rgb))] hover:bg-[rgb(var(--accent-rgb))]/[0.05] active:scale-95"
+                                                                            }`}
+                                                                        >
+                                                                            <Check size={16} />
+                                                                        </button>
+                                                                    </div>
+                                                                </SwipeSet>
+                                                                )}
                                                                 </div>
-                                                            </SwipeSet>
-                                                            {!s.completed && !isWarmup && (
-                                                                <input type="text" value={s.note} onChange={(e) => w.updateSet(ex.id, s.index, "note", e.target.value)} placeholder="Note (optional)"
-                                                                    className="mt-1 ml-5 sm:ml-7 text-[10px] font-mono rounded-md bg-transparent border border-[var(--fg-04)] px-2 py-1 text-[var(--fg-30)] placeholder:text-[var(--fg-15)] focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.2)] focus:text-[var(--fg-50)] transition" style={{ width: "calc(100% - 24px)" }} />
+                                                            </div>
+                                                            {/* ── Quick-log area (below the set row) ── */}
+                                                            {showQuickLog && !isDeleting && (
+                                                                <div className="mt-1.5 ml-7 sm:ml-8 space-y-1.5" style={{ width: "calc(100% - 32px)" }}>
+                                                                    {/* Auto-fill hint when prior data exists */}
+                                                                    {hasPrev && !userTyped && (
+                                                                        <span className="block text-[8px] font-mono text-[var(--fg-20)] -mt-0.5 mb-1">
+                                                                            tap ✓ to log {prevW}{w.weightUnit} × {prevR} from last session
+                                                                        </span>
+                                                                    )}
+                                                                    {/* Repeat last completed set (for sets 2+) */}
+                                                                    {lastCompleted && workingIdx > 0 && !userTyped && (
+                                                                        <button
+                                                                            onClick={() => w.completeSet(ex, s.index, { weight: lastCompleted.weight, reps: lastCompleted.reps })}
+                                                                            className="w-full flex items-center justify-between gap-2 py-2 px-3 rounded-lg border border-[var(--fg-08)] bg-[var(--fg-03)] text-[var(--fg-50)] hover:text-[var(--fg-80)] hover:bg-[var(--fg-06)] active:scale-[0.98] transition"
+                                                                        >
+                                                                            <span className="text-[11px] font-mono font-medium flex items-center gap-1.5">
+                                                                                <RefreshCw size={10} className="opacity-40" />
+                                                                                Repeat — {!ex.isBodyweight ? `${lastCompleted.weight}${w.weightUnit} × ` : ""}{lastCompleted.reps}
+                                                                            </span>
+                                                                            <Check size={12} className="opacity-30" />
+                                                                        </button>
+                                                                    )}
+                                                                    {/* Progressive overload chips — show computed value */}
+                                                                    {hasPrev && !userTyped && (
+                                                                        <div className="flex items-center gap-1.5">
+                                                                            {!ex.isBodyweight && (
+                                                                                <button onClick={() => w.completeSet(ex, s.index, { weight: String(Number(prevW) + weightIncrement), reps: prevR })} className="flex-1 text-[10px] font-mono font-medium py-2 rounded-lg border border-emerald-500/15 bg-emerald-500/[0.04] text-emerald-400/80 hover:bg-emerald-500/[0.1] active:scale-[0.98] transition">
+                                                                                    +{weightIncrement}{w.weightUnit} → {Number(prevW) + weightIncrement}
+                                                                                </button>
+                                                                            )}
+                                                                            <button onClick={() => w.completeSet(ex, s.index, { weight: prevW, reps: String(Number(prevR) + 1) })} className="flex-1 text-[10px] font-mono font-medium py-2 rounded-lg border border-emerald-500/15 bg-emerald-500/[0.04] text-emerald-400/80 hover:bg-emerald-500/[0.1] active:scale-[0.98] transition">
+                                                                                +1 rep → {Number(prevR) + 1}
+                                                                            </button>
+                                                                        </div>
+                                                                    )}
+                                                                    <input type="text" value={s.note} onChange={(e) => w.updateSet(ex.id, s.index, "note", e.target.value)} placeholder="Note (optional)"
+                                                                        className="w-full text-[10px] font-mono rounded-md bg-transparent border border-[var(--fg-04)] px-2 py-1 text-[var(--fg-30)] placeholder:text-[var(--fg-15)] focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.2)] focus:text-[var(--fg-50)] transition" />
+                                                                </div>
                                                             )}
                                                         </div>
                                                         );
                                                     })}
 
-                                                    <button onClick={() => w.addSet(ex.id)} className="flex items-center gap-1.5 text-[rgb(var(--accent-light-rgb)/0.6)] text-[10px] font-mono hover:text-[rgb(var(--accent-light-rgb))] transition pt-1 ml-5 sm:ml-7">
-                                                        <Plus size={12} /> Add set
-                                                    </button>
+                                                    {/* Add / Remove set controls */}
+                                                    <div className="flex items-center gap-3 pt-1 ml-5 sm:ml-7">
+                                                        <button onClick={() => w.addSet(ex.id)} className="flex items-center gap-1.5 text-[rgb(var(--accent-light-rgb)/0.6)] text-[10px] font-mono hover:text-[rgb(var(--accent-light-rgb))] transition">
+                                                            <Plus size={12} /> Add set
+                                                        </button>
+                                                        {sets.length > 1 && (
+                                                            <button
+                                                                onClick={() => setEditingExId(editingExId === ex.id ? null : ex.id)}
+                                                                className={`flex items-center gap-1 text-[10px] font-mono transition ${editingExId === ex.id ? "text-red-400" : "text-[var(--fg-25)] hover:text-[var(--fg-50)]"}`}
+                                                            >
+                                                                {editingExId === ex.id ? (
+                                                                    <><Check size={12} /> Done</>
+                                                                ) : (
+                                                                    <><Minus size={12} /> Remove set</>
+                                                                )}
+                                                            </button>
+                                                        )}
+                                                    </div>
 
                                                     {allDone && !w.confirmedExercises.has(ex.id) && (
                                                         <button
@@ -958,10 +1096,30 @@ export default function WorkoutPage() {
                 )}
             </div>
 
+            {/* ── UNDO TOAST ── */}
+            {w.lastAction && w.status === "active" && (
+                <div className="fixed bottom-28 md:bottom-20 left-1/2 -translate-x-1/2 z-40 animate-[fadeInUp_0.2s_ease] max-w-[90vw]">
+                    <div className="flex items-center gap-3 rounded-xl border border-[var(--fg-08)] px-4 py-2.5 shadow-lg backdrop-blur-xl" style={{ background: "var(--bg-card)" }}>
+                        <div className="flex flex-col gap-0.5 min-w-0">
+                            <span className="text-[10px] font-mono text-[rgb(var(--accent-light-rgb))] truncate">
+                                {w.lastAction.exName}
+                            </span>
+                            <span className="text-[9px] font-mono text-[var(--fg-30)]">
+                                {w.lastAction.weight ? `${w.lastAction.weight} × ` : ""}{w.lastAction.reps} reps logged
+                            </span>
+                        </div>
+                        <button onClick={w.undoLastSet} className="flex items-center gap-1.5 text-[10px] font-mono font-bold px-3 py-1.5 rounded-lg border border-[var(--fg-10)] text-[var(--fg-50)] hover:text-[var(--fg-80)] hover:bg-[var(--fg-05)] active:scale-95 transition shrink-0">
+                            <Undo2 size={12} />
+                            Undo
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* ── REST TIMER (sticky bottom) ── */}
             {w.restRemaining !== null && w.status === "active" && (
                 <div className="fixed bottom-16 md:bottom-6 left-0 right-0 md:left-1/2 md:-translate-x-1/2 md:max-w-sm md:rounded-xl z-30">
-                    <div className="border-t md:border border-[var(--fg-08)] bg-[var(--bg-card)]/95 backdrop-blur-xl px-5 py-3.5 flex items-center justify-between md:rounded-xl">
+                    <div className="border-t md:border border-[var(--fg-08)] bg-[var(--bg-card)] backdrop-blur-xl px-5 py-3.5 flex items-center justify-between md:rounded-xl">
                         <div>
                             <p className="text-[8px] font-mono tracking-widest text-[var(--fg-25)]">REST TIMER</p>
                             <p className="text-2xl font-bold font-mono text-[rgb(var(--accent-rgb))]">{formatClock(w.restRemaining)}</p>
@@ -982,7 +1140,7 @@ export default function WorkoutPage() {
             {/* ── STICKY ACTION BAR ── */}
             {w.status === "active" && w.restRemaining === null && (
                 <div className="fixed bottom-16 md:bottom-6 left-0 right-0 md:left-1/2 md:-translate-x-1/2 md:max-w-sm md:rounded-xl z-20">
-                    <div className="border-t md:border border-[var(--fg-06)] bg-[var(--bg-card)]/95 backdrop-blur-xl px-5 py-3 md:rounded-xl flex items-center gap-2">
+                    <div className="border-t md:border border-[var(--fg-06)] bg-[var(--bg-card)] backdrop-blur-xl px-5 py-3 md:rounded-xl flex items-center gap-2">
                         {!w.sessionPaused ? (
                             <>
                                 <button

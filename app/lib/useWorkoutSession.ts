@@ -32,7 +32,13 @@ export type WorkoutExercise = {
     body_segment: string;
     isCardio: boolean;
     isBodyweight: boolean;
+    is_unilateral: boolean;
 };
+
+export function isDualWeight(ex: WorkoutExercise): boolean {
+    if (ex.isCardio || ex.isBodyweight) return false;
+    return ex.equipment === "Dumbbell" || (ex.equipment === "Cable" && !ex.is_unilateral);
+}
 
 export type SetEntry = {
     index: number;
@@ -125,6 +131,7 @@ export function useWorkoutSession() {
     const [exercisesList, setExercisesList] = useState<WorkoutExercise[]>([]);
     const [logs, setLogs] = useState<Record<string, SetEntry[]>>({});
     const [lastPerformance, setLastPerformance] = useState<Record<string, { weight: number | null; reps: number | null }>>({});
+    const [lastSets, setLastSets] = useState<Record<string, { weight: number | null; reps: number | null }[]>>({});
     const [overloadHints, setOverloadHints] = useState<Record<string, OverloadSuggestion>>({});
     const [sessionId, setSessionId] = useState<string | null>(null);
     const [startedAt, setStartedAt] = useState<number | null>(null);
@@ -156,6 +163,7 @@ export function useWorkoutSession() {
     const [finishing, setFinishing] = useState(false);
     const [showDeletePlanConfirm, setShowDeletePlanConfirm] = useState(false);
     const [deletingPlan, setDeletingPlan] = useState(false);
+    const [lastAction, setLastAction] = useState<{ exId: string; setIdx: number; logId: string | null; ts: number; exName: string; weight: string; reps: string } | null>(null);
     const [skippedExercises, setSkippedExercises] = useState<Set<string>>(new Set());
     const [warmupExercises, setWarmupExercises] = useState<Set<string>>(new Set());
     const [cycleProfile, setCycleProfile] = useState<PhaseTrainingProfile | null>(null);
@@ -213,14 +221,14 @@ export function useWorkoutSession() {
 
             const { data: exRows } = await supabase
                 .from("scheduled_exercises")
-                .select("id, order_index, target_sets, target_reps, target_weight, rest_seconds, exercise_id, exercises(name, category, equipment, body_segment)")
+                .select("id, order_index, target_sets, target_reps, target_weight, rest_seconds, exercise_id, exercises(name, category, equipment, body_segment, is_unilateral)")
                 .eq("scheduled_day_id", day.id)
                 .order("order_index");
 
             const mapped: WorkoutExercise[] = (exRows ?? []).map((r: any) => {
                 const seg = r.exercises?.body_segment ?? "";
                 const equip = r.exercises?.equipment ?? "";
-                return { id: r.id, exercise_id: r.exercise_id, order_index: r.order_index, target_sets: r.target_sets, target_reps: r.target_reps, target_weight: r.target_weight, rest_seconds: r.rest_seconds, name: r.exercises?.name ?? "Unknown", category: r.exercises?.category ?? "", equipment: equip, body_segment: seg, isCardio: seg === "Cardio", isBodyweight: equip.toLowerCase() === "bodyweight" && seg !== "Cardio" };
+                return { id: r.id, exercise_id: r.exercise_id, order_index: r.order_index, target_sets: r.target_sets, target_reps: r.target_reps, target_weight: r.target_weight, rest_seconds: r.rest_seconds, name: r.exercises?.name ?? "Unknown", category: r.exercises?.category ?? "", equipment: equip, body_segment: seg, isCardio: seg === "Cardio", isBodyweight: equip.toLowerCase() === "bodyweight" && seg !== "Cardio", is_unilateral: r.exercises?.is_unilateral ?? false };
             });
             setExercisesList(mapped);
             if (mapped.length === 0) { setStatus("no_plan"); return; }
@@ -246,7 +254,7 @@ export function useWorkoutSession() {
             }
 
             const exerciseIds = mapped.map((m) => m.exercise_id);
-            const { data: priorLogs } = await supabase.from("exercise_set_logs").select("exercise_id, weight, reps, completed_at, workout_session_id, workout_sessions!inner(sex)").eq("user_id", user.id).eq("workout_sessions.sex", sex).in("exercise_id", exerciseIds).order("completed_at", { ascending: false }).limit(500);
+            const { data: priorLogs } = await supabase.from("exercise_set_logs").select("exercise_id, weight, reps, set_index, is_warmup, completed_at, workout_session_id, workout_sessions!inner(sex)").eq("user_id", user.id).eq("workout_sessions.sex", sex).in("exercise_id", exerciseIds).order("completed_at", { ascending: false }).limit(500);
 
             const { data: completedSessions } = await supabase
                 .from("workout_sessions")
@@ -268,16 +276,32 @@ export function useWorkoutSession() {
             const { data: existingSession } = await supabase.from("workout_sessions").select("*").eq("user_id", user.id).eq("date", today).eq("sex", sex).eq("status", "active").maybeSingle();
 
             const lastMap: Record<string, { weight: number | null; reps: number | null }> = {};
+            const lastSetsMap: Record<string, { weight: number | null; reps: number | null }[]> = {};
             const hints: Record<string, OverloadSuggestion> = {};
+            const sessionsByExercise: Record<string, string> = {};
             (priorLogs ?? []).forEach((row: any) => {
                 if (existingSession && row.workout_session_id === existingSession.id) return;
+                if (!sessionsByExercise[row.exercise_id]) sessionsByExercise[row.exercise_id] = row.workout_session_id;
                 if (!lastMap[row.exercise_id]) lastMap[row.exercise_id] = { weight: row.weight, reps: row.reps };
             });
+            const perExRows: Record<string, any[]> = {};
+            (priorLogs ?? []).forEach((row: any) => {
+                if (existingSession && row.workout_session_id === existingSession.id) return;
+                if (row.workout_session_id !== sessionsByExercise[row.exercise_id]) return;
+                if (row.is_warmup) return;
+                if (!perExRows[row.exercise_id]) perExRows[row.exercise_id] = [];
+                perExRows[row.exercise_id].push(row);
+            });
+            for (const [exId, rows] of Object.entries(perExRows)) {
+                rows.sort((a: any, b: any) => (a.set_index ?? 0) - (b.set_index ?? 0));
+                lastSetsMap[exId] = rows.map((r: any) => ({ weight: r.weight, reps: r.reps }));
+            }
             mapped.forEach((ex) => {
                 const last = lastMap[ex.exercise_id];
                 hints[ex.exercise_id] = computeOverload(last?.weight ?? null, last?.reps ?? null, ex.target_reps, weightUnit);
             });
             setLastPerformance(lastMap);
+            setLastSets(lastSetsMap);
             setOverloadHints(hints);
 
             if (existingSession) {
@@ -408,6 +432,13 @@ export function useWorkoutSession() {
         return () => clearInterval(id);
     }, [status, startedAt, sessionPaused, pausedElapsed]);
 
+    /* ── UNDO AUTO-DISMISS ── */
+    useEffect(() => {
+        if (!lastAction) return;
+        const id = setTimeout(() => setLastAction(null), 5000);
+        return () => clearTimeout(id);
+    }, [lastAction]);
+
     /* ── REST TIMER ── */
     useEffect(() => {
         if (restRemaining === null || restPaused) return;
@@ -465,6 +496,7 @@ export function useWorkoutSession() {
             body_segment: seg,
             isCardio: seg === "Cardio",
             isBodyweight: equip.toLowerCase() === "bodyweight" && seg !== "Cardio",
+            is_unilateral: false,
         };
         setFreestyleExercises((p) => [...p, localEx]);
         setShowFreestyleAddModal(false);
@@ -496,13 +528,13 @@ export function useWorkoutSession() {
 
         const { data: exRows } = await supabase
             .from("scheduled_exercises")
-            .select("id, order_index, target_sets, target_reps, target_weight, rest_seconds, exercise_id, exercises(name, category, equipment, body_segment)")
+            .select("id, order_index, target_sets, target_reps, target_weight, rest_seconds, exercise_id, exercises(name, category, equipment, body_segment, is_unilateral)")
             .eq("scheduled_day_id", day.id)
             .order("order_index");
 
         const mapped: WorkoutExercise[] = (exRows ?? []).map((r: any) => {
             const seg = r.exercises?.body_segment ?? ""; const equip = r.exercises?.equipment ?? "";
-            return { id: r.id, exercise_id: r.exercise_id, order_index: r.order_index, target_sets: r.target_sets, target_reps: r.target_reps, target_weight: r.target_weight, rest_seconds: r.rest_seconds, name: r.exercises?.name ?? "Unknown", category: r.exercises?.category ?? "", equipment: equip, body_segment: seg, isCardio: seg === "Cardio", isBodyweight: equip.toLowerCase() === "bodyweight" && seg !== "Cardio" };
+            return { id: r.id, exercise_id: r.exercise_id, order_index: r.order_index, target_sets: r.target_sets, target_reps: r.target_reps, target_weight: r.target_weight, rest_seconds: r.rest_seconds, name: r.exercises?.name ?? "Unknown", category: r.exercises?.category ?? "", equipment: equip, body_segment: seg, isCardio: seg === "Cardio", isBodyweight: equip.toLowerCase() === "bodyweight" && seg !== "Cardio", is_unilateral: r.exercises?.is_unilateral ?? false };
         });
 
         const { data: session } = await supabase.from("workout_sessions").insert({ user_id: user.id, scheduled_day_id: day.id, date: today, title: "Freestyle Session", status: "active", sex: userSex }).select().single();
@@ -541,33 +573,68 @@ export function useWorkoutSession() {
         }
     }
 
-    async function completeSet(ex: WorkoutExercise, idx: number) {
+    function editSet(exId: string, idx: number) {
+        setLogs((p) => ({
+            ...p,
+            [exId]: p[exId].map((s) => (s.index === idx ? { ...s, completed: false } : s)),
+        }));
+    }
+
+    async function completeSet(ex: WorkoutExercise, idx: number, overrides?: { weight?: string; reps?: string }) {
         if (!user || !sessionId) return;
         const set = logs[ex.id]?.find((s) => s.index === idx);
         if (!set) return;
+
+        const warmupCount = (logs[ex.id] ?? []).filter((x) => x.is_warmup).length;
+        const workingIdx = set.is_warmup ? -1 : idx - warmupCount;
+        const prevSets = lastSets[ex.exercise_id] ?? [];
+        const prevSet = !set.is_warmup ? prevSets[workingIdx] : undefined;
+
+        let finalWeight = overrides?.weight ?? set.weight;
+        let finalReps = overrides?.reps ?? set.reps;
+        if (!finalWeight && prevSet?.weight != null && !ex.isCardio && !ex.isBodyweight) finalWeight = String(kgToUnit(prevSet.weight, weightUnit));
+        if (!finalReps && prevSet?.reps != null && !ex.isCardio) finalReps = String(prevSet.reps);
+
         if (ex.isCardio) {
             if (!set.duration && !set.distance) return;
-        } else if (!ex.isBodyweight) {
-            if (!set.reps) return;
         } else {
-            if (!set.reps) return;
+            if (!finalReps) return;
         }
-        const payload: any = { workout_session_id: sessionId, user_id: user.id, exercise_id: ex.exercise_id, scheduled_exercise_id: ex.id, set_index: idx, is_warmup: set.is_warmup ?? false };
+
+        const perSide = isDualWeight(ex);
+        const payload: any = { workout_session_id: sessionId, user_id: user.id, exercise_id: ex.exercise_id, scheduled_exercise_id: ex.id, set_index: idx, is_warmup: set.is_warmup ?? false, is_per_side: perSide };
         if (ex.isCardio) { payload.duration_seconds = set.duration ? Number(set.duration) : null; payload.distance = set.distance ? Number(set.distance) : null; }
-        else { payload.weight = ex.isBodyweight ? 0 : (set.weight ? Number(set.weight) : null); payload.reps = set.reps ? Number(set.reps) : null; }
+        else { payload.weight = ex.isBodyweight ? 0 : (finalWeight ? Number(finalWeight) : null); payload.reps = finalReps ? Number(finalReps) : null; }
 
-        setLogs((p) => ({ ...p, [ex.id]: p[ex.id].map((s) => (s.index === idx ? { ...s, completed: true } : s)) }));
+        setLogs((p) => ({ ...p, [ex.id]: p[ex.id].map((s) => (s.index === idx ? { ...s, weight: finalWeight, reps: finalReps, completed: true } : s)) }));
         if (navigator.vibrate) navigator.vibrate(50);
-        if (!ex.isCardio && !ex.isBodyweight && set.weight && set.reps && !set.is_warmup) checkPR(ex.exercise_id, ex.name, Number(set.weight), Number(set.reps));
+        if (!ex.isCardio && !ex.isBodyweight && finalWeight && finalReps && !set.is_warmup) checkPR(ex.exercise_id, ex.name, Number(finalWeight), Number(finalReps));
 
+        const isEdit = !!set.logId;
         let logId = set.logId;
         if (logId) { await supabase.from("exercise_set_logs").update(payload).eq("id", logId); }
         else { const { data } = await supabase.from("exercise_set_logs").insert(payload).select().single(); logId = data?.id ?? null; }
         setLogs((p) => ({ ...p, [ex.id]: p[ex.id].map((s) => (s.index === idx ? { ...s, logId } : s)) }));
 
-        const restSec = ex.rest_seconds ?? 90;
-        const adjustedRest = Math.round(restSec * (cycleProfile?.restMultiplier ?? 1));
-        if (adjustedRest > 0) { setRestRemaining(adjustedRest); setRestPaused(false); }
+        if (!isEdit) {
+            setLastAction({ exId: ex.id, setIdx: idx, logId, ts: Date.now(), exName: ex.name, weight: finalWeight, reps: finalReps });
+            const restSec = ex.rest_seconds ?? 90;
+            const adjustedRest = Math.round(restSec * (cycleProfile?.restMultiplier ?? 1));
+            if (adjustedRest > 0) { setRestRemaining(adjustedRest); setRestPaused(false); }
+        }
+    }
+
+    async function undoLastSet() {
+        if (!lastAction) return;
+        const { exId, setIdx, logId } = lastAction;
+        setLogs((p) => ({
+            ...p,
+            [exId]: p[exId].map((s) => (s.index === setIdx ? { ...s, completed: false, logId: null } : s)),
+        }));
+        if (logId) await supabase.from("exercise_set_logs").delete().eq("id", logId);
+        setRestRemaining(null);
+        setRestPaused(false);
+        setLastAction(null);
     }
 
     async function propagateToTemplate(orderIdx: number, newExId: string) {
@@ -582,21 +649,21 @@ export function useWorkoutSession() {
 
     async function handleSwap(oldEx: WorkoutExercise, newEx: { id: string; name: string }) {
         if (!user) return;
-        const { data } = await supabase.from("exercises").select("category, equipment, body_segment").eq("id", newEx.id).maybeSingle();
+        const { data } = await supabase.from("exercises").select("category, equipment, body_segment, is_unilateral").eq("id", newEx.id).maybeSingle();
         const seg = data?.body_segment ?? ""; const equip = data?.equipment ?? "";
         await supabase.from("scheduled_exercises").update({ exercise_id: newEx.id }).eq("id", oldEx.id);
-        setExercisesList((p) => p.map((e) => (e.id === oldEx.id ? { ...e, exercise_id: newEx.id, name: newEx.name, body_segment: seg, equipment: equip, isCardio: seg === "Cardio", isBodyweight: equip.toLowerCase() === "bodyweight" && seg !== "Cardio" } : e)));
+        setExercisesList((p) => p.map((e) => (e.id === oldEx.id ? { ...e, exercise_id: newEx.id, name: newEx.name, body_segment: seg, equipment: equip, isCardio: seg === "Cardio", isBodyweight: equip.toLowerCase() === "bodyweight" && seg !== "Cardio", is_unilateral: data?.is_unilateral ?? false } : e)));
         setLogs((p) => ({ ...p, [oldEx.id]: Array.from({ length: oldEx.target_sets }, (_, i) => emptySet(i)) }));
         setSwapTargetId(null);
     }
 
     async function handleAddExercise(newEx: { id: string; name: string }) {
         if (!user || !sessionId) return;
-        const { data: exData } = await supabase.from("exercises").select("category, equipment, body_segment").eq("id", newEx.id).maybeSingle();
+        const { data: exData } = await supabase.from("exercises").select("category, equipment, body_segment, is_unilateral").eq("id", newEx.id).maybeSingle();
         const seg = exData?.body_segment ?? ""; const equip = exData?.equipment ?? ""; const nextOrder = exercisesList.length;
         const { data: created } = await supabase.from("scheduled_exercises").insert({ scheduled_day_id: scheduledDayId, user_id: user.id, exercise_id: newEx.id, order_index: nextOrder, target_sets: 3, target_reps: "8-10" }).select().single();
         if (!created) return;
-        const ex: WorkoutExercise = { id: created.id, exercise_id: newEx.id, order_index: nextOrder, target_sets: 3, target_reps: "8-10", target_weight: null, rest_seconds: 90, name: newEx.name, category: exData?.category ?? "", equipment: equip, body_segment: seg, isCardio: seg === "Cardio", isBodyweight: equip.toLowerCase() === "bodyweight" && seg !== "Cardio" };
+        const ex: WorkoutExercise = { id: created.id, exercise_id: newEx.id, order_index: nextOrder, target_sets: 3, target_reps: "8-10", target_weight: null, rest_seconds: 90, name: newEx.name, category: exData?.category ?? "", equipment: equip, body_segment: seg, isCardio: seg === "Cardio", isBodyweight: equip.toLowerCase() === "bodyweight" && seg !== "Cardio", is_unilateral: exData?.is_unilateral ?? false };
         setExercisesList((p) => [...p, ex]);
         setLogs((p) => ({ ...p, [ex.id]: Array.from({ length: 3 }, (_, i) => emptySet(i)) }));
         setExpandedId(ex.id);
@@ -604,6 +671,16 @@ export function useWorkoutSession() {
     }
 
     function addSet(exId: string) { setLogs((p) => ({ ...p, [exId]: [...p[exId], emptySet(p[exId].length)] })); }
+
+    async function removeSet(exId: string, idx: number) {
+        const set = logs[exId]?.find((s) => s.index === idx);
+        if (!set) return;
+        if (set.logId) await supabase.from("exercise_set_logs").delete().eq("id", set.logId);
+        setLogs((p) => ({
+            ...p,
+            [exId]: p[exId].filter((s) => s.index !== idx).map((s, i) => ({ ...s, index: i })),
+        }));
+    }
 
     async function deletePlan() {
         if (!user) return;
@@ -683,7 +760,11 @@ export function useWorkoutSession() {
         const allSets = Object.values(logs).flat().filter((s) => s.completed);
         const workingSets = allSets.filter((s) => !s.is_warmup);
         const totalSets = workingSets.length;
-        const totalVolume = workingSets.reduce((sum, s) => sum + (Number(s.weight) || 0) * (Number(s.reps) || 0), 0);
+        const totalVolume = workingSets.reduce((sum, s) => {
+            const ex = exercisesList.find((e) => logs[e.id]?.includes(s));
+            const mult = ex && isDualWeight(ex) ? 2 : 1;
+            return sum + (Number(s.weight) || 0) * (Number(s.reps) || 0) * mult;
+        }, 0);
         const dur = Math.floor((Date.now() - startedAt) / 1000) - pausedElapsed;
         const totalPlannedSets = exercisesList.reduce((sum, e) => sum + e.target_sets, 0);
         const setsData = workingSets.map((s) => { const ex = exercisesList.find((e) => logs[e.id]?.includes(s)); return { exercise_id: ex?.exercise_id ?? "", weight: Number(s.weight) || null, reps: Number(s.reps) || null }; });
@@ -917,11 +998,11 @@ export function useWorkoutSession() {
         showDeletePlanConfirm, showFreestylePrompt, finishing, sharing,
 
         // Data
-        lastPerformance, overloadHints, summary, todaySessions,
+        lastPerformance, lastSets, overloadHints, summary, todaySessions,
         recentSessions, weekDays, weeklyVolumes, statsLoaded,
         cycleProfile, energyForecast, exerciseRisks, substitutions,
         freestyleExercises, skippedExercises, warmupExercises,
-        confirmedExercises, prCount, preWorkoutWeight, weightLogged,
+        confirmedExercises, prCount, preWorkoutWeight, weightLogged, lastAction,
         startingFreestyle, savingFreestylePlan, deletingPlan,
 
         // Derived
@@ -939,7 +1020,7 @@ export function useWorkoutSession() {
 
         // Actions
         startWorkout, beginFreestyleSession, addFreestyleExercise, removeFreestyleExercise,
-        updateSet, completeSet, handleSwap, handleAddExercise, addSet,
+        updateSet, completeSet, editSet, undoLastSet, handleSwap, handleAddExercise, addSet, removeSet,
         deletePlan, removeExercise, skipExercise, unskipExercise, toggleWarmup,
         finishWorkout, handleShare, saveFreestyleAsRecurringPlan,
         logBodyWeight, confirmExercise, startAnotherWorkout, startManualRestTimer,

@@ -105,7 +105,7 @@ supabase/
 
 ## Database Schema
 
-24 migrations in `supabase/migrations/`. All tables have RLS (user_id = auth.uid()).
+25 migrations in `supabase/migrations/`. All tables have RLS (user_id = auth.uid()).
 
 ### Core Tables
 
@@ -181,6 +181,11 @@ SetEntry: { index, weight, reps, duration, distance, note, completed, logId, is_
 - Warmup sets auto-generated (bar/50%/70%/85% for barbell)
 
 ### Features in Session
+- **Smart defaults**: per-set placeholders from last session's working sets (weight + reps); auto-fills on tap when inputs empty
+- **Quick-log buttons**: full-width "Log Xkg × Y reps" one-tap button, progressive overload chips (+2.5kg/+5lbs, +1 rep), "Copy Set 1"
+- **Dual-weight logging**: dumbbell/cable exercises store `is_per_side`, show "/ SIDE" header + "×2" badge, volume calc doubled
+- **Edit saved sets**: completed sets show as tappable rows with pencil icon — tap to re-edit
+- **Undo last action**: 5-second toast with exercise name + values — undo deletes DB row + resets state
 - Overload suggestions (weight/rep increases based on last session)
 - Exercise swap mid-session (optionally propagates to template)
 - Exercise skip (grays out)
