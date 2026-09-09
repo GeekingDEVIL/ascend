@@ -16,6 +16,7 @@ import { fetchCycleTrainingData, assessExerciseRisk, getCycleAdjustedWeight, typ
 import { findSubstitutions, type Substitution } from "./substitutionEngine";
 import { useEquipment } from "./useEquipment";
 import { autoCompleteHabits } from "./habitAutoComplete";
+import { enqueue, setupOnlineListener, flushQueue } from "./offlineQueue";
 
 /* ─── TYPES ─── */
 export type WorkoutExercise = {
@@ -449,6 +450,12 @@ export function useWorkoutSession() {
     // Release on unmount
     useEffect(() => { return () => releaseWakeLock(); }, []);
 
+    /* ── OFFLINE QUEUE (3.3) ── */
+    useEffect(() => {
+        flushQueue(supabase).catch(() => {});
+        return setupOnlineListener(supabase);
+    }, []);
+
     /* ── PAUSE TRACKING ── */
     const pauseStartRef = useRef<number | null>(null);
     const pausedElapsedRef = useRef(0);
@@ -704,8 +711,19 @@ export function useWorkoutSession() {
 
         const isEdit = !!set.logId;
         let logId = set.logId;
-        if (logId) { await supabase.from("exercise_set_logs").update(payload).eq("id", logId); }
-        else { const { data } = await supabase.from("exercise_set_logs").insert(payload).select().single(); logId = data?.id ?? null; }
+        try {
+            if (logId) {
+                const { error } = await supabase.from("exercise_set_logs").update(payload).eq("id", logId);
+                if (error) throw error;
+            } else {
+                const { data, error } = await supabase.from("exercise_set_logs").insert(payload).select().single();
+                if (error) throw error;
+                logId = data?.id ?? null;
+            }
+        } catch {
+            if (!logId) enqueue({ table: "exercise_set_logs", operation: "insert", data: payload });
+            else enqueue({ table: "exercise_set_logs", operation: "update", data: payload, match: { id: logId } });
+        }
         setLogs((p) => ({ ...p, [ex.id]: p[ex.id].map((s) => (s.index === idx ? { ...s, logId } : s)) }));
 
         if (!isEdit) {
@@ -971,6 +989,7 @@ export function useWorkoutSession() {
 
         localStorage.removeItem("ascend_active_session");
         clearDraft();
+        releaseWakeLock();
         setTodaySessions(prev => [...prev, { id: sessionId!, duration: dur, sets: totalSets, volume: totalVolume, xp: xp.total }]);
         setSummary({ duration: dur, sets: totalSets, volume: totalVolume, xpBreakdown: xp, level: lvlAfter, rankName: getRank(lvlAfter).name });
         setStatus("completed");

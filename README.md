@@ -77,7 +77,8 @@ app/
     ├── useTheme.ts            # useSyncExternalStore hook
     ├── modules.ts             # Module registry (feature flags)
     ├── useModules.ts
-    ├── useWorkoutSession.ts   # All workout state, effects & actions (~700 lines)
+    ├── useWorkoutSession.ts   # All workout state, effects & actions (~800 lines)
+    ├── offlineQueue.ts        # Offline write queue — enqueue/flush/online listener
     ├── navPills.ts            # Nav structure (swipe sections per tab)
     ├── planLibrary.ts         # 50+ workout templates (PPL, U/L, etc.)
     ├── xpEngine.ts            # XP + leveling
@@ -169,9 +170,11 @@ SetEntry: { index, weight, reps, duration, distance, note, completed, logId, is_
 ### Session State
 - All state lives in `useWorkoutSession()` hook — page component just destructures and renders
 - **DB is source of truth** — on reload, active session + completed sets restored from Supabase
-- **Unsaved input is lost on reload** (weight/reps typed but not confirmed)
-- `localStorage` only stores a boolean `ascend_active_session` flag for the ActiveSessionBar
-- **No PWA/service worker** — fully online-dependent
+- **Draft persistence**: unsaved weight/reps inputs are saved to localStorage keyed by sessionId, restored on page reload or screen wake
+- `localStorage` stores `ascend_active_session` flag + `ascend_session_draft_{id}` per-session drafts + `ascend_offline_queue` for failed writes
+- **Wake Lock API**: screen stays on during active workout session, re-acquired on tab visibility change
+- **Offline queue**: failed DB writes (set completions) are queued in localStorage and flushed when connectivity returns
+- **PWA**: installable via manifest.json, service worker caches shell + static assets, network-first for navigation
 - Pause state (pausedElapsed) is NOT persisted
 
 ### Logging UI
