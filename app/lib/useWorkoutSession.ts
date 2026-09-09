@@ -193,13 +193,15 @@ export function useWorkoutSession() {
             const sex = userSex;
 
             const weekday = new Date().getDay();
-            const { data: plan } = await supabase
+            const { data: plans } = await supabase
                 .from("recurring_plans")
                 .select("template_id, is_rest, workout_templates(name)")
                 .eq("user_id", user.id)
                 .eq("weekday", weekday)
                 .eq("sex", sex)
-                .maybeSingle();
+                .order("created_at", { ascending: false })
+                .limit(1);
+            const plan = plans?.[0] ?? null;
 
             if (!plan) { setStatus("no_plan"); return; }
             if (plan.is_rest) { setStatus("rest_day"); return; }
@@ -232,7 +234,6 @@ export function useWorkoutSession() {
                 .select("id, order_index, target_sets, target_reps, target_weight, rest_seconds, exercise_id, superset_group, exercises(name, category, equipment, body_segment, is_unilateral)")
                 .eq("scheduled_day_id", day.id)
                 .order("order_index");
-
             const mapped: WorkoutExercise[] = (exRows ?? []).map((r: any) => {
                 const seg = r.exercises?.body_segment ?? "";
                 const equip = r.exercises?.equipment ?? "";
@@ -327,7 +328,7 @@ export function useWorkoutSession() {
                     }
                     logMap[ex.id] = arr;
                 });
-                setLogs(logMap);
+                setLogs(restoreDrafts(logMap, existingSession.id));
                 const restoredWarmups = new Set<string>();
                 for (const ex of mapped) {
                     if (logMap[ex.id]?.some((s) => s.is_warmup)) restoredWarmups.add(ex.id);
@@ -415,6 +416,39 @@ export function useWorkoutSession() {
         return () => { cancelled = true; };
     }, [user, status, userSex]);
 
+    /* ── WAKE LOCK (3.2) ── */
+    const wakeLockRef = useRef<WakeLockSentinel | null>(null);
+    const [wakeLockTipShown, setWakeLockTipShown] = useState(false);
+
+    async function requestWakeLock() {
+        try {
+            if ("wakeLock" in navigator) {
+                wakeLockRef.current = await navigator.wakeLock.request("screen");
+                wakeLockRef.current.addEventListener("release", () => { wakeLockRef.current = null; });
+            }
+        } catch {
+            if (!wakeLockTipShown) setWakeLockTipShown(true);
+        }
+    }
+
+    function releaseWakeLock() {
+        wakeLockRef.current?.release().catch(() => {});
+        wakeLockRef.current = null;
+    }
+
+    // Re-acquire wake lock when tab becomes visible again (browser releases on tab hide)
+    useEffect(() => {
+        if (status !== "active") return;
+        function handleVisibility() {
+            if (document.visibilityState === "visible" && !wakeLockRef.current) requestWakeLock();
+        }
+        document.addEventListener("visibilitychange", handleVisibility);
+        return () => document.removeEventListener("visibilitychange", handleVisibility);
+    }, [status]);
+
+    // Release on unmount
+    useEffect(() => { return () => releaseWakeLock(); }, []);
+
     /* ── PAUSE TRACKING ── */
     const pauseStartRef = useRef<number | null>(null);
     const pausedElapsedRef = useRef(0);
@@ -485,6 +519,7 @@ export function useWorkoutSession() {
         localStorage.setItem("ascend_active_session", "true");
         setStatus("active");
         setExpandedId(exercisesList[0]?.id ?? null);
+        requestWakeLock();
     }
 
     function addFreestyleExercise(ex: { id: string; name: string; category?: string; equipment?: string; body_segment?: string }) {
@@ -567,8 +602,47 @@ export function useWorkoutSession() {
         setStatus("active");
     }
 
+    /* ── DRAFT PERSISTENCE (3.1) ── */
+    const draftKey = sessionId ? `ascend_session_draft_${sessionId}` : null;
+
+    function saveDraft(exId: string, idx: number, field: string, val: string) {
+        if (!draftKey) return;
+        try {
+            const raw = localStorage.getItem(draftKey);
+            const draft = raw ? JSON.parse(raw) : {};
+            if (!draft[exId]) draft[exId] = {};
+            if (!draft[exId][idx]) draft[exId][idx] = {};
+            draft[exId][idx][field] = val;
+            localStorage.setItem(draftKey, JSON.stringify(draft));
+        } catch { /* storage full or unavailable */ }
+    }
+
+    function clearDraft() {
+        if (!draftKey) return;
+        try { localStorage.removeItem(draftKey); } catch {}
+    }
+
+    function restoreDrafts(logMap: Record<string, SetEntry[]>, sid: string): Record<string, SetEntry[]> {
+        try {
+            const raw = localStorage.getItem(`ascend_session_draft_${sid}`);
+            if (!raw) return logMap;
+            const draft = JSON.parse(raw);
+            const merged = { ...logMap };
+            for (const [exId, sets] of Object.entries(merged)) {
+                if (!draft[exId]) continue;
+                merged[exId] = sets.map((s) => {
+                    const d = draft[exId][s.index];
+                    if (!d || s.completed) return s;
+                    return { ...s, weight: d.weight ?? s.weight, reps: d.reps ?? s.reps, duration: d.duration ?? s.duration, distance: d.distance ?? s.distance };
+                });
+            }
+            return merged;
+        } catch { return logMap; }
+    }
+
     function updateSet(exId: string, idx: number, field: keyof SetEntry, val: string) {
         setLogs((p) => ({ ...p, [exId]: p[exId].map((s) => (s.index === idx ? { ...s, [field]: val } : s)) }));
+        saveDraft(exId, idx, field, val);
     }
 
     async function checkPR(exerciseId: string, name: string, w: number, r: number) {
@@ -616,6 +690,13 @@ export function useWorkoutSession() {
         else { payload.weight = ex.isBodyweight ? 0 : (finalWeight ? Number(finalWeight) : null); payload.reps = finalReps ? Number(finalReps) : null; }
 
         setLogs((p) => ({ ...p, [ex.id]: p[ex.id].map((s) => (s.index === idx ? { ...s, weight: finalWeight, reps: finalReps, completed: true } : s)) }));
+        // Clear this set's draft entry since it's now saved to DB
+        if (draftKey) {
+            try {
+                const raw = localStorage.getItem(draftKey);
+                if (raw) { const d = JSON.parse(raw); if (d[ex.id]) { delete d[ex.id][idx]; localStorage.setItem(draftKey, JSON.stringify(d)); } }
+            } catch {}
+        }
         if (navigator.vibrate) navigator.vibrate(50);
         const isDrop = set.set_type === "drop";
         const isRestPause = set.set_type === "rest_pause";
@@ -889,6 +970,7 @@ export function useWorkoutSession() {
         }
 
         localStorage.removeItem("ascend_active_session");
+        clearDraft();
         setTodaySessions(prev => [...prev, { id: sessionId!, duration: dur, sets: totalSets, volume: totalVolume, xp: xp.total }]);
         setSummary({ duration: dur, sets: totalSets, volume: totalVolume, xpBreakdown: xp, level: lvlAfter, rankName: getRank(lvlAfter).name });
         setStatus("completed");
