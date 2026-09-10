@@ -393,7 +393,31 @@ export function useWorkoutSession() {
                 setStatus("completed");
                 try { const c = JSON.parse(localStorage.getItem("ascend_workout_cache") || "null"); if (c) { c.completed = true; localStorage.setItem("ascend_workout_cache", JSON.stringify(c)); } } catch {}
             } else {
+                // Double-check: if cache says completed but query returned null/empty, re-query once
+                const cacheCheck = (() => { try { const c = JSON.parse(localStorage.getItem("ascend_workout_cache") || "null"); return c?.completed === true; } catch { return false; } })();
+                if (cacheCheck && !completedSessions) {
+                    const { data: retry } = await supabase.from("workout_sessions").select("id, total_sets, total_volume, duration_seconds, xp_earned").eq("user_id", user.id).eq("date", today).eq("sex", sex).eq("status", "completed").order("created_at", { ascending: true });
+                    if (retry && retry.length > 0) {
+                        localStorage.removeItem("ascend_active_session");
+                        const lastDone = retry[retry.length - 1];
+                        setTodaySessions(retry.map((s: any) => ({ id: s.id, sets: s.total_sets ?? 0, volume: Number(s.total_volume) || 0, duration: s.duration_seconds ?? 0, xp: s.xp_earned ?? 0 })));
+                        const { data: doneLogRows3 } = await supabase.from("exercise_set_logs").select("*").eq("workout_session_id", lastDone.id);
+                        const doneLogMap3: Record<string, SetEntry[]> = {};
+                        mapped.forEach((ex) => {
+                            const rows = (doneLogRows3 ?? []).filter((l: any) => l.scheduled_exercise_id === ex.id).sort((a: any, b: any) => a.set_index - b.set_index);
+                            if (rows.length > 0) doneLogMap3[ex.id] = rows.map((r: any, i: number) => ({ index: i, weight: r.weight != null ? String(r.weight) : "", reps: r.reps != null ? String(r.reps) : "", duration: r.duration_seconds != null ? String(r.duration_seconds) : "", distance: r.distance != null ? String(r.distance) : "", note: "", completed: true, logId: r.id, is_warmup: r.is_warmup ?? false, rpe: r.rpe ?? undefined, set_type: r.set_type ?? (r.is_warmup ? "warmup" : "working") }));
+                        });
+                        setLogs(doneLogMap3);
+                        const { data: xpRows3 } = await supabase.from("workout_sessions").select("xp_earned").eq("user_id", user.id).eq("status", "completed").eq("sex", sex);
+                        const totalXp3 = (xpRows3 ?? []).reduce((s: number, r: any) => s + (r.xp_earned || 0), 0);
+                        const lvl3 = computeLevel(totalXp3).level;
+                        setSummary({ sets: lastDone.total_sets ?? 0, volume: Number(lastDone.total_volume) || 0, duration: lastDone.duration_seconds ?? 0, xpBreakdown: { base: 0, setCompletion: 0, completionBonus: 0, prBonus: 0, progressionBonus: 0, consistencyBonus: 0, total: lastDone.xp_earned ?? 0, details: [] }, level: lvl3, rankName: getRank(lvl3).name });
+                        setStatus("completed");
+                        return;
+                    }
+                }
                 localStorage.removeItem("ascend_active_session");
+                localStorage.removeItem("ascend_workout_cache");
                 const initLogs: Record<string, SetEntry[]> = {};
                 mapped.forEach((ex) => {
                     const hint = hints[ex.exercise_id];
