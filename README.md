@@ -59,6 +59,7 @@ app/
 │   ├── PlanBrowserModal.tsx   # Browse plan library
 │   ├── MeasurementModal.tsx
 │   ├── InsightsPanel.tsx
+│   ├── ExerciseDetailSheet.tsx # Bottom sheet: PR, avg, 1RM sparkline, muscles, form cues
 │   ├── EnergyReceipt.tsx      # Post-workout summary card
 │   └── ui/                    # Reusable primitives
 │       ├── glass-card.tsx     # Glass morphism card wrapper
@@ -101,12 +102,12 @@ app/
     └── updateUserStats.ts / updateExerciseLeaderboard.ts
 
 supabase/
-└── migrations/                # 000_baseline.sql through 023_habits_mega_upgrade.sql
+└── migrations/                # 000_baseline.sql through 026_session_rating.sql
 ```
 
 ## Database Schema
 
-26 migrations in `supabase/migrations/`. All tables have RLS (user_id = auth.uid()).
+27 migrations in `supabase/migrations/`. All tables have RLS (user_id = auth.uid()).
 
 ### Core Tables
 
@@ -217,6 +218,11 @@ SetEntry: { index, weight, reps, duration, distance, note, completed, logId, is_
 - **Set type system**: `set_type` column (working/warmup/drop/rest_pause) replaces boolean `is_warmup`
 - **Superset grouping**: exercises can be grouped; fuchsia "SS" badge + connector line between grouped exercises; rest timer only starts after all exercises in group complete current round
 - **Auto-promote ordering**: active exercises float to top, completed/skipped sink to bottom (view-only reorder via useMemo, preserves DB order and superset adjacency)
+- **Exercise detail sheet**: tap exercise name (dotted underline hint) → bottom sheet with PR, average weight, session count, 1RM trend sparkline (Epley formula, 8-week window), target muscles as chips, form cues from exercise DB
+- **Session rating**: 5 emoji chips (😵😐😊💪🔥) on energy receipt; stored in `workout_sessions.rating` column; selected chip highlights with accent, others dim
+- **Session comparison deltas**: inline "+Xkg" green / "-Yrep" red badges on completed working sets, comparing to previous session's matching set
+- **Muscle hit map**: compact body SVG on energy receipt showing which muscle groups were targeted, with accent-highlighted regions and chip labels
+- **Exercise rotation badge**: "NEW" badge (green) on exercises with no prior session data, indicating fresh/untrained exercises
 
 ## Theme System
 

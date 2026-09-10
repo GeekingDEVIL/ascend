@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { Plus, Trash2, GripVertical, Pencil, Database, Settings2, Play, Moon, Flame, PersonStanding, ChevronDown, ChevronUp, X, Dumbbell, BarChart3, BookOpen } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { DndContext, closestCenter, PointerSensor, MouseSensor, TouchSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -446,8 +446,12 @@ function DayEditorModal({
 export default function SchedulePage() {
     const { user } = useAuth();
     const router = useRouter();
-    const searchParams = useSearchParams();
-    const [activeTab, setActiveTab] = useState<"week" | "today">("today");
+    const pathname = usePathname();
+    const pathTab = pathname.split("/").pop() as "week" | "today" | undefined;
+    const validTabs: ("week" | "today")[] = ["today", "week"];
+    const resolvedTab = pathTab && validTabs.includes(pathTab) ? pathTab : "today";
+    const [activeTab, setActiveTab] = useState<"week" | "today">(resolvedTab);
+    useEffect(() => { setActiveTab(resolvedTab); }, [resolvedTab]);
     const [weekOffset, setWeekOffset] = useState(0);
     const [selectedDate, setSelectedDate] = useState(toDateString(new Date()));
     const [showDatabase, setShowDatabase] = useState(false);
@@ -465,7 +469,7 @@ export default function SchedulePage() {
     const [adaptiveData, setAdaptiveData] = useState<Record<string, AdaptiveVolumeData>>({});
     const [adaptiveLoaded, setAdaptiveLoaded] = useState(false);
     const [importingTemplate, setImportingTemplate] = useState<string | null>(null);
-    const [planBrowserOpen, setPlanBrowserOpen] = useState(searchParams.get("browse") === "1");
+    const [planBrowserOpen, setPlanBrowserOpen] = useState(() => typeof window !== "undefined" && new URLSearchParams(window.location.search).get("browse") === "1");
     const [importingPlan, setImportingPlan] = useState(false);
     const [importConfirm, setImportConfirm] = useState<{ plan: WorkoutPlan; label: string } | null>(null);
     const [volumeExpanded, setVolumeExpanded] = useState(false);
@@ -748,13 +752,13 @@ export default function SchedulePage() {
                 {/* ─── Tabs ─── */}
                 <div className="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-[var(--fg-03)] border border-[var(--fg-06)]">
                     <button
-                        onClick={() => setActiveTab("today")}
+                        onClick={() => router.replace("/schedule/today")}
                         className={`py-2 rounded-lg text-xs font-bold tracking-wide transition ${activeTab === "today" ? "bg-[rgb(var(--accent-rgb)/0.15)] text-[rgb(var(--accent-light-rgb))] border border-[rgb(var(--accent-rgb)/0.3)]" : "text-[var(--fg-40)] hover:text-[var(--fg-60)] border border-transparent"}`}
                     >
                         TODAY
                     </button>
                     <button
-                        onClick={() => setActiveTab("week")}
+                        onClick={() => router.replace("/schedule/week")}
                         className={`py-2 rounded-lg text-xs font-bold tracking-wide transition ${activeTab === "week" ? "bg-[rgb(var(--accent-rgb)/0.15)] text-[rgb(var(--accent-light-rgb))] border border-[rgb(var(--accent-rgb)/0.3)]" : "text-[var(--fg-40)] hover:text-[var(--fg-60)] border border-transparent"}`}
                     >
                         MY WEEK

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { Calendar, Dumbbell, Weight, Trophy, ChevronDown, ChevronRight, Lock, Flame, Trash2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { tabContent } from "../../lib/motion";
@@ -197,7 +197,12 @@ export default function ProgressPage() {
     const { user } = useAuth();
     const router = useRouter();
     const { enabledKeys } = useModules();
-    const [tab, setTab] = useState<Tab>("intake");
+    const pathname = usePathname();
+    const pathTab = pathname.split("/").pop() as Tab | undefined;
+    const validTabs: Tab[] = ["intake", "history", "strength", "body"];
+    const resolvedTab = pathTab && validTabs.includes(pathTab) ? pathTab : "intake";
+    const [tab, setTab] = useState<Tab>(resolvedTab);
+    useEffect(() => { setTab(resolvedTab); }, [resolvedTab]);
     const [loading, setLoading] = useState(true);
     const { sex: userSex } = useSex();
     const isFemale = userSex === "female";
@@ -997,7 +1002,7 @@ export default function ProgressPage() {
                 <AnimatedTabs
                     tabs={TABS}
                     activeTab={tab}
-                    onTabChange={(k) => setTab(k as Tab)}
+                    onTabChange={(k) => router.replace(`/progress/${k}`)}
                 />
 
                 {loading ? (

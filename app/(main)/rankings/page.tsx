@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Award, Lock, Zap, Users, User, Trophy, Flame, Dumbbell, TrendingUp, ChevronLeft, ChevronRight, Search, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../lib/AuthProvider";
 import { useSex } from "../../lib/useSex";
@@ -71,8 +71,13 @@ function getSortUnit(sortBy: LeaderboardSort): string {
 export default function RankingsPage() {
   const { user } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
   const { enabledKeys } = useModules();
-  const [tab, setTab] = useState<"personal" | "leaderboard">("personal");
+  const pathTab = pathname.split("/").pop() as "personal" | "leaderboard" | undefined;
+  const validTabs: ("personal" | "leaderboard")[] = ["personal", "leaderboard"];
+  const resolvedTab = pathTab && validTabs.includes(pathTab) ? pathTab : "personal";
+  const [tab, setTab] = useState<"personal" | "leaderboard">(resolvedTab);
+  useEffect(() => { setTab(resolvedTab); }, [resolvedTab]);
   const [totalXp, setTotalXp] = useState(0);
   const [loading, setLoading] = useState(true);
   const [recentSessions, setRecentSessions] = useState<{ xp: number; date: string; title: string }[]>([]);
@@ -166,7 +171,7 @@ export default function RankingsPage() {
             { key: "leaderboard", label: "LEADERBOARD", icon: Users },
           ]}
           activeTab={tab}
-          onTabChange={(k) => setTab(k as "personal" | "leaderboard")}
+          onTabChange={(k) => router.replace(`/rankings/${k}`)}
           columns={2}
         />
 

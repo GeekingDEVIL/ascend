@@ -2,10 +2,12 @@
 
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Check, Plus, Play, X, RefreshCw, Pause, SkipForward, ChevronDown, Moon, Flame, Dumbbell, Timer, TrendingUp, Share2, Trash2, Ban, Calendar, Pencil, Undo2, Minus } from "lucide-react";
+import { Check, Plus, Play, X, RefreshCw, Pause, SkipForward, ChevronDown, ChevronRight, Moon, Flame, Dumbbell, Timer, TrendingUp, Share2, Trash2, Ban, Calendar, Pencil, Undo2, Minus, Info } from "lucide-react";
 import { useSwipeable } from "react-swipeable";
 import CubeLoader from "../../components/ui/cube-loader";
 import AddExerciseModal from "../../components/AddExerciseModal";
+import ExerciseDetailSheet from "../../components/ExerciseDetailSheet";
+import WorkoutCompleteCard from "../../components/WorkoutCompleteCard";
 import SwipeNav from "../../components/ui/swipe-nav";
 import { useModules } from "../../lib/useModules";
 import { getTrainSections } from "../../lib/navPills";
@@ -23,6 +25,59 @@ import {
 function CardPanel({ children, className = "" }: { children: React.ReactNode; className?: string }) {
     return (
         <div className={`rounded-2xl border border-[var(--fg-06)] bg-[var(--fg-03)] ${className}`}>{children}</div>
+    );
+}
+
+/* ─── MUSCLE HIT MAP ─── */
+const MUSCLE_REGIONS: Record<string, { label: string; paths: string[] }> = {
+    Chest:     { label: "Chest",     paths: ["M32,28 Q40,26 48,28 L48,36 Q40,38 32,36 Z"] },
+    Shoulders: { label: "Shoulders", paths: ["M24,24 Q28,22 32,26 L32,30 Q28,30 24,28 Z", "M48,26 Q52,22 56,24 L56,28 Q52,30 48,30 Z"] },
+    Biceps:    { label: "Biceps",    paths: ["M20,32 Q22,30 24,32 L24,42 Q22,44 20,42 Z", "M56,32 Q58,30 60,32 L60,42 Q58,44 56,42 Z"] },
+    Triceps:   { label: "Triceps",   paths: ["M16,32 Q18,30 20,32 L20,42 Q18,44 16,42 Z", "M60,32 Q62,30 64,32 L64,42 Q62,44 60,42 Z"] },
+    Forearms:  { label: "Forearms",  paths: ["M18,44 Q20,42 22,44 L21,54 Q19,55 17,54 Z", "M58,44 Q60,42 62,44 L63,54 Q61,55 59,54 Z"] },
+    Core:      { label: "Core",      paths: ["M34,38 Q40,37 46,38 L46,52 Q40,54 34,52 Z"] },
+    Back:      { label: "Back",      paths: ["M33,28 Q40,26 47,28 L47,38 Q40,40 33,38 Z"] },
+    Traps:     { label: "Traps",     paths: ["M30,20 Q40,18 50,20 L48,26 Q40,24 32,26 Z"] },
+    Legs:      { label: "Legs",      paths: ["M30,54 Q34,52 38,54 L37,72 Q33,74 29,72 Z", "M42,54 Q46,52 50,54 L51,72 Q47,74 43,72 Z"] },
+    Glutes:    { label: "Glutes",    paths: ["M32,50 Q40,48 48,50 L48,56 Q40,58 32,56 Z"] },
+};
+
+function MuscleHitMap({ hitSegments }: { hitSegments: Set<string> }) {
+    if (hitSegments.size === 0) return null;
+    const hitCount = hitSegments.size;
+    return (
+        <div className="glass-card p-3 mb-4">
+            <p className="text-[9px] font-mono tracking-widest text-[var(--fg-25)] mb-2 text-center">MUSCLES TARGETED</p>
+            <div className="flex items-center justify-center gap-4">
+                <svg viewBox="10 14 60 64" width="90" height="90" className="shrink-0">
+                    {Object.entries(MUSCLE_REGIONS).map(([seg, { paths }]) => {
+                        const hit = hitSegments.has(seg);
+                        return paths.map((d, i) => (
+                            <path
+                                key={`${seg}-${i}`}
+                                d={d}
+                                fill={hit ? "rgb(var(--accent-rgb) / 0.5)" : "rgb(var(--fg-rgb) / 0.06)"}
+                                stroke={hit ? "rgb(var(--accent-rgb) / 0.7)" : "rgb(var(--fg-rgb) / 0.1)"}
+                                strokeWidth="0.5"
+                                strokeLinejoin="round"
+                            />
+                        ));
+                    })}
+                </svg>
+                <div className="flex flex-wrap gap-1 max-w-[180px]">
+                    {Array.from(hitSegments).filter(s => s !== "Cardio" && s !== "Other").map(seg => (
+                        <span key={seg} className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-[rgb(var(--accent-rgb)/0.1)] border border-[rgb(var(--accent-rgb)/0.2)] text-[rgb(var(--accent-light-rgb))]">
+                            {seg}
+                        </span>
+                    ))}
+                    {hitCount > 0 && (
+                        <span className="text-[9px] font-mono px-1.5 py-0.5 text-[var(--fg-25)]">
+                            {hitCount} group{hitCount !== 1 ? "s" : ""}
+                        </span>
+                    )}
+                </div>
+            </div>
+        </div>
     );
 }
 
@@ -591,6 +646,7 @@ export default function WorkoutPage() {
     const [lastDelta, setLastDelta] = useState(0);
     const [rpePrompt, setRpePrompt] = useState<{ exId: string; setIdx: number } | null>(null);
     const rpeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const [detailExercise, setDetailExercise] = useState<WorkoutExercise | null>(null);
 
     const sortedExercises = useMemo(() => {
         if (w.status !== "active") return w.exercisesList;
@@ -654,11 +710,7 @@ export default function WorkoutPage() {
 
     // ── LOADING ──
     if (w.status === "loading") return (
-        <main className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] flex items-center justify-center relative">
-            <div className="relative z-10">
-                <CubeLoader message="Loading workout…" />
-            </div>
-        </main>
+        <main className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)]" />
     );
 
     // ── REST DAY ──
@@ -771,191 +823,57 @@ export default function WorkoutPage() {
 
     // ── COMPLETED ──
     if (w.status === "completed" && w.summary) {
-        const DAY_LABELS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
-        const todayDayIdx = (new Date().getDay() + 6) % 7;
-        const doneCount = w.weekDays.filter(Boolean).length;
-        const weekPct = Math.round((doneCount / 7) * 100);
-        const r = 28;
-        const circ = 2 * Math.PI * r;
-        const offset = circ - (weekPct / 100) * circ;
-
         return (
         <main className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] p-4 pb-24 relative">
             <div className="relative z-10 w-full max-w-xl mx-auto pt-2 space-y-3">
                 <SwipeNav sections={getTrainSections(enabledKeys)} />
 
-                {/* Session Complete Hero */}
-                <CardPanel className="p-5">
-                    <div className="text-center mb-5">
-                        <div className="w-12 h-12 mx-auto mb-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-                            <Check size={22} className="text-emerald-400" />
-                        </div>
-                        <p className="text-[9px] font-mono tracking-widest text-[var(--fg-25)] mb-1">COMPLETED TODAY</p>
-                        <p className="text-lg font-bold text-[var(--fg-90)]">{w.dayTitle}</p>
-                    </div>
-
-                    {w.cycleProfile && (
-                        <div className={`rounded-lg px-3 py-2 mb-3 border ${
-                            w.cycleProfile.banner.color === "rose" ? "border-rose-500/15 bg-rose-500/[0.04]" :
-                            w.cycleProfile.banner.color === "emerald" ? "border-emerald-500/15 bg-emerald-500/[0.04]" :
-                            w.cycleProfile.banner.color === "amber" ? "border-amber-500/15 bg-amber-500/[0.04]" :
-                            "border-violet-500/15 bg-violet-500/[0.04]"
-                        }`}>
-                            <p className={`text-[9px] font-mono text-center ${
-                                w.cycleProfile.banner.color === "rose" ? "text-rose-400/60" :
-                                w.cycleProfile.banner.color === "emerald" ? "text-emerald-400/60" :
-                                w.cycleProfile.banner.color === "amber" ? "text-amber-400/60" :
-                                "text-violet-400/60"
-                            }`}>
-                                Trained in {w.cycleProfile.phase} phase · Day {w.cycleProfile.cycleDay} · {w.cycleProfile.styleName}
-                            </p>
-                        </div>
-                    )}
-
-                    {/* Per-session cards when multiple sessions today */}
-                    {w.todaySessions.length > 1 ? (
-                        <div className="space-y-2 mb-4">
-                            {w.todaySessions.map((s, i) => (
-                                <div key={s.id} className="glass-card p-3">
-                                    <p className="text-[8px] font-mono tracking-widest text-[var(--fg-25)] mb-2">SESSION {i + 1}</p>
-                                    <div className="grid grid-cols-4 gap-2 text-center">
-                                        <div><p className="text-[8px] font-mono text-[var(--fg-25)]">TIME</p><p className="text-sm font-bold font-mono text-[var(--fg-80)]">{formatClock(s.duration)}</p></div>
-                                        <div><p className="text-[8px] font-mono text-[var(--fg-25)]">SETS</p><p className="text-sm font-bold font-mono text-[var(--fg-80)]">{s.sets}</p></div>
-                                        <div><p className="text-[8px] font-mono text-[var(--fg-25)]">VOL</p><p className="text-sm font-bold font-mono text-[var(--fg-80)]">{Math.round(kgToUnit(s.volume, w.weightUnit)).toLocaleString()}</p></div>
-                                        <div><p className="text-[8px] font-mono text-[rgb(var(--accent-rgb)/0.5)]">XP</p><p className="text-sm font-bold font-mono text-[rgb(var(--accent-rgb))]">+{s.xp}</p></div>
-                                    </div>
-                                </div>
-                            ))}
-                            <div className="rounded-xl border border-[rgb(var(--accent-rgb)/0.15)] bg-[rgb(var(--accent-rgb)/0.05)] p-3">
-                                <p className="text-[8px] font-mono tracking-widest text-[rgb(var(--accent-rgb)/0.5)] mb-2">TODAY&apos;S TOTAL</p>
-                                <div className="grid grid-cols-3 gap-2 text-center">
-                                    <div><p className="text-[8px] font-mono text-[var(--fg-25)]">SESSIONS</p><p className="text-sm font-bold font-mono text-[var(--fg-80)]">{w.todaySessions.length}</p></div>
-                                    <div><p className="text-[8px] font-mono text-[var(--fg-25)]">TOTAL SETS</p><p className="text-sm font-bold font-mono text-[var(--fg-80)]">{w.todaySessions.reduce((a, s) => a + s.sets, 0)}</p></div>
-                                    <div><p className="text-[8px] font-mono text-[rgb(var(--accent-rgb)/0.5)]">TOTAL XP</p><p className="text-sm font-bold font-mono text-[rgb(var(--accent-rgb))]">+{w.todaySessions.reduce((a, s) => a + s.xp, 0)}</p></div>
-                                </div>
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-2 gap-2 mb-4">
-                            <StatCell label="DURATION" value={formatClock(w.summary.duration)} />
-                            <StatCell label="SETS" value={String(w.summary.sets)} />
-                            <StatCell label="VOLUME" value={`${Math.round(kgToUnit(w.summary.volume, w.weightUnit)).toLocaleString()} ${w.weightUnit}`} />
-                            <StatCell label="XP EARNED" value={`+${w.summary.xpBreakdown.total}`} accent />
-                        </div>
-                    )}
-
-                    <p className="text-[10px] font-mono text-[var(--fg-20)] text-center mb-4">Nice work! You can start another session or come back tomorrow.</p>
-
-                    <div className="flex gap-2">
-                        <button onClick={() => router.push("/schedule")} className="flex-1 text-sm font-medium py-3 rounded-xl border border-[var(--fg-08)] text-[var(--fg-50)] hover:text-[var(--fg-80)] hover:bg-[var(--fg-05)] transition">
-                            <Calendar size={14} className="inline -mt-0.5 mr-1.5" />Schedule
-                        </button>
-                        <button onClick={() => router.push("/progress")} className="flex-1 text-sm font-semibold py-3 rounded-xl bg-[rgb(var(--accent-rgb))] text-black hover:brightness-110 transition">
-                            View Progress
-                        </button>
-                        <button onClick={w.handleShare} disabled={w.sharing} title="Share" className="shrink-0 w-11 flex items-center justify-center rounded-xl border border-[var(--fg-08)] text-[var(--fg-30)] hover:text-[var(--fg-60)] disabled:opacity-40 transition">
-                            {w.sharing ? <div className="w-4 h-4 border-2 border-[var(--fg-20)] border-t-[rgb(var(--accent-rgb))] rounded-full animate-spin" /> : <Share2 size={14} />}
-                        </button>
-                    </div>
-                    {w.todaySessions.length >= w.MAX_SESSIONS_PER_DAY ? (
-                        <p className="w-full mt-2 text-[10px] font-mono py-2.5 text-center text-[var(--fg-20)]">
-                            Daily session limit reached ({w.MAX_SESSIONS_PER_DAY}/{w.MAX_SESSIONS_PER_DAY})
-                        </p>
-                    ) : (
-                        <button
-                            onClick={w.startAnotherWorkout}
-                            className="w-full mt-2 text-[10px] font-mono py-2.5 rounded-xl border border-[var(--fg-06)] text-[var(--fg-30)] hover:text-[var(--fg-60)] hover:border-[var(--fg-15)] transition"
-                        >
-                            Start another workout ({w.todaySessions.length}/{w.MAX_SESSIONS_PER_DAY})
-                        </button>
-                    )}
-                </CardPanel>
+                <WorkoutCompleteCard
+                    dayTitle={w.dayTitle}
+                    summary={w.summary}
+                    exercisesList={w.exercisesList}
+                    logs={w.logs}
+                    todaySessions={w.todaySessions}
+                    weekDays={w.weekDays}
+                    prCount={w.prCount}
+                    weightUnit={w.weightUnit}
+                    sessionRating={w.sessionRating}
+                    cycleProfile={w.cycleProfile}
+                    sharing={w.sharing}
+                    maxSessions={w.MAX_SESSIONS_PER_DAY}
+                    sessionCount={w.sessionCount}
+                    nextSession={w.nextSession}
+                    onRate={w.rateSession}
+                    onShare={w.handleShare}
+                    onSchedule={() => router.push("/schedule")}
+                    onProgress={() => router.push("/progress")}
+                    onStartAnother={w.startAnotherWorkout}
+                />
 
                 {/* Recent Sessions */}
                 {w.statsLoaded && w.recentSessions.length > 0 && (
-                    <CardPanel className="p-4">
-                        <div className="flex items-center justify-between mb-3">
-                            <p className="text-[9px] font-mono tracking-widest text-[rgb(var(--accent-light-rgb)/0.4)]">RECENT SESSIONS</p>
-                            <button onClick={() => router.push("/progress")} className="text-[9px] font-mono text-[rgb(var(--accent-rgb)/0.5)] hover:text-[rgb(var(--accent-rgb))] transition">View All</button>
+                    <div style={{background:"var(--bg-card)",borderRadius:16,border:"1px solid rgb(var(--accent-rgb) / 0.08)",padding:"16px 20px"}}>
+                        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
+                            <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:7,letterSpacing:2,color:"var(--fg-35)"}}>RECENT SESSIONS</span>
+                            <a href="/progress/history" style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"rgb(var(--accent-rgb) / 0.5)",textDecoration:"none",letterSpacing:1}}>View All</a>
                         </div>
-                        <div className="space-y-0.5">
+                        <div>
                             {w.recentSessions.map((s) => {
                                 const d = new Date(s.date + "T12:00:00");
                                 const now = new Date();
                                 const diff = Math.floor((now.getTime() - d.getTime()) / 86400000);
                                 const label = diff === 0 ? "Today" : diff === 1 ? "Yesterday" : d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
                                 return (
-                                    <div key={s.id} className="flex items-center justify-between py-2 px-1">
-                                        <span className="text-sm text-[var(--fg-70)] truncate flex-1 min-w-0">{s.title}</span>
-                                        <span className="text-xs font-mono text-[var(--fg-25)] shrink-0 ml-2">{label}</span>
+                                    <div key={s.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid rgb(var(--accent-rgb) / 0.08)"}}>
+                                        <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:"var(--fg-90)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",flex:1,minWidth:0}}>{s.title}</span>
+                                        <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"var(--fg-35)",flexShrink:0,marginLeft:8}}>{label}</span>
                                     </div>
                                 );
                             })}
                         </div>
-                    </CardPanel>
+                    </div>
                 )}
 
-                {/* This Week Ring */}
-                {w.statsLoaded && (
-                    <CardPanel className="p-4">
-                        <p className="text-[9px] font-mono tracking-widest text-[rgb(var(--accent-light-rgb)/0.4)] mb-3">THIS WEEK</p>
-                        <div className="flex items-center gap-4 mb-3">
-                            <div className="relative w-16 h-16 shrink-0">
-                                <svg viewBox="0 0 64 64" className="w-full h-full -rotate-90">
-                                    <circle cx="32" cy="32" r={r} fill="none" stroke="var(--fg-04)" strokeWidth="4" />
-                                    <circle cx="32" cy="32" r={r} fill="none" stroke="rgb(var(--accent-rgb))" strokeWidth="4" strokeLinecap="round"
-                                        strokeDasharray={circ} strokeDashoffset={offset} className="transition-all duration-700" />
-                                </svg>
-                                <span className="absolute inset-0 flex items-center justify-center text-xs font-mono font-bold text-[var(--fg-80)]">{doneCount}/7</span>
-                            </div>
-                            <div>
-                                <p className="text-sm font-medium text-[var(--fg-70)]">{doneCount === 0 ? "No sessions yet" : `${doneCount} session${doneCount !== 1 ? "s" : ""} done`}</p>
-                                <p className="text-[10px] font-mono text-[var(--fg-25)] mt-0.5">{7 - doneCount} day{7 - doneCount !== 1 ? "s" : ""} remaining</p>
-                            </div>
-                        </div>
-                        <div className="flex justify-between gap-1">
-                            {DAY_LABELS.map((day, i) => {
-                                const isToday = i === todayDayIdx;
-                                const done = w.weekDays[i];
-                                return (
-                                    <div key={day} className={`flex-1 py-1.5 rounded-lg text-center text-[10px] font-mono font-semibold transition-colors ${
-                                        done ? "bg-[rgb(var(--accent-rgb))] text-black"
-                                            : isToday ? "border border-[rgb(var(--accent-rgb)/0.4)] text-[rgb(var(--accent-rgb))] border-dashed"
-                                            : "bg-[var(--fg-04)] text-[var(--fg-20)]"
-                                    }`}>{day}</div>
-                                );
-                            })}
-                        </div>
-                    </CardPanel>
-                )}
-
-                {/* Volume Trend */}
-                {w.statsLoaded && w.weeklyVolumes.some(v => v > 0) && (
-                    <CardPanel className="p-4">
-                        <p className="text-[9px] font-mono tracking-widest text-[rgb(var(--accent-light-rgb)/0.4)] mb-3">VOLUME TREND</p>
-                        <div className="flex items-end gap-1.5 h-20">
-                            {(() => {
-                                const maxVol = Math.max(...w.weeklyVolumes, 1);
-                                return w.weeklyVolumes.map((vol, i) => {
-                                    const h = Math.max((vol / maxVol) * 100, 4);
-                                    const isLatest = i === w.weeklyVolumes.length - 1;
-                                    return (
-                                        <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                                            <div className="w-full relative flex-1 flex items-end">
-                                                <div className={`w-full rounded-t-md transition-all ${isLatest ? "bg-[rgb(var(--accent-rgb))]" : "bg-[var(--fg-08)]"}`} style={{ height: `${h}%` }} />
-                                            </div>
-                                            <span className="text-[7px] font-mono text-[var(--fg-20)]">{isLatest ? "NOW" : `W${i + 1}`}</span>
-                                        </div>
-                                    );
-                                });
-                            })()}
-                        </div>
-                        <div className="flex justify-between mt-2">
-                            <span className="text-[9px] font-mono text-[var(--fg-20)]">6 weeks</span>
-                            <span className="text-[9px] font-mono text-[var(--fg-30)]">{w.weeklyVolumes[w.weeklyVolumes.length - 1] > 0 ? `${(w.weeklyVolumes[w.weeklyVolumes.length - 1] / 1000).toFixed(1)}k ${w.weightUnit}` : "—"}</span>
-                        </div>
-                    </CardPanel>
-                )}
             </div>
 
             {w.showFreestylePrompt && (
@@ -1123,6 +1041,29 @@ export default function WorkoutPage() {
                     </div>
                 )}
 
+                {/* ── BODY WEIGHT (compact, not_started only) ── */}
+                {w.status === "not_started" && (
+                    <div className="flex items-center gap-3 rounded-xl border border-[var(--fg-05)] bg-[var(--fg-02)] px-4 py-2.5">
+                        <p className="text-[9px] font-mono text-[var(--fg-25)] shrink-0">BODY WEIGHT</p>
+                        <input
+                            type="number" min="0" onWheel={(e) => (e.target as HTMLElement).blur()}
+                            inputMode="decimal"
+                            value={w.preWorkoutWeight}
+                            onChange={(e) => w.setPreWorkoutWeight(e.target.value)}
+                            placeholder="—"
+                            className="flex-1 min-w-0 h-8 rounded-lg bg-[var(--fg-04)] border border-[var(--fg-06)] text-center text-sm font-bold font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.3)] transition"
+                        />
+                        <span className="text-[10px] font-mono text-[var(--fg-20)] shrink-0">{w.weightUnit}</span>
+                        {w.preWorkoutWeight && !w.weightLogged && (
+                            <button
+                                onClick={w.logBodyWeight}
+                                className="shrink-0 text-[9px] font-mono px-2.5 py-1.5 rounded-lg border border-[rgb(var(--accent-rgb)/0.2)] text-[rgb(var(--accent-rgb))] hover:bg-[rgb(var(--accent-rgb)/0.1)] transition"
+                            >Log</button>
+                        )}
+                        {w.weightLogged && <Check size={14} className="shrink-0 text-[rgb(var(--accent-rgb))]" />}
+                    </div>
+                )}
+
                 {/* ── START WORKOUT HERO ── */}
                 {w.status === "not_started" && (
                     <div className="relative overflow-hidden rounded-2xl border border-[rgb(var(--accent-rgb)/0.15)] bg-gradient-to-br from-[rgb(var(--accent-rgb)/0.08)] to-transparent">
@@ -1152,29 +1093,6 @@ export default function WorkoutPage() {
                                 </button>
                             </div>
                         </div>
-                    </div>
-                )}
-
-                {/* ── BODY WEIGHT (compact, not_started only) ── */}
-                {w.status === "not_started" && (
-                    <div className="flex items-center gap-3 rounded-xl border border-[var(--fg-05)] bg-[var(--fg-02)] px-4 py-2.5">
-                        <p className="text-[9px] font-mono text-[var(--fg-25)] shrink-0">BODY WEIGHT</p>
-                        <input
-                            type="number" min="0" onWheel={(e) => (e.target as HTMLElement).blur()}
-                            inputMode="decimal"
-                            value={w.preWorkoutWeight}
-                            onChange={(e) => w.setPreWorkoutWeight(e.target.value)}
-                            placeholder="—"
-                            className="flex-1 min-w-0 h-8 rounded-lg bg-[var(--fg-04)] border border-[var(--fg-06)] text-center text-sm font-bold font-mono focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.3)] transition"
-                        />
-                        <span className="text-[10px] font-mono text-[var(--fg-20)] shrink-0">{w.weightUnit}</span>
-                        {w.preWorkoutWeight && !w.weightLogged && (
-                            <button
-                                onClick={w.logBodyWeight}
-                                className="shrink-0 text-[9px] font-mono px-2.5 py-1.5 rounded-lg border border-[rgb(var(--accent-rgb)/0.2)] text-[rgb(var(--accent-rgb))] hover:bg-[rgb(var(--accent-rgb)/0.1)] transition"
-                            >Log</button>
-                        )}
-                        {w.weightLogged && <Check size={14} className="shrink-0 text-[rgb(var(--accent-rgb))]" />}
                     </div>
                 )}
 
@@ -1278,30 +1196,50 @@ export default function WorkoutPage() {
                                 )}
                                 <div className={`rounded-xl border overflow-hidden transition-all ${isSkipped ? "border-[var(--fg-04)] bg-[var(--fg-01)] opacity-50" : allDone ? "border-[rgb(var(--accent-rgb)/0.2)] bg-[rgb(var(--accent-rgb)/0.03)]" : ex.superset_group != null ? "border-fuchsia-400/15 bg-[var(--fg-03)]" : "border-[var(--fg-06)] bg-[var(--fg-03)]"}`}>
                                     {/* Exercise header */}
-                                    <button onClick={() => isSkipped ? w.unskipExercise(ex.id) : w.setExpandedId(isOpen ? null : ex.id)} className="w-full flex items-center gap-3 px-4 py-3 text-left">
-                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-[10px] font-mono font-bold ${isSkipped ? "bg-[var(--fg-03)] text-[var(--fg-15)] border border-[var(--fg-04)]" : allDone ? "bg-[rgb(var(--accent-rgb)/0.15)] text-[rgb(var(--accent-rgb))] border border-[rgb(var(--accent-rgb)/0.2)]" : "bg-[var(--fg-04)] text-[var(--fg-20)] border border-[var(--fg-06)]"}`}>
-                                            {isSkipped ? <Ban size={12} /> : allDone ? <Check size={14} /> : String(i + 1).padStart(2, "0")}
+                                    <div className="w-full flex items-center gap-3 px-4 py-3 text-left">
+                                        <div onClick={() => isSkipped ? w.unskipExercise(ex.id) : w.setExpandedId(isOpen ? null : ex.id)} className="shrink-0 cursor-pointer">
+                                        {ex.image_url && !isSkipped ? (
+                                            <div className={`w-9 h-9 rounded-lg overflow-hidden border ${allDone ? "border-[rgb(var(--accent-rgb)/0.3)]" : "border-[var(--fg-06)]"}`}>
+                                                <img src={ex.image_url} alt="" className={`w-full h-full object-cover ${allDone ? "opacity-60" : ""}`} />
+                                            </div>
+                                        ) : (
+                                            <div className={`w-9 h-9 rounded-lg flex items-center justify-center text-[10px] font-mono font-bold ${isSkipped ? "bg-[var(--fg-03)] text-[var(--fg-15)] border border-[var(--fg-04)]" : allDone ? "bg-[rgb(var(--accent-rgb)/0.15)] text-[rgb(var(--accent-rgb))] border border-[rgb(var(--accent-rgb)/0.2)]" : "bg-[var(--fg-04)] text-[var(--fg-20)] border border-[var(--fg-06)]"}`}>
+                                                {isSkipped ? <Ban size={12} /> : allDone ? <Check size={14} /> : String(i + 1).padStart(2, "0")}
+                                            </div>
+                                        )}
                                         </div>
-                                        <div className="flex-1 min-w-0">
+                                        <div className="flex-1 min-w-0" onClick={() => isSkipped ? w.unskipExercise(ex.id) : w.setExpandedId(isOpen ? null : ex.id)} role="button" tabIndex={0}>
                                             <div className="flex items-center gap-1.5">
-                                                <p className={`text-[13px] font-medium truncate ${isSkipped ? "text-[var(--fg-30)] line-through" : "text-[var(--fg-80)]"}`}>{ex.name}</p>
+                                                <span
+                                                    role="link"
+                                                    className={`text-[13px] font-medium inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 -mx-1.5 -my-0.5 cursor-pointer transition ${isSkipped ? "text-[var(--fg-30)] line-through" : "text-[rgb(var(--accent-light-rgb))] active:bg-[rgb(var(--accent-rgb)/0.08)]"}`}
+                                                    onClick={(e) => { if (!isSkipped) { e.stopPropagation(); e.preventDefault(); setDetailExercise(ex); } }}
+                                                >
+                                                    {ex.name}
+                                                    {!isSkipped && <ChevronRight size={11} className="shrink-0 opacity-50" />}
+                                                </span>
                                                 {ex.superset_group != null && !isSkipped && (
                                                     <span className="shrink-0 text-[8px] font-mono px-1.5 py-0.5 rounded bg-fuchsia-400/10 text-fuchsia-300/60 border border-fuchsia-400/15">SS</span>
                                                 )}
                                                 {w.substitutions[ex.id] && !isSkipped && (
                                                     <span className="shrink-0 text-[8px] font-mono px-1.5 py-0.5 rounded bg-orange-400/10 text-orange-300/60 border border-orange-400/15">NO GEAR</span>
                                                 )}
+                                                {!last && !isSkipped && !allDone && (
+                                                    <span className="shrink-0 text-[8px] font-mono px-1.5 py-0.5 rounded bg-emerald-400/10 text-emerald-300/60 border border-emerald-400/15">NEW</span>
+                                                )}
                                             </div>
                                             <p className="text-[9px] font-mono text-[var(--fg-25)]">
                                                 {isSkipped ? "Skipped" : `${done}/${workingSetsOnly.length} sets${warmupSetsOnly.length > 0 ? ` + ${warmupDone}/${warmupSetsOnly.length} warm-up` : ""}${last ? ` · Last: ${last.weight != null ? kgToUnit(last.weight, w.weightUnit) : "—"}${ex.isCardio ? "" : ex.isBodyweight ? " BW" : w.weightUnit} × ${last.reps ?? "—"}` : ""}`}
                                             </p>
                                         </div>
+                                        <div onClick={() => isSkipped ? w.unskipExercise(ex.id) : w.setExpandedId(isOpen ? null : ex.id)} className="shrink-0 cursor-pointer p-1">
                                         {isSkipped ? (
-                                            <span className="text-[9px] font-mono text-[var(--fg-20)] shrink-0">tap to undo</span>
+                                            <span className="text-[9px] font-mono text-[var(--fg-20)]">tap to undo</span>
                                         ) : (
-                                            <ChevronDown size={14} className={`text-[var(--fg-15)] shrink-0 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+                                            <ChevronDown size={14} className={`text-[var(--fg-15)] transition-transform ${isOpen ? "rotate-180" : ""}`} />
                                         )}
-                                    </button>
+                                        </div>
+                                    </div>
 
                                     {/* Expanded content */}
                                     {isOpen && !isSkipped && (
@@ -1528,7 +1466,7 @@ export default function WorkoutPage() {
                                                                 {s.completed && !isWarmup ? (
                                                                     <button
                                                                         onClick={() => !isDeleting && w.editSet(ex.id, s.index)}
-                                                                        className="w-full flex items-center gap-1.5 sm:gap-2 group rounded-lg py-1.5 px-1 relative overflow-hidden hover:brightness-110 active:scale-[0.99] transition"
+                                                                        className="w-full flex items-center gap-1.5 sm:gap-2 group rounded-lg py-1.5 px-1 relative overflow-visible hover:brightness-110 active:scale-[0.99] transition"
                                                                     >
                                                                         <div className="absolute left-0 top-1 bottom-1 w-[2px] rounded-full" style={{ background: "rgb(var(--accent-rgb) / 0.5)" }} />
                                                                         {/* Set number in accent circle */}
@@ -1549,13 +1487,32 @@ export default function WorkoutPage() {
                                                                             <span className="text-[var(--fg-80)]">{s.reps}</span>
                                                                             {ex.isBodyweight && <span className="text-[10px] font-mono text-[var(--fg-30)] ml-1">reps</span>}
                                                                         </div>
-                                                                        {/* Volume + pencil */}
+                                                                        {/* Volume + pencil + delta */}
                                                                         <div className="flex flex-col items-center shrink-0 w-9 sm:w-11">
                                                                             <Pencil size={12} className="text-[var(--fg-15)] group-hover:text-[rgb(var(--accent-light-rgb))] transition" />
                                                                             {setVol > 0 && (
                                                                                 <span className="text-[7px] font-mono text-[var(--fg-15)] mt-0.5">{Math.round(setVol)}</span>
                                                                             )}
                                                                         </div>
+                                                                        {/* Delta vs last session */}
+                                                                        {(() => {
+                                                                            if (!prevSet || !s.completed || isWarmup || isDrop || isRestPause) return null;
+                                                                            const curW = Number(s.weight) || 0;
+                                                                            const curR = Number(s.reps) || 0;
+                                                                            const pW = prevSet.weight ?? 0;
+                                                                            const pR = prevSet.reps ?? 0;
+                                                                            if (!pW && !pR) return null;
+                                                                            const wDiff = curW - kgToUnit(pW, w.weightUnit);
+                                                                            const rDiff = curR - pR;
+                                                                            if (wDiff === 0 && rDiff === 0) return null;
+                                                                            const isUp = wDiff > 0 || (wDiff === 0 && rDiff > 0);
+                                                                            const label = wDiff !== 0 ? `${wDiff > 0 ? "+" : ""}${wDiff}${w.weightUnit}` : `${rDiff > 0 ? "+" : ""}${rDiff}rep`;
+                                                                            return (
+                                                                                <span className={`absolute -top-1 -right-1 text-[7px] font-mono font-bold px-1 py-px rounded ${isUp ? "bg-emerald-500/15 text-emerald-400" : "bg-red-500/15 text-red-400"}`}>
+                                                                                    {label}
+                                                                                </span>
+                                                                            );
+                                                                        })()}
                                                                     </button>
                                                                 ) : s.completed && isWarmup ? (
                                                                     /* ── COMPLETED WARMUP ── */
@@ -1641,7 +1598,7 @@ export default function WorkoutPage() {
                                                                     {/* Repeat last completed set (for sets 2+) */}
                                                                     {lastCompleted && workingIdx > 0 && !userTyped && (
                                                                         <button
-                                                                            onClick={() => completeWithRpe(ex, s.index, { weight: lastCompleted.weight, reps: lastCompleted.reps }, true)}
+                                                                            onClick={() => completeWithRpe(ex, s.index, { weight: lastCompleted.weight, reps: lastCompleted.reps })}
                                                                             className="w-full flex items-center justify-between gap-2 py-2 px-3 rounded-lg border border-[var(--fg-08)] bg-[var(--fg-03)] text-[var(--fg-50)] hover:text-[var(--fg-80)] hover:bg-[var(--fg-06)] active:scale-[0.98] transition"
                                                                         >
                                                                             <span className="text-[11px] font-mono font-medium flex items-center gap-1.5">
@@ -1860,6 +1817,18 @@ export default function WorkoutPage() {
 
             {w.swapTargetId && <AddExerciseModal onAdd={(e) => { const old = w.exercisesList.find((x) => x.id === w.swapTargetId); if (old) w.handleSwap(old, e); }} onClose={() => w.setSwapTargetId(null)} defaultSegment={w.exercisesList.find((x) => x.id === w.swapTargetId)?.body_segment} />}
             {w.showAddModal && <AddExerciseModal onAdd={w.handleAddExercise} onClose={() => w.setShowAddModal(false)} existingIds={new Set(w.exercisesList.map((e) => e.exercise_id))} />}
+            {detailExercise && (
+                <ExerciseDetailSheet
+                    exerciseId={detailExercise.exercise_id}
+                    exerciseName={detailExercise.name}
+                    equipment={detailExercise.equipment}
+                    bodySegment={detailExercise.body_segment}
+                    weightUnit={w.weightUnit}
+                    userSex={w.userSex}
+                    imageUrl={detailExercise.image_url}
+                    onClose={() => setDetailExercise(null)}
+                />
+            )}
         </main>
     );
 }

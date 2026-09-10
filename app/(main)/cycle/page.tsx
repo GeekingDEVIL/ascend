@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronLeft, ChevronRight, Droplets, Brain, Moon, Zap, Calendar,
@@ -100,9 +100,14 @@ function CycleRing({ cycleDay, cycleLength, phase }: { cycleDay: number; cycleLe
 export default function CyclePage() {
   const { user } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
   const { enabledKeys } = useModules();
   const { sex: userSex } = useSex();
-  const [tab, setTab] = useState<Tab>("today");
+  const pathTab = pathname.split("/").pop() as Tab | undefined;
+  const validCycleTabs: Tab[] = ["today", "log", "insights", "learn"];
+  const resolvedTab = pathTab && validCycleTabs.includes(pathTab) ? pathTab : "today";
+  const [tab, setTab] = useState<Tab>(resolvedTab);
+  useEffect(() => { setTab(resolvedTab); }, [resolvedTab]);
   const [loading, setLoading] = useState(true);
   const [logs, setLogs] = useState<CycleLog[]>([]);
   const [symptoms, setSymptoms] = useState<CycleSymptomLog[]>([]);
@@ -190,7 +195,7 @@ export default function CyclePage() {
     await logPeriod(user.id, periodDate, flowLevel);
     setLogSaving(false);
     await loadData();
-    setTab("today");
+    router.replace("/cycle/today");
   }
 
   async function handleEndPeriod(log: CycleLog) {
@@ -349,7 +354,7 @@ export default function CyclePage() {
             { key: "learn", label: "LEARN", icon: BookOpen },
           ]}
           activeTab={tab}
-          onTabChange={(k) => setTab(k as Tab)}
+          onTabChange={(k) => router.replace(`/cycle/${k}`)}
           accentRgb="236 72 153"
         />
 
