@@ -142,6 +142,7 @@ export function useWorkoutSession() {
         } catch { cachedInit.current = { exercises: [], title: "", status: "loading" }; }
     }
     const [status, setStatus] = useState<SessionStatus>(cachedInit.current.status);
+    const [hasLoaded, setHasLoaded] = useState(false);
     const [dayTitle, setDayTitle] = useState(cachedInit.current.title);
     const [scheduledDayId, setScheduledDayId] = useState<string | null>(null);
     const [exercisesList, setExercisesList] = useState<WorkoutExercise[]>(cachedInit.current.exercises);
@@ -403,6 +404,7 @@ export function useWorkoutSession() {
             }
         } finally {
             loadInFlight.current = false;
+            setHasLoaded(true);
         }
     }, [user, today, userSex, weightUnit]);
 
@@ -1280,7 +1282,7 @@ export function useWorkoutSession() {
         startingFreestyle, savingFreestylePlan, deletingPlan,
 
         // Derived
-        totalPlanned, completedCount, sessionVolume, today, weightUnit, userSex, equipmentAccess,
+        hasLoaded, totalPlanned, completedCount, sessionVolume, today, weightUnit, userSex, equipmentAccess,
 
         // Constants
         MAX_SESSIONS_PER_DAY,

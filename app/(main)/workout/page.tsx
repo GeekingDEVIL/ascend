@@ -830,7 +830,7 @@ export default function WorkoutPage() {
     ═══════════════════════════════════════════════════════════════ */
 
     // ── LOADING ──
-    if (w.status === "loading") return (
+    if (w.status === "loading" || !w.hasLoaded) return (
         <main className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] flex flex-col items-center justify-center gap-6">
             <LoadingRuneCircle />
             <div className="flex flex-col items-center gap-1.5 animate-pulse" style={{ animationDuration: "2s" }}>
