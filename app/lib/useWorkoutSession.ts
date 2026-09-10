@@ -203,7 +203,7 @@ export function useWorkoutSession() {
                 if (cached && cached.date === today && cached.sex === sex && cached.exercises?.length) {
                     setExercisesList(cached.exercises);
                     setDayTitle(cached.title || "Workout");
-                    setStatus("not_started");
+                    if (!cached.completed) setStatus("not_started");
                 } else {
                     setStatus("loading");
                 }
@@ -308,6 +308,7 @@ export function useWorkoutSession() {
                 const lvl = computeLevel(totalXp).level;
                 setSummary({ sets: lastDone.total_sets ?? 0, volume: Number(lastDone.total_volume) || 0, duration: lastDone.duration_seconds ?? 0, xpBreakdown: { base: 0, setCompletion: 0, completionBonus: 0, prBonus: 0, progressionBonus: 0, consistencyBonus: 0, total: lastDone.xp_earned ?? 0, details: [] }, level: lvl, rankName: getRank(lvl).name });
                 setStatus("completed");
+                try { const c = JSON.parse(localStorage.getItem("ascend_workout_cache") || "null"); if (c) { c.completed = true; localStorage.setItem("ascend_workout_cache", JSON.stringify(c)); } } catch {}
                 return;
             }
 
@@ -384,6 +385,7 @@ export function useWorkoutSession() {
                 const lvl2 = computeLevel(totalXp2).level;
                 setSummary({ sets: lastDone.total_sets ?? 0, volume: Number(lastDone.total_volume) || 0, duration: lastDone.duration_seconds ?? 0, xpBreakdown: { base: 0, setCompletion: 0, completionBonus: 0, prBonus: 0, progressionBonus: 0, consistencyBonus: 0, total: lastDone.xp_earned ?? 0, details: [] }, level: lvl2, rankName: getRank(lvl2).name });
                 setStatus("completed");
+                try { const c = JSON.parse(localStorage.getItem("ascend_workout_cache") || "null"); if (c) { c.completed = true; localStorage.setItem("ascend_workout_cache", JSON.stringify(c)); } } catch {}
             } else {
                 localStorage.removeItem("ascend_active_session");
                 const initLogs: Record<string, SetEntry[]> = {};
@@ -1073,6 +1075,7 @@ export function useWorkoutSession() {
         setTodaySessions(prev => [...prev, { id: sessionId!, duration: dur, sets: totalSets, volume: totalVolume, xp: xp.total }]);
         setSummary({ duration: dur, sets: totalSets, volume: totalVolume, xpBreakdown: xp, level: lvlAfter, rankName: getRank(lvlAfter).name });
         setStatus("completed");
+        try { const c = JSON.parse(localStorage.getItem("ascend_workout_cache") || "null"); if (c) { c.completed = true; localStorage.setItem("ascend_workout_cache", JSON.stringify(c)); } } catch {}
         setRestRemaining(null);
     }
 
