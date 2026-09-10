@@ -45,7 +45,7 @@ const SCROLL_CSS = `
 .scroll-container {
     width: 100%; position: relative;
 }
-.scroll-border { position: absolute; inset: -2px; pointer-events: none; z-index: 2; }
+.scroll-border { position: absolute; top: -2px; left: -2px; width: calc(100% + 4px); height: calc(100% + 4px); pointer-events: none; z-index: 2; }
 .scroll-border rect { fill: none; stroke: var(--fg-08); stroke-width: 1.5; rx: 16; stroke-dasharray: 2400; stroke-dashoffset: 2400; animation: drawBorder 1.8s ease-out 0.2s forwards; }
 .scroll-border .inner { stroke: rgb(var(--accent-rgb) / 0.4); stroke-width: 0.5; stroke-dasharray: 2400; stroke-dashoffset: 2400; animation: drawBorder 2.2s ease-out 0.5s forwards; opacity: 0.5; }
 .scroll-border .knot { fill: none; stroke: var(--fg-12); stroke-width: 0.8; stroke-dasharray: 200; stroke-dashoffset: 200; animation: drawBorder 1s ease-out 1.4s forwards; opacity: 0.35; }
@@ -167,7 +167,7 @@ const SCROLL_CSS = `
 .weekly-title { font-family: 'JetBrains Mono', monospace; font-size: 8px; letter-spacing: 2px; color: var(--fg-35); margin-bottom: 3px; }
 .weekly-detail { font-size: 11px; color: var(--fg-50); }
 
-.next-session { margin-top: 16px; padding: 10px 14px; border-radius: 8px; border: 1px dashed var(--fg-08); display: flex; align-items: center; gap: 10px; }
+.next-session { margin-top: 10px; padding: 10px 14px; border-radius: 8px; border: 1px dashed var(--fg-08); display: flex; align-items: center; gap: 10px; }
 .next-icon { color: var(--fg-35); font-size: 14px; }
 .next-info { flex: 1; }
 .next-label { font-family: 'JetBrains Mono', monospace; font-size: 7px; letter-spacing: 2px; color: var(--fg-35); margin-bottom: 2px; }
@@ -185,25 +185,25 @@ const SCROLL_CSS = `
 .rating-text { font-family: 'JetBrains Mono', monospace; font-size: 7px; color: var(--fg-35); }
 .rating-btn.selected .rating-text { color: rgb(var(--accent-rgb)); }
 
-.seal-section { margin-top: 24px; text-align: center; position: relative; }
+.seal-group { text-align: center; padding: 8px 0; }
 .seal-container { display: inline-block; position: relative; opacity: 0; animation: sealStamp 0.5s cubic-bezier(0.34,1.56,0.64,1) 3.2s forwards; }
 @keyframes sealStamp { 0% { opacity: 0; transform: scale(2.5) rotate(-15deg); } 60% { opacity: 1; transform: scale(0.95) rotate(2deg); } 100% { opacity: 1; transform: scale(1) rotate(0deg); } }
-.seal-svg { width: 72px; height: 72px; filter: drop-shadow(0 0 12px rgba(201,148,62,0.3)); }
+.seal-svg { width: 64px; height: 64px; filter: drop-shadow(0 0 12px rgba(201,148,62,0.3)); }
 .seal-ring { fill: none; stroke: #c9943e; stroke-width: 2; }
 .seal-inner { fill: none; stroke: #c9943e; stroke-width: 1; opacity: 0.5; }
 .seal-text-cls { font-family: 'MedievalSharp', cursive; font-size: 7px; fill: #c9943e; }
 .seal-center { font-family: 'MedievalSharp', cursive; font-size: 14px; fill: #c9943e; }
 
-.signature { margin-top: 12px; font-family: 'JetBrains Mono', monospace; font-size: 8px; letter-spacing: 1.5px; color: var(--fg-35); text-align: center; opacity: 0; animation: revealIn 0.5s ease-out 3.5s forwards; }
-.signature .sig-name { color: var(--fg-50); }
-.signature .sig-tier { color: rgb(var(--accent-rgb) / 0.4); }
+.seal-group .signature { margin-top: 6px; font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 1.5px; color: var(--fg-50); text-align: center; }
+.seal-group .signature .sig-name { color: var(--fg-70); }
+.seal-group .signature .sig-tier { color: rgb(var(--accent-rgb) / 0.7); }
 
-.inscription { margin-top: 16px; font-family: 'MedievalSharp', cursive; font-size: 13px; color: var(--fg-35); text-align: center; font-style: italic; opacity: 0; animation: revealIn 0.8s ease-out 3.8s forwards; line-height: 1.5; }
+.seal-group .inscription { margin-top: 6px; font-family: 'MedievalSharp', cursive; font-size: 14px; color: var(--fg-50); text-align: center; font-style: italic; line-height: 1.4; padding: 0 8px; }
 
 .glow-pulse { position: absolute; inset: 0; border-radius: 16px; box-shadow: inset 0 0 40px rgb(var(--accent-rgb) / 0.15); opacity: 0; animation: glowSettle 1.5s ease-out 3.0s forwards; pointer-events: none; }
 @keyframes glowSettle { 0% { opacity: 0; } 50% { opacity: 1; } 100% { opacity: 0.3; } }
 
-.scroll-actions { margin-top: 20px; display: flex; gap: 8px; }
+.scroll-actions { margin-top: 14px; display: flex; gap: 8px; }
 .scroll-btn-outline { flex: 1; font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 1px; padding: 10px 0; border-radius: 10px; border: 1px solid var(--fg-08); background: transparent; color: var(--fg-50); cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 4px; }
 .scroll-btn-outline:hover { color: var(--fg-90); border-color: var(--fg-12); }
 .scroll-btn-primary { flex: 1; font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 1px; font-weight: 700; padding: 10px 0; border-radius: 10px; border: none; background: rgb(var(--accent-rgb)); color: var(--bg-primary); cursor: pointer; transition: all 0.2s; }
@@ -211,7 +211,7 @@ const SCROLL_CSS = `
 .scroll-btn-icon { width: 36px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; border-radius: 10px; border: 1px solid var(--fg-08); background: transparent; color: var(--fg-35); cursor: pointer; transition: all 0.2s; padding: 10px 0; }
 .scroll-btn-icon:hover { color: var(--fg-50); border-color: var(--fg-12); }
 .scroll-btn-icon:disabled { opacity: 0.4; cursor: default; }
-.another-btn { margin-top: 8px; width: 100%; font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 1.5px; padding: 10px 0; border-radius: 10px; border: 1px solid rgb(var(--accent-rgb) / 0.08); background: transparent; color: var(--fg-35); cursor: pointer; transition: all 0.2s; }
+.another-btn { margin-top: 8px; width: 100%; font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 1.5px; padding: 11px 0; border-radius: 10px; border: 1px solid var(--fg-10); background: transparent; color: var(--fg-45); cursor: pointer; transition: all 0.2s; }
 .another-btn:hover { color: var(--fg-50); border-color: var(--fg-12); }
 `;
 
@@ -655,9 +655,9 @@ export default function WorkoutCompleteCard({
 
                         <div className="reveal d11"><Ornament /></div>
 
-                        {/* 10. Wax seal */}
+                        {/* 10. Seal + Signature + Inscription — grouped */}
                         <div className="reveal d11">
-                            <div className="seal-section">
+                            <div className="seal-group">
                                 <div className="seal-container">
                                     <svg className="seal-svg" viewBox="0 0 72 72">
                                         <circle className="seal-ring" cx="36" cy="36" r="32" />
@@ -668,16 +668,12 @@ export default function WorkoutCompleteCard({
                                         <text className="seal-center" x="36" y="40" textAnchor="middle">A</text>
                                     </svg>
                                 </div>
+                                <div className="signature">
+                                    FORGED BY <span className="sig-name">{dayTitle.split("—")[0]?.trim() || "YOU"}</span> · <span className="sig-tier">{summary.rankName.toUpperCase()}</span> · LV.{summary.level}
+                                </div>
+                                <div className="inscription">&ldquo;{inscription}&rdquo;</div>
                             </div>
                         </div>
-
-                        {/* 11. Signature */}
-                        <div className="signature">
-                            FORGED BY <span className="sig-name">{dayTitle.split("—")[0]?.trim() || "YOU"}</span> · <span className="sig-tier">{summary.rankName.toUpperCase()}</span> · LV.{summary.level}
-                        </div>
-
-                        {/* 12. Inscription */}
-                        <div className="inscription">&ldquo;{inscription}&rdquo;</div>
 
                         {/* Actions */}
                         <div className="reveal d13">

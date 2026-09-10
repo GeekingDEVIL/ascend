@@ -929,6 +929,88 @@ function ReportRuneLoader({ progress }: { progress: number }) {
     );
 }
 
+function RotationCard({ exercises, onSwap, currentExerciseIds }: {
+    exercises: Array<{ id: string; name: string; body_segment: string; lastDone: string; daysSince: number }>;
+    onSwap: (exerciseId: string, name: string) => void;
+    currentExerciseIds: Set<string>;
+}) {
+    const [expanded, setExpanded] = useState(false);
+    const grouped = useMemo(() => {
+        const map = new Map<string, typeof exercises>();
+        for (const ex of exercises) {
+            const seg = ex.body_segment || "Other";
+            if (!map.has(seg)) map.set(seg, []);
+            map.get(seg)!.push(ex);
+        }
+        return Array.from(map.entries()).sort((a, b) => b[1][0].daysSince - a[1][0].daysSince);
+    }, [exercises]);
+
+    const preview = exercises.slice(0, 3);
+
+    return (
+        <div className="rounded-2xl border border-[var(--fg-06)] bg-[var(--fg-02)] overflow-hidden">
+            <button onClick={() => setExpanded(!expanded)} className="w-full flex items-center gap-3 px-4 py-3 text-left">
+                <RefreshCw size={14} className="text-[rgb(var(--accent-rgb)/0.5)] shrink-0" />
+                <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-mono tracking-widest text-[var(--fg-25)]">ROTATE BACK IN</p>
+                    <p className="text-[9px] text-[var(--fg-20)] mt-0.5 truncate">
+                        {exercises.length} exercise{exercises.length !== 1 ? "s" : ""} not done in 3+ weeks
+                    </p>
+                </div>
+                {expanded ? <ChevronDown size={14} className="text-[var(--fg-15)] shrink-0" /> : <ChevronRight size={14} className="text-[var(--fg-15)] shrink-0" />}
+            </button>
+
+            {!expanded && (
+                <div className="px-4 pb-3 flex gap-1.5 flex-wrap">
+                    {preview.map(ex => (
+                        <span key={ex.id} className="text-[8px] font-mono px-2 py-0.5 rounded-full bg-[var(--fg-04)] text-[var(--fg-30)]">
+                            {ex.name} · {ex.daysSince}d
+                        </span>
+                    ))}
+                    {exercises.length > 3 && (
+                        <span className="text-[8px] font-mono px-2 py-0.5 rounded-full bg-[var(--fg-04)] text-[var(--fg-15)]">
+                            +{exercises.length - 3}
+                        </span>
+                    )}
+                </div>
+            )}
+
+            {expanded && (
+                <div className="px-4 pb-3 space-y-3">
+                    {grouped.map(([segment, exs]) => (
+                        <div key={segment}>
+                            <p className="text-[7px] font-mono tracking-widest text-[var(--fg-15)] mb-1.5">{segment.toUpperCase()}</p>
+                            <div className="space-y-1">
+                                {exs.map(ex => {
+                                    const alreadyInPlan = currentExerciseIds.has(ex.id);
+                                    return (
+                                        <div key={ex.id} className="flex items-center gap-2 rounded-lg bg-[var(--fg-03)] px-3 py-2">
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-[10px] font-medium text-[var(--fg-50)] truncate">{ex.name}</p>
+                                                <p className="text-[8px] font-mono text-[var(--fg-20)]">{ex.daysSince} days ago</p>
+                                            </div>
+                                            {alreadyInPlan ? (
+                                                <span className="text-[8px] font-mono text-[var(--fg-15)] px-2 py-1">In plan</span>
+                                            ) : (
+                                                <button
+                                                    onClick={() => onSwap(ex.id, ex.name)}
+                                                    className="text-[8px] font-mono px-2.5 py-1 rounded-lg border border-[rgb(var(--accent-rgb)/0.2)] text-[rgb(var(--accent-rgb))] hover:bg-[rgb(var(--accent-rgb)/0.08)] transition"
+                                                >
+                                                    Swap in
+                                                </button>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+}
+
 type ExVolumeEntry = { name: string; volume: number; color?: string };
 
 function SessionCounterPanel({ sets, totalSets, volume, elapsed, weightUnit, lastDelta, lastSessionVolume, exerciseVolumes }: {
@@ -1535,6 +1617,14 @@ export default function WorkoutPage() {
                             </div>
                         </div>
                     </div>
+                )}
+
+                {/* ── EXERCISE ROTATION (not_started) ── */}
+                {w.status === "not_started" && w.statsLoaded && w.staleExercises.length > 0 && (
+                    <RotationCard exercises={w.staleExercises} onSwap={(exId, exName) => {
+                        const swapTarget = w.exercisesList.find(e => e.body_segment === w.staleExercises.find(s => s.id === exId)?.body_segment);
+                        if (swapTarget) w.handleSwap(swapTarget, { id: exId, name: exName });
+                    }} currentExerciseIds={new Set(w.exercisesList.map(e => e.exercise_id))} />
                 )}
 
                 {/* ── STATS DASHBOARD (not_started) ── */}

@@ -178,6 +178,7 @@ export function useWorkoutSession() {
     const [statsLoaded, setStatsLoaded] = useState(false);
     const [sessionCount, setSessionCount] = useState(0);
     const [nextSession, setNextSession] = useState<{ name: string; exerciseCount: number; dayLabel: string } | null>(null);
+    const [staleExercises, setStaleExercises] = useState<Array<{ id: string; name: string; body_segment: string; lastDone: string; daysSince: number }>>([]);
     const [freestyleExercises, setFreestyleExercises] = useState<WorkoutExercise[]>([]);
     const [showFreestyleAddModal, setShowFreestyleAddModal] = useState(false);
     const [startingFreestyle, setStartingFreestyle] = useState(false);
@@ -525,6 +526,44 @@ export function useWorkoutSession() {
                     setNextSession({ name: (np as any).workout_templates?.name || "Workout", exerciseCount: exCount ?? 0, dayLabel: label });
                     break;
                 }
+            }
+
+            // Exercise rotation: find exercises not done in 21+ days
+            const ninetyDaysAgo = new Date(now);
+            ninetyDaysAgo.setDate(now.getDate() - 90);
+            const twentyOneDaysAgo = new Date(now);
+            twentyOneDaysAgo.setDate(now.getDate() - 21);
+            const ninetyStr = toDateString(ninetyDaysAgo);
+            const twentyOneStr = toDateString(twentyOneDaysAgo);
+
+            const { data: allLogs90 } = await supabase
+                .from("exercise_set_logs")
+                .select("exercise_id, completed_at, exercises(name, body_segment)")
+                .eq("user_id", user!.id)
+                .gte("completed_at", ninetyStr + "T00:00:00")
+                .order("completed_at", { ascending: false });
+            if (cancelled) return;
+
+            if (allLogs90 && allLogs90.length > 0) {
+                const lastDoneMap = new Map<string, { name: string; segment: string; date: string }>();
+                for (const log of allLogs90) {
+                    if (lastDoneMap.has(log.exercise_id)) continue;
+                    const d = (log.completed_at ?? "").slice(0, 10);
+                    lastDoneMap.set(log.exercise_id, {
+                        name: (log as any).exercises?.name ?? "Unknown",
+                        segment: (log as any).exercises?.body_segment ?? "",
+                        date: d,
+                    });
+                }
+                const stale: typeof staleExercises = [];
+                const todayMs = now.getTime();
+                for (const [id, info] of lastDoneMap) {
+                    if (info.date >= twentyOneStr) continue;
+                    const daysSince = Math.floor((todayMs - new Date(info.date + "T00:00:00").getTime()) / 86400000);
+                    stale.push({ id, name: info.name, body_segment: info.segment, lastDone: info.date, daysSince });
+                }
+                stale.sort((a, b) => b.daysSince - a.daysSince);
+                setStaleExercises(stale.slice(0, 8));
             }
 
             setStatsLoaded(true);
@@ -1312,7 +1351,7 @@ export function useWorkoutSession() {
 
         // Data
         lastPerformance, lastSets, overloadHints, summary, todaySessions,
-        recentSessions, weekDays, weeklyVolumes, statsLoaded, sessionCount, nextSession,
+        recentSessions, weekDays, weeklyVolumes, statsLoaded, sessionCount, nextSession, staleExercises,
         cycleProfile, energyForecast, exerciseRisks, substitutions,
         freestyleExercises, skippedExercises, warmupExercises,
         confirmedExercises, prCount, preWorkoutWeight, weightLogged, lastAction,
