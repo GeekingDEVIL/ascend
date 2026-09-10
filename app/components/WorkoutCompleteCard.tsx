@@ -342,7 +342,7 @@ export default function WorkoutCompleteCard({
         return s;
     }, [exercisesList, logs]);
 
-    const bestMoment = useMemo(() => {
+    const bestMoment: { name: string; weight: number; reps: number; isPr: boolean } | null = useMemo(() => {
         let best: { name: string; weight: number; reps: number; isPr: boolean } | null = null;
         exercisesList.forEach(ex => {
             (logs[ex.id] ?? []).filter(s => s.completed && !s.is_warmup).forEach(s => {
@@ -368,7 +368,8 @@ export default function WorkoutCompleteCard({
     const ringOffset = 113 - (doneCount / 7) * 113;
     const dur = summary.duration;
     const durMin = Math.floor(dur / 60);
-    const vol = Math.round(kgToUnit(summary.volume, weightUnit));
+    const unit = weightUnit as "kg" | "lbs";
+    const vol = Math.round(kgToUnit(summary.volume, unit));
     const xpPct = Math.min(((summary.xpBreakdown.total % 100) / 100) * 100, 100);
     const now = new Date();
     const dateStr = now.toLocaleDateString("en-US", { weekday: "short", day: "numeric", month: "short" }).toUpperCase() + " · " + formatClock(dur);
@@ -377,13 +378,14 @@ export default function WorkoutCompleteCard({
     useEffect(() => {
         const animate = (el: HTMLSpanElement | null, target: number, delay: number) => {
             if (!el) return;
+            const node = el;
             const start = performance.now();
             function tick(now: number) {
                 const elapsed = now - start - delay;
                 if (elapsed < 0) { requestAnimationFrame(tick); return; }
                 const p = Math.min(elapsed / 1200, 1);
                 const eased = 1 - Math.pow(1 - p, 3);
-                el.textContent = Math.round(target * eased).toLocaleString();
+                node.textContent = Math.round(target * eased).toLocaleString();
                 if (p < 1) requestAnimationFrame(tick);
             }
             requestAnimationFrame(tick);
@@ -526,7 +528,7 @@ export default function WorkoutCompleteCard({
                                     <div className="best-moment-text">
                                         <div className="best-moment-label">BEST MOMENT</div>
                                         <div className="best-moment-value">
-                                            {bestMoment.name} — {kgToUnit(bestMoment.weight, weightUnit)}{weightUnit} × {bestMoment.reps}
+                                            {bestMoment.name} — {kgToUnit(bestMoment.weight, unit)}{weightUnit} × {bestMoment.reps}
                                             {bestMoment.isPr && " (PR)"}
                                         </div>
                                     </div>
@@ -572,7 +574,7 @@ export default function WorkoutCompleteCard({
                                                         <span className="exercise-name-text">{ex.name}</span>
                                                     </div>
                                                     <div className="exercise-detail">
-                                                        {ex.sets.length}×{totalR} · {kgToUnit(totalW, weightUnit)}{weightUnit}
+                                                        {ex.sets.length}×{totalR} · {kgToUnit(totalW, unit)}{weightUnit}
                                                         <span className="expand-arrow">{"▾"}</span>
                                                     </div>
                                                 </div>
@@ -580,7 +582,7 @@ export default function WorkoutCompleteCard({
                                                     {ex.sets.map((s, j) => (
                                                         <div key={j} className="set-line">
                                                             <span className="set-num">Set {j + 1}</span>
-                                                            <span className="set-data">{kgToUnit(Number(s.weight) || 0, weightUnit)}{weightUnit} × {s.reps}</span>
+                                                            <span className="set-data">{kgToUnit(Number(s.weight) || 0, unit)}{weightUnit} × {s.reps}</span>
                                                             {s.rpe && <span className={`set-rpe ${rpeClass(s.rpe)}`}>RPE {s.rpe}</span>}
                                                         </div>
                                                     ))}
