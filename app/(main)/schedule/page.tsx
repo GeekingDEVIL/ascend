@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
-import { Plus, Trash2, GripVertical, Pencil, Database, Settings2, Play, Moon, Flame, PersonStanding, ChevronDown, ChevronUp, X, Dumbbell, BarChart3, BookOpen } from "lucide-react";
+import { Plus, Trash2, GripVertical, Pencil, Database, Settings2, Play, Moon, Flame, PersonStanding, ChevronDown, ChevronUp, X, Dumbbell, BarChart3, BookOpen, Copy } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 import { DndContext, closestCenter, PointerSensor, MouseSensor, TouchSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
@@ -180,7 +180,7 @@ function SortableRow({ ex, index, onUpdate, onRemove }: { ex: LocalExercise; ind
 // ─── Day Editor Modal ────────────────────────────────────────────
 function DayEditorModal({
     weekday, plan, onClose, onSaved,
-    sensors, user, userSex,
+    sensors, user, userSex, allPlans,
 }: {
     weekday: number;
     plan: RecurringPlan | undefined;
@@ -189,11 +189,14 @@ function DayEditorModal({
     sensors: ReturnType<typeof useSensors>;
     user: any;
     userSex: string;
+    allPlans: Record<number, RecurringPlan>;
 }) {
     const [title, setTitle] = useState(plan?.template_name || "");
     const [exercises, setExercises] = useState<LocalExercise[]>([]);
     const [deletedIds, setDeletedIds] = useState<string[]>([]);
     const [isRest, setIsRest] = useState(plan?.is_rest ?? false);
+    const [showCopyPicker, setShowCopyPicker] = useState(false);
+    const [copying, setCopying] = useState(false);
     const [templateId, setTemplateId] = useState<string | null>(plan?.template_id ?? null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -309,6 +312,31 @@ function DayEditorModal({
         onClose();
     }
 
+    async function handleCopyFrom(sourceWeekday: number) {
+        const sourcePlan = allPlans[sourceWeekday];
+        if (!sourcePlan?.template_id) return;
+        setCopying(true);
+        const { data: rows } = await supabase
+            .from("workout_template_exercises")
+            .select("id, order_index, target_sets, target_reps, target_weight, rest_seconds, notes, target_duration_minutes, target_incline, target_speed, exercise_id, exercises(name, body_segment)")
+            .eq("template_id", sourcePlan.template_id)
+            .order("order_index");
+        if (rows?.length) {
+            setExercises(rows.map((r) => ({
+                ...mapExerciseRow(r),
+                id: `new-${Date.now()}-${Math.random().toString(36).slice(2)}-${r.exercise_id}`,
+                isNew: true,
+            })));
+            setDeletedIds((prev) => [...prev, ...exercises.filter((e) => !e.isNew).map((e) => e.id)]);
+            setTitle(sourcePlan.template_name || title);
+            setIsRest(false);
+        }
+        setCopying(false);
+        setShowCopyPicker(false);
+    }
+
+    const copyableDays = WEEKDAY_ORDER.filter((wd) => wd !== weekday && allPlans[wd] && !allPlans[wd].is_rest && allPlans[wd].template_id);
+
     const hasContent = isRest || exercises.length > 0;
     const totalSets = exercises.reduce((sum, e) => sum + (e.target_sets || 0), 0);
     const existingIds = new Set(exercises.map((e) => e.exercise_id));
@@ -374,7 +402,36 @@ function DayEditorModal({
                                         <Trash2 size={11} /> CLEAR
                                     </button>
                                 )}
+                                {copyableDays.length > 0 && (
+                                    <button
+                                        onClick={() => setShowCopyPicker((v) => !v)}
+                                        className="flex items-center gap-1.5 text-[10px] font-mono px-2.5 py-1.5 rounded-lg border border-[rgb(var(--accent-rgb)/0.3)] bg-[rgb(var(--accent-rgb)/0.08)] text-[rgb(var(--accent-light-rgb)/0.7)] hover:text-[rgb(var(--accent-light-rgb))] transition ml-auto"
+                                    >
+                                        <Copy size={11} /> COPY FROM…
+                                    </button>
+                                )}
                             </div>
+
+                            {showCopyPicker && (
+                                <div className="mb-4 p-3 rounded-xl border border-[rgb(var(--accent-rgb)/0.2)] bg-[rgb(var(--accent-rgb)/0.04)]">
+                                    <p className="text-[10px] font-mono text-[var(--fg-40)] mb-2.5">COPY PLAN FROM</p>
+                                    <div className="grid grid-cols-3 gap-2">
+                                        {copyableDays.map((wd) => (
+                                            <button
+                                                key={wd}
+                                                disabled={copying}
+                                                onClick={() => handleCopyFrom(wd)}
+                                                className="flex flex-col items-center gap-1 p-2.5 rounded-lg border border-[var(--fg-08)] bg-[var(--fg-02)] hover:border-[rgb(var(--accent-rgb)/0.4)] hover:bg-[rgb(var(--accent-rgb)/0.06)] transition text-center disabled:opacity-40"
+                                            >
+                                                <span className="text-xs font-bold text-[var(--fg-70)]">{WEEKDAY_LABELS[wd]}</span>
+                                                <span className="text-[9px] font-mono text-[var(--fg-30)] truncate max-w-full">{allPlans[wd]?.template_name || "Plan"}</span>
+                                                <span className="text-[8px] font-mono text-[var(--fg-20)]">{allPlans[wd]?.exercise_count} ex</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                    {copying && <p className="text-[10px] font-mono text-[rgb(var(--accent-light-rgb)/0.6)] mt-2 text-center">Copying…</p>}
+                                </div>
+                            )}
 
                             {isRest ? (
                                 <EmptyState title="REST DAY" subtitle="Every future occurrence stays a rest day." />
@@ -839,11 +896,11 @@ export default function SchedulePage() {
                                                     ) : (
                                                         <>
                                                             <p className="text-sm font-medium text-[var(--fg-85)] truncate">{plan.template_name || "Workout"}</p>
-                                                            <div className="flex items-center gap-2 mt-0.5">
-                                                                <span className="text-[10px] font-mono text-[var(--fg-30)]">{plan.exercise_count} exercises</span>
-                                                                {plan.muscles.length > 0 && (
-                                                                    <span className="text-[10px] font-mono text-[var(--fg-20)] truncate">{plan.muscles.slice(0, 3).join(" · ")}</span>
-                                                                )}
+                                                            <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                                                                <span className="text-[10px] font-mono text-[var(--fg-30)]">{plan.exercise_count} ex</span>
+                                                                {plan.muscles.slice(0, 3).map((m) => (
+                                                                    <span key={m} className="text-[9px] font-mono px-1.5 py-0.5 rounded-full bg-[rgb(var(--accent-rgb)/0.08)] text-[rgb(var(--accent-light-rgb)/0.55)] border border-[rgb(var(--accent-rgb)/0.12)]">{m}</span>
+                                                                ))}
                                                             </div>
                                                         </>
                                                     )
@@ -1068,6 +1125,7 @@ export default function SchedulePage() {
                     sensors={sensors}
                     user={user}
                     userSex={userSex ?? "male"}
+                    allPlans={recurringPlans}
                 />
             )}
             {todayAddModal && selectedPlan?.template_id && (

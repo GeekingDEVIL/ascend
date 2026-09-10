@@ -342,14 +342,16 @@ export default function WorkoutCompleteCard({
         return s;
     }, [exercisesList, logs]);
 
-    const bestMoment: { name: string; weight: number; reps: number; isPr: boolean } | null = useMemo(() => {
-        let best: { name: string; weight: number; reps: number; isPr: boolean } | null = null;
-        exercisesList.forEach(ex => {
-            (logs[ex.id] ?? []).filter(s => s.completed && !s.is_warmup).forEach(s => {
+    type BestMoment = { name: string; weight: number; reps: number; isPr: boolean };
+    const bestMoment = useMemo<BestMoment | null>(() => {
+        let best: BestMoment | null = null;
+        let bestVol = 0;
+        for (const ex of exercisesList) {
+            for (const s of (logs[ex.id] ?? []).filter(s => s.completed && !s.is_warmup)) {
                 const w = Number(s.weight) || 0, r = Number(s.reps) || 0, v = w * r;
-                if (v > 0 && (!best || w * r > best.weight * best.reps)) best = { name: ex.name, weight: w, reps: r, isPr: prCount > 0 };
-            });
-        });
+                if (v > 0 && v > bestVol) { best = { name: ex.name, weight: w, reps: r, isPr: prCount > 0 }; bestVol = v; }
+            }
+        }
         return best;
     }, [exercisesList, logs, prCount]);
 
