@@ -130,10 +130,21 @@ export function useWorkoutSession() {
     const loadInFlight = useRef(false);
 
     /* ── STATE ── */
-    const [status, setStatus] = useState<SessionStatus>("loading");
-    const [dayTitle, setDayTitle] = useState("");
+    const cachedInit = useRef<{ exercises: WorkoutExercise[]; title: string; status: SessionStatus } | null>(null);
+    if (cachedInit.current === null) {
+        try {
+            const c = JSON.parse(localStorage.getItem("ascend_workout_cache") || "null");
+            if (c && c.date === today && c.sex === userSex && c.exercises?.length) {
+                cachedInit.current = { exercises: c.exercises, title: c.title || "Workout", status: c.completed ? "loading" : "not_started" };
+            } else {
+                cachedInit.current = { exercises: [], title: "", status: "loading" };
+            }
+        } catch { cachedInit.current = { exercises: [], title: "", status: "loading" }; }
+    }
+    const [status, setStatus] = useState<SessionStatus>(cachedInit.current.status);
+    const [dayTitle, setDayTitle] = useState(cachedInit.current.title);
     const [scheduledDayId, setScheduledDayId] = useState<string | null>(null);
-    const [exercisesList, setExercisesList] = useState<WorkoutExercise[]>([]);
+    const [exercisesList, setExercisesList] = useState<WorkoutExercise[]>(cachedInit.current.exercises);
     const [logs, setLogs] = useState<Record<string, SetEntry[]>>({});
     const [lastPerformance, setLastPerformance] = useState<Record<string, { weight: number | null; reps: number | null }>>({});
     const [lastSets, setLastSets] = useState<Record<string, { weight: number | null; reps: number | null }[]>>({});
@@ -198,16 +209,7 @@ export function useWorkoutSession() {
         try {
             const sex = userSex;
 
-            try {
-                const cached = JSON.parse(localStorage.getItem("ascend_workout_cache") || "null");
-                if (cached && cached.date === today && cached.sex === sex && cached.exercises?.length) {
-                    setExercisesList(cached.exercises);
-                    setDayTitle(cached.title || "Workout");
-                    if (!cached.completed) setStatus("not_started");
-                } else {
-                    setStatus("loading");
-                }
-            } catch { setStatus("loading"); }
+            if (exercisesList.length === 0) setStatus("loading");
 
             const weekday = new Date().getDay();
             const { data: plans } = await supabase
