@@ -130,16 +130,19 @@ export function useWorkoutSession() {
     const loadInFlight = useRef(false);
 
     /* ── STATE ── */
-    const cachedInit = useRef<{ exercises: WorkoutExercise[]; title: string; status: SessionStatus } | null>(null);
+    type LoadHint = "completed" | "active" | "default";
+    const cachedInit = useRef<{ exercises: WorkoutExercise[]; title: string; status: SessionStatus; loadHint: LoadHint } | null>(null);
     if (cachedInit.current === null) {
         try {
             const c = JSON.parse(localStorage.getItem("ascend_workout_cache") || "null");
+            const hasActiveSession = localStorage.getItem("ascend_active_session") === "true";
             if (c && c.date === today && c.sex === userSex && c.exercises?.length) {
-                cachedInit.current = { exercises: c.exercises, title: c.title || "Workout", status: "loading" };
+                const hint: LoadHint = c.completed ? "completed" : hasActiveSession ? "active" : "default";
+                cachedInit.current = { exercises: c.exercises, title: c.title || "Workout", status: "loading", loadHint: hint };
             } else {
-                cachedInit.current = { exercises: [], title: "", status: "loading" };
+                cachedInit.current = { exercises: [], title: "", status: "loading", loadHint: hasActiveSession ? "active" : "default" };
             }
-        } catch { cachedInit.current = { exercises: [], title: "", status: "loading" }; }
+        } catch { cachedInit.current = { exercises: [], title: "", status: "loading", loadHint: "default" }; }
     }
     const [status, setStatus] = useState<SessionStatus>(cachedInit.current.status);
     const [hasLoaded, setHasLoaded] = useState(false);
@@ -1282,7 +1285,7 @@ export function useWorkoutSession() {
         startingFreestyle, savingFreestylePlan, deletingPlan,
 
         // Derived
-        hasLoaded, totalPlanned, completedCount, sessionVolume, today, weightUnit, userSex, equipmentAccess,
+        hasLoaded, loadHint: cachedInit.current!.loadHint, totalPlanned, completedCount, sessionVolume, today, weightUnit, userSex, equipmentAccess,
 
         // Constants
         MAX_SESSIONS_PER_DAY,
