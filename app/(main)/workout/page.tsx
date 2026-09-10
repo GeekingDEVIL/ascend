@@ -843,28 +843,10 @@ export default function WorkoutPage() {
                 </div>
             </main>
         );
-        // Default: cube loader for fresh/no-session state
+        // Default: existing cube loader for fresh/no-session state
         return (
             <main className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] flex items-center justify-center">
-                <div className="cube-loader">
-                    <div className="cube">
-                        <div className="face front" /><div className="face back" />
-                        <div className="face left" /><div className="face right" />
-                        <div className="face top" /><div className="face bottom" />
-                    </div>
-                </div>
-                <style>{`
-                    .cube-loader { perspective: 200px; width: 40px; height: 40px; }
-                    .cube { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; animation: cube-spin 1.8s ease-in-out infinite; }
-                    .face { position: absolute; width: 100%; height: 100%; border: 1.5px solid rgb(var(--accent-rgb) / 0.35); background: rgb(var(--accent-rgb) / 0.04); }
-                    .front  { transform: translateZ(20px); }
-                    .back   { transform: translateZ(-20px) rotateY(180deg); }
-                    .left   { transform: translateX(-20px) rotateY(-90deg); }
-                    .right  { transform: translateX(20px) rotateY(90deg); }
-                    .top    { transform: translateY(-20px) rotateX(90deg); }
-                    .bottom { transform: translateY(20px) rotateX(-90deg); }
-                    @keyframes cube-spin { 0% { transform: rotateX(0) rotateY(0); } 50% { transform: rotateX(180deg) rotateY(90deg); } 100% { transform: rotateX(360deg) rotateY(180deg); } }
-                `}</style>
+                <CubeLoader />
             </main>
         );
     }
