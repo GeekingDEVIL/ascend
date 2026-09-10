@@ -146,6 +146,7 @@ export function useWorkoutSession() {
     }
     const [status, setStatus] = useState<SessionStatus>(cachedInit.current.status);
     const [hasLoaded, setHasLoaded] = useState(false);
+    const [loadProgress, setLoadProgress] = useState(0);
     const [dayTitle, setDayTitle] = useState(cachedInit.current.title);
     const [scheduledDayId, setScheduledDayId] = useState<string | null>(null);
     const [exercisesList, setExercisesList] = useState<WorkoutExercise[]>(cachedInit.current.exercises);
@@ -214,6 +215,7 @@ export function useWorkoutSession() {
             const sex = userSex;
 
             if (exercisesList.length === 0) setStatus("loading");
+            setLoadProgress(10);
 
             const weekday = new Date().getDay();
             const { data: plans } = await supabase
@@ -230,6 +232,7 @@ export function useWorkoutSession() {
             if (plan.is_rest) { localStorage.removeItem("ascend_workout_cache"); setStatus("rest_day"); return; }
             if (!plan.template_id) { localStorage.removeItem("ascend_workout_cache"); setStatus("no_plan"); return; }
 
+            setLoadProgress(20);
             const planTitle = (plan as any).workout_templates?.name || "Workout";
             setDayTitle(planTitle);
 
@@ -242,6 +245,7 @@ export function useWorkoutSession() {
             if (!day) { setStatus("no_plan"); return; }
             setScheduledDayId(day.id);
 
+            setLoadProgress(35);
             const { data: sessionCheck } = await supabase.from("workout_sessions").select("id, status").eq("user_id", user.id).eq("date", today).eq("sex", sex).in("status", ["active", "completed"]).limit(1);
             const hasSessionToday = !!sessionCheck?.length;
             if (!hasSessionToday) {
@@ -287,9 +291,11 @@ export function useWorkoutSession() {
                 setExerciseRisks({});
             }
 
+            setLoadProgress(50);
             const exerciseIds = mapped.map((m) => m.exercise_id);
             const { data: priorLogs } = await supabase.from("exercise_set_logs").select("exercise_id, weight, reps, set_index, is_warmup, completed_at, workout_session_id, workout_sessions!inner(sex)").eq("user_id", user.id).eq("workout_sessions.sex", sex).in("exercise_id", exerciseIds).order("completed_at", { ascending: false }).limit(500);
 
+            setLoadProgress(65);
             const { data: completedSessions } = await supabase
                 .from("workout_sessions")
                 .select("id, total_sets, total_volume, duration_seconds, xp_earned")
@@ -299,6 +305,7 @@ export function useWorkoutSession() {
                 .eq("status", "completed")
                 .order("created_at", { ascending: true });
             if (completedSessions && completedSessions.length > 0 && completedSessions.length >= MAX_SESSIONS_PER_DAY) {
+                setLoadProgress(80);
                 localStorage.removeItem("ascend_active_session");
                 const lastDone = completedSessions[completedSessions.length - 1];
                 setTodaySessions(completedSessions.map((s: any) => ({ id: s.id, sets: s.total_sets ?? 0, volume: Number(s.total_volume) || 0, duration: s.duration_seconds ?? 0, xp: s.xp_earned ?? 0 })));
@@ -313,6 +320,7 @@ export function useWorkoutSession() {
                 const totalXp = (xpRows ?? []).reduce((s: number, r: any) => s + (r.xp_earned || 0), 0);
                 const lvl = computeLevel(totalXp).level;
                 setSummary({ sets: lastDone.total_sets ?? 0, volume: Number(lastDone.total_volume) || 0, duration: lastDone.duration_seconds ?? 0, xpBreakdown: { base: 0, setCompletion: 0, completionBonus: 0, prBonus: 0, progressionBonus: 0, consistencyBonus: 0, total: lastDone.xp_earned ?? 0, details: [] }, level: lvl, rankName: getRank(lvl).name });
+                setLoadProgress(100);
                 setStatus("completed");
                 try { const c = JSON.parse(localStorage.getItem("ascend_workout_cache") || "null"); if (c) { c.completed = true; localStorage.setItem("ascend_workout_cache", JSON.stringify(c)); } } catch {}
                 return;
@@ -390,6 +398,7 @@ export function useWorkoutSession() {
                 const totalXp2 = (xpRows2 ?? []).reduce((s: number, r: any) => s + (r.xp_earned || 0), 0);
                 const lvl2 = computeLevel(totalXp2).level;
                 setSummary({ sets: lastDone.total_sets ?? 0, volume: Number(lastDone.total_volume) || 0, duration: lastDone.duration_seconds ?? 0, xpBreakdown: { base: 0, setCompletion: 0, completionBonus: 0, prBonus: 0, progressionBonus: 0, consistencyBonus: 0, total: lastDone.xp_earned ?? 0, details: [] }, level: lvl2, rankName: getRank(lvl2).name });
+                setLoadProgress(100);
                 setStatus("completed");
                 try { const c = JSON.parse(localStorage.getItem("ascend_workout_cache") || "null"); if (c) { c.completed = true; localStorage.setItem("ascend_workout_cache", JSON.stringify(c)); } } catch {}
             } else {
@@ -412,6 +421,7 @@ export function useWorkoutSession() {
                         const totalXp3 = (xpRows3 ?? []).reduce((s: number, r: any) => s + (r.xp_earned || 0), 0);
                         const lvl3 = computeLevel(totalXp3).level;
                         setSummary({ sets: lastDone.total_sets ?? 0, volume: Number(lastDone.total_volume) || 0, duration: lastDone.duration_seconds ?? 0, xpBreakdown: { base: 0, setCompletion: 0, completionBonus: 0, prBonus: 0, progressionBonus: 0, consistencyBonus: 0, total: lastDone.xp_earned ?? 0, details: [] }, level: lvl3, rankName: getRank(lvl3).name });
+                        setLoadProgress(100);
                         setStatus("completed");
                         return;
                     }
@@ -1309,7 +1319,7 @@ export function useWorkoutSession() {
         startingFreestyle, savingFreestylePlan, deletingPlan,
 
         // Derived
-        hasLoaded, loadHint: cachedInit.current!.loadHint, totalPlanned, completedCount, sessionVolume, today, weightUnit, userSex, equipmentAccess,
+        hasLoaded, loadHint: cachedInit.current!.loadHint, loadProgress, totalPlanned, completedCount, sessionVolume, today, weightUnit, userSex, equipmentAccess,
 
         // Constants
         MAX_SESSIONS_PER_DAY,

@@ -509,123 +509,422 @@ function MiniRuneCircle({ completed, total, circleSize = 64 }: { completed: numb
     );
 }
 
-function LoadingRuneCircle() {
+function ReportRuneLoader({ progress }: { progress: number }) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    const frameRef = useRef(0);
     const startRef = useRef(0);
-    const SIZE = 96;
+    const frameRef = useRef(0);
+    const accentRef = useRef("45, 212, 191");
+    const [textVisible, setTextVisible] = useState(false);
+    const textTimerRef = useRef(false);
+    const displayPctRef = useRef(0);
+    const particleSpeedsRef = useRef<number[]>([]);
+    const orbitParticlesRef = useRef<Array<{ angle: number; speed: number; dist: number; size: number }>>([]);
+
+    const SIZE = 200;
     const RADIUS = SIZE * 0.36;
     const GLYPH_SIZE = SIZE * 0.09;
-    const NUM_RUNES = 12;
+    const RUNE_COUNT = 16;
+
+    if (particleSpeedsRef.current.length === 0) {
+        for (let i = 0; i < RUNE_COUNT; i++) {
+            particleSpeedsRef.current.push(0.4 + Math.random() * 0.25);
+        }
+    }
+    if (orbitParticlesRef.current.length === 0) {
+        for (let i = 0; i < 12; i++) {
+            orbitParticlesRef.current.push({
+                angle: Math.random() * Math.PI * 2,
+                speed: 0.15 + Math.random() * 0.25,
+                dist: RADIUS * (0.85 + Math.random() * 0.1),
+                size: 0.5 + Math.random() * 1.0,
+            });
+        }
+    }
 
     const parsedPaths = useMemo(() => RUNE_PATHS.map((d) => {
         const cmds: Array<{ type: string; args: number[] }> = [];
         const re = /([MLHVZ])([^MLHVZ]*)/gi;
         let m;
         while ((m = re.exec(d)) !== null) {
-            cmds.push({ type: m[1].toUpperCase(), args: m[2].trim().split(/[\s,]+/).filter(Boolean).map(Number) });
+            const type = m[1].toUpperCase();
+            const args = m[2].trim().split(/[\s,]+/).filter(Boolean).map(Number);
+            cmds.push({ type, args });
         }
         return cmds;
     }), []);
 
+    function drawRune(ctx: CanvasRenderingContext2D, cmds: typeof parsedPaths[0], cx: number, cy: number, glyphSize: number, drawFraction = 1) {
+        const scale = glyphSize / 16;
+        const ox = cx - glyphSize / 2;
+        const oy = cy - glyphSize / 2;
+        let curX = 0, curY = 0;
+        const segments: Array<[number, number, number, number]> = [];
+        for (const { type, args } of cmds) {
+            switch (type) {
+                case "M": curX = args[0]; curY = args[1]; break;
+                case "L": segments.push([curX, curY, args[0], args[1]]); curX = args[0]; curY = args[1]; break;
+                case "H": segments.push([curX, curY, args[0], curY]); curX = args[0]; break;
+                case "V": segments.push([curX, curY, curX, args[0]]); curY = args[0]; break;
+                case "Z": break;
+            }
+        }
+        const totalSegs = segments.length;
+        const segsToShow = Math.ceil(totalSegs * drawFraction);
+        ctx.beginPath();
+        for (let si = 0; si < segsToShow; si++) {
+            const [x1, y1, x2, y2] = segments[si];
+            const sx1 = ox + x1 * scale, sy1 = oy + y1 * scale;
+            const sx2 = ox + x2 * scale, sy2 = oy + y2 * scale;
+            if (si === segsToShow - 1 && drawFraction < 1) {
+                const segFrac = (drawFraction * totalSegs) - si;
+                ctx.moveTo(sx1, sy1);
+                ctx.lineTo(sx1 + (sx2 - sx1) * segFrac, sy1 + (sy2 - sy1) * segFrac);
+            } else {
+                ctx.moveTo(sx1, sy1);
+                ctx.lineTo(sx2, sy2);
+            }
+        }
+        ctx.stroke();
+    }
+
+    useEffect(() => {
+        if (!textTimerRef.current) {
+            textTimerRef.current = true;
+            setTimeout(() => setTextVisible(true), 500);
+        }
+    }, []);
+
     useEffect(() => {
         const canvas = canvasRef.current;
         if (!canvas) return;
-        const dpr = window.devicePixelRatio || 1;
-        canvas.width = SIZE * dpr;
-        canvas.height = SIZE * dpr;
-        const ctx = canvas.getContext("2d")!;
-        ctx.scale(dpr, dpr);
-        const el = document.documentElement;
-        const cs = getComputedStyle(el);
-        const accent = cs.getPropertyValue("--accent-rgb").trim() || "45,212,191";
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
 
-        startRef.current = performance.now();
-        const loop = () => {
-            const t = (performance.now() - startRef.current) / 1000;
+        accentRef.current = (getComputedStyle(document.documentElement).getPropertyValue("--accent-rgb").trim() || "45 212 191").replace(/\s+/g, ", ");
+
+        let lastTime = 0;
+        const loop = (time: number) => {
+            if (!startRef.current) { startRef.current = time; lastTime = time; }
+            const dt = Math.min((time - lastTime) / 1000, 0.05);
+            lastTime = time;
+            const elapsed = (time - startRef.current) / 1000;
+            const accent = accentRef.current;
+
+            const dpr = window.devicePixelRatio || 2;
+            canvas.width = SIZE * dpr;
+            canvas.height = SIZE * dpr;
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
             ctx.clearRect(0, 0, SIZE, SIZE);
-            const mx = SIZE / 2, my = SIZE / 2;
-            const rotation = t * 0.4;
 
-            // Outer ring glow
-            const glowAlpha = 0.08 + Math.sin(t * 1.5) * 0.04;
-            ctx.beginPath();
-            ctx.arc(mx, my, RADIUS + 2, 0, Math.PI * 2);
-            ctx.strokeStyle = `rgba(${accent}, ${glowAlpha})`;
-            ctx.lineWidth = 4;
-            ctx.stroke();
+            const mx = SIZE / 2;
+            const my = SIZE / 2;
 
-            // Track circle
-            ctx.beginPath();
-            ctx.arc(mx, my, RADIUS, 0, Math.PI * 2);
-            ctx.strokeStyle = `rgba(${accent}, 0.1)`;
-            ctx.lineWidth = 1.5;
-            ctx.stroke();
+            // Real progress drives the sweep — progress is 0-100 from hook
+            const realProgress = progress / 100;
+            // Sweep is driven by real progress, not time
+            const fadeInEnd = 0.35;
+            const fadeIn = Math.min(1, elapsed / fadeInEnd);
 
-            // Sweeping arc
-            const sweepLen = Math.PI * 0.6;
-            const sweepStart = rotation * Math.PI * 2 - Math.PI / 2;
-            ctx.beginPath();
-            ctx.arc(mx, my, RADIUS, sweepStart, sweepStart + sweepLen);
-            ctx.strokeStyle = `rgba(${accent}, 0.5)`;
-            ctx.lineWidth = 2;
-            ctx.lineCap = "round";
-            ctx.stroke();
+            // Smooth the sweep to avoid jerky jumps between progress stages
+            const sweepTarget = realProgress;
+            const prevSweep = displayPctRef.current / 100;
+            const sweepProgress = prevSweep + (sweepTarget - prevSweep) * Math.min(1, dt * 3);
 
-            // Rune glyphs
-            for (let i = 0; i < NUM_RUNES; i++) {
-                const angle = (i / NUM_RUNES) * Math.PI * 2 + rotation - Math.PI / 2;
-                const gx = mx + Math.cos(angle) * RADIUS;
-                const gy = my + Math.sin(angle) * RADIUS;
+            const sweepAngle = -Math.PI / 2 + sweepProgress * Math.PI * 2;
+            const litCount = Math.floor(sweepProgress * RUNE_COUNT);
+            const isComplete = progress >= 100;
 
-                // Pulse: each rune lights up in sequence
-                const phase = ((t * 0.8) - i / NUM_RUNES) % 1;
-                const brightness = phase > 0 && phase < 0.3 ? 0.7 + (1 - phase / 0.3) * 0.3 : 0.2;
+            // Smooth percentage counter
+            displayPctRef.current += (progress - displayPctRef.current) * Math.min(1, dt * 5);
+            const pct = Math.min(100, Math.round(displayPctRef.current));
 
-                const cmds = parsedPaths[i % parsedPaths.length];
-                const scale = GLYPH_SIZE / 16;
-                const ox = gx - GLYPH_SIZE / 2, oy = gy - GLYPH_SIZE / 2;
+            // Breathing pulse after complete
+            const completeTime = isComplete ? elapsed : 0;
+            const breathPhase = isComplete ? (completeTime / 2.5) % 1 : 0;
+            const breathVal = 0.5 + Math.sin(breathPhase * Math.PI * 2) * 0.5;
+
+            // Slow rotation after complete
+            const completeRot = isComplete ? completeTime * 0.0087 : 0;
+
+            // ── Background radial gradient ──
+            const bgRadius = RADIUS * (0.8 + sweepProgress * 0.8);
+            const bgAlpha = sweepProgress * 0.08;
+            if (bgAlpha > 0) {
+                const bgGrad = ctx.createRadialGradient(mx, my, 0, mx, my, bgRadius);
+                bgGrad.addColorStop(0, `rgba(${accent}, ${bgAlpha})`);
+                bgGrad.addColorStop(0.6, `rgba(${accent}, ${bgAlpha * 0.3})`);
+                bgGrad.addColorStop(1, `rgba(${accent}, 0)`);
+                ctx.fillStyle = bgGrad;
                 ctx.beginPath();
-                let cx = 0, cy = 0;
-                for (const { type, args } of cmds) {
-                    switch (type) {
-                        case "M": cx = args[0]; cy = args[1]; ctx.moveTo(ox + cx * scale, oy + cy * scale); break;
-                        case "L": cx = args[0]; cy = args[1]; ctx.lineTo(ox + cx * scale, oy + cy * scale); break;
-                        case "H": cx = args[0]; ctx.lineTo(ox + cx * scale, oy + cy * scale); break;
-                        case "V": cy = args[0]; ctx.lineTo(ox + cx * scale, oy + cy * scale); break;
-                    }
-                }
-                ctx.strokeStyle = `rgba(${accent}, ${brightness})`;
-                ctx.lineWidth = 1.2;
-                ctx.lineCap = "round";
-                if (brightness > 0.5) {
-                    ctx.shadowColor = `rgba(${accent}, 0.6)`;
-                    ctx.shadowBlur = 6;
-                }
-                ctx.stroke();
-                ctx.shadowBlur = 0;
+                ctx.arc(mx, my, bgRadius, 0, Math.PI * 2);
+                ctx.fill();
             }
 
-            // Center diamond glyph
-            const diamondPulse = 0.3 + Math.sin(t * 2) * 0.15;
-            ctx.fillStyle = `rgba(${accent}, ${diamondPulse})`;
-            ctx.font = `bold ${SIZE * 0.22}px serif`;
+            // ── Ripple pulses ──
+            const ripples = [
+                { start: 0, dur: 0.8, alpha: 0.12 },
+                { start: 0.6, dur: 0.7, alpha: 0.08 },
+            ];
+            for (const rip of ripples) {
+                const rt = (elapsed - rip.start) / rip.dur;
+                if (rt > 0 && rt < 1) {
+                    const rippleR = RADIUS * 1.2 * rt;
+                    const rippleA = (1 - rt) * rip.alpha;
+                    ctx.strokeStyle = `rgba(${accent}, ${rippleA})`;
+                    ctx.lineWidth = 1.5 * (1 - rt);
+                    ctx.beginPath();
+                    ctx.arc(mx, my, rippleR, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+            }
+
+            // ── "Ready" flash when hitting 100% ──
+            if (isComplete && completeTime < 0.4) {
+                const flashReadyT = completeTime / 0.4;
+                const flashR = RADIUS * (0.3 + flashReadyT * 1.0);
+                const flashA = (1 - flashReadyT) * 0.35;
+                ctx.strokeStyle = `rgba(255, 255, 255, ${flashA * 0.5})`;
+                ctx.lineWidth = 2 * (1 - flashReadyT);
+                ctx.beginPath();
+                ctx.arc(mx, my, flashR, 0, Math.PI * 2);
+                ctx.stroke();
+                const fg = ctx.createRadialGradient(mx, my, 0, mx, my, flashR);
+                fg.addColorStop(0, `rgba(255, 255, 255, ${flashA * 0.3})`);
+                fg.addColorStop(0.5, `rgba(${accent}, ${flashA * 0.15})`);
+                fg.addColorStop(1, `rgba(${accent}, 0)`);
+                ctx.fillStyle = fg;
+                ctx.beginPath();
+                ctx.arc(mx, my, flashR, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // ── #1: Orbiting micro-particles ──
+            for (const op of orbitParticlesRef.current) {
+                op.angle += op.speed * dt;
+                const opx = mx + Math.cos(op.angle) * op.dist;
+                const opy = my + Math.sin(op.angle) * op.dist;
+                const opAlpha = 0.08 + sweepProgress * 0.12;
+                ctx.fillStyle = `rgba(${accent}, ${opAlpha})`;
+                ctx.beginPath();
+                ctx.arc(opx, opy, op.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // ── Circle track: dashed → solid ──
+            ctx.setLineDash([2, 6]);
+            ctx.strokeStyle = `rgba(${accent}, ${0.06 * fadeIn})`;
+            ctx.lineWidth = 0.8;
+            ctx.beginPath();
+            ctx.arc(mx, my, RADIUS, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Solid arc + #3: afterglow (brighter near comet head)
+            if (sweepProgress > 0) {
+                const arcStart = -Math.PI / 2 + completeRot;
+                const arcEnd = arcStart + sweepProgress * Math.PI * 2;
+                ctx.strokeStyle = `rgba(${accent}, ${isComplete ? 0.25 + breathVal * 0.1 : 0.15})`;
+                ctx.lineWidth = 1.2;
+                ctx.beginPath();
+                ctx.arc(mx, my, RADIUS, arcStart, arcEnd);
+                ctx.stroke();
+
+                // Afterglow: brighter arc near the comet head
+                if (!isComplete && sweepProgress > 0.05) {
+                    const glowSpan = 0.15;
+                    const glowStart = arcEnd - glowSpan * Math.PI * 2;
+                    ctx.strokeStyle = `rgba(${accent}, 0.35)`;
+                    ctx.lineWidth = 1.8;
+                    ctx.beginPath();
+                    ctx.arc(mx, my, RADIUS, Math.max(arcStart, glowStart), arcEnd);
+                    ctx.stroke();
+                }
+            }
+
+            // ── Energy sweep comet ──
+            if (sweepProgress > 0.01 && !isComplete) {
+                const headX = mx + Math.cos(sweepAngle) * RADIUS;
+                const headY = my + Math.sin(sweepAngle) * RADIUS;
+
+                const tailLen = 0.5;
+                const tailSamples = 16;
+                for (let t = 0; t < tailSamples; t++) {
+                    const f = t / tailSamples;
+                    const tailAngle = sweepAngle - f * tailLen;
+                    const tailX = mx + Math.cos(tailAngle) * RADIUS;
+                    const tailY = my + Math.sin(tailAngle) * RADIUS;
+                    const tailAlpha = (1 - f) * (1 - f) * 0.18;
+                    const tailR = GLYPH_SIZE * (1.8 - f * 0.8);
+                    const tg = ctx.createRadialGradient(tailX, tailY, 0, tailX, tailY, tailR);
+                    tg.addColorStop(0, `rgba(${accent}, ${tailAlpha})`);
+                    tg.addColorStop(1, `rgba(${accent}, 0)`);
+                    ctx.fillStyle = tg;
+                    ctx.beginPath();
+                    ctx.arc(tailX, tailY, tailR, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                const hGrad = ctx.createRadialGradient(headX, headY, 0, headX, headY, GLYPH_SIZE * 2.5);
+                hGrad.addColorStop(0, `rgba(255, 255, 255, 0.65)`);
+                hGrad.addColorStop(0.25, `rgba(${accent}, 0.35)`);
+                hGrad.addColorStop(1, `rgba(${accent}, 0)`);
+                ctx.fillStyle = hGrad;
+                ctx.beginPath();
+                ctx.arc(headX, headY, GLYPH_SIZE * 2.5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // ── Particles flying to center ──
+            for (let i = 0; i < RUNE_COUNT; i++) {
+                const runeAngle = (i / RUNE_COUNT) * Math.PI * 2 - Math.PI / 2 + completeRot;
+                const igniteFrac = i / RUNE_COUNT;
+                const ignited = sweepProgress >= igniteFrac;
+                if (!ignited) continue;
+                const sinceIgnite = (sweepProgress - igniteFrac) * 3;
+                const pDur = particleSpeedsRef.current[i];
+                if (sinceIgnite > 0 && sinceIgnite < pDur) {
+                    const p = sinceIgnite / pDur;
+                    const eased = 1 - Math.pow(1 - p, 2);
+                    const rx = mx + Math.cos(runeAngle) * RADIUS;
+                    const ry = my + Math.sin(runeAngle) * RADIUS;
+                    const px = rx + (mx - rx) * eased;
+                    const py = ry + (my - ry) * eased;
+                    const pAlpha = (1 - p) * 0.55;
+                    const pSize = 2.0 * (1 - p);
+                    ctx.fillStyle = `rgba(${accent}, ${pAlpha})`;
+                    ctx.beginPath();
+                    ctx.arc(px, py, pSize, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.strokeStyle = `rgba(${accent}, ${pAlpha * 0.25})`;
+                    ctx.lineWidth = 0.5;
+                    ctx.beginPath();
+                    ctx.moveTo(rx, ry);
+                    ctx.lineTo(px, py);
+                    ctx.stroke();
+                }
+            }
+
+            // ── #2: Shimmer wave after all runes lit ──
+            const shimmerAngle = isComplete ? (elapsed * 1.5) % (Math.PI * 2) : 0;
+
+            // ── Rune glyphs ──
+            for (let i = 0; i < RUNE_COUNT; i++) {
+                const runeAngle = (i / RUNE_COUNT) * Math.PI * 2 - Math.PI / 2 + completeRot;
+                const gx = mx + Math.cos(runeAngle) * RADIUS;
+                const gy = my + Math.sin(runeAngle) * RADIUS;
+                const runeIdx = i % parsedPaths.length;
+                const igniteFrac = i / RUNE_COUNT;
+                const isLit = sweepProgress >= igniteFrac || isComplete;
+                const sinceIgnite = isLit ? (sweepProgress - igniteFrac) * 3 : 0;
+
+                ctx.save();
+                ctx.lineCap = "round";
+                ctx.lineJoin = "round";
+
+                if (!isLit) {
+                    // #5: Dormant runes pulse faintly before sweep reaches them
+                    const distToSweep = igniteFrac - sweepProgress;
+                    const anticipation = distToSweep < 0.15 && distToSweep > 0
+                        ? 0.04 + Math.sin(elapsed * 4) * 0.03
+                        : 0;
+                    ctx.strokeStyle = `rgba(${accent}, ${(0.07 + anticipation) * fadeIn})`;
+                    ctx.lineWidth = 0.8;
+                    drawRune(ctx, parsedPaths[runeIdx], gx, gy, GLYPH_SIZE);
+                    ctx.restore();
+                    continue;
+                }
+
+                const flashDur = 0.6;
+                const flashProgress = Math.min(1, sinceIgnite / flashDur);
+                const flashEased = 1 - Math.pow(1 - flashProgress, 2);
+
+                // Underglow pool
+                const uR = GLYPH_SIZE * (1.0 + (1 - flashEased) * 1.0);
+                const uAlpha = flashEased < 1 ? 0.18 * (1 - flashEased * 0.6) : 0.05;
+                const uGrad = ctx.createRadialGradient(gx, gy, 0, gx, gy, uR);
+                uGrad.addColorStop(0, `rgba(${flashEased < 0.25 ? "255, 255, 255" : accent}, ${uAlpha})`);
+                uGrad.addColorStop(1, `rgba(${accent}, 0)`);
+                ctx.fillStyle = uGrad;
+                ctx.beginPath();
+                ctx.arc(gx, gy, uR, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Shimmer boost for completed state
+                let shimmerBoost = 0;
+                if (isComplete) {
+                    let angleDist = Math.abs(runeAngle - shimmerAngle);
+                    if (angleDist > Math.PI) angleDist = Math.PI * 2 - angleDist;
+                    shimmerBoost = angleDist < 0.5 ? (1 - angleDist / 0.5) * 0.3 : 0;
+                }
+
+                const whiteAmount = Math.max(0, 1 - flashEased * 2.5);
+                const runeAlpha = isComplete
+                    ? 0.6 + breathVal * 0.2 + shimmerBoost
+                    : 0.35 + flashEased * 0.45;
+                ctx.strokeStyle = whiteAmount > 0.3
+                    ? `rgba(255, 255, 255, ${0.8 * whiteAmount + runeAlpha * (1 - whiteAmount)})`
+                    : `rgba(${accent}, ${runeAlpha})`;
+                ctx.lineWidth = flashEased < 0.15 ? 2.2 : 1.2 + (1 - flashEased) * 0.3;
+
+                if (flashEased < 0.4) {
+                    ctx.shadowColor = `rgba(255, 255, 255, ${0.5 * (1 - flashEased * 2.5)})`;
+                    ctx.shadowBlur = 12 * (1 - flashEased * 2.5);
+                } else if (isComplete) {
+                    ctx.shadowColor = `rgba(${accent}, ${0.15 + breathVal * 0.1 + shimmerBoost * 0.3})`;
+                    ctx.shadowBlur = 3 + breathVal * 3 + shimmerBoost * 6;
+                }
+
+                const revealFrac = Math.min(1, sinceIgnite / 0.3);
+                drawRune(ctx, parsedPaths[runeIdx], gx, gy, GLYPH_SIZE, revealFrac);
+                ctx.restore();
+            }
+
+            // ── Center percentage + #4: scale-up + #6: "SCROLL" label ──
+            // #4: Scale from 0.92 to 1.0 as approaching 100
+            const scaleVal = 0.92 + (pct / 100) * 0.08;
+            const fontSize = SIZE * 0.16 * scaleVal;
+            const centerGlow = isComplete ? 0.15 + breathVal * 0.1 : sweepProgress * 0.12;
+
+            if (centerGlow > 0) {
+                const cGrad = ctx.createRadialGradient(mx, my, 0, mx, my, RADIUS * 0.4);
+                cGrad.addColorStop(0, `rgba(${accent}, ${centerGlow})`);
+                cGrad.addColorStop(1, `rgba(${accent}, 0)`);
+                ctx.fillStyle = cGrad;
+                ctx.beginPath();
+                ctx.arc(mx, my, RADIUS * 0.4, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            ctx.font = `700 ${fontSize}px "JetBrains Mono", monospace`;
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
-            ctx.shadowColor = `rgba(${accent}, 0.4)`;
-            ctx.shadowBlur = 8;
-            ctx.fillText("⟡", mx, my);
+            const textAlpha = isComplete ? 0.7 + breathVal * 0.2 : 0.4 + sweepProgress * 0.3;
+            ctx.fillStyle = `rgba(${accent}, ${textAlpha})`;
+            ctx.shadowColor = `rgba(${accent}, ${isComplete ? 0.4 + breathVal * 0.2 : sweepProgress * 0.3})`;
+            ctx.shadowBlur = isComplete ? 6 + breathVal * 4 : 4;
+            ctx.fillText(`${pct}%`, mx, my - 5);
             ctx.shadowBlur = 0;
+
+            // #6: "SCROLL" sub-label
+            const subSize = SIZE * 0.04;
+            ctx.font = `600 ${subSize}px "JetBrains Mono", monospace`;
+            ctx.fillStyle = `rgba(${accent}, ${(isComplete ? 0.35 + breathVal * 0.1 : sweepProgress * 0.25)})`;
+            ctx.letterSpacing = "2px";
+            ctx.fillText("SCROLL", mx, my + fontSize * 0.55);
 
             frameRef.current = requestAnimationFrame(loop);
         };
         frameRef.current = requestAnimationFrame(loop);
         return () => cancelAnimationFrame(frameRef.current);
-    }, [parsedPaths, SIZE, RADIUS, GLYPH_SIZE]);
+    }, [parsedPaths, SIZE, RADIUS, GLYPH_SIZE, progress]);
 
     return (
-        <div className="flex justify-center">
+        <div className="flex flex-col items-center gap-8">
             <canvas ref={canvasRef} style={{ width: `${SIZE}px`, height: `${SIZE}px` }} />
+            <div className={`flex flex-col items-center gap-2 transition-opacity duration-500 ${textVisible ? "opacity-100" : "opacity-0"}`}>
+                <p className="text-sm font-semibold tracking-[0.3em] text-[rgb(var(--accent-light-rgb))] uppercase">Generating Report</p>
+                <p className="text-xs text-[var(--fg-30)]">Inscribing your scroll...</p>
+            </div>
         </div>
     );
 }
@@ -769,6 +1068,15 @@ export default function WorkoutPage() {
     const rpeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const [detailExercise, setDetailExercise] = useState<WorkoutExercise | null>(null);
 
+    // Minimum display time for completed session loading screen
+    const [minLoadDone, setMinLoadDone] = useState(false);
+    const minLoadTimerRef = useRef(false);
+    if (!minLoadTimerRef.current && w.loadHint === "completed") {
+        minLoadTimerRef.current = true;
+        setTimeout(() => setMinLoadDone(true), 2000);
+    }
+    const showCompletedLoader = w.loadHint === "completed" && (!w.hasLoaded || !minLoadDone);
+
     const sortedExercises = useMemo(() => {
         if (w.status !== "active") return w.exercisesList;
         const list = [...w.exercisesList];
@@ -830,20 +1138,15 @@ export default function WorkoutPage() {
     ═══════════════════════════════════════════════════════════════ */
 
     // ── LOADING ──
-    if (w.status === "loading" || !w.hasLoaded) {
-        // Active session: no loader, skip straight through
-        if (w.loadHint === "active") return null;
-        // Completed session: rune circle + report text
-        if (w.loadHint === "completed") return (
-            <main className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] flex flex-col items-center justify-center gap-6">
-                <LoadingRuneCircle />
-                <div className="flex flex-col items-center gap-1.5 animate-pulse" style={{ animationDuration: "2s" }}>
-                    <p className="text-[13px] font-mono tracking-wider text-[rgb(var(--accent-rgb)/0.6)]">GENERATING SESSION REPORT</p>
-                    <p className="text-[11px] text-[var(--fg-25)]">Inscribing your scroll...</p>
-                </div>
+    if (showCompletedLoader) {
+        return (
+            <main className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] flex flex-col items-center justify-center">
+                <ReportRuneLoader progress={w.loadProgress} />
             </main>
         );
-        // Default: existing cube loader for fresh/no-session state
+    }
+    if (w.status === "loading" || !w.hasLoaded) {
+        if (w.loadHint === "active") return null;
         return (
             <main className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] flex items-center justify-center">
                 <CubeLoader />
