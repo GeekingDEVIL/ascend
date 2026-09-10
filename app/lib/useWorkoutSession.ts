@@ -135,7 +135,7 @@ export function useWorkoutSession() {
         try {
             const c = JSON.parse(localStorage.getItem("ascend_workout_cache") || "null");
             if (c && c.date === today && c.sex === userSex && c.exercises?.length) {
-                cachedInit.current = { exercises: c.exercises, title: c.title || "Workout", status: c.completed ? "loading" : "not_started" };
+                cachedInit.current = { exercises: c.exercises, title: c.title || "Workout", status: "loading" };
             } else {
                 cachedInit.current = { exercises: [], title: "", status: "loading" };
             }
