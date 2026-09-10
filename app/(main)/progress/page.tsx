@@ -18,6 +18,7 @@ import { useUnits } from "../../lib/useUnits";
 import { kgToUnit, weightInputToKg } from "../../lib/units";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, CartesianGrid, ReferenceLine, LabelList } from "recharts";
 import { ACHIEVEMENT_DEFS, RARITY_COLORS, type AchievementDef } from "../../lib/achievements";
+import { analyzeVolume, type VolumeBalance } from "../../lib/intelligenceEngine";
 import MeasurementModal, { type MeasurementType } from "../../components/MeasurementModal";
 import { type WeightEntry, type WeightContext, rematerializeWeightTrend } from "../../lib/weightTrend";
 import { type FoodEntry, type MealSlot, MEAL_SLOTS, rematerializeDailyIntake, calcAdherence } from "../../lib/intakeLog";
@@ -234,6 +235,7 @@ export default function ProgressPage() {
 
     // Volume
     const [weeklyVolumeData, setWeeklyVolumeData] = useState<WeeklyVolume[]>([]);
+    const [volumeBalance, setVolumeBalance] = useState<VolumeBalance | null>(null);
 
     // Intake
     const [intakeDate, setIntakeDate] = useState(() => { const _d = new Date(); return `${_d.getFullYear()}-${String(_d.getMonth() + 1).padStart(2, "0")}-${String(_d.getDate()).padStart(2, "0")}`; });
@@ -787,6 +789,15 @@ export default function ProgressPage() {
     }, [loadHistory, loadAchievements, loadLeaderboardCard, loadGoals, loadPRs, loadBodyWeight, loadMeasurements, loadWeeklyVolume]);
 
     useEffect(() => {
+        if (!user) return;
+        let cancelled = false;
+        analyzeVolume(supabase, user.id, userSex).then(result => {
+            if (!cancelled) setVolumeBalance(result);
+        });
+        return () => { cancelled = true; };
+    }, [user, userSex, sessions.length]);
+
+    useEffect(() => {
         if (sessions.length === 0) { setMonthlyInsights(null); return; }
         try {
             setMonthlyInsights(buildMonthlyInsights(sessions.map(s => ({
@@ -1151,6 +1162,71 @@ export default function ProgressPage() {
                                                 </div>
                                             );
                                         })()}
+
+                                        {/* Volume by Muscle Group */}
+                                        {volumeBalance && volumeBalance.thisWeek.length > 0 && (
+                                            <div className="glass-card rounded-2xl p-4">
+                                                <div className="flex items-center justify-between mb-3">
+                                                    <p className="text-[9px] font-mono tracking-[0.2em] text-[var(--fg-20)]">VOLUME BY MUSCLE GROUP</p>
+                                                    {volumeBalance.weekOverWeekChange !== null && (
+                                                        <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded-md ${
+                                                            volumeBalance.weekOverWeekChange >= 0 ? "text-emerald-300 bg-emerald-400/10" : "text-orange-300 bg-orange-400/10"
+                                                        }`}>
+                                                            {volumeBalance.weekOverWeekChange >= 0 ? "+" : ""}{volumeBalance.weekOverWeekChange}% vs last week
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div className="flex items-center gap-4 mb-4">
+                                                    <div className="text-center">
+                                                        <p className="text-2xl font-bold font-mono text-[var(--fg-90)]">{volumeBalance.totalSets}</p>
+                                                        <p className="text-[9px] font-mono text-[var(--fg-30)]">Sets</p>
+                                                    </div>
+                                                    <div className="text-center">
+                                                        <p className="text-2xl font-bold font-mono text-[rgb(var(--accent-light-rgb))]">{(() => { const v = kgToUnit(volumeBalance.totalVolume, weightUnit); return v >= 1000 ? `${(v / 1000).toFixed(1)}k` : Math.round(v); })()}</p>
+                                                        <p className="text-[9px] font-mono text-[var(--fg-30)]">Volume ({weightUnit})</p>
+                                                    </div>
+                                                    <div className="text-center">
+                                                        <p className="text-2xl font-bold font-mono text-[var(--fg-90)]">{volumeBalance.thisWeek.length}</p>
+                                                        <p className="text-[9px] font-mono text-[var(--fg-30)]">Muscles</p>
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    {volumeBalance.thisWeek.map((m) => {
+                                                        const maxSets = volumeBalance.thisWeek[0]?.sets || 1;
+                                                        const lastWeekMatch = volumeBalance.lastWeek.find(lw => lw.muscle === m.muscle);
+                                                        return (
+                                                            <div key={m.muscle} className="flex items-center gap-2">
+                                                                <span className="text-[9px] font-mono text-[var(--fg-40)] w-20 text-right shrink-0 truncate">{m.muscle}</span>
+                                                                <div className="flex-1 h-4 rounded-full bg-[var(--fg-04)] overflow-hidden relative">
+                                                                    {lastWeekMatch && (
+                                                                        <div
+                                                                            className="absolute h-full rounded-full bg-[var(--fg-06)]"
+                                                                            style={{ width: `${Math.max(4, (lastWeekMatch.sets / maxSets) * 100)}%` }}
+                                                                        />
+                                                                    )}
+                                                                    <div
+                                                                        className="h-full rounded-full bg-gradient-to-r from-[rgb(var(--accent-rgb))] to-[rgb(var(--accent-light-rgb))] relative z-[1]"
+                                                                        style={{ width: `${Math.max(8, (m.sets / maxSets) * 100)}%` }}
+                                                                    />
+                                                                </div>
+                                                                <span className="text-[9px] font-mono text-[var(--fg-30)] w-12 shrink-0">{m.sets} sets</span>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                                {volumeBalance.imbalances.length > 0 && (
+                                                    <div className="mt-3 pt-2 border-t border-[var(--fg-06)]">
+                                                        {volumeBalance.imbalances.map((imb, i) => (
+                                                            <p key={i} className={`text-[10px] font-mono mt-1 ${
+                                                                imb.status === "low" ? "text-amber-400/70" : "text-orange-400/70"
+                                                            }`}>
+                                                                {imb.status === "low" ? "↓" : "↑"} {imb.detail}
+                                                            </p>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
 
                                         {/* Monthly Insights */}
                                         {monthlyInsights && (

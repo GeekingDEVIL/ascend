@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Dumbbell, Activity, Flame, Zap, HeartPulse, Trophy, Award, Bell, ChevronRight, TrendingUp, Target, Play, Calendar, Droplets, AlertCircle, BarChart3, Sparkles } from "lucide-react";
+import { Dumbbell, Activity, Flame, Zap, HeartPulse, Trophy, Award, Bell, ChevronRight, TrendingUp, Target, Play, Calendar, Droplets, AlertCircle, BarChart3, Sparkles, ShieldAlert } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "../lib/supabase";
 import { computeLevel, getRank, getNextRank } from "../lib/levelSystem";
@@ -17,6 +17,7 @@ import { useUnits } from "../lib/useUnits";
 import { formatWeight, kgToUnit } from "../lib/units";
 import { useModules } from "../lib/useModules";
 import { MODULE_REGISTRY } from "../lib/modules";
+import { detectFatigue, analyzeVolume, type FatigueAlert, type VolumeBalance } from "../lib/intelligenceEngine";
 
 type TodayPlan = { title: string; is_rest: boolean; count: number; sets: number; completed?: boolean };
 
@@ -116,6 +117,8 @@ export default function Dashboard() {
   const [hydrationMl, setHydrationMl] = useState<number | null>(null);
   const [habitStats, setHabitStats] = useState<{ completed: number; total: number; habits: { id: string; name: string; icon: string; done: boolean }[] } | null>(null);
   const [pendingHabits, setPendingHabits] = useState<{ id: string; name: string; icon: string }[]>([]);
+  const [fatigueAlerts, setFatigueAlerts] = useState<FatigueAlert[]>([]);
+  const [volumeBalance, setVolumeBalance] = useState<VolumeBalance | null>(null);
 
   useEffect(() => {
     const updateClock = () => setTime(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
@@ -674,6 +677,16 @@ export default function Dashboard() {
         }
       }
 
+      // ── Fatigue detection + Volume balance ──
+      const [fatigueResult, volumeResult] = await Promise.all([
+        detectFatigue(supabase, user.id, userSex),
+        analyzeVolume(supabase, user.id, userSex),
+      ]);
+      if (!cancelled) {
+        setFatigueAlerts(fatigueResult);
+        setVolumeBalance(volumeResult);
+      }
+
       // Habits card
       if (isEnabled("habits")) {
         const now = new Date();
@@ -769,6 +782,7 @@ export default function Dashboard() {
   // Smart card ordering — lower order = higher on page
   const cardOrder = useMemo(() => {
     let prOrder = 10, missedOrder = 11, cycleOrder = 12, recapOrder = 13, insightOrder = 14;
+    let fatigueOrder = 15, volumeOrder = 16;
     let workoutOrder = 20, levelOrder = 30, statsOrder = 40, attrOrder = 50;
     let recoveryBodyOrder = 60, energyOrder = 70, hydrationOrder = 75, habitsOrder = 76;
 
@@ -790,9 +804,17 @@ export default function Dashboard() {
     if (hour >= 12 && isEnabled("nutrition") && calorieSummary && !todayIntake) {
       energyOrder = 7;
     }
+    // Fatigue alerts are high priority — above workout card
+    if (fatigueAlerts.length > 0) {
+      fatigueOrder = fatigueAlerts.some(a => a.severity === "critical") ? 1.5 : 4;
+    }
+    // Volume balance is informational — keep it lower in the feed
+    if (volumeBalance && volumeBalance.imbalances.length > 0) {
+      volumeOrder = 45;
+    }
 
-    return { prOrder, missedOrder, cycleOrder, recapOrder, insightOrder, workoutOrder, levelOrder, statsOrder, attrOrder, recoveryBodyOrder, energyOrder, hydrationOrder, habitsOrder };
-  }, [recentPR, missedWorkout, stats.recoveryPct, todayPlan, cyclePhase, hour, isEnabled, calorieSummary, todayIntake]);
+    return { prOrder, missedOrder, cycleOrder, recapOrder, insightOrder, fatigueOrder, volumeOrder, workoutOrder, levelOrder, statsOrder, attrOrder, recoveryBodyOrder, energyOrder, hydrationOrder, habitsOrder };
+  }, [recentPR, missedWorkout, stats.recoveryPct, todayPlan, cyclePhase, hour, isEnabled, calorieSummary, todayIntake, fatigueAlerts, volumeBalance]);
 
   return (
     <main className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] pb-24 md:pb-10 relative">
@@ -893,6 +915,88 @@ export default function Dashboard() {
                 Schedule
               </button>
             </div>
+          </motion.div>
+        )}
+
+        {/* ─── Fatigue Alert ─── */}
+        {fatigueAlerts.length > 0 && (
+          <motion.div variants={staggerItem} className={`rounded-2xl border p-4 ${
+            fatigueAlerts.some(a => a.severity === "critical")
+              ? "border-red-400/20 bg-red-400/[0.04]"
+              : "border-amber-400/20 bg-amber-400/[0.04]"
+          }`} style={{ order: cardOrder.fatigueOrder, boxShadow: fatigueAlerts.some(a => a.severity === "critical") ? "0 0 25px -5px rgba(248,113,113,0.15)" : undefined }}>
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                fatigueAlerts.some(a => a.severity === "critical")
+                  ? "bg-red-400/15 border border-red-400/25"
+                  : "bg-amber-400/15 border border-amber-400/25"
+              }`}>
+                <ShieldAlert size={18} className={fatigueAlerts.some(a => a.severity === "critical") ? "text-red-400" : "text-amber-400"} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className={`text-[9px] font-mono tracking-widest mb-0.5 ${
+                  fatigueAlerts.some(a => a.severity === "critical") ? "text-red-400/60" : "text-amber-400/60"
+                }`}>FATIGUE DETECTED</p>
+                <p className={`text-sm font-semibold ${
+                  fatigueAlerts.some(a => a.severity === "critical") ? "text-red-300/90" : "text-amber-300/90"
+                }`}>{fatigueAlerts[0].message}</p>
+                <p className="text-[10px] font-mono text-[var(--fg-30)] mt-0.5">{fatigueAlerts[0].detail}</p>
+              </div>
+            </div>
+            {fatigueAlerts.length > 1 && (
+              <div className="mt-2 pt-2 border-t border-[var(--fg-06)] space-y-1">
+                {fatigueAlerts.slice(1).map((a, i) => (
+                  <p key={i} className="text-[10px] font-mono text-[var(--fg-35)]">• {a.message}: {a.detail}</p>
+                ))}
+              </div>
+            )}
+          </motion.div>
+        )}
+
+        {/* ─── Volume Balance ─── */}
+        {volumeBalance && volumeBalance.thisWeek.length > 0 && (
+          <motion.div variants={staggerItem} className="rounded-2xl border border-[var(--fg-06)] bg-[var(--fg-03)] p-4" style={{ order: cardOrder.volumeOrder }}>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <BarChart3 size={14} className="text-[rgb(var(--accent-rgb))]" />
+                <p className="text-[9px] font-mono tracking-[0.2em] text-[var(--fg-20)]">VOLUME BY MUSCLE</p>
+              </div>
+              {volumeBalance.weekOverWeekChange !== null && (
+                <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded-md ${
+                  volumeBalance.weekOverWeekChange >= 0 ? "text-emerald-300 bg-emerald-400/10" : "text-orange-300 bg-orange-400/10"
+                }`}>
+                  {volumeBalance.weekOverWeekChange >= 0 ? "+" : ""}{volumeBalance.weekOverWeekChange}% vs last week
+                </span>
+              )}
+            </div>
+            <div className="space-y-1.5">
+              {volumeBalance.thisWeek.slice(0, 6).map((m) => {
+                const maxSets = volumeBalance.thisWeek[0]?.sets || 1;
+                return (
+                  <div key={m.muscle} className="flex items-center gap-2">
+                    <span className="text-[9px] font-mono text-[var(--fg-40)] w-16 text-right shrink-0">{m.muscle}</span>
+                    <div className="flex-1 h-3 rounded-full bg-[var(--fg-04)] overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-[rgb(var(--accent-rgb))] to-[rgb(var(--accent-light-rgb))]"
+                        style={{ width: `${Math.max(8, (m.sets / maxSets) * 100)}%` }}
+                      />
+                    </div>
+                    <span className="text-[9px] font-mono text-[var(--fg-30)] w-10 shrink-0">{m.sets} sets</span>
+                  </div>
+                );
+              })}
+            </div>
+            {volumeBalance.imbalances.length > 0 && (
+              <div className="mt-3 pt-2 border-t border-[var(--fg-06)]">
+                {volumeBalance.imbalances.map((imb, i) => (
+                  <p key={i} className={`text-[10px] font-mono mt-1 ${
+                    imb.status === "low" ? "text-amber-400/70" : "text-orange-400/70"
+                  }`}>
+                    {imb.status === "low" ? "↓" : "↑"} {imb.detail}
+                  </p>
+                ))}
+              </div>
+            )}
           </motion.div>
         )}
 

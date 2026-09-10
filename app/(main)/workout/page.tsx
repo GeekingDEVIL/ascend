@@ -11,6 +11,9 @@ import WorkoutCompleteCard from "../../components/WorkoutCompleteCard";
 import SwipeNav from "../../components/ui/swipe-nav";
 import { useModules } from "../../lib/useModules";
 import { getTrainSections } from "../../lib/navPills";
+import { detectFatigue, type FatigueAlert } from "../../lib/intelligenceEngine";
+import { supabase } from "../../lib/supabase";
+import { useAuth } from "../../lib/AuthProvider";
 import {
     useWorkoutSession,
     formatClock,
@@ -1142,6 +1145,7 @@ function SessionCounterPanel({ sets, totalSets, volume, elapsed, weightUnit, las
 export default function WorkoutPage() {
     const router = useRouter();
     const { enabledKeys } = useModules();
+    const { user } = useAuth();
     const w = useWorkoutSession();
     const [editingExId, setEditingExId] = useState<string | null>(null);
     const prevVolRef = useRef(0);
@@ -1149,6 +1153,17 @@ export default function WorkoutPage() {
     const [rpePrompt, setRpePrompt] = useState<{ exId: string; setIdx: number } | null>(null);
     const rpeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const [detailExercise, setDetailExercise] = useState<WorkoutExercise | null>(null);
+    const [fatigueAlerts, setFatigueAlerts] = useState<FatigueAlert[]>([]);
+    const [fatigueDismissed, setFatigueDismissed] = useState(false);
+
+    useEffect(() => {
+        if (!user || !w.statsLoaded || w.status !== "not_started") return;
+        let cancelled = false;
+        detectFatigue(supabase, user.id, w.userSex).then(alerts => {
+            if (!cancelled) setFatigueAlerts(alerts);
+        });
+        return () => { cancelled = true; };
+    }, [user, w.statsLoaded, w.status, w.userSex]);
 
     // Minimum display time for completed session loading screen
     const [minLoadDone, setMinLoadDone] = useState(false);
@@ -1480,6 +1495,44 @@ export default function WorkoutPage() {
                         />
                     );
                 })()}
+
+                {/* ── FATIGUE WARNING BANNER ── */}
+                {w.status === "not_started" && fatigueAlerts.length > 0 && !fatigueDismissed && (
+                    <div className={`rounded-2xl border p-4 relative ${
+                        fatigueAlerts.some(a => a.severity === "critical")
+                            ? "border-red-400/20 bg-red-400/[0.04]"
+                            : "border-amber-400/20 bg-amber-400/[0.04]"
+                    }`}>
+                        <button onClick={() => setFatigueDismissed(true)} className="absolute top-3 right-3 text-[var(--fg-20)] hover:text-[var(--fg-50)] transition">
+                            <X size={14} />
+                        </button>
+                        <div className="flex items-start gap-3">
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${
+                                fatigueAlerts.some(a => a.severity === "critical")
+                                    ? "bg-red-400/15 border border-red-400/25"
+                                    : "bg-amber-400/15 border border-amber-400/25"
+                            }`}>
+                                <Flame size={14} className={fatigueAlerts.some(a => a.severity === "critical") ? "text-red-400" : "text-amber-400"} />
+                            </div>
+                            <div className="flex-1 min-w-0 pr-4">
+                                <p className={`text-[8px] font-mono tracking-widest mb-0.5 ${
+                                    fatigueAlerts.some(a => a.severity === "critical") ? "text-red-400/60" : "text-amber-400/60"
+                                }`}>FATIGUE WARNING</p>
+                                <p className={`text-sm font-semibold ${
+                                    fatigueAlerts.some(a => a.severity === "critical") ? "text-red-300/90" : "text-amber-300/90"
+                                }`}>{fatigueAlerts[0].message}</p>
+                                <p className="text-[10px] text-[var(--fg-35)] mt-1 leading-relaxed">{fatigueAlerts[0].detail}</p>
+                                {fatigueAlerts.length > 1 && (
+                                    <div className="mt-2 pt-2 border-t border-[var(--fg-06)] space-y-1">
+                                        {fatigueAlerts.slice(1).map((a, i) => (
+                                            <p key={i} className="text-[10px] font-mono text-[var(--fg-30)]">• {a.detail}</p>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* ── CYCLE TRAINING BANNER (female mode) ── */}
                 {w.cycleProfile && (w.status === "not_started" || w.status === "active") && (
