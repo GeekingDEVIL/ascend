@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { X, Camera, Square, RotateCcw, ChevronRight, Circle } from "lucide-react";
-import { analyzeForm, getScoreColor, getScoreLabel, type FormFrame, type FormAnalysisResult, type BarPathPoint } from "../lib/formAnalysis";
+import { analyzeForm, getScoreColor, getScoreLabel, checkFormRealtime, type FormFrame, type FormAnalysisResult, type BarPathPoint, type JointStatus } from "../lib/formAnalysis";
 import { LandmarkSmoother } from "../lib/oneEuroFilter";
 
 type PoseLandmarker = any;
@@ -10,9 +10,12 @@ type PoseLandmarker = any;
 const MAX_DURATION_MS = 60_000;
 const COUNTDOWN_SECONDS = 3;
 
-const SKELETON_COLOR = "#00ffaa";
-const SKELETON_GLOW = "rgba(0, 255, 170, 0.5)";
-const SKELETON_DOT = "#66ffc8";
+const STATUS_COLORS: Record<JointStatus, { line: string; glow: string; dot: string }> = {
+    good: { line: "#00ffaa", glow: "rgba(0, 255, 170, 0.5)", dot: "#66ffc8" },
+    warn: { line: "#ffb800", glow: "rgba(255, 184, 0, 0.5)", dot: "#ffd566" },
+    bad:  { line: "#ff4466", glow: "rgba(255, 68, 102, 0.5)", dot: "#ff8899" },
+};
+const DEFAULT_STATUS: JointStatus = "good";
 
 const POSE_CONNECTIONS = [
     [11, 12], [11, 13], [13, 15], [12, 14], [14, 16],
@@ -32,6 +35,9 @@ export default function FormCheckCamera({ exerciseName, onClose }: { exerciseNam
     const rafRef = useRef<number>(0);
     const startTimeRef = useRef(0);
     const smootherRef = useRef(new LandmarkSmoother());
+    const detectedExerciseRef = useRef<"squat" | "deadlift" | "bench" | "overhead_press" | "general">("general");
+    const feedbackRef = useRef<ReturnType<typeof checkFormRealtime> | null>(null);
+    const frameCountRef = useRef(0);
 
     const [phase, setPhase] = useState<Phase>("loading");
     const [elapsed, setElapsed] = useState(0);
@@ -99,7 +105,7 @@ export default function FormCheckCamera({ exerciseName, onClose }: { exerciseNam
         return () => { cancelled = true; };
     }, [facingMode]);
 
-    const drawSkeleton = useCallback((landmarks: any[]) => {
+    const drawSkeleton = useCallback((landmarks: any[], isRecording: boolean) => {
         const canvas = overlayCanvasRef.current;
         const video = videoRef.current;
         if (!canvas || !video) return;
@@ -116,15 +122,29 @@ export default function FormCheckCamera({ exerciseName, onClose }: { exerciseNam
         const w = canvas.width;
         const h = canvas.height;
 
-        // Pass 1: outer glow
+        // Get per-joint color feedback during recording
+        const fb = feedbackRef.current;
+        const getConnStatus = (a: number, b: number): JointStatus => {
+            if (!fb || !isRecording) return DEFAULT_STATUS;
+            const key = `${Math.min(a, b)}-${Math.max(a, b)}`;
+            return fb.connectionStatus.get(key) ?? DEFAULT_STATUS;
+        };
+        const getJointStatus = (idx: number): JointStatus => {
+            if (!fb || !isRecording) return DEFAULT_STATUS;
+            return fb.jointStatus.get(idx) ?? DEFAULT_STATUS;
+        };
+
+        // Pass 1: outer glow (per-connection color)
         ctx.save();
-        ctx.shadowColor = SKELETON_GLOW;
-        ctx.shadowBlur = 16;
-        ctx.strokeStyle = SKELETON_COLOR;
         ctx.lineWidth = 6;
         ctx.lineCap = "round";
         for (const [a, b] of POSE_CONNECTIONS) {
             if (smoothed[a] && smoothed[b] && (smoothed[a].visibility ?? 0) > 0.5 && (smoothed[b].visibility ?? 0) > 0.5) {
+                const status = getConnStatus(a, b);
+                const colors = STATUS_COLORS[status];
+                ctx.shadowColor = colors.glow;
+                ctx.shadowBlur = 16;
+                ctx.strokeStyle = colors.line;
                 ctx.beginPath();
                 ctx.moveTo(smoothed[a].x * w, smoothed[a].y * h);
                 ctx.lineTo(smoothed[b].x * w, smoothed[b].y * h);
@@ -134,11 +154,11 @@ export default function FormCheckCamera({ exerciseName, onClose }: { exerciseNam
         ctx.restore();
 
         // Pass 2: crisp inner line
-        ctx.strokeStyle = "#ffffff";
         ctx.lineWidth = 2;
         ctx.lineCap = "round";
         for (const [a, b] of POSE_CONNECTIONS) {
             if (smoothed[a] && smoothed[b] && (smoothed[a].visibility ?? 0) > 0.5 && (smoothed[b].visibility ?? 0) > 0.5) {
+                ctx.strokeStyle = "#ffffff";
                 ctx.beginPath();
                 ctx.moveTo(smoothed[a].x * w, smoothed[a].y * h);
                 ctx.lineTo(smoothed[b].x * w, smoothed[b].y * h);
@@ -146,22 +166,24 @@ export default function FormCheckCamera({ exerciseName, onClose }: { exerciseNam
             }
         }
 
-        // Joint dots with glow
+        // Joint dots with per-joint color
         ctx.save();
-        ctx.shadowColor = SKELETON_GLOW;
-        ctx.shadowBlur = 12;
-        for (const p of smoothed) {
+        for (let i = 0; i < smoothed.length; i++) {
+            const p = smoothed[i];
             const vis = p.visibility ?? 0;
             if (vis > 0.3) {
                 const alpha = vis > 0.8 ? 1 : vis > 0.5 ? 0.7 : 0.35;
+                const status = getJointStatus(i);
+                const colors = STATUS_COLORS[status];
+                ctx.shadowColor = colors.glow;
+                ctx.shadowBlur = 12;
                 ctx.globalAlpha = alpha;
-                ctx.fillStyle = SKELETON_DOT;
+                ctx.fillStyle = colors.dot;
                 ctx.beginPath();
                 ctx.arc(p.x * w, p.y * h, 5, 0, Math.PI * 2);
                 ctx.fill();
-                // Outer ring
                 ctx.globalAlpha = alpha * 0.3;
-                ctx.strokeStyle = SKELETON_DOT;
+                ctx.strokeStyle = colors.dot;
                 ctx.lineWidth = 1.5;
                 ctx.beginPath();
                 ctx.arc(p.x * w, p.y * h, 8, 0, Math.PI * 2);
@@ -181,12 +203,40 @@ export default function FormCheckCamera({ exerciseName, onClose }: { exerciseNam
 
         const now = performance.now();
         const result = landmarker.detectForVideo(video, now);
+        const isRecording = phase === "recording";
 
         if (result?.landmarks?.[0]) {
-            drawSkeleton(result.landmarks[0]);
-            if (phase === "recording") {
-                framesRef.current.push({ timestamp: now, landmarks: result.landmarks[0] });
+            const rawLandmarks = result.landmarks[0];
+
+            if (isRecording) {
+                framesRef.current.push({ timestamp: now, landmarks: rawLandmarks });
+                frameCountRef.current++;
+
+                // Detect exercise type from early frames (after 15 frames)
+                if (frameCountRef.current === 15) {
+                    const earlyFrames = framesRef.current.slice(0, 15);
+                    let hipBelowKnee = 0, wristAbove = 0;
+                    for (const f of earlyFrames) {
+                        const lm = f.landmarks;
+                        const hipY = (lm[23].y + lm[24].y) / 2;
+                        const kneeY = (lm[25].y + lm[26].y) / 2;
+                        const shoulderY = (lm[11].y + lm[12].y) / 2;
+                        const wristY = (lm[15].y + lm[16].y) / 2;
+                        if (hipY > kneeY - 0.02) hipBelowKnee++;
+                        if (wristY < shoulderY - 0.05) wristAbove++;
+                    }
+                    if (wristAbove / earlyFrames.length > 0.4) detectedExerciseRef.current = "overhead_press";
+                    else if (hipBelowKnee / earlyFrames.length > 0.15) detectedExerciseRef.current = "squat";
+                    else detectedExerciseRef.current = "general";
+                }
+
+                // Run real-time form check every 3rd frame for performance
+                if (frameCountRef.current % 3 === 0) {
+                    feedbackRef.current = checkFormRealtime(rawLandmarks, detectedExerciseRef.current);
+                }
             }
+
+            drawSkeleton(rawLandmarks, isRecording);
         }
 
         if (startTimeRef.current > 0) {
@@ -236,6 +286,9 @@ export default function FormCheckCamera({ exerciseName, onClose }: { exerciseNam
 
     function beginRecording() {
         framesRef.current = [];
+        frameCountRef.current = 0;
+        feedbackRef.current = null;
+        detectedExerciseRef.current = "general";
         startTimeRef.current = performance.now();
         setElapsed(0);
         setPhase("recording");
@@ -363,9 +416,12 @@ export default function FormCheckCamera({ exerciseName, onClose }: { exerciseNam
 
                     {/* Recording indicator */}
                     {phase === "recording" && (
-                        <div className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-red-500/90 backdrop-blur-sm px-4 py-2 rounded-full shadow-lg shadow-red-500/20">
-                            <div className="w-2.5 h-2.5 rounded-full bg-white animate-pulse" />
-                            <span className="text-sm font-mono font-medium text-white tracking-wide">{elapsed}s / 60s</span>
+                        <div className="absolute top-4 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
+                            <div className="flex items-center gap-2 bg-red-500/90 backdrop-blur-sm px-4 py-2 rounded-full shadow-lg shadow-red-500/20">
+                                <div className="w-2.5 h-2.5 rounded-full bg-white animate-pulse" />
+                                <span className="text-sm font-mono font-medium text-white tracking-wide">{elapsed}s / 60s</span>
+                            </div>
+                            <LiveFormBadge feedbackRef={feedbackRef} />
                         </div>
                     )}
 
@@ -409,6 +465,45 @@ export default function FormCheckCamera({ exerciseName, onClose }: { exerciseNam
                     )}
                 </div>
             )}
+        </div>
+    );
+}
+
+function LiveFormBadge({ feedbackRef }: { feedbackRef: React.RefObject<ReturnType<typeof checkFormRealtime> | null> }) {
+    const [status, setStatus] = useState<"good" | "warn" | "bad">("good");
+    const [message, setMessage] = useState("");
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            const fb = feedbackRef.current;
+            if (!fb) return;
+
+            let worst: JointStatus = "good";
+            for (const [, s] of fb.jointStatus) {
+                if (s === "bad") { worst = "bad"; break; }
+                if (s === "warn") worst = "warn";
+            }
+            setStatus(worst);
+
+            if (fb.kneeCave) {
+                setMessage("Knees caving in!");
+            } else if (worst === "bad") {
+                setMessage("Check your form");
+            } else if (worst === "warn") {
+                setMessage("Watch your form");
+            } else {
+                setMessage("");
+            }
+        }, 200);
+        return () => clearInterval(interval);
+    }, [feedbackRef]);
+
+    if (!message) return null;
+
+    const bg = status === "bad" ? "bg-red-500/80" : "bg-amber-500/80";
+    return (
+        <div className={`${bg} backdrop-blur-sm px-3 py-1 rounded-full animate-pulse`}>
+            <span className="text-[11px] font-semibold text-white">{message}</span>
         </div>
     );
 }
@@ -503,6 +598,17 @@ function ResultsView({ result, onRetry, onClose }: { result: FormAnalysisResult;
                         </div>
                         <p className="text-lg font-bold text-white/90 leading-none mb-0.5">{result.symmetry.diff}°</p>
                         <p className="text-[9px] text-white/30">L{result.symmetry.leftAngle}° R{result.symmetry.rightAngle}°</p>
+                    </div>
+                )}
+
+                {result.kneeCave && (
+                    <div className={`flex-1 rounded-xl p-3 ${!result.kneeCave.detected ? "bg-emerald-500/10 border border-emerald-500/15" : "bg-red-500/10 border border-red-500/15"}`}>
+                        <div className="flex items-center justify-between mb-1.5">
+                            <span className={`text-[10px] font-semibold tracking-wide uppercase ${!result.kneeCave.detected ? "text-emerald-400" : "text-red-400"}`}>Knee Cave</span>
+                            <span className={`text-[10px] ${!result.kneeCave.detected ? "text-emerald-400" : "text-red-400"}`}>{!result.kneeCave.detected ? "✓" : "!"}</span>
+                        </div>
+                        <p className="text-lg font-bold text-white/90 leading-none mb-0.5">{result.kneeCave.detected ? result.kneeCave.side : "None"}</p>
+                        <p className="text-[9px] text-white/30">{result.kneeCave.detected ? "valgus detected" : "tracking well"}</p>
                     </div>
                 )}
 

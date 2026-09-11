@@ -33,12 +33,20 @@ export type SymmetryCheck = {
 
 export type BarPathPoint = { x: number; y: number; t: number };
 
+export type KneeCaveCheck = {
+    detected: boolean;
+    side: "left" | "right" | "both" | "none";
+    worstSeverity: number;
+    message: string;
+};
+
 export type FormAnalysisResult = {
     exerciseType: "squat" | "deadlift" | "bench" | "overhead_press" | "general";
     frameCount: number;
     duration: number;
     depth?: DepthCheck;
     symmetry?: SymmetryCheck;
+    kneeCave?: KneeCaveCheck;
     barPath?: BarPathPoint[];
     overallScore: number;
     tips: string[];
@@ -156,6 +164,35 @@ function extractBarPath(frames: FormFrame[]): BarPathPoint[] {
     return points;
 }
 
+function analyzeKneeCave(frames: FormFrame[]): KneeCaveCheck {
+    let leftCaveCount = 0, rightCaveCount = 0, worstSeverity = 0;
+    const sample = frames.filter((_, i) => i % 3 === 0);
+
+    for (const f of sample) {
+        const result = checkKneeCave(f.landmarks);
+        if (result) {
+            if (result.side === "left" || result.side === "both") leftCaveCount++;
+            if (result.side === "right" || result.side === "both") rightCaveCount++;
+            if (result.severity > worstSeverity) worstSeverity = result.severity;
+        }
+    }
+
+    const total = sample.length;
+    const leftRatio = leftCaveCount / total;
+    const rightRatio = rightCaveCount / total;
+    const detected = leftRatio > 0.2 || rightRatio > 0.2;
+    const side = detected ? (leftRatio > 0.2 && rightRatio > 0.2 ? "both" : leftRatio > 0.2 ? "left" : "right") : "none";
+
+    return {
+        detected,
+        side,
+        worstSeverity: Math.round(worstSeverity * 1000) / 1000,
+        message: detected
+            ? `Knee valgus detected on ${side} side${side === "both" ? "s" : ""} — knees collapsing inward during the lift.`
+            : "No knee cave detected — knees tracking well over toes.",
+    };
+}
+
 function detectMovement(frames: FormFrame[]): number {
     if (frames.length < 10) return 0;
     const sample = frames.filter((_, i) => i % 5 === 0);
@@ -210,11 +247,15 @@ export function analyzeForm(frames: FormFrame[]): FormAnalysisResult {
     let depth: DepthCheck | undefined;
     let symmetry: SymmetryCheck | undefined;
 
+    let kneeCave: KneeCaveCheck | undefined;
+
     if (exerciseType === "squat") {
         depth = analyzeSquatDepth(frames);
         symmetry = analyzeSymmetry(frames);
-        if (depth.passed) score += 25; else { score -= 10; tips.push("Try to hit at least parallel depth on squats."); }
-        if (symmetry.passed) score += 20; else { score -= 5; tips.push("Work on evening out both sides — mobility drills can help."); }
+        kneeCave = analyzeKneeCave(frames);
+        if (depth.passed) score += 20; else { score -= 10; tips.push("Try to hit at least parallel depth on squats."); }
+        if (symmetry.passed) score += 15; else { score -= 5; tips.push("Work on evening out both sides — mobility drills can help."); }
+        if (kneeCave.detected) { score -= 10; tips.push(kneeCave.message); } else { score += 10; }
     } else if (exerciseType === "deadlift") {
         symmetry = analyzeSymmetry(frames);
         if (symmetry.passed) score += 20; else { score -= 5; tips.push("Keep the bar balanced — check your grip width."); }
@@ -258,9 +299,150 @@ export function analyzeForm(frames: FormFrame[]): FormAnalysisResult {
 
     return {
         exerciseType, frameCount: frames.length, duration: Math.round(duration),
-        depth, symmetry, barPath,
+        depth, symmetry, kneeCave, barPath,
         overallScore: Math.max(0, Math.min(100, score)), tips,
     };
+}
+
+// Real-time per-joint form status for live color feedback
+export type JointStatus = "good" | "warn" | "bad";
+export type RealtimeFormFeedback = {
+    jointStatus: Map<number, JointStatus>;
+    connectionStatus: Map<string, JointStatus>;
+    kneeCave?: { side: "left" | "right" | "both"; severity: number };
+};
+
+const CONN_KEY = (a: number, b: number) => `${Math.min(a, b)}-${Math.max(a, b)}`;
+
+function checkKneeCave(lm: NormalizedLandmark[]): RealtimeFormFeedback["kneeCave"] {
+    const lKnee = lm[LM.LEFT_KNEE], lHip = lm[LM.LEFT_HIP], lAnkle = lm[LM.LEFT_ANKLE];
+    const rKnee = lm[LM.RIGHT_KNEE], rHip = lm[LM.RIGHT_HIP], rAnkle = lm[LM.RIGHT_ANKLE];
+    if (!lKnee || !rKnee || !lHip || !rHip || !lAnkle || !rAnkle) return undefined;
+
+    // Knee cave = knee X drifts inward past the hip-ankle midline
+    const lMidX = (lHip.x + lAnkle.x) / 2;
+    const rMidX = (rHip.x + rAnkle.x) / 2;
+    // In normalized coords, left knee caving inward means it moves toward center (higher x if left side)
+    const lDrift = lKnee.x - lMidX; // positive = inward for left leg
+    const rDrift = rMidX - rKnee.x; // positive = inward for right leg
+    const threshold = 0.015;
+
+    const leftCave = lDrift > threshold;
+    const rightCave = rDrift > threshold;
+    if (!leftCave && !rightCave) return undefined;
+
+    const severity = Math.max(leftCave ? lDrift : 0, rightCave ? rDrift : 0);
+    return {
+        side: leftCave && rightCave ? "both" : leftCave ? "left" : "right",
+        severity,
+    };
+}
+
+export function checkFormRealtime(
+    landmarks: NormalizedLandmark[],
+    exerciseType: "squat" | "deadlift" | "bench" | "overhead_press" | "general",
+): RealtimeFormFeedback {
+    const jointStatus = new Map<number, JointStatus>();
+    const connectionStatus = new Map<string, JointStatus>();
+    let kneeCave: RealtimeFormFeedback["kneeCave"];
+
+    const setJoint = (idx: number, s: JointStatus) => {
+        const cur = jointStatus.get(idx);
+        if (!cur || s === "bad" || (s === "warn" && cur === "good")) jointStatus.set(idx, s);
+    };
+    const setConn = (a: number, b: number, s: JointStatus) => {
+        const key = CONN_KEY(a, b);
+        const cur = connectionStatus.get(key);
+        if (!cur || s === "bad" || (s === "warn" && cur === "good")) connectionStatus.set(key, s);
+    };
+
+    if (exerciseType === "squat" || exerciseType === "general") {
+        // Knee angle check (depth indicator during movement)
+        const lKneeAngle = angle3(landmarks[LM.LEFT_HIP], landmarks[LM.LEFT_KNEE], landmarks[LM.LEFT_ANKLE]);
+        const rKneeAngle = angle3(landmarks[LM.RIGHT_HIP], landmarks[LM.RIGHT_KNEE], landmarks[LM.RIGHT_ANKLE]);
+        for (const [kneeAngle, hip, knee, ankle] of [
+            [lKneeAngle, LM.LEFT_HIP, LM.LEFT_KNEE, LM.LEFT_ANKLE],
+            [rKneeAngle, LM.RIGHT_HIP, LM.RIGHT_KNEE, LM.RIGHT_ANKLE],
+        ] as [number, number, number, number][]) {
+            if (kneeAngle < 100) {
+                setJoint(knee, "good"); setConn(hip, knee, "good"); setConn(knee, ankle, "good");
+            } else if (kneeAngle < 130) {
+                setJoint(knee, "warn"); setConn(hip, knee, "warn"); setConn(knee, ankle, "warn");
+            }
+        }
+
+        // Knee cave detection
+        kneeCave = checkKneeCave(landmarks);
+        if (kneeCave) {
+            if (kneeCave.side === "left" || kneeCave.side === "both") {
+                const s: JointStatus = kneeCave.severity > 0.03 ? "bad" : "warn";
+                setJoint(LM.LEFT_KNEE, s); setConn(LM.LEFT_HIP, LM.LEFT_KNEE, s); setConn(LM.LEFT_KNEE, LM.LEFT_ANKLE, s);
+            }
+            if (kneeCave.side === "right" || kneeCave.side === "both") {
+                const s: JointStatus = kneeCave.severity > 0.03 ? "bad" : "warn";
+                setJoint(LM.RIGHT_KNEE, s); setConn(LM.RIGHT_HIP, LM.RIGHT_KNEE, s); setConn(LM.RIGHT_KNEE, LM.RIGHT_ANKLE, s);
+            }
+        }
+
+        // Back rounding (shoulder dropping below hip)
+        const shoulderY = (landmarks[LM.LEFT_SHOULDER].y + landmarks[LM.RIGHT_SHOULDER].y) / 2;
+        const hipY = (landmarks[LM.LEFT_HIP].y + landmarks[LM.RIGHT_HIP].y) / 2;
+        if (shoulderY > hipY + 0.04) {
+            setJoint(LM.LEFT_SHOULDER, "bad"); setJoint(LM.RIGHT_SHOULDER, "bad");
+            setConn(LM.LEFT_SHOULDER, LM.LEFT_HIP, "bad"); setConn(LM.RIGHT_SHOULDER, LM.RIGHT_HIP, "bad");
+        } else if (shoulderY > hipY + 0.02) {
+            setJoint(LM.LEFT_SHOULDER, "warn"); setJoint(LM.RIGHT_SHOULDER, "warn");
+            setConn(LM.LEFT_SHOULDER, LM.LEFT_HIP, "warn"); setConn(LM.RIGHT_SHOULDER, LM.RIGHT_HIP, "warn");
+        }
+    }
+
+    if (exerciseType === "deadlift") {
+        // Back rounding check
+        const shoulderY = (landmarks[LM.LEFT_SHOULDER].y + landmarks[LM.RIGHT_SHOULDER].y) / 2;
+        const hipY = (landmarks[LM.LEFT_HIP].y + landmarks[LM.RIGHT_HIP].y) / 2;
+        if (shoulderY > hipY + 0.03) {
+            setJoint(LM.LEFT_SHOULDER, "bad"); setJoint(LM.RIGHT_SHOULDER, "bad");
+            setConn(LM.LEFT_SHOULDER, LM.LEFT_HIP, "bad"); setConn(LM.RIGHT_SHOULDER, LM.RIGHT_HIP, "bad");
+            setConn(LM.LEFT_SHOULDER, LM.RIGHT_SHOULDER, "bad");
+        }
+
+        // Symmetry — check if one side is significantly lower
+        const lElbowAngle = angle3(landmarks[LM.LEFT_SHOULDER], landmarks[LM.LEFT_ELBOW], landmarks[LM.LEFT_WRIST]);
+        const rElbowAngle = angle3(landmarks[LM.RIGHT_SHOULDER], landmarks[LM.RIGHT_ELBOW], landmarks[LM.RIGHT_WRIST]);
+        if (Math.abs(lElbowAngle - rElbowAngle) > 15) {
+            const worse = lElbowAngle > rElbowAngle ? "left" : "right";
+            const [elbow, shoulder, wrist] = worse === "left"
+                ? [LM.LEFT_ELBOW, LM.LEFT_SHOULDER, LM.LEFT_WRIST]
+                : [LM.RIGHT_ELBOW, LM.RIGHT_SHOULDER, LM.RIGHT_WRIST];
+            setJoint(elbow, "warn"); setConn(shoulder, elbow, "warn"); setConn(elbow, wrist, "warn");
+        }
+    }
+
+    if (exerciseType === "overhead_press" || exerciseType === "bench") {
+        // Elbow flare check
+        const lElbowAngle = angle3(landmarks[LM.LEFT_SHOULDER], landmarks[LM.LEFT_ELBOW], landmarks[LM.LEFT_WRIST]);
+        const rElbowAngle = angle3(landmarks[LM.RIGHT_SHOULDER], landmarks[LM.RIGHT_ELBOW], landmarks[LM.RIGHT_WRIST]);
+
+        // Bar path lateral drift
+        const lWristX = landmarks[LM.LEFT_WRIST].x;
+        const rWristX = landmarks[LM.RIGHT_WRIST].x;
+        const lShoulderX = landmarks[LM.LEFT_SHOULDER].x;
+        const rShoulderX = landmarks[LM.RIGHT_SHOULDER].x;
+        const lDrift = Math.abs(lWristX - lShoulderX);
+        const rDrift = Math.abs(rWristX - rShoulderX);
+
+        if (lDrift > 0.08) { setJoint(LM.LEFT_WRIST, "warn"); setConn(LM.LEFT_ELBOW, LM.LEFT_WRIST, "warn"); }
+        if (rDrift > 0.08) { setJoint(LM.RIGHT_WRIST, "warn"); setConn(LM.RIGHT_ELBOW, LM.RIGHT_WRIST, "warn"); }
+        if (lDrift > 0.14) { setJoint(LM.LEFT_WRIST, "bad"); setConn(LM.LEFT_ELBOW, LM.LEFT_WRIST, "bad"); }
+        if (rDrift > 0.14) { setJoint(LM.RIGHT_WRIST, "bad"); setConn(LM.RIGHT_ELBOW, LM.RIGHT_WRIST, "bad"); }
+
+        // Symmetry
+        if (Math.abs(lElbowAngle - rElbowAngle) > 20) {
+            setJoint(LM.LEFT_ELBOW, "warn"); setJoint(LM.RIGHT_ELBOW, "warn");
+        }
+    }
+
+    return { jointStatus, connectionStatus, kneeCave };
 }
 
 export function getScoreColor(score: number): string {
