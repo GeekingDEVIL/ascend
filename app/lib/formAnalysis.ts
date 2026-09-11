@@ -48,6 +48,7 @@ export type FormAnalysisResult = {
     symmetry?: SymmetryCheck;
     kneeCave?: KneeCaveCheck;
     barPath?: BarPathPoint[];
+    reps?: RepResult[];
     overallScore: number;
     tips: string[];
 };
@@ -295,11 +296,32 @@ export function analyzeForm(frames: FormFrame[]): FormAnalysisResult {
 
     if (duration >= 10) score += 5;
 
+    // Post-recording rep detection
+    const repDetector = new RepDetector();
+    repDetector.setExerciseType(exerciseType);
+    for (const f of frames) {
+        repDetector.processFrame(f.landmarks, f.timestamp);
+    }
+    const reps = repDetector.getReps();
+
+    // If reps detected, blend per-rep scores with form score
+    if (reps.length > 0) {
+        const avgRepScore = reps.reduce((sum, r) => sum + r.score, 0) / reps.length;
+        score = Math.round(score * 0.4 + avgRepScore * 0.6);
+        if (reps.length >= 5) score += 5;
+
+        const worstRep = reps.reduce((worst, r) => r.score < worst.score ? r : worst, reps[0]);
+        if (worstRep.score < 50 && reps.length > 2) {
+            tips.push(`Rep ${worstRep.repNumber} had the weakest form (${worstRep.score}/100) — fatigue may be setting in.`);
+        }
+    }
+
     if (tips.length === 0) tips.push("Form looks solid. Keep it up!");
 
     return {
         exerciseType, frameCount: frames.length, duration: Math.round(duration),
         depth, symmetry, kneeCave, barPath,
+        reps: reps.length > 0 ? reps : undefined,
         overallScore: Math.max(0, Math.min(100, score)), tips,
     };
 }
@@ -443,6 +465,151 @@ export function checkFormRealtime(
     }
 
     return { jointStatus, connectionStatus, kneeCave };
+}
+
+// --- Rep Detection ---
+
+export type RepResult = {
+    repNumber: number;
+    startTime: number;
+    endTime: number;
+    minAngle: number;
+    symmetryDiff: number;
+    score: number;
+};
+
+type RepPhase = "top" | "descending" | "bottom" | "ascending";
+
+export class RepDetector {
+    private phase: RepPhase = "top";
+    private exerciseType: FormAnalysisResult["exerciseType"] = "general";
+    private lastAngle = 180;
+    private repStartTime = 0;
+    private minAngleDuringRep = 180;
+    private symmetryAccum: number[] = [];
+    private reps: RepResult[] = [];
+    private lastRepTime = 0;
+    private readonly MIN_REP_DURATION_MS = 800;
+    private readonly ANGLE_HYSTERESIS = 12;
+
+    setExerciseType(type: FormAnalysisResult["exerciseType"]) {
+        this.exerciseType = type;
+    }
+
+    private getTrackingAngle(lm: NormalizedLandmark[]): number {
+        if (this.exerciseType === "overhead_press" || this.exerciseType === "bench") {
+            const l = angle3(lm[LM.LEFT_SHOULDER], lm[LM.LEFT_ELBOW], lm[LM.LEFT_WRIST]);
+            const r = angle3(lm[LM.RIGHT_SHOULDER], lm[LM.RIGHT_ELBOW], lm[LM.RIGHT_WRIST]);
+            return (l + r) / 2;
+        }
+        const l = angle3(lm[LM.LEFT_HIP], lm[LM.LEFT_KNEE], lm[LM.LEFT_ANKLE]);
+        const r = angle3(lm[LM.RIGHT_HIP], lm[LM.RIGHT_KNEE], lm[LM.RIGHT_ANKLE]);
+        return (l + r) / 2;
+    }
+
+    private getSymmetryDiff(lm: NormalizedLandmark[]): number {
+        const l = angle3(lm[LM.LEFT_HIP], lm[LM.LEFT_KNEE], lm[LM.LEFT_ANKLE]);
+        const r = angle3(lm[LM.RIGHT_HIP], lm[LM.RIGHT_KNEE], lm[LM.RIGHT_ANKLE]);
+        return Math.abs(l - r);
+    }
+
+    private scoreRep(): number {
+        let s = 60;
+        // Depth bonus for squat/deadlift
+        if (this.exerciseType === "squat") {
+            if (this.minAngleDuringRep <= 90) s += 25;
+            else if (this.minAngleDuringRep <= 100) s += 15;
+            else if (this.minAngleDuringRep <= 120) s += 5;
+            else s -= 10;
+        } else if (this.exerciseType === "overhead_press" || this.exerciseType === "bench") {
+            if (this.minAngleDuringRep <= 90) s += 20;
+            else if (this.minAngleDuringRep <= 110) s += 10;
+        } else {
+            s += 10;
+        }
+        // Symmetry
+        const avgSym = this.symmetryAccum.length > 0
+            ? this.symmetryAccum.reduce((a, b) => a + b, 0) / this.symmetryAccum.length : 0;
+        if (avgSym < 5) s += 15;
+        else if (avgSym < 10) s += 5;
+        else s -= 10;
+        return Math.max(0, Math.min(100, s));
+    }
+
+    processFrame(landmarks: NormalizedLandmark[], timestamp: number): RepResult | null {
+        if (this.exerciseType === "general") return null;
+
+        const angle = this.getTrackingAngle(landmarks);
+        const diff = angle - this.lastAngle;
+        this.lastAngle = angle;
+
+        const symDiff = this.getSymmetryDiff(landmarks);
+        let completedRep: RepResult | null = null;
+
+        switch (this.phase) {
+            case "top":
+                if (angle < 160 - this.ANGLE_HYSTERESIS) {
+                    this.phase = "descending";
+                    this.repStartTime = timestamp;
+                    this.minAngleDuringRep = angle;
+                    this.symmetryAccum = [symDiff];
+                }
+                break;
+            case "descending":
+                if (angle < this.minAngleDuringRep) this.minAngleDuringRep = angle;
+                this.symmetryAccum.push(symDiff);
+                if (diff > 2) {
+                    this.phase = "bottom";
+                }
+                break;
+            case "bottom":
+                if (angle < this.minAngleDuringRep) this.minAngleDuringRep = angle;
+                this.symmetryAccum.push(symDiff);
+                if (angle > this.minAngleDuringRep + this.ANGLE_HYSTERESIS) {
+                    this.phase = "ascending";
+                }
+                break;
+            case "ascending":
+                this.symmetryAccum.push(symDiff);
+                if (angle > 150) {
+                    const elapsed = timestamp - this.repStartTime;
+                    if (elapsed >= this.MIN_REP_DURATION_MS && timestamp - this.lastRepTime > this.MIN_REP_DURATION_MS) {
+                        const score = this.scoreRep();
+                        const avgSym = this.symmetryAccum.length > 0
+                            ? this.symmetryAccum.reduce((a, b) => a + b, 0) / this.symmetryAccum.length : 0;
+                        completedRep = {
+                            repNumber: this.reps.length + 1,
+                            startTime: this.repStartTime,
+                            endTime: timestamp,
+                            minAngle: Math.round(this.minAngleDuringRep),
+                            symmetryDiff: Math.round(avgSym),
+                            score,
+                        };
+                        this.reps.push(completedRep);
+                        this.lastRepTime = timestamp;
+                    }
+                    this.phase = "top";
+                    this.minAngleDuringRep = 180;
+                    this.symmetryAccum = [];
+                }
+                break;
+        }
+
+        return completedRep;
+    }
+
+    getReps(): RepResult[] { return this.reps; }
+    getRepCount(): number { return this.reps.length; }
+
+    reset() {
+        this.phase = "top";
+        this.lastAngle = 180;
+        this.repStartTime = 0;
+        this.minAngleDuringRep = 180;
+        this.symmetryAccum = [];
+        this.reps = [];
+        this.lastRepTime = 0;
+    }
 }
 
 export function getScoreColor(score: number): string {

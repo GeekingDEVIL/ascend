@@ -2,9 +2,10 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { X, Camera, Square, RotateCcw, ChevronRight, Circle } from "lucide-react";
-import { analyzeForm, getScoreColor, getScoreLabel, checkFormRealtime, type FormFrame, type FormAnalysisResult, type BarPathPoint, type JointStatus } from "../lib/formAnalysis";
+import { analyzeForm, getScoreColor, getScoreLabel, checkFormRealtime, RepDetector, type FormFrame, type FormAnalysisResult, type BarPathPoint, type JointStatus, type RepResult } from "../lib/formAnalysis";
 import { LandmarkSmoother } from "../lib/oneEuroFilter";
 import { getExerciseGuide, SILHOUETTE_PATHS } from "../lib/formGuides";
+import { supabase } from "../lib/supabase";
 
 type PoseLandmarker = any;
 
@@ -39,6 +40,8 @@ export default function FormCheckCamera({ exerciseName, onClose }: { exerciseNam
     const detectedExerciseRef = useRef<"squat" | "deadlift" | "bench" | "overhead_press" | "general">("general");
     const feedbackRef = useRef<ReturnType<typeof checkFormRealtime> | null>(null);
     const frameCountRef = useRef(0);
+    const repDetectorRef = useRef(new RepDetector());
+    const lastFormStatusRef = useRef<JointStatus>("good");
 
     const distanceHintRef = useRef<"close" | "far" | "ok">("ok");
 
@@ -49,6 +52,8 @@ export default function FormCheckCamera({ exerciseName, onClose }: { exerciseNam
     const [error, setError] = useState<string | null>(null);
     const [facingMode, setFacingMode] = useState<"user" | "environment">("environment");
     const [distanceHint, setDistanceHint] = useState<"close" | "far" | "ok">("ok");
+    const [repCount, setRepCount] = useState(0);
+    const [repFlash, setRepFlash] = useState(false);
 
     const guide = getExerciseGuide(exerciseName);
 
@@ -234,11 +239,33 @@ export default function FormCheckCamera({ exerciseName, onClose }: { exerciseNam
                     if (wristAbove / earlyFrames.length > 0.4) detectedExerciseRef.current = "overhead_press";
                     else if (hipBelowKnee / earlyFrames.length > 0.15) detectedExerciseRef.current = "squat";
                     else detectedExerciseRef.current = "general";
+                    repDetectorRef.current.setExerciseType(detectedExerciseRef.current);
                 }
 
                 // Run real-time form check every 3rd frame for performance
                 if (frameCountRef.current % 3 === 0) {
+                    const prevStatus = lastFormStatusRef.current;
                     feedbackRef.current = checkFormRealtime(rawLandmarks, detectedExerciseRef.current);
+
+                    // Haptic on form break (1.7)
+                    let worst: JointStatus = "good";
+                    for (const [, s] of feedbackRef.current.jointStatus) {
+                        if (s === "bad") { worst = "bad"; break; }
+                        if (s === "warn") worst = "warn";
+                    }
+                    if (worst === "bad" && prevStatus !== "bad") {
+                        try { navigator.vibrate?.([50, 30, 50]); } catch {}
+                    }
+                    lastFormStatusRef.current = worst;
+                }
+
+                // Rep detection
+                const rep = repDetectorRef.current.processFrame(rawLandmarks, now);
+                if (rep) {
+                    setRepCount(rep.repNumber);
+                    setRepFlash(true);
+                    setTimeout(() => setRepFlash(false), 600);
+                    try { navigator.vibrate?.(40); } catch {}
                 }
             }
 
@@ -309,8 +336,12 @@ export default function FormCheckCamera({ exerciseName, onClose }: { exerciseNam
         frameCountRef.current = 0;
         feedbackRef.current = null;
         detectedExerciseRef.current = "general";
+        repDetectorRef.current.reset();
+        lastFormStatusRef.current = "good";
         startTimeRef.current = performance.now();
         setElapsed(0);
+        setRepCount(0);
+        setRepFlash(false);
         setPhase("recording");
         try { navigator.vibrate?.(80); } catch {}
     }
@@ -324,6 +355,8 @@ export default function FormCheckCamera({ exerciseName, onClose }: { exerciseNam
             const analysis = analyzeForm(framesRef.current);
             setResult(analysis);
             setPhase("results");
+            // Auto-save to DB (fire and forget)
+            saveFormCheck(analysis, exerciseName);
         }, 300);
     }
 
@@ -436,13 +469,33 @@ export default function FormCheckCamera({ exerciseName, onClose }: { exerciseNam
                     {/* Recording indicator */}
                     {phase === "recording" && (
                         <div className="absolute top-4 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
-                            <div className="flex items-center gap-2 bg-red-500/90 backdrop-blur-sm px-4 py-2 rounded-full shadow-lg shadow-red-500/20">
+                            <div className="flex items-center gap-3 bg-red-500/90 backdrop-blur-sm px-4 py-2 rounded-full shadow-lg shadow-red-500/20">
                                 <div className="w-2.5 h-2.5 rounded-full bg-white animate-pulse" />
                                 <span className="text-sm font-mono font-medium text-white tracking-wide">{elapsed}s / 60s</span>
+                                {repCount > 0 && (
+                                    <>
+                                        <span className="w-px h-4 bg-white/20" />
+                                        <span className="text-sm font-mono font-bold text-white">{repCount} rep{repCount !== 1 ? "s" : ""}</span>
+                                    </>
+                                )}
                             </div>
                             <LiveFormBadge feedbackRef={feedbackRef} />
                         </div>
                     )}
+
+                    {/* +1 rep flash */}
+                    {repFlash && (
+                        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 pointer-events-none animate-[repPop_0.6s_ease-out_forwards]">
+                            <span className="text-5xl font-black text-emerald-400 drop-shadow-[0_0_20px_rgba(0,255,170,0.6)]">+1</span>
+                        </div>
+                    )}
+                    <style>{`
+                        @keyframes repPop {
+                            0% { transform: translateX(-50%) scale(0.5) translateY(0); opacity: 0; }
+                            20% { transform: translateX(-50%) scale(1.2) translateY(-10px); opacity: 1; }
+                            100% { transform: translateX(-50%) scale(0.8) translateY(-60px); opacity: 0; }
+                        }
+                    `}</style>
 
                     {/* Ready state guide */}
                     {phase === "ready" && (
@@ -504,6 +557,31 @@ export default function FormCheckCamera({ exerciseName, onClose }: { exerciseNam
             )}
         </div>
     );
+}
+
+async function saveFormCheck(result: FormAnalysisResult, exerciseName: string) {
+    try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        await supabase.from("form_checks").insert({
+            user_id: user.id,
+            exercise_name: exerciseName,
+            exercise_type: result.exerciseType,
+            overall_score: result.overallScore,
+            duration_s: result.duration,
+            frame_count: result.frameCount,
+            rep_count: result.reps?.length ?? 0,
+            depth_angle: result.depth?.minAngle ?? null,
+            depth_passed: result.depth?.passed ?? null,
+            symmetry_diff: result.symmetry?.diff ?? null,
+            symmetry_passed: result.symmetry?.passed ?? null,
+            knee_cave_detected: result.kneeCave?.detected ?? null,
+            knee_cave_side: result.kneeCave?.detected ? result.kneeCave.side : null,
+            reps: result.reps ?? null,
+            tips: result.tips,
+        });
+    } catch {}
 }
 
 function LiveFormBadge({ feedbackRef }: { feedbackRef: React.RefObject<ReturnType<typeof checkFormRealtime> | null> }) {
@@ -610,9 +688,29 @@ function ResultsView({ result, onRetry, onClose }: { result: FormAnalysisResult;
                 <div className="min-w-0">
                     <p className="text-[10px] font-mono tracking-[0.15em] text-white/30 uppercase mb-1">Analysis</p>
                     <p className="text-sm font-semibold text-white/80 capitalize mb-1">{exerciseLabel}</p>
-                    <p className="text-[11px] text-white/30 font-mono">{result.duration}s · {result.frameCount} frames</p>
+                    <p className="text-[11px] text-white/30 font-mono">{result.duration}s · {result.frameCount} frames{result.reps ? ` · ${result.reps.length} reps` : ""}</p>
                 </div>
             </div>
+
+            {/* Per-rep dots */}
+            {result.reps && result.reps.length > 0 && (
+                <div className="mb-4">
+                    <p className="text-[10px] font-semibold tracking-[0.15em] text-white/30 uppercase mb-2">Per-Rep Quality</p>
+                    <div className="flex gap-1.5 flex-wrap">
+                        {result.reps.map((rep) => {
+                            const c = rep.score >= 80 ? "#00ffaa" : rep.score >= 60 ? "#facc15" : "#f87171";
+                            return (
+                                <div key={rep.repNumber} className="flex flex-col items-center gap-1">
+                                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold text-black" style={{ backgroundColor: c }}>
+                                        {rep.score}
+                                    </div>
+                                    <span className="text-[8px] text-white/30">R{rep.repNumber}</span>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
 
             {/* Metric cards row */}
             <div className="flex gap-2.5 mb-4">
