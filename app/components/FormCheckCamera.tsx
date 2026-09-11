@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { X, Camera, Square, RotateCcw, ChevronRight, Circle } from "lucide-react";
 import { analyzeForm, getScoreColor, getScoreLabel, checkFormRealtime, type FormFrame, type FormAnalysisResult, type BarPathPoint, type JointStatus } from "../lib/formAnalysis";
 import { LandmarkSmoother } from "../lib/oneEuroFilter";
+import { getExerciseGuide, SILHOUETTE_PATHS } from "../lib/formGuides";
 
 type PoseLandmarker = any;
 
@@ -39,12 +40,17 @@ export default function FormCheckCamera({ exerciseName, onClose }: { exerciseNam
     const feedbackRef = useRef<ReturnType<typeof checkFormRealtime> | null>(null);
     const frameCountRef = useRef(0);
 
+    const distanceHintRef = useRef<"close" | "far" | "ok">("ok");
+
     const [phase, setPhase] = useState<Phase>("loading");
     const [elapsed, setElapsed] = useState(0);
     const [countdownNum, setCountdownNum] = useState(3);
     const [result, setResult] = useState<FormAnalysisResult | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [facingMode, setFacingMode] = useState<"user" | "environment">("environment");
+    const [distanceHint, setDistanceHint] = useState<"close" | "far" | "ok">("ok");
+
+    const guide = getExerciseGuide(exerciseName);
 
     const cleanup = useCallback(() => {
         if (rafRef.current) cancelAnimationFrame(rafRef.current);
@@ -237,6 +243,20 @@ export default function FormCheckCamera({ exerciseName, onClose }: { exerciseNam
             }
 
             drawSkeleton(rawLandmarks, isRecording);
+
+            // Distance estimation: hip width relative to frame
+            if (frameCountRef.current % 10 === 0 || !isRecording) {
+                const lHip = rawLandmarks[23];
+                const rHip = rawLandmarks[24];
+                if (lHip && rHip && (lHip.visibility ?? 0) > 0.5 && (rHip.visibility ?? 0) > 0.5) {
+                    const hipWidth = Math.abs(rHip.x - lHip.x);
+                    const hint = hipWidth < 0.08 ? "far" : hipWidth > 0.35 ? "close" : "ok";
+                    if (hint !== distanceHintRef.current) {
+                        distanceHintRef.current = hint;
+                        setDistanceHint(hint);
+                    }
+                }
+            }
         }
 
         if (startTimeRef.current > 0) {
@@ -367,14 +387,13 @@ export default function FormCheckCamera({ exerciseName, onClose }: { exerciseNam
                     />
                     <canvas ref={canvasRef} className="hidden" />
 
-                    {/* Corner frame guides */}
-                    {phase === "ready" && (
-                        <>
-                            <div className="absolute top-8 left-6 w-10 h-10 border-t-2 border-l-2 border-white/20 rounded-tl-lg" />
-                            <div className="absolute top-8 right-6 w-10 h-10 border-t-2 border-r-2 border-white/20 rounded-tr-lg" />
-                            <div className="absolute bottom-28 left-6 w-10 h-10 border-b-2 border-l-2 border-white/20 rounded-bl-lg" />
-                            <div className="absolute bottom-28 right-6 w-10 h-10 border-b-2 border-r-2 border-white/20 rounded-br-lg" />
-                        </>
+                    {/* Body silhouette guide */}
+                    {(phase === "ready" || phase === "countdown") && (
+                        <div className={`absolute inset-0 flex items-center justify-center pointer-events-none transition-opacity duration-500 ${phase === "countdown" ? "opacity-20" : "opacity-100"}`}>
+                            <svg viewBox="0 0 100 130" className="w-[45%] max-w-[200px]" style={{ opacity: 0.18 }}>
+                                <path d={SILHOUETTE_PATHS[guide.angle]} fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                        </div>
                     )}
 
                     {/* Loading overlay */}
@@ -428,10 +447,28 @@ export default function FormCheckCamera({ exerciseName, onClose }: { exerciseNam
                     {/* Ready state guide */}
                     {phase === "ready" && (
                         <div className="absolute bottom-24 left-4 right-4 text-center space-y-2">
-                            <p className="text-sm text-white/50 font-medium">Position your full body in frame</p>
-                            <p className="text-[11px] text-white/25 bg-black/30 rounded-xl px-4 py-2 backdrop-blur-sm inline-block">
-                                All processing happens on your device
-                            </p>
+                            <div className="inline-flex items-center gap-2 bg-black/50 backdrop-blur-sm rounded-full px-4 py-2">
+                                <span className="text-[10px] font-mono tracking-wider text-emerald-400/80">{guide.label}</span>
+                                <span className="w-px h-3 bg-white/10" />
+                                <span className="text-[11px] text-white/40">{guide.tip}</span>
+                            </div>
+                            {distanceHint !== "ok" && (
+                                <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold ${distanceHint === "far" ? "bg-amber-500/20 text-amber-300" : "bg-amber-500/20 text-amber-300"}`}>
+                                    {distanceHint === "far" ? "Step closer to the camera" : "Step back from the camera"}
+                                </div>
+                            )}
+                            <p className="text-[10px] text-white/20">All processing happens on your device</p>
+                        </div>
+                    )}
+
+                    {/* Distance hint during recording */}
+                    {phase === "recording" && distanceHint !== "ok" && (
+                        <div className="absolute bottom-24 left-1/2 -translate-x-1/2">
+                            <div className="bg-amber-500/80 backdrop-blur-sm px-3 py-1.5 rounded-full">
+                                <span className="text-[11px] font-semibold text-white">
+                                    {distanceHint === "far" ? "Step closer" : "Step back"}
+                                </span>
+                            </div>
                         </div>
                     )}
                 </div>
