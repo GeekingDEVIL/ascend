@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { X, Camera, Square, RotateCcw, ChevronRight, Circle } from "lucide-react";
 import { analyzeForm, getScoreColor, getScoreLabel, checkFormRealtime, RepDetector, type FormFrame, type FormAnalysisResult, type BarPathPoint, type JointStatus, type RepResult } from "../lib/formAnalysis";
 import { LandmarkSmoother } from "../lib/oneEuroFilter";
@@ -377,17 +378,18 @@ export default function FormCheckCamera({ exerciseName, onClose }: { exerciseNam
     }
 
     if (error) {
-        return (
+        return createPortal(
             <div className="fixed inset-0 z-[9999] bg-black flex flex-col items-center justify-center p-6">
                 <Camera size={48} className="text-red-400 mb-4" />
                 <p className="text-sm text-white/60 text-center mb-2">Camera access failed</p>
                 <p className="text-xs text-white/30 text-center mb-6">{error}</p>
                 <button onClick={onClose} className="px-6 py-2 rounded-lg bg-white/10 text-white/60 text-sm">Close</button>
-            </div>
+            </div>,
+            document.body
         );
     }
 
-    return (
+    return createPortal(
         <div className="fixed inset-0 z-[9999] bg-black flex flex-col">
             {/* Header */}
             <div className="flex items-center justify-between px-4 pt-[env(safe-area-inset-top,12px)] pb-3 bg-gradient-to-b from-black/90 to-black/0 z-10">
@@ -434,7 +436,7 @@ export default function FormCheckCamera({ exerciseName, onClose }: { exerciseNam
                         <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/70">
                             <div className="w-12 h-12 border-2 border-emerald-400/20 border-t-emerald-400 rounded-full animate-spin mb-4" />
                             <p className="text-sm font-medium text-white/60">Loading pose model...</p>
-                            <p className="text-[11px] text-white/30 mt-1">First load downloads ~5MB</p>
+                            <p className="text-[11px] text-white/30 mt-1">First load may take a moment</p>
                         </div>
                     )}
 
@@ -555,7 +557,8 @@ export default function FormCheckCamera({ exerciseName, onClose }: { exerciseNam
                     )}
                 </div>
             )}
-        </div>
+        </div>,
+        document.body
     );
 }
 

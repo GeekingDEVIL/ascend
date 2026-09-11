@@ -40,7 +40,7 @@ export type WorkoutExercise = {
 
 export function isDualWeight(ex: WorkoutExercise): boolean {
     if (ex.isCardio || ex.isBodyweight) return false;
-    return ex.equipment === "Dumbbell" || (ex.equipment === "Cable" && !ex.is_unilateral);
+    return ex.is_unilateral;
 }
 
 export type SetEntry = {
