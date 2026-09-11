@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
-import { Plus, Trash2, GripVertical, Pencil, Database, Settings2, Play, Moon, Flame, PersonStanding, ChevronDown, ChevronUp, X, Dumbbell, BarChart3, BookOpen, Copy } from "lucide-react";
+import { Plus, Trash2, GripVertical, Pencil, Database, Play, Moon, Flame, PersonStanding, ChevronDown, ChevronUp, X, Dumbbell, BarChart3, BookOpen, Copy, RefreshCw, ChevronRight } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 import { DndContext, closestCenter, PointerSensor, MouseSensor, TouchSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
@@ -20,6 +20,7 @@ import AddExerciseModal from "../../components/AddExerciseModal";
 import ExerciseDatabaseModal from "../../components/ExerciseDatabaseModal";
 import MusclePickerModal from "../../components/MusclePickerModal";
 import PlanBrowserModal from "../../components/PlanBrowserModal";
+import ExerciseDetailSheet from "../../components/ExerciseDetailSheet";
 import type { WorkoutPlan } from "../../lib/planLibrary";
 
 type LocalExercise = {
@@ -29,6 +30,9 @@ type LocalExercise = {
     name: string;
     body_segment: string;
     isCardio: boolean;
+    equipment: string;
+    is_unilateral: boolean;
+    image_url: string | null;
     target_sets: number;
     target_reps: string;
     target_weight: number | null;
@@ -38,6 +42,11 @@ type LocalExercise = {
     target_incline: number | null;
     target_speed: number | null;
 };
+
+function isDualWeightEx(ex: LocalExercise): boolean {
+    if (ex.isCardio || ex.equipment.toLowerCase() === "bodyweight") return false;
+    return ex.equipment === "Dumbbell" || (ex.equipment === "Cable" && !ex.is_unilateral);
+}
 
 type RecurringPlan = { template_id: string | null; is_rest: boolean; template_name: string; exercise_count: number; muscles: string[] };
 
@@ -65,10 +74,13 @@ function toDateString(d: Date) {
 
 function mapExerciseRow(row: any): LocalExercise {
     const segment = row.exercises?.body_segment ?? "Other";
+    const equip = row.exercises?.equipment ?? "Other";
     return {
         id: row.id, isNew: false, exercise_id: row.exercise_id,
         name: row.exercises?.name ?? "Unknown", body_segment: segment,
         isCardio: segment === "Cardio",
+        equipment: equip, is_unilateral: row.exercises?.is_unilateral ?? false,
+        image_url: row.exercises?.image_url ?? null,
         target_sets: row.target_sets ?? 1, target_reps: row.target_reps ?? "",
         target_weight: row.target_weight ?? null, rest_seconds: row.rest_seconds ?? null,
         notes: row.notes ?? "",
@@ -108,71 +120,128 @@ function EmptyState({ title, subtitle }: { title: string; subtitle: string }) {
     );
 }
 
-function ReadOnlyRow({ ex, index }: { ex: LocalExercise; index: number }) {
-    const wu = useUnits();
+function ExerciseThumb({ ex }: { ex: LocalExercise }) {
+    if (ex.image_url) {
+        return (
+            <div className="w-9 h-9 rounded-lg overflow-hidden border border-[var(--fg-06)] shrink-0">
+                <img src={ex.image_url} alt="" className="w-full h-full object-cover" />
+            </div>
+        );
+    }
     return (
-        <div className="flex items-center gap-2 rounded-lg border border-[var(--fg-06)] bg-[var(--fg-02)] px-3 py-2.5">
-            <span className="text-[10px] font-mono text-[var(--fg-25)] w-5 shrink-0">{String(index + 1).padStart(2, "0")}</span>
-            <p className="text-[13px] font-medium text-[var(--fg-85)] flex-1 min-w-0 truncate">{ex.name}</p>
-            {ex.isCardio ? (
-                <div className="flex items-center gap-3 shrink-0">
-                    {ex.target_duration_minutes != null && <div className="text-center"><p className="text-[8px] font-mono text-[var(--fg-30)] leading-none">MIN</p><p className="text-sm font-bold text-[var(--fg-80)]">{ex.target_duration_minutes}</p></div>}
-                    {ex.target_incline != null && <div className="text-center"><p className="text-[8px] font-mono text-[var(--fg-30)] leading-none">INCLINE</p><p className="text-sm font-bold text-[var(--fg-80)]">{ex.target_incline}%</p></div>}
-                    {ex.target_speed != null && <div className="text-center"><p className="text-[8px] font-mono text-[var(--fg-30)] leading-none">KM/H</p><p className="text-sm font-bold text-[var(--fg-80)]">{ex.target_speed}</p></div>}
-                </div>
-            ) : (
-                <div className="flex items-center gap-3 shrink-0">
-                    <div className="text-center"><p className="text-[8px] font-mono text-[var(--fg-30)] leading-none">SETS</p><p className="text-sm font-bold text-[var(--fg-80)]">{ex.target_sets}</p></div>
-                    <div className="text-center"><p className="text-[8px] font-mono text-[var(--fg-30)] leading-none">REPS</p><p className="text-sm font-bold text-[var(--fg-80)]">{ex.target_reps}</p></div>
-                    {ex.target_weight != null && <div className="text-center"><p className="text-[8px] font-mono text-[var(--fg-30)] leading-none">{wu.toUpperCase()}</p><p className="text-sm font-bold text-[var(--fg-80)]">{Math.round(kgToUnit(ex.target_weight, wu))}</p></div>}
-                </div>
-            )}
+        <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-[var(--fg-04)] border border-[var(--fg-06)] shrink-0">
+            <Dumbbell size={14} className="text-[var(--fg-20)]" />
         </div>
     );
 }
 
-function SortableRow({ ex, index, onUpdate, onRemove }: { ex: LocalExercise; index: number; onUpdate: (id: string, patch: Partial<LocalExercise>) => void; onRemove: (id: string) => void }) {
+function ReadOnlyRow({ ex, onDetail }: { ex: LocalExercise; onDetail?: (ex: LocalExercise) => void }) {
+    const wu = useUnits();
+    const dualWt = isDualWeightEx(ex);
+    return (
+        <div className="rounded-xl border border-[var(--fg-06)] bg-[var(--fg-02)] p-3">
+            <div className="flex items-start gap-2.5">
+                <div className="cursor-pointer" onClick={() => onDetail?.(ex)}><ExerciseThumb ex={ex} /></div>
+                <div className="flex-1 min-w-0">
+                    <button onClick={() => onDetail?.(ex)} className="text-[13px] font-medium text-[rgb(var(--accent-light-rgb))] text-left inline-flex items-center gap-1 rounded-md px-1 py-0.5 -mx-1 -my-0.5 active:bg-[rgb(var(--accent-rgb)/0.08)] transition">
+                        {ex.name}
+                        <ChevronRight size={11} className="shrink-0 opacity-50" />
+                    </button>
+                    <p className="text-[9px] font-mono text-[var(--fg-30)] mt-0.5">{ex.body_segment}{ex.equipment && ex.equipment !== "Other" ? ` · ${ex.equipment}` : ""}</p>
+                </div>
+            </div>
+            <div className="flex items-center gap-2 mt-2.5 flex-wrap">
+                {ex.isCardio ? (
+                    <>
+                        {ex.target_duration_minutes != null && <span className="text-[10px] font-mono px-2 py-1 rounded-md bg-[var(--fg-04)] text-[var(--fg-60)]">{ex.target_duration_minutes} min</span>}
+                        {ex.target_incline != null && <span className="text-[10px] font-mono px-2 py-1 rounded-md bg-[var(--fg-04)] text-[var(--fg-60)]">{ex.target_incline}% incline</span>}
+                        {ex.target_speed != null && <span className="text-[10px] font-mono px-2 py-1 rounded-md bg-[var(--fg-04)] text-[var(--fg-60)]">{ex.target_speed} km/h</span>}
+                    </>
+                ) : (
+                    <>
+                        <span className="text-[10px] font-mono px-2 py-1 rounded-md bg-[var(--fg-04)] text-[var(--fg-60)]">{ex.target_sets} sets</span>
+                        <span className="text-[10px] font-mono px-2 py-1 rounded-md bg-[var(--fg-04)] text-[var(--fg-60)]">{ex.target_reps} reps</span>
+                        {ex.target_weight != null && (
+                            <span className="text-[10px] font-mono px-2 py-1 rounded-md bg-[var(--fg-04)] text-[var(--fg-60)]">
+                                {Math.round(kgToUnit(ex.target_weight, wu))} {wu}{dualWt ? " /side" : ""}
+                            </span>
+                        )}
+                        {ex.rest_seconds != null && <span className="text-[10px] font-mono px-2 py-1 rounded-md bg-[var(--fg-04)] text-[var(--fg-40)]">{ex.rest_seconds}s rest</span>}
+                    </>
+                )}
+            </div>
+            {ex.notes && <p className="text-[10px] italic text-[var(--fg-30)] mt-2 ml-0.5">{ex.notes}</p>}
+        </div>
+    );
+}
+
+function SortableRow({ ex, onUpdate, onRemove, onSwap, onDetail }: { ex: LocalExercise; onUpdate: (id: string, patch: Partial<LocalExercise>) => void; onRemove: (id: string) => void; onSwap: (ex: LocalExercise) => void; onDetail: (ex: LocalExercise) => void }) {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: ex.id });
     const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 };
-    const [expanded, setExpanded] = useState(false);
     const swu = useUnits();
+    const dualWt = isDualWeightEx(ex);
+    const inputCls = "w-full rounded-md bg-[var(--fg-03)] border border-[var(--fg-10)] text-center text-sm py-1.5 focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.5)]";
     return (
-        <div ref={setNodeRef} style={style} className="rounded-lg border border-[var(--fg-06)] bg-[var(--fg-02)]">
-            <div className="flex items-center gap-2 px-3 py-2.5">
-                <button {...attributes} {...listeners} className="text-[var(--fg-30)] hover:text-[rgb(var(--accent-light-rgb))] cursor-grab active:cursor-grabbing shrink-0 touch-none"><GripVertical size={16} /></button>
-                <span className="text-[10px] font-mono text-[var(--fg-25)] w-5 shrink-0">{String(index + 1).padStart(2, "0")}</span>
-                <p className="text-[13px] font-medium text-[var(--fg-85)] flex-1 min-w-0 truncate">{ex.name}</p>
+        <div ref={setNodeRef} style={style} className="rounded-xl border border-[var(--fg-06)] bg-[var(--fg-02)]">
+            {/* Row 1: drag + image + name + equipment + actions */}
+            <div className="flex items-start gap-2 px-3 pt-3 pb-1">
+                <button {...attributes} {...listeners} className="text-[var(--fg-20)] hover:text-[rgb(var(--accent-light-rgb))] cursor-grab active:cursor-grabbing shrink-0 touch-none mt-1.5"><GripVertical size={14} /></button>
+                <div className="cursor-pointer mt-0.5" onClick={() => onDetail(ex)}><ExerciseThumb ex={ex} /></div>
+                <div className="flex-1 min-w-0">
+                    <button onClick={() => onDetail(ex)} className="text-[13px] font-medium text-[rgb(var(--accent-light-rgb))] text-left inline-flex items-center gap-1 rounded-md px-1 py-0.5 -mx-1 -my-0.5 active:bg-[rgb(var(--accent-rgb)/0.08)] transition">
+                        {ex.name}
+                        <ChevronRight size={11} className="shrink-0 opacity-50" />
+                    </button>
+                    <p className="text-[9px] font-mono text-[var(--fg-30)] mt-0.5">{ex.body_segment}{ex.equipment && ex.equipment !== "Other" ? ` · ${ex.equipment}` : ""}</p>
+                </div>
+                <div className="flex items-center gap-1 shrink-0 mt-1">
+                    <button onClick={() => onSwap(ex)} className="p-1.5 rounded-md text-[var(--fg-25)] hover:text-emerald-400 hover:bg-emerald-400/10 transition" title="Swap"><RefreshCw size={13} /></button>
+                    <button onClick={() => onRemove(ex.id)} className="p-1.5 rounded-md text-[var(--fg-25)] hover:text-red-400 hover:bg-red-400/10 transition" title="Remove"><Trash2 size={13} /></button>
+                </div>
+            </div>
+
+            {/* Row 2: inputs — always visible */}
+            <div className="px-3 pb-3 pt-1">
                 {ex.isCardio ? (
-                    <div className="flex items-center gap-2 shrink-0">
-                        <input type="number" min="0" onWheel={(e) => (e.target as HTMLElement).blur()} inputMode="numeric" value={ex.target_duration_minutes ?? ""} onChange={(e) => onUpdate(ex.id, { target_duration_minutes: e.target.value ? Number(e.target.value) : null })} placeholder="MIN" className="w-14 shrink-0 rounded-md bg-[var(--fg-03)] border border-[rgb(var(--accent-rgb)/0.2)] text-center text-sm py-1.5 focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.5)]" />
-                        <input type="number" min="0" onWheel={(e) => (e.target as HTMLElement).blur()} inputMode="decimal" value={ex.target_incline ?? ""} onChange={(e) => onUpdate(ex.id, { target_incline: e.target.value ? Number(e.target.value) : null })} placeholder="%" className="w-12 shrink-0 rounded-md bg-[var(--fg-03)] border border-[rgb(var(--accent-rgb)/0.2)] text-center text-sm py-1.5 focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.5)]" />
-                        <input type="number" min="0" onWheel={(e) => (e.target as HTMLElement).blur()} inputMode="decimal" value={ex.target_speed ?? ""} onChange={(e) => onUpdate(ex.id, { target_speed: e.target.value ? Number(e.target.value) : null })} placeholder="KM/H" className="w-16 shrink-0 rounded-md bg-[var(--fg-03)] border border-[rgb(var(--accent-rgb)/0.2)] text-center text-sm py-1.5 focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.5)]" />
+                    <div className="grid grid-cols-3 gap-2">
+                        <div>
+                            <label className="text-[8px] font-mono text-[var(--fg-30)]">MIN</label>
+                            <input type="number" min="0" onWheel={(e) => (e.target as HTMLElement).blur()} inputMode="numeric" value={ex.target_duration_minutes ?? ""} onChange={(e) => onUpdate(ex.id, { target_duration_minutes: e.target.value ? Number(e.target.value) : null })} placeholder="—" className={inputCls} />
+                        </div>
+                        <div>
+                            <label className="text-[8px] font-mono text-[var(--fg-30)]">INCLINE %</label>
+                            <input type="number" min="0" onWheel={(e) => (e.target as HTMLElement).blur()} inputMode="decimal" value={ex.target_incline ?? ""} onChange={(e) => onUpdate(ex.id, { target_incline: e.target.value ? Number(e.target.value) : null })} placeholder="—" className={inputCls} />
+                        </div>
+                        <div>
+                            <label className="text-[8px] font-mono text-[var(--fg-30)]">KM/H</label>
+                            <input type="number" min="0" onWheel={(e) => (e.target as HTMLElement).blur()} inputMode="decimal" value={ex.target_speed ?? ""} onChange={(e) => onUpdate(ex.id, { target_speed: e.target.value ? Number(e.target.value) : null })} placeholder="—" className={inputCls} />
+                        </div>
                     </div>
                 ) : (
-                    <div className="flex items-center gap-2 shrink-0">
-                        <SetsStepper value={ex.target_sets} onChange={(v) => onUpdate(ex.id, { target_sets: v })} />
-                        <input type="text" value={ex.target_reps} onChange={(e) => onUpdate(ex.id, { target_reps: e.target.value })} className="w-14 shrink-0 rounded-md bg-[var(--fg-03)] border border-[rgb(var(--accent-rgb)/0.2)] text-center text-sm py-1.5 focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.5)]" />
+                    <div className="grid grid-cols-4 gap-2">
+                        <div>
+                            <label className="text-[8px] font-mono text-[var(--fg-30)]">SETS</label>
+                            <SetsStepper value={ex.target_sets} onChange={(v) => onUpdate(ex.id, { target_sets: v })} />
+                        </div>
+                        <div>
+                            <label className="text-[8px] font-mono text-[var(--fg-30)]">REPS</label>
+                            <input type="text" value={ex.target_reps} onChange={(e) => onUpdate(ex.id, { target_reps: e.target.value })} placeholder="8-12" className={inputCls} />
+                        </div>
+                        <div className="relative">
+                            <label className="text-[8px] font-mono text-[var(--fg-30)]">
+                                {swu.toUpperCase()}{dualWt && <span className="text-[rgb(var(--accent-rgb))] font-bold ml-0.5">/SIDE</span>}
+                            </label>
+                            <input type="number" min="0" onWheel={(e) => (e.target as HTMLElement).blur()} inputMode="decimal" value={ex.target_weight ?? ""} onChange={(e) => onUpdate(ex.id, { target_weight: e.target.value ? Number(e.target.value) : null })} placeholder="—" className={inputCls} />
+                        </div>
+                        <div>
+                            <label className="text-[8px] font-mono text-[var(--fg-30)]">REST</label>
+                            <input type="number" min="0" onWheel={(e) => (e.target as HTMLElement).blur()} inputMode="numeric" value={ex.rest_seconds ?? ""} onChange={(e) => onUpdate(ex.id, { rest_seconds: e.target.value ? Number(e.target.value) : null })} placeholder="90" className={inputCls} />
+                        </div>
                     </div>
                 )}
-                <button onClick={() => setExpanded((v) => !v)} className={`shrink-0 transition ${expanded ? "text-[rgb(var(--accent-light-rgb))]" : "text-[var(--fg-30)] hover:text-[var(--fg-70)]"}`}><Settings2 size={15} /></button>
-                <button onClick={() => onRemove(ex.id)} className="text-[var(--fg-30)] hover:text-red-400 transition shrink-0"><Trash2 size={16} /></button>
+                {/* Notes */}
+                <input type="text" value={ex.notes} onChange={(e) => onUpdate(ex.id, { notes: e.target.value })} placeholder="Notes (optional)" className="w-full mt-2 rounded-md bg-transparent border border-[var(--fg-06)] px-2 text-[10px] font-mono py-1.5 text-[var(--fg-40)] placeholder:text-[var(--fg-15)] focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.3)]" />
             </div>
-            {expanded && (
-                <div className="px-3 pb-3 pt-1 border-t border-[var(--fg-05)] grid grid-cols-2 gap-2">
-                    <div>
-                        <label className="text-[9px] font-mono text-[var(--fg-30)]">WEIGHT ({swu.toUpperCase()})</label>
-                        <input type="number" min="0" onWheel={(e) => (e.target as HTMLElement).blur()} inputMode="decimal" value={ex.target_weight ?? ""} onChange={(e) => onUpdate(ex.id, { target_weight: e.target.value ? Number(e.target.value) : null })} placeholder="—" className="w-full mt-1 rounded-md bg-[var(--fg-03)] border border-[var(--fg-10)] text-center text-sm py-1.5 focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.5)]" />
-                    </div>
-                    <div>
-                        <label className="text-[9px] font-mono text-[var(--fg-30)]">REST (SEC)</label>
-                        <input type="number" min="0" onWheel={(e) => (e.target as HTMLElement).blur()} inputMode="numeric" value={ex.rest_seconds ?? ""} onChange={(e) => onUpdate(ex.id, { rest_seconds: e.target.value ? Number(e.target.value) : null })} placeholder="90" className="w-full mt-1 rounded-md bg-[var(--fg-03)] border border-[var(--fg-10)] text-center text-sm py-1.5 focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.5)]" />
-                    </div>
-                    <div className="col-span-2">
-                        <label className="text-[9px] font-mono text-[var(--fg-30)]">NOTES</label>
-                        <input type="text" value={ex.notes} onChange={(e) => onUpdate(ex.id, { notes: e.target.value })} placeholder="e.g. slow eccentric" className="w-full mt-1 rounded-md bg-[var(--fg-03)] border border-[var(--fg-10)] px-2 text-sm py-1.5 focus:outline-none focus:border-[rgb(var(--accent-rgb)/0.5)]" />
-                    </div>
-                </div>
-            )}
         </div>
     );
 }
@@ -203,13 +272,16 @@ function DayEditorModal({
     const [saved, setSaved] = useState(false);
     const [editMode, setEditMode] = useState(!plan);
     const [addModalOpen, setAddModalOpen] = useState(false);
+    const [swapTarget, setSwapTarget] = useState<LocalExercise | null>(null);
+    const [detailExercise, setDetailExercise] = useState<LocalExercise | null>(null);
+    const weightUnit = useUnits();
 
     useEffect(() => {
         (async () => {
             if (plan?.template_id) {
                 const { data: rows } = await supabase
                     .from("workout_template_exercises")
-                    .select("id, order_index, target_sets, target_reps, target_weight, rest_seconds, notes, target_duration_minutes, target_incline, target_speed, exercise_id, exercises(name, body_segment)")
+                    .select("id, order_index, target_sets, target_reps, target_weight, rest_seconds, notes, target_duration_minutes, target_incline, target_speed, exercise_id, exercises(name, body_segment, equipment, is_unilateral, image_url)")
                     .eq("template_id", plan.template_id)
                     .order("order_index");
                 setExercises((rows ?? []).map(mapExerciseRow));
@@ -218,7 +290,7 @@ function DayEditorModal({
         })();
     }, [plan]);
 
-    function handleAdd(exercise: { id: string; name: string; body_segment?: string }) {
+    function handleAdd(exercise: { id: string; name: string; body_segment?: string; equipment?: string; is_unilateral?: boolean; image_url?: string | null }) {
         const segment = exercise.body_segment || "Other";
         const cardio = segment === "Cardio";
         setExercises((prev) => {
@@ -226,6 +298,8 @@ function DayEditorModal({
             return [...prev, {
                 id: `new-${Date.now()}-${Math.random().toString(36).slice(2)}`, isNew: true, exercise_id: exercise.id, name: exercise.name,
                 body_segment: segment, isCardio: cardio,
+                equipment: exercise.equipment ?? "Other", is_unilateral: exercise.is_unilateral ?? false,
+                image_url: exercise.image_url ?? null,
                 target_sets: cardio ? 1 : 3, target_reps: cardio ? "" : "8-10", target_weight: null, rest_seconds: cardio ? null : 90, notes: "",
                 target_duration_minutes: cardio ? 10 : null, target_incline: null, target_speed: null,
             }];
@@ -250,6 +324,27 @@ function DayEditorModal({
             const newIndex = items.findIndex((i) => i.id === over.id);
             return arrayMove(items, oldIndex, newIndex);
         });
+    }
+
+    function handleSwap(replacement: { id: string; name: string; body_segment?: string; equipment?: string; is_unilateral?: boolean; image_url?: string | null }) {
+        if (!swapTarget) return;
+        const segment = replacement.body_segment || "Other";
+        const cardio = segment === "Cardio";
+        setExercises((prev) => prev.map((e) => {
+            if (e.id !== swapTarget.id) return e;
+            const old = e;
+            if (!old.isNew) setDeletedIds((d) => [...d, old.id]);
+            return {
+                id: `new-${Date.now()}-${Math.random().toString(36).slice(2)}`, isNew: true, exercise_id: replacement.id, name: replacement.name,
+                body_segment: segment, isCardio: cardio,
+                equipment: replacement.equipment ?? "Other", is_unilateral: replacement.is_unilateral ?? false,
+                image_url: replacement.image_url ?? null,
+                target_sets: old.target_sets, target_reps: old.target_reps, target_weight: old.target_weight,
+                rest_seconds: old.rest_seconds, notes: old.notes,
+                target_duration_minutes: old.target_duration_minutes, target_incline: old.target_incline, target_speed: old.target_speed,
+            };
+        }));
+        setSwapTarget(null);
     }
 
     async function handleSave() {
@@ -318,7 +413,7 @@ function DayEditorModal({
         setCopying(true);
         const { data: rows } = await supabase
             .from("workout_template_exercises")
-            .select("id, order_index, target_sets, target_reps, target_weight, rest_seconds, notes, target_duration_minutes, target_incline, target_speed, exercise_id, exercises(name, body_segment)")
+            .select("id, order_index, target_sets, target_reps, target_weight, rest_seconds, notes, target_duration_minutes, target_incline, target_speed, exercise_id, exercises(name, body_segment, equipment, is_unilateral, image_url)")
             .eq("template_id", sourcePlan.template_id)
             .order("order_index");
         if (rows?.length) {
@@ -381,7 +476,7 @@ function DayEditorModal({
                                     <div key={`${group.label}-${gi}`}>
                                         <p className="text-[10px] font-mono tracking-widest text-[rgb(var(--accent-light-rgb)/0.6)] mb-2">{group.label.toUpperCase()}</p>
                                         <div className="space-y-1.5">
-                                            {group.items.map((ex) => <ReadOnlyRow key={ex.id} ex={ex} index={exercises.indexOf(ex)} />)}
+                                            {group.items.map((ex) => <ReadOnlyRow key={ex.id} ex={ex} onDetail={(e) => setDetailExercise(e)} />)}
                                         </div>
                                     </div>
                                 ))}
@@ -460,7 +555,7 @@ function DayEditorModal({
                                         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                                             <SortableContext items={exercises.map((e) => e.id)} strategy={verticalListSortingStrategy}>
                                                 <div className="space-y-2 mb-4">
-                                                    {exercises.map((ex, i) => <SortableRow key={ex.id} ex={ex} index={i} onUpdate={handleUpdate} onRemove={handleRemove} />)}
+                                                    {exercises.map((ex) => <SortableRow key={ex.id} ex={ex} onUpdate={handleUpdate} onRemove={handleRemove} onSwap={(e) => setSwapTarget(e)} onDetail={(e) => setDetailExercise(e)} />)}
                                                 </div>
                                             </SortableContext>
                                         </DndContext>
@@ -493,6 +588,19 @@ function DayEditorModal({
             </div>
 
             {addModalOpen && <AddExerciseModal onAdd={handleAdd} onClose={() => setAddModalOpen(false)} existingIds={existingIds} />}
+            {swapTarget && <AddExerciseModal onAdd={handleSwap} onClose={() => setSwapTarget(null)} existingIds={existingIds} />}
+            {detailExercise && (
+                <ExerciseDetailSheet
+                    exerciseId={detailExercise.exercise_id}
+                    exerciseName={detailExercise.name}
+                    equipment={detailExercise.equipment}
+                    bodySegment={detailExercise.body_segment}
+                    weightUnit={weightUnit}
+                    userSex={userSex}
+                    imageUrl={detailExercise.image_url}
+                    onClose={() => setDetailExercise(null)}
+                />
+            )}
         </div>
     );
 
@@ -531,7 +639,9 @@ export default function SchedulePage() {
     const [importConfirm, setImportConfirm] = useState<{ plan: WorkoutPlan; label: string } | null>(null);
     const [volumeExpanded, setVolumeExpanded] = useState(false);
     const [todayAddModal, setTodayAddModal] = useState(false);
+    const [viewDetailExercise, setViewDetailExercise] = useState<LocalExercise | null>(null);
     const { sex: userSex } = useSex();
+    const weightUnit = useUnits();
 
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -731,7 +841,7 @@ export default function SchedulePage() {
         if (!plan || plan.is_rest || !plan.template_id) { setViewExercises([]); setRecoveryWarnings([]); setViewLoading(false); return; }
         const { data: rows } = await supabase
             .from("workout_template_exercises")
-            .select("id, order_index, target_sets, target_reps, target_weight, target_duration_minutes, target_incline, target_speed, exercise_id, exercises(name, body_segment)")
+            .select("id, order_index, target_sets, target_reps, target_weight, target_duration_minutes, target_incline, target_speed, exercise_id, exercises(name, body_segment, equipment, is_unilateral, image_url)")
             .eq("template_id", plan.template_id)
             .order("order_index");
         setViewExercises((rows ?? []).map(mapExerciseRow));
@@ -1096,7 +1206,7 @@ export default function SchedulePage() {
                                             <div key={`${group.label}-${gi}`}>
                                                 <p className="text-[10px] font-mono tracking-widest text-[rgb(var(--accent-light-rgb)/0.5)] mb-2">{group.label.toUpperCase()}</p>
                                                 <div className="space-y-1.5">
-                                                    {group.items.map((ex) => <ReadOnlyRow key={ex.id} ex={ex} index={viewExercises.indexOf(ex)} />)}
+                                                    {group.items.map((ex) => <ReadOnlyRow key={ex.id} ex={ex} onDetail={(e) => setViewDetailExercise(e)} />)}
                                                 </div>
                                             </div>
                                         ))}
@@ -1133,6 +1243,18 @@ export default function SchedulePage() {
                     onAdd={handleAddExerciseToday}
                     onClose={() => setTodayAddModal(false)}
                     existingIds={new Set(viewExercises.map(e => e.exercise_id))}
+                />
+            )}
+            {viewDetailExercise && (
+                <ExerciseDetailSheet
+                    exerciseId={viewDetailExercise.exercise_id}
+                    exerciseName={viewDetailExercise.name}
+                    equipment={viewDetailExercise.equipment}
+                    bodySegment={viewDetailExercise.body_segment}
+                    weightUnit={weightUnit}
+                    userSex={userSex ?? "male"}
+                    imageUrl={viewDetailExercise.image_url}
+                    onClose={() => setViewDetailExercise(null)}
                 />
             )}
             {showDatabase && <ExerciseDatabaseModal onClose={() => setShowDatabase(false)} />}
