@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Check, Plus, Play, X, RefreshCw, Pause, SkipForward, ChevronDown, ChevronRight, Moon, Flame, Dumbbell, Timer, TrendingUp, Share2, Trash2, Ban, Calendar, Pencil, Undo2, Minus, Info } from "lucide-react";
+import { Check, Plus, Play, X, RefreshCw, Pause, SkipForward, ChevronDown, ChevronRight, Moon, Flame, Dumbbell, Timer, TrendingUp, Share2, Trash2, Ban, Calendar, Pencil, Undo2, Minus, Info, Camera } from "lucide-react";
 import { useSwipeable } from "react-swipeable";
 import CubeLoader from "../../components/ui/cube-loader";
 import AddExerciseModal from "../../components/AddExerciseModal";
@@ -23,6 +23,14 @@ import {
     type WorkoutExercise,
     type SetEntry,
 } from "../../lib/useWorkoutSession";
+
+/* ─── LAZY FORM CHECK ─── */
+import dynamic from "next/dynamic";
+const LazyFormCheck = dynamic(() => import("../../components/FormCheckCamera"), { ssr: false, loading: () => (
+    <div className="fixed inset-0 z-[200] bg-black flex items-center justify-center">
+        <div className="w-10 h-10 border-2 border-[rgb(var(--accent-rgb)/0.3)] border-t-[rgb(var(--accent-rgb))] rounded-full animate-spin" />
+    </div>
+) });
 
 /* ─── CARD WRAPPER ─── */
 function CardPanel({ children, className = "" }: { children: React.ReactNode; className?: string }) {
@@ -1153,6 +1161,7 @@ export default function WorkoutPage() {
     const [rpePrompt, setRpePrompt] = useState<{ exId: string; setIdx: number } | null>(null);
     const rpeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const [detailExercise, setDetailExercise] = useState<WorkoutExercise | null>(null);
+    const [formCheckExercise, setFormCheckExercise] = useState<string | null>(null);
     const [fatigueAlerts, setFatigueAlerts] = useState<FatigueAlert[]>([]);
     const [fatigueDismissed, setFatigueDismissed] = useState(false);
 
@@ -1899,6 +1908,11 @@ export default function WorkoutPage() {
                                                         <X size={11} /> Remove
                                                     </button>
                                                 )}
+                                                {!ex.isCardio && (
+                                                    <button onClick={() => setFormCheckExercise(ex.name)} className="flex items-center gap-1.5 text-[var(--fg-40)] text-[10px] font-mono hover:text-cyan-400 active:scale-95 transition px-2 py-1.5 rounded-md hover:bg-cyan-400/10">
+                                                        <Camera size={11} /> Form
+                                                    </button>
+                                                )}
                                                 {!ex.isCardio && !ex.isBodyweight && (
                                                     <button onClick={() => w.toggleWarmup(ex)} className={`flex items-center gap-1.5 text-[10px] font-mono transition ml-auto px-2 py-1.5 rounded-md active:scale-95 ${w.warmupExercises.has(ex.id) ? "text-amber-400 bg-amber-400/10 hover:bg-amber-400/15" : "text-[var(--fg-40)] hover:text-amber-400 hover:bg-amber-400/10"}`}>
                                                         <Flame size={11} />
@@ -2413,6 +2427,7 @@ export default function WorkoutPage() {
                     onClose={() => setDetailExercise(null)}
                 />
             )}
+            {formCheckExercise && <LazyFormCheck exerciseName={formCheckExercise} onClose={() => setFormCheckExercise(null)} />}
         </main>
     );
 }
